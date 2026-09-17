@@ -1,35 +1,16 @@
-MIT License (with Non-Commercial Restriction)
+MIT License
 
-Copyright (c) 2026 StarPie (formerly WinPieGestures) Contributors
+Copyright (c) 2026 Star Pie
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, and sublicense the Software,
-subject to the following conditions:
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
-----------------------------------------------------------------------------------
-[NON-COMMERCIAL RESTRICTION / 非商业性限制声明]
-
-1. Non-Commercial Use Only:
-   The Software is provided strictly for personal, educational, research, and
-   non-commercial internal office use.
-
-2. Prohibition of Commercial Sale and Redistribution:
-   Without explicit prior written permission from the copyright owner (SoftBlack42):
-   - You may NOT sell, rent, or lease the Software or any derivative works.
-   - You may NOT repackage the Software (in binary or source form) for paid distribution
-     on any platform, marketplace, or app store.
-   - You may NOT embed, bundle, or integrate the Software (or its core components) into
-     proprietary closed-source commercial applications or for-profit commercial services.
-
-3. Commercial Licensing:
-   For commercial usage, customization, or commercial distribution rights, please contact
-   the original author for explicit commercial licensing.
-----------------------------------------------------------------------------------
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -38,5 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-

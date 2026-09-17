@@ -335,6 +335,11 @@ public static class ActionExecutor
 			case "ShellTool":
 				ExecuteShellTool(action.Parameter);
 				break;
+
+			case "Plugin":
+				// 普通社区插件动作统一走 PluginHost，避免在历史 switch 中静默失效。
+				ExecutePluginActionItem(action);
+				break;
 			}
 		}
 		catch (Exception ex)

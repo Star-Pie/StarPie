@@ -4,7 +4,8 @@ on:
   pull_request:
     branches:
       - main
-      - 'dev*'
+      - 'dev/**'
+      - 'dev-*'
   workflow_dispatch:
 
 permissions:
