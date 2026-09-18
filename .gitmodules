@@ -1,0 +1,3 @@
+[submodule "external/StarPie-Official-Plugins"]
+	path = external/StarPie-Official-Plugins
+	url = https://github.com/Star-Pie/StarPie-Official-Plugins.git
