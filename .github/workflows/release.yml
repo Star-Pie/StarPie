@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*.*.*'
       - 'V*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 Git 标签，例如 v1.4.4 或 v1.4.4-beta.1'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,11 +19,14 @@ jobs:
   release:
     name: Build and Publish StarPie Release
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Verify tag points to latest main commit
@@ -25,7 +34,7 @@ jobs:
         run: |
           git fetch origin main
 
-          $tagCommit = (git rev-list -n 1 $env:GITHUB_REF_NAME).Trim()
+          $tagCommit = (git rev-list -n 1 $env:RELEASE_TAG).Trim()
           $mainCommit = (git rev-parse origin/main).Trim()
 
           if ($tagCommit -ne $mainCommit) {
@@ -37,7 +46,7 @@ jobs:
       - name: Verify compiled version fields
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           if ($tag -inotmatch '^v(?<baseVersion>\d+\.\d+\.\d+)(?<prerelease>-beta\.\d+)?$') {
             throw "Release tag must use vX.Y.Z/VX.Y.Z or vX.Y.Z-beta.N/VX.Y.Z-beta.N format: $tag"
           }
@@ -112,7 +121,7 @@ jobs:
       - name: Build Inno Setup Installer
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           $tagClean = $tag.TrimStart('v', 'V')
           $outputBaseFilename = "StarPie-$tag-Setup-win-x64"
 
@@ -145,7 +154,7 @@ jobs:
       - name: Package release assets
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           New-Item -ItemType Directory -Force -Path "dist" | Out-Null
 
           $lightweightArchive = "dist/StarPie-$tag-Lightweight-win-x64.zip"
@@ -170,7 +179,7 @@ jobs:
       - name: Extract Release Notes from CHANGELOG.md
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           $tagClean = $tag.TrimStart('v', 'V')
           $changelogPath = "CHANGELOG.md"
           $notes = ""
@@ -209,20 +218,20 @@ jobs:
             Sort-Object Name |
             Select-Object -ExpandProperty FullName
 
-          $releaseArguments = @("release", "create", $env:GITHUB_REF_NAME)
+          $releaseArguments = @("release", "create", $env:RELEASE_TAG)
           $releaseArguments += $assets
-          $releaseArguments += @("--verify-tag", "--title", "StarPie $env:GITHUB_REF_NAME")
+          $releaseArguments += @("--verify-tag", "--title", "StarPie $env:RELEASE_TAG")
 
           $notesFile = "dist/RELEASE_NOTES.md"
           if (Test-Path $notesFile) {
             $releaseArguments += @("--notes-file", $notesFile)
           } else {
-            $releaseArguments += @("--notes", "StarPie $env:GITHUB_REF_NAME")
+            $releaseArguments += @("--notes", "StarPie $env:RELEASE_TAG")
           }
 
-          if ($env:GITHUB_REF_NAME -imatch '^v\d+\.\d+\.\d+-beta\.\d+$') {
+          if ($env:RELEASE_TAG -imatch '^v\d+\.\d+\.\d+-beta\.\d+$') {
             $releaseArguments += "--prerelease"
-            Write-Host "Publishing GitHub pre-release: $env:GITHUB_REF_NAME"
+            Write-Host "Publishing GitHub pre-release: $env:RELEASE_TAG"
           }
 
           & gh @releaseArguments
@@ -231,14 +240,14 @@ jobs:
           }
 
       - name: Retain latest three beta releases
-        if: ${{ contains(github.ref_name, '-beta.') }}
+        if: ${{ contains(env.RELEASE_TAG, '-beta.') }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ($env:GITHUB_REF_NAME -inotmatch '^v(?<baseVersion>\d+\.\d+\.\d+)-beta\.\d+$') {
-            throw "Unexpected beta tag format: $env:GITHUB_REF_NAME"
+          if ($env:RELEASE_TAG -inotmatch '^v(?<baseVersion>\d+\.\d+\.\d+)-beta\.\d+$') {
+            throw "Unexpected beta tag format: $env:RELEASE_TAG"
           }
 
           $baseVersion = $Matches.baseVersion

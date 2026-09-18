@@ -2,7 +2,14 @@ name: Build and Test
 
 on:
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - 'dev/**'
+      - 'dev-*'
+    paths:
+      - 'StarPie.Plugin.Abstractions/**'
+      - 'installer/**'
+      - 'WinPieGestures/**'
   workflow_dispatch:
 
 permissions:
