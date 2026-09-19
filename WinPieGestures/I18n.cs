@@ -481,7 +481,7 @@ public static class I18n
 		};
 		dictionary["EnableMultiTier"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "启用多级轮盘与级联子菜单 (Multi-Tier Sub-Wheels)",
+			[LanguageCode.ZhCn] = "启用多级轮盘与级联子菜单",
 			[LanguageCode.ZhTw] = "啟用多級輪盤與級聯子選單 (Multi-Tier Sub-Wheels)",
 			[LanguageCode.En] = "Enable Multi-Tier Cascading Sub-Wheels",
 			[LanguageCode.Ja] = "マルチ階層サブホイール機能を有効化"
@@ -495,7 +495,7 @@ public static class I18n
 		};
 		dictionary["AutoExpandSubRingsTitle"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "唤出时直接同时展开一二级轮盘 (Auto-Expand Sub-Rings)",
+			[LanguageCode.ZhCn] = "唤出时直接同时展开一二级轮盘",
 			[LanguageCode.ZhTw] = "喚出時直接同時展開一二級輪盤 (Auto-Expand Sub-Rings)",
 			[LanguageCode.En] = "Expand Sub-Rings Simultaneously on Popup",
 			[LanguageCode.Ja] = "ポップアップ時にサブリングを同時展開"
@@ -2182,7 +2182,7 @@ public static class I18n
 		};
 		dictionary["LanguageTitle"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "界面语言 (Display Language)",
+			[LanguageCode.ZhCn] = "界面语言",
 			[LanguageCode.ZhTw] = "介面語言 (Display Language)",
 			[LanguageCode.En] = "Display Language",
 			[LanguageCode.Ja] = "表示言語 (Display Language)"
