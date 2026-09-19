@@ -169,6 +169,9 @@ public class SubSlotViewModel : INotifyPropertyChanged
 
 	public bool IsShellToolType => Type == "ShellTool";
 
+	public bool SupportsShellToolStandardUser =>
+		IsShellToolType && ActionExecutor.SupportsShellToolStandardUser(Parameter);
+
 	public bool IsWindowManagerType =>
 		Type == "Tile" || Type == "ToggleTopmost" || Type == "MoveMonitor" ||
 		Type == "WindowOpacity" || Type == "SwitchWindow" || Type == "WindowManager";
@@ -299,6 +302,7 @@ public class SubSlotViewModel : INotifyPropertyChanged
 				OnPropertyChanged(nameof(WindowOpacityValue));
 				OnPropertyChanged(nameof(WindowOpacityLabel));
 				OnPropertyChanged(nameof(ShellToolTitle));
+				OnPropertyChanged(nameof(SupportsShellToolStandardUser));
 			}
 		}
 	}
@@ -645,6 +649,7 @@ public class SubSlotViewModel : INotifyPropertyChanged
 		OnPropertyChanged(nameof(IsTileType));
 		OnPropertyChanged(nameof(IsOcrType));
 		OnPropertyChanged(nameof(IsShellToolType));
+		OnPropertyChanged(nameof(SupportsShellToolStandardUser));
 		OnPropertyChanged(nameof(IsWindowManagerType));
 		OnPropertyChanged(nameof(WindowManagerSubMode));
 		OnPropertyChanged(nameof(IsTileSubMode));

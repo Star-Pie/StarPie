@@ -398,6 +398,12 @@
                         </Border>
                         <Button Grid.Column="1" Content="⚡ 挑选功能..." Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Margin="6,0,0,0" ToolTip="打开系统与右键工具库，支持搜索与分类" Click="SubPickShellTool_Click" />
                       </Grid>
+                      <CheckBox Style="{StaticResource ToggleSwitchStyle}" Margin="0,2,0,0" Visibility="{Binding SupportsShellToolStandardUser, Converter={StaticResource BoolToVis}}" IsChecked="{Binding RunAsStandardUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <StackPanel Margin="6,0,0,0">
+                          <TextBlock Text="🛡️ 以常规普通权限启动 (避免管理员终端盾牌)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                          <TextBlock Text="当 StarPie 以管理员权限运行时，通过 Windows Shell 降权启动终端 / 编辑器，使用普通用户完整性级别。" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </CheckBox>
                     </StackPanel>
 
                     <!-- 关联外部程序图标面板 (解耦执行与外观) -->
