@@ -283,7 +283,7 @@ public partial class SubActionEditorWindow : Window
 		if (sender is FrameworkElement { DataContext: SubSlotViewModel vm })
 		{
 			vm.Parameter = url;
-			if (string.IsNullOrWhiteSpace(vm.Name) || vm.Name.StartsWith("子动作"))
+			if (ActionNameDefaults.IsAutoFilled(vm.Name))
 			{
 				vm.Name = name;
 			}
@@ -307,7 +307,7 @@ public partial class SubActionEditorWindow : Window
 			if (folderBrowserDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
 			{
 				vm.Parameter = folderBrowserDialog.SelectedPath;
-				if (string.IsNullOrEmpty(vm.Name) || vm.Name.StartsWith("子动作"))
+				if (ActionNameDefaults.IsAutoFilled(vm.Name))
 				{
 					vm.Name = Path.GetFileName(folderBrowserDialog.SelectedPath);
 					if (string.IsNullOrEmpty(vm.Name)) vm.Name = folderBrowserDialog.SelectedPath;
@@ -331,7 +331,7 @@ public partial class SubActionEditorWindow : Window
 		if (sender is FrameworkElement { DataContext: SubSlotViewModel vm })
 		{
 			vm.Parameter = path;
-			if (string.IsNullOrWhiteSpace(vm.Name) || vm.Name.StartsWith("子动作"))
+			if (ActionNameDefaults.IsAutoFilled(vm.Name))
 			{
 				vm.Name = name;
 			}
@@ -353,7 +353,7 @@ public partial class SubActionEditorWindow : Window
 		if (sender is FrameworkElement { DataContext: SubSlotViewModel vm })
 		{
 			vm.TileLayout = layout;
-			if (string.IsNullOrEmpty(vm.Name) || vm.Name.StartsWith("子动作"))
+			if (ActionNameDefaults.IsAutoFilled(vm.Name))
 			{
 				vm.Name = "平铺: " + WindowTiler.LayoutDisplayName(layout);
 			}
@@ -374,7 +374,7 @@ public partial class SubActionEditorWindow : Window
 		if (sender is FrameworkElement { DataContext: SubSlotViewModel vm })
 		{
 			vm.WindowOpacityValue = opacity;
-			if (string.IsNullOrEmpty(vm.Name) || vm.Name.StartsWith("子动作"))
+			if (ActionNameDefaults.IsAutoFilled(vm.Name))
 			{
 				vm.Name = $"透明度: {opacity}%";
 			}
@@ -395,7 +395,7 @@ public partial class SubActionEditorWindow : Window
 		if (sender is FrameworkElement { DataContext: SubSlotViewModel vm })
 		{
 			vm.NthWindowIndex = slot;
-			if (string.IsNullOrEmpty(vm.Name) || vm.Name.StartsWith("子动作"))
+			if (ActionNameDefaults.IsAutoFilled(vm.Name))
 			{
 				vm.Name = $"切换应用 #{slot}";
 			}

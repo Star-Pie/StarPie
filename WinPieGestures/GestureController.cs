@@ -1208,7 +1208,7 @@ public class GestureController : IDisposable
 		}
 		else
 		{
-			string label = (!string.IsNullOrEmpty(a.Name) && a.Name != "手势动作") ? a.Name : (a.Parameter ?? "");
+			string label = (!string.IsNullOrEmpty(a.Name) && !ActionNameDefaults.IsAutoFilled(a.Name)) ? a.Name : (a.Parameter ?? "");
 			if (string.IsNullOrEmpty(label))
 			{
 				label = a.Type ?? "";

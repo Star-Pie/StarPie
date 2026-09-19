@@ -466,6 +466,9 @@ public class UpdateManager
 				if (releaseVersion == null) continue;
 				Version parsedVer = releaseVersion.CoreVersion;
 
+				// 「内测」「尝鲜」匹配的是 GitHub Release 的<b>标题</b> —— 那串字是发布者
+				// （本项目自己）写在 tag / release 上的数据，不是本程序的界面文案，
+				// 也不随用户切语言而变化。做 i18n 清理时按可接受项排除。
 				bool isPrerelease = releaseVersion.IsPrerelease ||
 					tag.Contains("beta", StringComparison.OrdinalIgnoreCase) ||
 					tag.Contains("alpha", StringComparison.OrdinalIgnoreCase) ||

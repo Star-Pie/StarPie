@@ -255,6 +255,13 @@ public static class ConfigManager
 			foreach (ActionItem action in profile.Actions)
 			{
 				if (action == null) continue;
+
+				// 这里的 Contains("平铺") 匹配的是<b>配置里已经存着的历史名字</b>，不是 UI 文案：
+				// 老版本的平铺动作会把名字写成「平铺: 左半屏」这种形态（前缀由当时的代码硬编码生成），
+				// 而这个迁移要做的是「认出那些名字、把它换成启动程序」。名字是数据，切语言不影响它。
+				// 顺带说明：新配置里同一位置的前缀仍由 SettingsWindow 硬编码拼接，
+				// 所以这条判断在本次 i18n 收口之后依然成立；等那处前缀也接了词条，
+				// 这条迁移判断要跟着一起改（否则迁移会静默漏掉新配置）。
 				if (action.Type == "Tile" && action.Parameter == "2L" &&
 					!string.IsNullOrWhiteSpace(action.InheritAppIconPath) &&
 					(action.InheritAppIconPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||

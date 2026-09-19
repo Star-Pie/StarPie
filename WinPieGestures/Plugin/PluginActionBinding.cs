@@ -258,14 +258,16 @@ internal static class PluginActionBinding
 
     /// <summary>
     /// 名字是否属于「自动填充值」而非用户自定义。
+    /// <para>
+    /// 占位名那一半交给 <see cref="ActionNameDefaults"/> —— 这里原先自己抄了四个中文字面量
+    /// （「快捷动作」「动作」「子动作」前缀），而真正会被填进去的默认名由 <c>I18n.T</c> 生成，
+    /// 两者从来没有对齐过：简中的「切换窗口」「插件动作」就不以「动作」开头，
+    /// 英文界面下更是全部失效。四份手抄副本收归一处。
+    /// </para>
     /// </summary>
     private static bool ShouldAutoFillName(string? name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return true;
-        if (name == "快捷动作") return true;
-        if (name.StartsWith("动作", StringComparison.Ordinal)) return true;
-        if (name.StartsWith("快捷动作", StringComparison.Ordinal)) return true;
-        if (name.StartsWith("子动作", StringComparison.Ordinal)) return true;
+        if (ActionNameDefaults.IsAutoFilled(name)) return true;
 
         // 上一次就是插件动作自动填的名字 —— 换动作时应当同步替换。
         // 这里查一遍注册表，代价是一次字典遍历（插件动作通常只有几个）。

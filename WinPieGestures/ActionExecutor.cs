@@ -1823,6 +1823,21 @@ public static class ActionExecutor
 		}
 	}
 
+	/// <summary>
+	/// 执行系统功能预设。
+	/// <para>
+	/// <b>入参是稳定 ID 还是中文名？两者都收。</b>先 <c>ToLowerInvariant()</c> 再比对，
+	/// 所以主力分支是一串英文小写 ID（<c>windowswitcher</c> / <c>alttab</c> / …），
+	/// 它们与 <c>SlotViewModel.SystemPresetList</c> 的 <c>Key</c> 一一对应。
+	/// </para>
+	/// <para>
+	/// <b>那几处中文 case 是历史数据兼容，不要把它们改掉、也不要以为它们该接 i18n</b>：
+	/// 老版本往 <c>Action.Parameter</c> 里存的是中文显示名（「锁屏」「控制台」「文件秒搜」…），
+	/// 用户升级后这些配置还在。中文 case 匹配的是<b>已存在配置文件里的历史字符串</b>，
+	/// 属于数据而不是界面文案 —— 界面语言怎么切都不影响老配置里的那几个字。
+	/// 拿「中文参与判断」的扫描结果挨个清理时，这几处要按可接受项排除。
+	/// </para>
+	/// </summary>
 	internal static bool ExecuteSystem(string presetName)
 	{
 		if (string.IsNullOrEmpty(presetName))

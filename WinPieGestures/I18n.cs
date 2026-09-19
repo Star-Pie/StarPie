@@ -90,6 +90,34 @@ public static class I18n
 		return string.Format(T(key), args);
 	}
 
+	/// <summary>
+	/// 取某个键在<b>全部语言</b>下的值（去重后的非空集合，仅内置词条）。
+	/// <para>
+	/// 专供「与语言无关的判据」使用。典型用例是判断一个动作名是不是系统自动填的默认名：
+	/// 只认当前语言的话，用户切一次语言之后，界面里那个<b>旧语言</b>的默认名就会被
+	/// 当成「用户自己起的名字」，自动填充从此对那条动作失效 —— 而且换回语言也不恢复。
+	/// </para>
+	/// <para>
+	/// 不含插件注册的外部词条：外部词条在停用插件时会被回收，拿它做判据会让
+	/// 「这个名字算不算默认名」随插件启停而变。
+	/// </para>
+	/// </summary>
+	internal static IEnumerable<string> AllTranslations(string key)
+	{
+		if (!Translations.TryGetValue(key, out Dictionary<LanguageCode, string>? values))
+		{
+			return Array.Empty<string>();
+		}
+
+		var result = new List<string>(values.Count);
+		foreach (string value in values.Values)
+		{
+			if (string.IsNullOrWhiteSpace(value) || result.Contains(value)) continue;
+			result.Add(value);
+		}
+		return result;
+	}
+
 	public static string GetString(string key)
 	{
 		if (Translations.TryGetValue(key, out Dictionary<LanguageCode, string> value))

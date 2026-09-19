@@ -289,10 +289,11 @@ public class WheelProfile : INotifyPropertyChanged
 			bool hasSvg = !string.IsNullOrWhiteSpace(action.CustomIconSvg);
 			bool hasIconKey = !string.IsNullOrWhiteSpace(action.IconKey);
 			bool hasSub = action.SubActions != null && action.SubActions.Any(s => IsActionConfigured(s));
-			bool hasCustomName = !string.IsNullOrWhiteSpace(action.Name) &&
-				!action.Name.StartsWith("动作 ") &&
-				!action.Name.Equals("快捷动作", StringComparison.OrdinalIgnoreCase) &&
-				!action.Name.Equals("未命名动作", StringComparison.OrdinalIgnoreCase);
+
+			// 「有自定义名」= 名字非空且不是系统填的占位名。判据收归一处，
+			// 别在这里再抄一份中文字面量 —— 原先是 StartsWith("动作 ") + 两个 Equals，
+			// 那套字面量与真正被填进去的默认名（I18n 词条值）从来没有对齐过。
+			bool hasCustomName = !ActionNameDefaults.IsAutoFilled(action.Name);
 			if (!hasParam && !hasAppIcon && !hasSvg && !hasIconKey && !hasSub && !hasCustomName)
 			{
 				return false;

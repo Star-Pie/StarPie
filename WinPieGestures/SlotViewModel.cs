@@ -393,7 +393,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 			if ((value == "Folder" || value == "OpenFolder") && string.IsNullOrEmpty(IconKey))
 			{
 				IconKey = "Folder";
-				if (string.IsNullOrEmpty(Name) || Name.StartsWith("快捷动作") || Name.StartsWith("动作"))
+				if (ActionNameDefaults.IsAutoFilled(Name))
 				{
 					Name = I18n.T("ActionTypeFolderShort");
 				}
@@ -401,12 +401,12 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 			if ((value == "WebUrl" || value == "Url") && string.IsNullOrEmpty(IconKey))
 			{
 				IconKey = "Globe";
-				if (string.IsNullOrEmpty(Name) || Name.StartsWith("快捷动作") || Name.StartsWith("动作"))
+				if (ActionNameDefaults.IsAutoFilled(Name))
 				{
 					Name = I18n.T("ActionTypeWebUrlShort");
 				}
 			}
-			if (value == "SwitchWindow" && (string.IsNullOrEmpty(Name) || Name.StartsWith("快捷动作") || Name.StartsWith("动作")))
+			if (value == "SwitchWindow" && ActionNameDefaults.IsAutoFilled(Name))
 			{
 				Name = I18n.T("ActionTypeSwitchWindowShort");
 			}
@@ -414,7 +414,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 			{
 				NthWindowIndex = "1";
 			}
-			if (value == "Tile" && (string.IsNullOrEmpty(Name) || Name.StartsWith("快捷动作") || Name.StartsWith("动作")))
+			if (value == "Tile" && ActionNameDefaults.IsAutoFilled(Name))
 			{
 				Name = I18n.T("ActionTypeTileShort");
 			}
@@ -437,7 +437,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 				{
 					IconKey = "Copy";
 				}
-				if (string.IsNullOrEmpty(Name) || Name.StartsWith("快捷动作") || Name.StartsWith("动作"))
+				if (ActionNameDefaults.IsAutoFilled(Name))
 				{
 					Name = "复制文件/文件夹路径";
 				}
@@ -689,7 +689,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 			SystemPresetItem systemPresetItem = SystemPresetList.FirstOrDefault((SystemPresetItem x) => string.Equals(x.Key, value, StringComparison.OrdinalIgnoreCase));
 			if (systemPresetItem != null)
 			{
-				if (string.IsNullOrEmpty(Name) || Name == "快捷动作" || SystemPresetList.Any((SystemPresetItem p) => p.DefaultName == Name))
+				if (ActionNameDefaults.IsAutoFilled(Name) || SystemPresetList.Any((SystemPresetItem p) => p.DefaultName == Name))
 				{
 					Name = systemPresetItem.DefaultName;
 				}

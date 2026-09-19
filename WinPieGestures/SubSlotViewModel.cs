@@ -84,22 +84,22 @@ public class SubSlotViewModel : INotifyPropertyChanged
 				if ((value == "Folder" || value == "OpenFolder") && string.IsNullOrEmpty(IconKey))
 				{
 					IconKey = "Folder";
-					if (string.IsNullOrEmpty(Name) || Name.StartsWith("子动作"))
+					if (ActionNameDefaults.IsAutoFilled(Name))
 					{
-						Name = "打开文件夹";
+						Name = I18n.T("ActionTypeFolderShort");
 					}
 				}
 				if ((value == "WebUrl" || value == "Url") && string.IsNullOrEmpty(IconKey))
 				{
 					IconKey = "Globe";
-					if (string.IsNullOrEmpty(Name) || Name.StartsWith("子动作"))
+					if (ActionNameDefaults.IsAutoFilled(Name))
 					{
-						Name = "打开网址";
+						Name = I18n.T("ActionTypeWebUrlShort");
 					}
 				}
-				if (value == "SwitchWindow" && (string.IsNullOrEmpty(Name) || Name.StartsWith("子动作")))
+				if (value == "SwitchWindow" && ActionNameDefaults.IsAutoFilled(Name))
 				{
-					Name = "切换窗口";
+					Name = I18n.T("ActionTypeSwitchWindowShort");
 				}
 				if (value == "SwitchWindow" && string.IsNullOrWhiteSpace(Action.Parameter))
 				{
@@ -516,7 +516,7 @@ public class SubSlotViewModel : INotifyPropertyChanged
 				SystemPresetItem systemPresetItem = SlotViewModel.SystemPresetList.FirstOrDefault((SystemPresetItem p) => p.Key == value);
 				if (systemPresetItem != null)
 				{
-					if (string.IsNullOrEmpty(Name) || Name.StartsWith("子动作"))
+					if (ActionNameDefaults.IsAutoFilled(Name))
 					{
 						Name = systemPresetItem.DefaultName;
 					}

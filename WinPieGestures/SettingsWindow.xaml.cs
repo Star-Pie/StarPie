@@ -4230,6 +4230,10 @@ public partial class SettingsWindow : Window
 					}
 				}
 				_selectedProfile.BoundProcesses = ProfileBoundProcessesTextBox?.Text ?? proc;
+				// 「配置名是占位还是用户起的」—— 这个判断在本文件里有三处（本节 3 次，动作名之外的另一套）。
+				// 与动作名那套的区别：配置名<b>没有任何走 I18n 的默认值</b>（生成点是
+				// 下面的「<c> - 副本</c>」拼接与设置页的重命名），所以这里的中文字面量
+				// 与赋值同源、不随语言变，属于可接受项，不必收进 ActionNameDefaults。
 				if (string.IsNullOrEmpty(_selectedProfile.DisplayName) || _selectedProfile.DisplayName.StartsWith("自定义配置_") || _selectedProfile.DisplayName.EndsWith(" - 副本"))
 				{
 					if (!string.IsNullOrWhiteSpace(picker.SelectedTitle))
@@ -7306,7 +7310,7 @@ public partial class SettingsWindow : Window
 				// 已配好的插件动作不应被清掉（改选具体动作是子下拉的事）。
 				// 引用为空只表示「还没选过」，由子下拉的空状态去引导。
 				item.Type = PluginActionBinding.TypeName;
-				if (string.IsNullOrEmpty(item.Name) || item.Name.StartsWith("快捷动作") || item.Name.StartsWith("动作"))
+				if (ActionNameDefaults.IsAutoFilled(item.Name))
 				{
 					item.Name = I18n.T("ActionTypePluginShort");
 				}
@@ -7318,7 +7322,7 @@ public partial class SettingsWindow : Window
 				{
 					item.Type = "Tile";
 					item.Parameter = "2L";
-					if (string.IsNullOrEmpty(item.Name) || item.Name.StartsWith("扇区") || item.Name.StartsWith("新动作") || item.Name.StartsWith("截屏识字"))
+					if (ActionNameDefaults.IsAutoFilled(item.Name))
 					{
 						item.Name = "平铺: " + WindowTiler.LayoutDisplayName("2L");
 					}
@@ -7347,7 +7351,7 @@ public partial class SettingsWindow : Window
 			else if (newType == "Ocr" || newType == "ScreenOcr")
 			{
 				item.Type = "Ocr";
-				if (string.IsNullOrEmpty(item.Name) || item.Name.StartsWith("扇区") || item.Name.StartsWith("新动作") || item.Name.StartsWith("平铺"))
+				if (ActionNameDefaults.IsAutoFilled(item.Name))
 				{
 					item.Name = "截屏识字";
 				}
@@ -8054,7 +8058,7 @@ public partial class SettingsWindow : Window
 		{
 			item.Parameter = fbd.SelectedPath;
 			FocusFolderPathTextBox.Text = fbd.SelectedPath;
-			if (string.IsNullOrWhiteSpace(item.Name) || item.Name.StartsWith("快捷动作") || item.Name.StartsWith("文件夹"))
+			if (ActionNameDefaults.IsAutoFilled(item.Name))
 			{
 				string autoName = System.IO.Path.GetFileName(fbd.SelectedPath);
 				if (string.IsNullOrEmpty(autoName)) autoName = fbd.SelectedPath;
@@ -8225,7 +8229,7 @@ public partial class SettingsWindow : Window
 			SystemPresetItem? presetItem = SlotViewModel.SystemPresetList.FirstOrDefault(p => p.Key == presetKey);
 			if (presetItem != null)
 			{
-				if (string.IsNullOrEmpty(item.Name) || item.Name.StartsWith("快捷动作"))
+				if (ActionNameDefaults.IsAutoFilled(item.Name))
 				{
 					item.Name = presetItem.DefaultName;
 					FocusActionNameTextBox.Text = presetItem.DefaultName;
@@ -16667,7 +16671,7 @@ public partial class SettingsWindow : Window
 		if (programPickerWindow.ShowDialog() == true && !string.IsNullOrEmpty(programPickerWindow.SelectedPath))
 		{
 			dataContext.Parameter = programPickerWindow.SelectedPath;
-			if (string.IsNullOrEmpty(dataContext.Name) || dataContext.Name.StartsWith("动作") || dataContext.Name == "快捷动作")
+			if (ActionNameDefaults.IsAutoFilled(dataContext.Name))
 			{
 				dataContext.Name = ((!string.IsNullOrEmpty(programPickerWindow.SelectedName)) ? programPickerWindow.SelectedName : System.IO.Path.GetFileNameWithoutExtension(programPickerWindow.SelectedPath));
 			}
@@ -16699,7 +16703,7 @@ public partial class SettingsWindow : Window
 			if (!string.IsNullOrEmpty(folderName))
 			{
 				dataContext.Parameter = folderName;
-				if (string.IsNullOrEmpty(dataContext.Name) || dataContext.Name.StartsWith("快捷动作") || dataContext.Name.StartsWith("动作") || dataContext.Name == "打开文件夹")
+				if (ActionNameDefaults.IsAutoFilled(dataContext.Name))
 				{
 					DirectoryInfo directoryInfo = new DirectoryInfo(folderName);
 					dataContext.Name = directoryInfo.Name;
@@ -19033,7 +19037,7 @@ public partial class SettingsWindow : Window
 			if (dlg.ShowDialog() == true && !string.IsNullOrEmpty(dlg.ResultHotkey))
 			{
 				vm.Parameter = dlg.ResultHotkey;
-				if (string.IsNullOrEmpty(vm.Name) || vm.Name.StartsWith("快捷键"))
+				if (ActionNameDefaults.IsAutoFilled(vm.Name))
 				{
 					vm.Name = dlg.ResultHotkey;
 				}
@@ -19054,7 +19058,7 @@ public partial class SettingsWindow : Window
 			if (picker.ShowDialog() == true && !string.IsNullOrEmpty(picker.SelectedPath))
 			{
 				vm.Parameter = picker.SelectedPath;
-				if (string.IsNullOrEmpty(vm.Name) || vm.Name == "启动程序" || vm.Name == "取消动作")
+				if (ActionNameDefaults.IsAutoFilled(vm.Name))
 				{
 					vm.Name = !string.IsNullOrEmpty(picker.SelectedName)
 						? picker.SelectedName
@@ -19077,7 +19081,7 @@ public partial class SettingsWindow : Window
 			if (winPicker.ShowDialog() == true && !string.IsNullOrEmpty(winPicker.SelectedPath))
 			{
 				vm.Parameter = winPicker.SelectedPath;
-				if (string.IsNullOrEmpty(vm.Name) || vm.Name == "启动程序" || vm.Name == "取消动作")
+				if (ActionNameDefaults.IsAutoFilled(vm.Name))
 				{
 					vm.Name = !string.IsNullOrEmpty(winPicker.SelectedTitle) 
 						? winPicker.SelectedTitle 
@@ -19100,7 +19104,7 @@ public partial class SettingsWindow : Window
 		{
 			vm.Type = "WebUrl";
 			vm.Parameter = url;
-			if (string.IsNullOrEmpty(vm.Name) || vm.Name.StartsWith("http") || vm.Name == "打开网址")
+			if (ActionNameDefaults.IsAutoFilled(vm.Name) || vm.Name.StartsWith("http"))
 			{
 				vm.Name = name;
 			}

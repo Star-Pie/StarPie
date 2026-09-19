@@ -297,6 +297,11 @@ public partial class ProgramPickerWindow : Window
 		{
 			return true;
 		}
+		// 下面几个 if 里的中文关键词（「卸载」「意见反馈」「修复」「使用说明」「用户手册」
+		// 「帮助」「官方网站」「访问官网」）匹配的是<b>第三方软件自己的名字</b>，
+		// 不是本程序的 UI 文案 —— 数据里本来就带中文，切换界面语言不影响它。
+		// 做 i18n 清理时把这几处按「可接受」排除，别顺手删掉：
+		// 删了之后中文软件的卸载程序与说明文档会重新出现在程序挑选器里。
 		string text = Path.GetFileName(exePath).ToLowerInvariant();
 		string text2 = displayName.ToLowerInvariant() + " " + text;
 		string text3 = exePath.ToLowerInvariant();

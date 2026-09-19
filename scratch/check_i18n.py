@@ -35,19 +35,27 @@ empty = [k for k, v in defs.items() if not v.get("ZhCn") or v.get("ZhCn") in ('"
 print(f"简中文案为空的键: {len(empty)}  {empty[:10]}")
 
 # 2) 收集代码里的引用
+#
+# **必须跳过注释行**：文档注释里出现 `I18n.T("…")` 这样的示例是常态
+# （说明「新增默认名赋值点时要同步哪里」时就会写），把它当成真引用会报出
+# 「引用但未定义」的假阳性 —— 而假阳性会让人开始忽略这个脚本的输出。
 refs = set()
 dynamic = []
 mentions = set()   # 出现在代码里的任意字符串字面量（含三元表达式里拼的键，refs 抓不到）
 refpat = re.compile(r'I18n\.(?:T|TF)\(\s*"([^"]+)"')
+dynpat = re.compile(r'I18n\.(?:T|TF)\(\s*[^"\s]')
 for f in src.rglob("*.cs"):
     if "obj" in f.parts or "bin" in f.parts or f.name == "I18n.cs":
         continue
-    txt = f.read_text(encoding="utf-8", errors="ignore")
-    for m in refpat.finditer(txt):
-        refs.add(m.group(1))
-    for m in re.finditer(r'I18n\.(?:T|TF)\(\s*[^"\s]', txt):
-        dynamic.append(f"{f.name}:{txt[:m.start()].count(chr(10))+1}")
-    mentions.update(re.findall(r'"([A-Za-z][A-Za-z0-9_]{6,})"', txt))
+    for lineno, line in enumerate(f.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
+        stripped = line.lstrip()
+        if stripped.startswith("//") or stripped.startswith("*"):
+            continue
+        for m in refpat.finditer(line):
+            refs.add(m.group(1))
+        for m in dynpat.finditer(line):
+            dynamic.append(f"{f.name}:{lineno}")
+        mentions.update(re.findall(r'"([A-Za-z][A-Za-z0-9_]{6,})"', line))
 
 undef = sorted(refs - set(defs))
 print(f"代码引用的唯一键: {len(refs)}")
