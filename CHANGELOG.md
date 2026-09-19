@@ -81,6 +81,25 @@
 - **`conftest.py` 抽出 `find_exe()` / `launch_app()`**：需要「启动前改现场」的用例（预置语言）必须自己控制启动时机，而 `app` 夹具启动得比用例早、替不了。抽出来是为了不再抄第二份候选路径列表 —— 抄一份漂一份，漂掉时的表现是「找不到 exe」这种与被测功能无关的失败。
 - **验收**：`dotnet build -c Release` → **0 警告 0 错误**；`pytest tests/` 收集 **27** 个用例（26 + 1）；修掉网络不确定性后**连续三次运行**（1 次标定 + 2 次断言）结果一致（0 新增 0 减少）；**变异测试**把 `ConfigModeProRadio.Content = I18n.T(...)` 注释掉（＝真实的「漏接线」形态），构建**仍 0 警告**，用例当场报 `英文界面上出现了 10 条台账里没有的中文文案：⚙️ 高级模式` 并列出页签与控件名；**共享夹具冒烟**再跑 `test_switch_all_tabs_smoothly` 与 `test_v138_i18n_multilanguage_support` 两条老用例，均 PASS。标定用的 `scratch/dump_i18n_en_cjk.py` 与中间产物已删除（台账改由用例自身以 `STARPIE_I18N_UPDATE_BASELINE=1` 重采，避免两份实现漂移）。
 
+### 🔌 插件动作面板接入多语言，并修掉「切完语言编辑器停在旧语言」
+
+插件动作编辑面板（「手势动作」页里选中一个插件动作之后那一块）的文案此前是 `SettingsWindow` 私有方法里的一整段**代码拼串**，一条词条都没接；更要紧的是 **`ApplyLocalization()` 从不调用 `UpdateFocusEditorUi()`** —— 也就是说这块即便接了词条，切语言时也不会重渲染，只会冻结在构建时那门语言。
+
+- **新增 `Plugin/PluginActionPanelText.cs`**：把面板文案抽成纯静态类（`NotChosen` / `Unavailable` / `Registered` / `ParamsHint` / `IssuesCount`），`SettingsWindow` 只剩「把字符串摆到控件上」。**这一步不是为了整洁** —— 窗口类的私有方法无界面自检够不着，「切了语言它还残不残中文」就只能靠人肉点一遍；搬出来之后 `[3g]` 才写得成。与 `[3f]`（`PluginListItem`）、`[3e]`（`PluginInstallConfirmationText`）是同一条理由：**可测性是靠摆放位置换来的**。
+- **入参是基本类型而不是 `PluginActionRegistration`**：注册表字段随时会长，而自检里要构造一个合法 registration 得连带填一堆无关字段 —— 基本类型让「驱动一次」变成一行。
+- **修掉「同一个窗口里两种语言并存」**：在 `ApplyLocalization()` 末尾补一次 `UpdateFocusEditorUi()`（`if (IsLoaded)` 挡住构造期那次调用）。这一处覆盖的不止插件面板 —— `Hotkey` / `Launch` / `WebUrl` / `Folder` / `Command` / `WindowManager` / `System` / `Ocr` / `ShellTool` 九个面板**同样一直停在旧语言**，因为它们全是代码拼串。`UpdateFocusEditorUi` 自带重入守卫、幂等，与它 40+ 个既有调用点走同一条路；且 `PluginParameterForm.Build` 的文档与实现都是「重建表单**并回填已保存的值**」（从 `ActionItem.ExtensionData` 取），所以重建不会清空用户输入。
+- **14 个新词条 × 4 语言**（面板标题复用既有 `ActionTypePluginShort`）：未选择的两种处境各一句、引用失效的正文与警示句、`提供插件` 的两种写法（显示名与 ID 相同时不重复显示）、执行方式（后台并发 / 串行）、超时、贡献点 ID、必填参数提示、全部可选、校验结论「还差几项」。**中文值与原字面量逐字一致 ⇒ 简中界面一字不变。**
+- **三种处境的引导语是分开的**（这是原本就有的设计，本轮加了护栏防止后人合并）：有候选 → 去下拉框里挑；无候选 → 去插件页装并启用；引用失效 → 去插件页确认状态或改选。用户照提示操作走错地方，是这类文案最典型的失效方式。
+- **自检新增 `[3g]`（4 条断言）**：① 四种处境 × 四种语言，标题与正文非空、**不是裸键名**，提示行「要么非空、要么老实是 `null`」；② 同一处境四语言必须给出四份不同正文；③ **四种处境的正文必须四句不同**；④ 英文面板的**宿主部分**无方块字与全角标点（插件自带数据按值降序摘除，沿用 `[3f]` 踩过的坑）。段落同样刻意排在 `[4]` 之前 —— `--skip-invoke` 会在 `[4]` 开头提前 return。
+
+**两次变异测试证明 `[3g]` 是真护栏**：① 把 `PluginsPanelKindSerial` 的英文值换回中文 ⇒ 自检报「英文面板的『正常』里出现了中文/日文字符『串』(U+4E32)」并打印摘除后的原文；② 让「有候选 / 无候选」两个分支共用一句话 ⇒ 报「四种面板处境的正文只得到 3 份不同文案 —— 有两处共用了同一句话」。两次均已还原，`grep MUTATION` 为空。
+
+**诚实边界（已写进 `AGENTS.md` §5.1）**：**「切语言重渲染」这一条没有机器护栏**。UI 套件一律在**启动前**把语言写进 `config.json`（app 内切换在 pywinauto 下因 emoji 被剥而脆弱，故有意不用它采集），所以没有任何一条断言在看「切完之后有没有换」。目前只有 `test_settings.py::test_v138_i18n_multilanguage_support` 真的在 app 内切了一次语言、证明这条路径**不炸**，**但它不校验内容** —— 别把「它绿了」读成「重渲染是对的」。面板文案本身由 `[3g]` 守，两者是分工。
+
+**验证**：`dotnet build -c Release -t:Rebuild` → **0 警告 0 错误**；`--plugin-selftest <官方 Launch.dll> --skip-invoke` → `PASS —— 全链路可用`，段落号 `[0][1][2][3][3b][3c][3d][3e][3f][3g][3j][4][5][5b][6][7]`（**16 段**）、0 条 FAIL、`%TEMP%/StarPie-PluginSelfTest-*` 零残留；`check_i18n.py` → **712 唯一键 / 0 重复 / 0 缺语言分支 / 0 简中空值 / 0 引用但未定义**，本次新增 14 键全部「引用=是、语言=4」、占位符跨语言不一致 **0**、插件页漏接具名控件 **0**；`pytest tests/test_settings.py -k "v138_i18n_multilanguage_support or v139_folder_action_type_and_i18n_consistency"` → **2 passed**（这是「app 内切语言不炸」的实测依据）。
+
+**已知未覆盖（登记）**：插件面仍有约 **250 条**面向用户的中文串 —— `PluginHost` 47 / `PluginManifestReader` 35 / `PluginInstance` 30 / `PluginScanner` 30 / `OfficialPluginClient` 29 / `PluginInvoker` 28 / `PluginContext` 20 / `PluginRuntime` 20 / `PluginParameterForm` 12 / `PluginParameterValidator` 9 等，其中相当一部分是异常消息（只在报错路径出现，且那些路径另有已接词条的摘要行）。**日志与自检控制台输出约 400 行按既有约定不翻**。
+
 ### 🌍 插件管理页整块接入多语言，并新增 `[3f]`「卡片文案」护栏
 
 上一笔给台账补「插件卡片看不到」这个盲区时，顺查确认同一条渲染路径上还有 **2 处 `DataTemplate` 硬编码**与**约 22 条代码拼串** —— 它们集中在一个自称「所有面向用户的文案都集中在这里」的函数里，**集中了、但一条词条都没接**。本轮把这块整个接掉。

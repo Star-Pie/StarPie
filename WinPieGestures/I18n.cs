@@ -2026,6 +2026,104 @@ public static class I18n
 			[LanguageCode.En] = "⚠️ The plugin action this referred to is no longer available (the plugin may be disabled or uninstalled). Please choose another one.",
 			[LanguageCode.Ja] = "⚠️ 参照していたプラグイン動作は利用できません（プラグインが無効化または削除された可能性があります）。選び直してください。"
 		};
+		dictionary["PluginsPanelNotChosenPick"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "尚未选定具体的插件动作。请在上方「插件动作」下拉框中选择 —— 候选动作按插件分组，同一插件的动作都归在它以自己名字命名的那个分组下。",
+			[LanguageCode.ZhTw] = "尚未選定具體的外掛動作。請在上方「外掛動作」下拉選單中選擇 —— 候選動作依外掛分組，同一外掛的動作都歸在它以自己名字命名的那個分組下。",
+			[LanguageCode.En] = "No plugin action selected yet. Pick one in the plugin action dropdown above — candidates are grouped by plugin, and every action of a plugin lives under the group named after it.",
+			[LanguageCode.Ja] = "具体的なプラグイン動作が未選択です。上の「プラグイン動作」ドロップダウンで選択してください —— 候補はプラグインごとにまとまっており、同じプラグインの動作はその名前のグループに入っています。"
+		};
+		dictionary["PluginsPanelNotChosenEmpty"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前没有可用的插件动作。请先到「插件与扩展」页安装并启用插件，再回到这里选择。",
+			[LanguageCode.ZhTw] = "目前沒有可用的外掛動作。請先到「外掛與擴充」頁安裝並啟用外掛，再回到這裡選擇。",
+			[LanguageCode.En] = "No plugin actions are available. Install and enable a plugin on the plugins page first, then come back here to choose one.",
+			[LanguageCode.Ja] = "利用できるプラグイン動作がありません。先に「プラグインと拡張」ページでプラグインをインストールして有効化し、ここに戻って選択してください。"
+		};
+		dictionary["PluginsPanelUnavailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "所引用的插件动作当前不可用：{0}\n可能是该插件已被停用或卸载，也可能是插件升级后移除了这个动作。\n到「插件与扩展」页确认插件状态，或直接在上方「插件动作」下拉框里改选另一个动作。",
+			[LanguageCode.ZhTw] = "所引用的外掛動作目前無法使用：{0}\n可能是該外掛已被停用或解除安裝，也可能是外掛升級後移除了這個動作。\n到「外掛與擴充」頁確認外掛狀態，或直接在上方「外掛動作」下拉選單裡改選另一個動作。",
+			[LanguageCode.En] = "The referenced plugin action is currently unavailable: {0}\nThe plugin may have been disabled or uninstalled, or an upgrade removed this action.\nCheck the plugin's state on the plugins page, or pick another action in the dropdown above.",
+			[LanguageCode.Ja] = "参照しているプラグイン動作は現在利用できません：{0}\nプラグインが無効化／アンインストールされたか、更新でこの動作が削除された可能性があります。\n「プラグインと拡張」ページで状態を確認するか、上の「プラグイン動作」ドロップダウンで別の動作を選び直してください。"
+		};
+		dictionary["PluginsPanelUnavailableHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 触发时会明确提示「插件动作不可用」，不会静默无操作。",
+			[LanguageCode.ZhTw] = "⚠️ 觸發時會明確提示「外掛動作無法使用」，不會靜默無操作。",
+			[LanguageCode.En] = "⚠️ Triggering it reports \"plugin action unavailable\" — it will not silently do nothing.",
+			[LanguageCode.Ja] = "⚠️ 実行時は「プラグイン動作を利用できません」と明示されます。無言で何も起きることはありません。"
+		};
+		dictionary["PluginsPanelProvider"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "提供插件：{0}",
+			[LanguageCode.ZhTw] = "提供外掛：{0}",
+			[LanguageCode.En] = "Plugin: {0}",
+			[LanguageCode.Ja] = "提供プラグイン：{0}"
+		};
+		dictionary["PluginsPanelProviderWithId"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "提供插件：{0}（{1}）",
+			[LanguageCode.ZhTw] = "提供外掛：{0}（{1}）",
+			[LanguageCode.En] = "Plugin: {0} ({1})",
+			[LanguageCode.Ja] = "提供プラグイン：{0}（{1}）"
+		};
+		dictionary["PluginsPanelExecutionMode"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "执行方式：{0}",
+			[LanguageCode.ZhTw] = "執行方式：{0}",
+			[LanguageCode.En] = "Runs: {0}",
+			[LanguageCode.Ja] = "実行方式：{0}"
+		};
+		dictionary["PluginsPanelKindBackground"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "后台并发（不占用动作线程）",
+			[LanguageCode.ZhTw] = "背景並行（不佔用動作執行緒）",
+			[LanguageCode.En] = "background, concurrent (does not hold the action thread)",
+			[LanguageCode.Ja] = "バックグラウンド並行（動作スレッドを占有しません）"
+		};
+		dictionary["PluginsPanelKindSerial"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "串行（占用动作线程）",
+			[LanguageCode.ZhTw] = "序列（佔用動作執行緒）",
+			[LanguageCode.En] = "serial (holds the action thread)",
+			[LanguageCode.Ja] = "直列（動作スレッドを占有します）"
+		};
+		dictionary["PluginsPanelTimeout"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "超时：{0} 秒",
+			[LanguageCode.ZhTw] = "逾時：{0} 秒",
+			[LanguageCode.En] = "Timeout: {0} s",
+			[LanguageCode.Ja] = "タイムアウト：{0} 秒"
+		};
+		dictionary["PluginsPanelContributionId"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "贡献点 ID：{0}",
+			[LanguageCode.ZhTw] = "貢獻點 ID：{0}",
+			[LanguageCode.En] = "Contribution ID: {0}",
+			[LanguageCode.Ja] = "提供ポイント ID：{0}"
+		};
+		dictionary["PluginsPanelRequiredParams"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "此动作有 {0} 个必填参数，留空会在触发时被拦下。",
+			[LanguageCode.ZhTw] = "此動作有 {0} 個必填參數，留空會在觸發時被攔下。",
+			[LanguageCode.En] = "This action has {0} required parameter(s); leaving them empty blocks the trigger.",
+			[LanguageCode.Ja] = "この動作には必須パラメーターが {0} 個あります。空欄のまま実行するとブロックされます。"
+		};
+		dictionary["PluginsPanelAllOptional"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "此动作的参数全部可选。",
+			[LanguageCode.ZhTw] = "此動作的參數全部可選。",
+			[LanguageCode.En] = "All parameters of this action are optional.",
+			[LanguageCode.Ja] = "この動作のパラメーターはすべて任意です。"
+		};
+		dictionary["PluginsPanelIssuesCount"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "还有 {0} 个参数不合法，触发时会被拦下。",
+			[LanguageCode.ZhTw] = "還有 {0} 個參數不合法，觸發時會被攔下。",
+			[LanguageCode.En] = "{0} parameter(s) are still invalid; the trigger will be blocked.",
+			[LanguageCode.Ja] = "まだ {0} 個のパラメーターが不正です。実行時にブロックされます。"
+		};
 		dictionary["PluginCandidateAuthor"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "作者 {0}",

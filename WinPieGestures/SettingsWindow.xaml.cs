@@ -2895,6 +2895,20 @@ public partial class SettingsWindow : Window
 		}
 
 		UpdateFocusActionTypeItemsSource();
+
+		// 动作编辑面板的文案是**代码拼串**（不是 XAML 字面量），所以它只在被**重建**时才换语言。
+		// 这里必须补一次重渲染，否则切完语言会得到「同一个窗口里两种语言并存」：
+		// 侧边栏、页签、按钮都换了，而编辑器里那一整块（插件面板，以及
+		// Hotkey / Launch / WebUrl / Folder / Command / WindowManager / System / Ocr /
+		// ShellTool 九个面板）还停在旧语言 —— 而这一块正是用户改动作时盯着看的地方。
+		// 用 IsLoaded 挡住构造期那次调用：那时编辑器还没起来，重跑没有意义，
+		// 平白多走一遍初始化路径也没有好处。UpdateFocusEditorUi 自带重入守卫且幂等，
+		// 与它 40+ 个调用点走的是同一条路。
+		if (IsLoaded)
+		{
+			UpdateFocusEditorUi();
+		}
+
 		App.RefreshTrayMenu();
 	}
 
@@ -6225,13 +6239,12 @@ public partial class SettingsWindow : Window
 		StarPie.Plugin.PluginActionRef? reference = item.PluginActionRef;
 		if (reference == null || !reference.IsValid)
 		{
-			FocusPluginTitleText.Text = "🔌 " + I18n.T("ActionTypePluginShort");
-			// 区分「还没选」与「根本没得选」：前者引导去下拉里挑，
-			// 后者让用户对着一个空下拉框找，只会让人以为功能坏了。
-			FocusPluginDetailText.Text = PluginActionBinding.BuildPluginActionItems().Count > 0
-				? "尚未选定具体的插件动作。请在上方「插件动作」下拉框中选择 —— " +
-				  "候选动作按插件分组，同一插件的动作都归在它以自己名字命名的那个分组下。"
-				: "当前没有可用的插件动作。请先到「插件与扩展」页安装并启用插件，再回到这里选择。";
+			// 「还没选」与「根本没得选」要给出两句不同的话，这个分支判据收在
+			// PluginActionPanelText 里（见那里的注释）。窗口类只负责摆控件 ——
+			// 拼串留在窗口类里的话，无界面自检够不着它，[3g] 就写不出来。
+			var notChosen = PluginActionPanelText.NotChosen(PluginActionBinding.BuildPluginActionItems().Count);
+			FocusPluginTitleText.Text = notChosen.Title;
+			FocusPluginDetailText.Text = notChosen.Detail;
 			if (FocusPluginParamsHintText != null) FocusPluginParamsHintText.Visibility = Visibility.Collapsed;
 			if (FocusPluginReloadBtn != null) FocusPluginReloadBtn.Visibility = Visibility.Collapsed;
 			ClearFocusPluginParameterForm();
@@ -6241,14 +6254,12 @@ public partial class SettingsWindow : Window
 		if (!PluginHost.TryGetAction(reference.FullId, out PluginActionRegistration registration))
 		{
 			// 引用还在、贡献点却没了 —— 最常见的是插件被停用/卸载，或插件升级后不再提供该动作。
-			FocusPluginTitleText.Text = "🔌 " + I18n.T("ActionTypePluginShort");
-			FocusPluginDetailText.Text =
-				$"所引用的插件动作当前不可用：{reference.FullId}\n" +
-				"可能是该插件已被停用或卸载，也可能是插件升级后移除了这个动作。\n" +
-				"到「插件与扩展」页确认插件状态，或直接在上方「插件动作」下拉框里改选另一个动作。";
+			var unavailable = PluginActionPanelText.Unavailable(reference.FullId);
+			FocusPluginTitleText.Text = unavailable.Title;
+			FocusPluginDetailText.Text = unavailable.Detail;
 			if (FocusPluginParamsHintText != null)
 			{
-				FocusPluginParamsHintText.Text = "⚠️ 触发时会明确提示「插件动作不可用」，不会静默无操作。";
+				FocusPluginParamsHintText.Text = unavailable.Hint ?? "";
 				FocusPluginParamsHintText.Visibility = Visibility.Visible;
 			}
 			if (FocusPluginReloadBtn != null) FocusPluginReloadBtn.Visibility = Visibility.Visible;
@@ -6256,32 +6267,18 @@ public partial class SettingsWindow : Window
 			return;
 		}
 
-		FocusPluginTitleText.Text = "🔌 " + registration.DisplayName;
-
-		var detail = new System.Text.StringBuilder();
 		// 插件名与子下拉的分组标题保持一致，用户才能把两处对上号；ID 另行标注，
-		// 排查问题时仍然需要它。
-		detail.Append("提供插件：").Append(PluginActionBinding.ResolvePluginDisplayName(registration.PluginId));
-		if (!string.Equals(
-				PluginActionBinding.ResolvePluginDisplayName(registration.PluginId),
-				registration.PluginId,
-				StringComparison.Ordinal))
-		{
-			detail.Append("（").Append(registration.PluginId).Append('）');
-		}
-		detail.Append("　|　执行方式：").Append(registration.Kind == StarPie.Plugin.ActionKind.Background
-			? "后台并发（不占用动作线程）"
-			: "串行（占用动作线程）");
-		if (registration.TimeoutSeconds > 0)
-		{
-			detail.Append("　|　超时：").Append(registration.TimeoutSeconds).Append(" 秒");
-		}
-		detail.Append('\n').Append("贡献点 ID：").Append(registration.FullId);
-		if (!string.IsNullOrWhiteSpace(registration.Description))
-		{
-			detail.Append('\n').Append(registration.Description);
-		}
-		FocusPluginDetailText.Text = detail.ToString();
+		// 排查问题时仍然需要它。这几行摘要的拼串全部收在 PluginActionPanelText 里。
+		var registered = PluginActionPanelText.Registered(
+			registration.DisplayName,
+			registration.PluginId,
+			PluginActionBinding.ResolvePluginDisplayName(registration.PluginId),
+			registration.FullId,
+			registration.Kind == StarPie.Plugin.ActionKind.Background,
+			registration.TimeoutSeconds,
+			registration.Description);
+		FocusPluginTitleText.Text = registered.Title;
+		FocusPluginDetailText.Text = registered.Detail;
 
 		BuildFocusPluginParameterForm(registration);
 
@@ -6308,9 +6305,7 @@ public partial class SettingsWindow : Window
 				int requiredCount = registration.Parameters.Count(
 					p => p.Required && p.Type != StarPie.Plugin.ParameterFieldType.Bool);
 
-				FocusPluginParamsHintText.Text = requiredCount > 0
-					? $"此动作有 {requiredCount} 个必填参数，留空会在触发时被拦下。"
-					: "此动作的参数全部可选。";
+				FocusPluginParamsHintText.Text = PluginActionPanelText.ParamsHint(requiredCount);
 				FocusPluginParamsHintText.Visibility = Visibility.Visible;
 			}
 			else
@@ -6346,7 +6341,7 @@ public partial class SettingsWindow : Window
 			string? message = validation.PluginMessage;
 			if (message == null && validation.DeclaredIssues.Count > 0)
 			{
-				message = $"还有 {validation.DeclaredIssues.Count} 个参数不合法，触发时会被拦下。";
+				message = PluginActionPanelText.IssuesCount(validation.DeclaredIssues.Count);
 			}
 
 			if (string.IsNullOrWhiteSpace(message))

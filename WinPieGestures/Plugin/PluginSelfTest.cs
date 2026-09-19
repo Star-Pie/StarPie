@@ -1740,6 +1740,154 @@ internal static class PluginSelfTest
             I18n.CurrentLanguage = originalLanguage;
         }
 
+        // ---- 3g 插件动作面板文案 ----
+        //
+        // 这块文案与 [3f] 同源：原先全是 SettingsWindow 私有方法里的**代码拼串**，
+        // 无界面自检够不着，所以「切了语言它还残不残中文」只能靠人肉点一遍。
+        // 搬进 PluginActionPanelText 之后这里才有东西可断言。
+        //
+        // 同样刻意排在 [4] 之前 —— --skip-invoke 会在 [4] 开头提前 return。
+        line("");
+        line("[3g] 插件动作面板文案（三种处境 / 逐语言）");
+
+        // 面板会透出插件自带数据（动作名 / 插件名 / ID / 自述）。断言「英文界面里没有方块字」
+        // 之前必须先把它摘掉 —— 那是插件写的，不是宿主的翻译责任。这里刻意用**全 ASCII**
+        // 的合成数据，免得「摘除顺序」又变成一条隐式依赖（[3f] 正是在这里踩过坑：
+        // 插件名嵌在描述里，先摘短串会破坏长串匹配）。
+        const string panelPluginId = "selftest.plugin";
+        const string panelPluginName = "StarPie SelfTest";
+        const string panelContributionId = "selftest.plugin.demo";
+        const string panelActionName = "SelfTestAction";
+        const string panelDescription = "Synthetic description produced by the self test.";
+
+        LanguageCode[] panelLanguages = Enum.GetValues<LanguageCode>();
+
+        string StripPanelData(string text)
+        {
+            foreach (string piece in new[]
+                         {
+                             panelPluginId, panelPluginName, panelContributionId, panelActionName, panelDescription,
+                         }.OrderByDescending(p => p.Length))
+            {
+                text = text.Replace(piece, "", StringComparison.Ordinal);
+            }
+            return text;
+        }
+
+        (string Name, string Title, string Detail, string? Hint)[] BuildPanelSamples()
+        {
+            (string Title, string Detail, string? Hint) withCandidates = PluginActionPanelText.NotChosen(3);
+            (string Title, string Detail, string? Hint) noCandidates = PluginActionPanelText.NotChosen(0);
+            (string Title, string Detail, string? Hint) stale = PluginActionPanelText.Unavailable(panelContributionId);
+            (string Title, string Detail, string? Hint) healthy = PluginActionPanelText.Registered(
+                panelActionName,
+                panelPluginId,
+                panelPluginName,
+                panelContributionId,
+                background: false,
+                timeoutSeconds: 30,
+                description: panelDescription);
+
+            return new (string Name, string Title, string Detail, string? Hint)[]
+            {
+                ("未选择·有候选", withCandidates.Title, withCandidates.Detail, withCandidates.Hint),
+                ("未选择·无候选", noCandidates.Title, noCandidates.Detail, noCandidates.Hint),
+                ("引用失效", stale.Title, stale.Detail, stale.Hint),
+                ("正常", healthy.Title, healthy.Detail, healthy.Hint),
+            };
+        }
+
+        LanguageCode panelOriginalLanguage = I18n.CurrentLanguage;
+        try
+        {
+            // ① 四种处境 × 四种语言：标题与正文都不许为空、不许是裸键名。
+            //    提示行只有「引用失效」那种处境有；口径必须两端一致 —— 有提示就得非空且不是
+            //    裸键名，没提示就老老实实是 null（调用方据此决定显不显示那一行）。
+            foreach (LanguageCode language in panelLanguages)
+            {
+                I18n.CurrentLanguage = language;
+                foreach ((string name, string title, string detail, string? hint) in BuildPanelSamples())
+                {
+                    foreach ((string field, string value) in new[] { ("标题", title), ("正文", detail) })
+                    {
+                        if (string.IsNullOrWhiteSpace(value))
+                        {
+                            return $"[3g] {language} 的「{name}」{field}为空 —— 面板上会出现一行空白。";
+                        }
+                        if (value.StartsWith("PluginsPanel", StringComparison.Ordinal))
+                        {
+                            return $"[3g] {language} 的「{name}」{field}取到的是裸键名「{value}」—— 词条键写错了。";
+                        }
+                    }
+                    if (hint != null
+                        && (string.IsNullOrWhiteSpace(hint)
+                            || hint.StartsWith("PluginsPanel", StringComparison.Ordinal)))
+                    {
+                        return $"[3g] {language} 的「{name}」提示行是空的或裸键名「{hint}」—— " +
+                               "用户会看到一行空白或一行键名原文。";
+                    }
+                }
+            }
+
+            // ② 同一处境、四种语言必须给出四份不同的正文 —— 相同说明有一门没走自己的词条。
+            var distinctDetails = new HashSet<string>(StringComparer.Ordinal);
+            foreach (LanguageCode language in panelLanguages)
+            {
+                I18n.CurrentLanguage = language;
+                distinctDetails.Add(PluginActionPanelText.Unavailable(panelContributionId).Detail);
+            }
+            if (distinctDetails.Count != panelLanguages.Length)
+            {
+                return $"[3g] 「引用失效」的正文在 {panelLanguages.Length} 种语言下只得到 " +
+                       $"{distinctDetails.Count} 份不同文案 —— 有一门没走自己的词条。";
+            }
+
+            // ③ 四种处境的正文必须是四句不同的话。共用同一句意味着有**两处处境被串到了一起** ——
+            //    用户照着提示去操作会走错地方（去下拉框里找一个根本不存在的动作）。
+            I18n.CurrentLanguage = LanguageCode.ZhCn;
+            int situationCount = BuildPanelSamples().Select(s => s.Detail).Distinct(StringComparer.Ordinal).Count();
+            if (situationCount != 4)
+            {
+                return $"[3g] 四种面板处境的正文只得到 {situationCount} 份不同文案 —— 有两处共用了同一句话。";
+            }
+
+            // ④ 英文面板的**宿主部分**不许有方块字与全角标点（先照值摘掉插件自带数据）。
+            I18n.CurrentLanguage = LanguageCode.En;
+            foreach ((string name, string title, string detail, string? hint) in BuildPanelSamples())
+            {
+                string hosted = StripPanelData(title + "\n" + detail + "\n" + (hint ?? ""));
+                char? leak = FindCjkLeak(hosted);
+                if (leak.HasValue)
+                {
+                    return $"[3g] 英文面板的「{name}」里出现了中文/日文字符「{leak.Value}」" +
+                           $"(U+{(int)leak.Value:X4})：…{hosted.Replace("\n", "\\n")}…";
+                }
+            }
+
+            // ⑤ 面板之外的两位：参数提示行的两个分支必须是两句不同的话（否则用户看不出
+            //    这个动作有没有必填项），校验结论必须把「几项不合法」这个数字真的拼进去。
+            if (string.Equals(
+                    PluginActionPanelText.ParamsHint(0),
+                    PluginActionPanelText.ParamsHint(2),
+                    StringComparison.Ordinal))
+            {
+                return "[3g] 「参数全部可选」与「有 N 个必填」文案相同 —— 用户看不出这个动作有没有必填项。";
+            }
+            if (!PluginActionPanelText.ParamsHint(2).Contains('2')
+                || !PluginActionPanelText.IssuesCount(2).Contains('2'))
+            {
+                return "[3g] 参数提示行或校验结论没有把数量拼进去 —— 用户看不到到底差几项。";
+            }
+
+            line($"    面板文案：4 种处境 × {panelLanguages.Length} 种语言全部有文案且不是裸键名 ✓");
+            line("    英文面板的宿主部分无方块字与全角标点（插件自带数据已按值摘除）✓");
+            line("    四种处境互不相同、四语言互不相同；参数提示行两分支不同且数量已拼入 ✓");
+        }
+        finally
+        {
+            I18n.CurrentLanguage = panelOriginalLanguage;
+        }
+
         // ---- 4 调用 ----
         line("");
         line("[4] 调用动作（走与轮盘完全相同的接缝）");
