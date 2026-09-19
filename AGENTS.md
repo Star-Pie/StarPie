@@ -301,6 +301,10 @@ g:\Users\2 Better\Desktop\design\
 ### 5.1 代码构建与修改原则
 - **优先直接维护 `WinPieGestures/` 源码**：项目源码已完整解耦，可以直接在 `WinPieGestures` 中进行修改、扩展与调试。
 - **流水线工具 `scratch/Decompiler/Program.cs`**：当需要批量从基线生成或大范围重构时，同步维护 `Program.cs` 并通过 `dotnet run --project scratch/Decompiler` 生成源码。
+- **`PluginSelfTest.cs` 的段落号是结构契约，不是装饰。** 它承载 `[0]`…`[7]`（含 `[3b]`/`[3c]`/`[3d]`/`[3j]`）共十余段断言，而本文件是全仓**唯一**没有单测保护的执行体 —— 它自己就是验证手段。任何「整文件重写」或「解决冲突整体取一侧」都可能在无人察觉的情况下整段顶掉断言。
+  - **真实事故**：`refactor` 分支在旧基线上重写了本文件（2813 行 → 945 行），合并时整体取它，导致 `devplugin` 侧后加的 `[3j]`（宿主服务面与能力门禁，~200 行，含跨能力交叉断言）连同 `[3k]`/`[3m]` 一起消失。此后 `AGENTS.md` §3.7、`PluginCapabilityLabels` 类注释、`PluginHostServices.RunPreset` 注释**仍在引用 `[3j]`**，也就是说后续所有「已由 `[3j]` 守」的结论全都没有依据。已于 2026-09-19 恢复（按现行服务名重写，非照抄）。
+  - **改本文件前后都要比对段落号集合**：`grep -o '\[[0-9][a-z]*\]' WinPieGestures/Plugin/PluginSelfTest.cs | sort -u`。少一段就得回答「它守的东西现在由谁守」，答不上来就是回归。这条纪律同样适用于其它「文档/注释在引用它」的断言集合（见技能 `merge-integrity-audit`）。
+  - **新增断言要自证有效**：`[3j]` 恢复时用变异测试验过 —— 把 `PluginWindowService` 的 required 从 `WindowControl` 改成 `Process`，构建**仍 0 警告**（编译器抓不到），自检当场报 3 条 [FAIL]。一条从没红过的断言不算护栏。
 
 ### 5.2 标准构建与发布命令集
 ```powershell

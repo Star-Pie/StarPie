@@ -652,7 +652,8 @@ internal sealed class PluginSystemService : PluginGatedService, IHostSystemServi
         RequireCapability();
 
         // 门禁<b>之后</b>才判空值 —— 与 PluginCommandService.Run / PluginWindowService.ApplyLayout 同序。
-        // 这个顺序有两层作用，两条都被自检 [3j] 直接用到：
+        // 这个顺序有两层作用，两条都被自检 [3j] 直接用到
+        // （分别落在探针 ProbeCapabilityGate 与「已声明 InputSimulation：放行」那一段）：
         //   ① 它证明门禁排在「空值短路」之前：一个没声明能力的插件连空键都调不动；
         //   ② 反过来，声明了能力的插件用空键调下来的代价为零 ——
         //      「声明后放行」那半条断言正是靠这一点才敢真的调下去（不起进程、不按键）。
