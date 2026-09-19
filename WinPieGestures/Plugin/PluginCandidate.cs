@@ -112,10 +112,16 @@ internal sealed class PluginCandidate
 
             if (Scan.Manifest?.Capabilities is { Count: > 0 } capabilities)
             {
-                parts.Add(I18n.TF("PluginCandidateCapabilities", string.Join("、", capabilities)));
+                // 连接符走词条而不是写死「、」：顿号是中文标点，英文下应为逗号，
+                // 写死会让英文界面出现「Capabilities: Process、WindowControl」这种混排。
+                parts.Add(I18n.TF("PluginCandidateCapabilities",
+                    string.Join(I18n.T("PluginsEnumSeparator"), capabilities)));
             }
 
             if (parts.Count == 0) parts.Add(FileName);
+
+            // 这里的「　|　」是**字形**分隔符（全角空格 + 竖线），不是词语，因而不随语言变。
+            // 与上面那个顿号是两回事：前者是排版装饰，后者是标点符号。
             return string.Join("　|　", parts);
         }
     }

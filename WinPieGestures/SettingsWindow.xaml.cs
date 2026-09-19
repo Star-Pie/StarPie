@@ -6801,7 +6801,14 @@ public partial class SettingsWindow : Window
 			return;
 		}
 
-		if (!ConfirmCandidateInstall(candidate)) return;
+		if (!ConfirmPluginInstall(new PluginInstallConfirmation
+		{
+			Scan = candidate.Scan,
+			State = candidate.State,
+			Note = candidate.Note,
+			// 与 PluginHost.InstallCandidateAsync 保持一致：候选安装走 EnableAfterInstall = true。
+			EnableAfterInstall = true,
+		})) return;
 
 		PluginInstallResult installResult = await PluginHost.InstallCandidateAsync(candidate);
 		string error = installResult.Error;
@@ -6819,41 +6826,6 @@ public partial class SettingsWindow : Window
 		}
 
 		RefreshPluginManagerUi();
-	}
-
-	/// <summary>候选安装确认卡。文案随状态变化，把「会发生什么」说清楚而不是只问一句「确定吗」。</summary>
-	private bool ConfirmCandidateInstall(PluginCandidate candidate)
-	{
-		var text = new System.Text.StringBuilder();
-		text.AppendLine(I18n.TF("PluginsConfirmAboutToInstall", candidate.DisplayName, candidate.VersionText));
-		text.AppendLine(I18n.TF("PluginsConfirmFile", candidate.DllPath));
-		text.AppendLine();
-
-		if (candidate.Scan.Manifest?.Capabilities is { Count: > 0 } capabilities)
-		{
-			text.AppendLine(I18n.T("PluginsConfirmCapabilities"));
-			text.AppendLine(DescribeCapabilities(candidate.Scan.Manifest.ResolveCapabilities()));
-			text.AppendLine();
-		}
-
-		if (candidate.HasNote)
-		{
-			text.AppendLine(I18n.TF("PluginsConfirmScanResult", candidate.Note));
-			text.AppendLine();
-		}
-
-		text.AppendLine(candidate.State switch
-		{
-			PluginCandidateState.Update => I18n.T("PluginsConfirmUpdate"),
-			PluginCandidateState.Downgrade => I18n.T("PluginsConfirmDowngrade"),
-			PluginCandidateState.Replaced => I18n.T("PluginsConfirmReplaced"),
-			_ => I18n.T("PluginsConfirmFresh"),
-		});
-		text.AppendLine();
-		text.Append(I18n.T("PluginsConfirmPrivileges"));
-
-		return System.Windows.MessageBox.Show(this, text.ToString(),
-			I18n.T("PluginsConfirmTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
 	}
 
 	/// <summary>打开只读扫描目录。目录不存在时只提示路径，绝不代为创建。</summary>
@@ -6977,8 +6949,8 @@ public partial class SettingsWindow : Window
 
 		var dialog = new Microsoft.Win32.OpenFileDialog
 		{
-			Title = "选择要安装的插件 (.dll)",
-			Filter = "插件程序集 (*.dll)|*.dll|所有文件 (*.*)|*.*",
+			Title = I18n.T("PluginsPickDllTitle"),
+			Filter = I18n.T("PluginsPickDllFilter"),
 			CheckFileExists = true,
 			Multiselect = false,
 		};
@@ -6992,26 +6964,37 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, $"读取所选文件时出错：\n{ex.Message}", "StarPie 插件",
-				MessageBoxButton.OK, MessageBoxImage.Error);
+			System.Windows.MessageBox.Show(this, I18n.TF("PluginsReadFileFailed", ex.Message),
+				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 			return;
 		}
 
 		if (!scan.Accepted)
 		{
 			System.Windows.MessageBox.Show(this,
-				"这个文件不能作为 StarPie 插件安装。\n\n" +
-				$"原因：{PluginScanFailureText.Title(scan.Failure)}\n" +
-				$"详情：{scan.ErrorDetail}\n\n" +
-				$"建议：{PluginScanFailureText.Hint(scan.Failure)}\n\n" +
-				$"文件：{scan.DllPath}",
-				"StarPie 插件", MessageBoxButton.OK, MessageBoxImage.Warning);
+				I18n.TF("PluginsNotAPlugin",
+					PluginScanFailureText.Title(scan.Failure),
+					scan.ErrorDetail,
+					PluginScanFailureText.Hint(scan.Failure),
+					scan.DllPath),
+				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
 		}
 
 		// 识别已通过 —— 把「它到底是什么」摊开给用户看，确认后才落盘。
 		// 插件是以 StarPie 的权限在进程内跑代码的，这一步是唯一的知情同意关口。
-		if (!ConfirmPluginInstall(scan)) return;
+		//
+		// 这里的「装下去会怎样」与候选路径共用同一套判定（PluginHost.ClassifyManualInstall），
+		// 否则同一枚文件从扫描目录装与手动选进来装，会在确认页上得到两种说法。
+		(PluginCandidateState manualState, string manualNote) = PluginHost.ClassifyManualInstall(scan);
+		if (!ConfirmPluginInstall(new PluginInstallConfirmation
+		{
+			Scan = scan,
+			State = manualState,
+			Note = manualNote,
+			// 与下面 CommitInstallAsync 的 EnableAfterInstall 保持一致。
+			EnableAfterInstall = false,
+		})) return;
 
 		PluginInstallResult result = await PluginHost.CommitInstallAsync(scan, new PluginInstallOptions
 		{
@@ -7025,62 +7008,35 @@ public partial class SettingsWindow : Window
 
 		if (!result.Success)
 		{
-			System.Windows.MessageBox.Show(this, $"安装失败：{result.Error}", "StarPie 插件",
-				MessageBoxButton.OK, MessageBoxImage.Error);
+			System.Windows.MessageBox.Show(this, I18n.TF("PluginsInstallFailed", result.Error),
+				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 			return;
 		}
 
 		RefreshPluginManagerUi();
-		PluginHost.NotifyUser("StarPie 插件", $"{result.PluginId} 安装完成，到列表中启用它即可使用。");
+		PluginHost.NotifyUser(I18n.T("PluginsMsgTitle"), I18n.TF("PluginsInstalledNotify", result.PluginId));
 
-		System.Windows.MessageBox.Show(this,
-			$"插件 {result.PluginId} 已安装。\n\n" +
-			"它当前处于「未启用」状态。在列表里勾选「启用」后，它注册的动作才会出现在" +
-			"「手势与动作」页的动作类型下拉框中，从而可以分配到轮盘上。",
-			"StarPie 插件", MessageBoxButton.OK, MessageBoxImage.Information);
+		System.Windows.MessageBox.Show(this, I18n.TF("PluginsInstalledDisabled", result.PluginId),
+			I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 	}
 
-	private bool ConfirmPluginInstall(PluginScanResult scan)
-	{
-		StarPie.Plugin.PluginManifest? manifest = scan.Manifest;
-		StarPie.Plugin.PluginCapability capabilities =
-			manifest?.ResolveCapabilities() ?? StarPie.Plugin.PluginCapability.None;
+	/// <summary>
+	/// 安装确认页的<b>唯一实现</b>，候选安装与手动选 .dll 都走这里。
+	/// <para>
+	/// 这里曾经是两份独立实现（候选一份、手动一份），只有候选那份接了 i18n ⇒
+	/// 同一个「确认安装插件」语义两条路，改一处漏一处。现在正文只在
+	/// <see cref="PluginInstallConfirmationText"/> 里写一遍，本方法只剩弹窗。
+	/// </para>
+	/// <para>
+	/// 正文之所以挪出去，是为了让它在无界面自检里能被逐语言驱动 —— 「切到英文后
+	/// 这一页还剩下多少中文」只有变成断言才守得住（自检 <c>[3e]</c>）。
+	/// </para>
+	/// </summary>
+	private bool ConfirmPluginInstall(PluginInstallConfirmation info) =>
+		System.Windows.MessageBox.Show(this, PluginInstallConfirmationText.Build(info),
+			I18n.T("PluginsConfirmTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
 
-		var text = new System.Text.StringBuilder();
-		text.AppendLine($"插件 ID：{manifest?.Id}");
-		text.AppendLine($"名称：{manifest?.Name}");
-		text.AppendLine($"版本：{manifest?.Version}　　作者：{manifest?.Author}");
-		if (!string.IsNullOrWhiteSpace(manifest?.Description))
-		{
-			text.AppendLine($"说明：{manifest.Description}");
-		}
-		text.AppendLine();
-		text.AppendLine($"目标框架：{scan.TargetFramework}");
-		text.AppendLine($"平台架构：{scan.MachineText}");
-		text.AppendLine($"文件大小：{scan.FileSizeText}");
-		text.AppendLine($"SHA256：{scan.Sha256Short}…");
-		text.AppendLine($"数字签名：{(scan.IsSigned ? scan.SignerSubject : "无（未签名）")}");
-		text.AppendLine($"清单来源：{scan.ManifestSource}");
-		text.AppendLine();
-		text.AppendLine($"声明能力：{(manifest?.Capabilities is { Count: > 0 } ? string.Join("、", manifest.Capabilities) : "无")}");
-		text.AppendLine($"拟安装到：{PluginPaths.Root}\\{manifest?.Id}");
-		text.AppendLine();
-		text.AppendLine("⚠️ 安全提示");
-		text.AppendLine("插件会以 StarPie 当前的权限在你的电脑上运行代码。");
-		if (capabilities != StarPie.Plugin.PluginCapability.None)
-		{
-			text.AppendLine("该插件额外声明了以下权限，请确认来源可信：");
-			text.AppendLine(DescribeCapabilities(capabilities));
-		}
-		text.AppendLine();
-		text.Append("点击「确定」表示你已了解并接受以上风险。");
-
-		return System.Windows.MessageBox.Show(this, text.ToString(), "确认安装插件",
-			MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
-	}
-
-	private static string DescribeCapabilities(StarPie.Plugin.PluginCapability capabilities) =>
-		PluginCapabilityLabels.Describe(capabilities);	private void RescanPluginsButton_Click(object sender, RoutedEventArgs e)
+	private void RescanPluginsButton_Click(object sender, RoutedEventArgs e)
 	{
 		int discovered = PluginHost.SyncFromDisk();
 

@@ -478,6 +478,202 @@ internal static class PluginSelfTest
             // ★ 本段曾在 refactor 分支重写自检时被整段丢弃（段落号与行数两重证据见
             // CHANGELOG「自检护栏丢失」一节），此后 AGENTS.md 与若干类注释仍声称它存在。
             // 恢复时按<b>现行</b>服务名重写，编号一律按执行顺序重排（旧版是 ①②③③b③c③d⑤④⑤）。
+            //
+            // ---- 3e 安装确认页正文（候选安装 / 手动安装共用一份，且整页必须随语言切换）----
+            //
+            // 这一段守的是前几轮 i18n 漏接的共同形态：编译、静态检查、词表覆盖率全绿，
+            // 界面上却仍是中文 —— 只有真的切一次语言才看得见。确认页又是最不能含糊的一页
+            // （用户在这里决定「要不要让这段代码在我电脑上跑」），所以它值得一条机器断言。
+            //
+            // 用<b>合成</b>的扫描结果而不是传入的那枚 dll：正文里唯一的非词条来源就是清单字段
+            // 与文件路径，合成数据能把它们钉成纯 ASCII，于是「英文页里有没有方块字」成为无歧义判据。
+            // 换成真实插件的话，一个中文插件名就会把断言染红，而那不是缺陷。
+            //
+            // 正文之所以能从 SettingsWindow 里搬出来（搬进 PluginInstallConfirmationText），
+            // 也正是为了这一段：留在窗口类里的话，无界面自检碰不到它。
+            Line("");
+            Line("[3e] 安装确认页正文（候选安装 / 手动安装共用一份，且整页随语言切换）");
+
+            var confirmScan = new PluginScanResult
+            {
+                Accepted = true,
+                DllPath = @"C:\selftest\Demo.Plugin.dll",
+                TargetFramework = ".NET 8.0",
+                MachineText = "x64",
+                FileSizeText = "24 KB",
+                Sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                IsSigned = false,
+                ManifestSource = "plugin.json",
+                Manifest = new StarPie.Plugin.PluginManifest
+                {
+                    Id = "demo.selftest.plugin",
+                    Name = "Self Test Plugin",
+                    Description = "Synthetic plugin used by the self test only.",
+                    Author = "StarPie Self Test",
+                    Version = "1.2.3",
+                    Capabilities = new List<string> { "Process", "WindowControl" },
+                },
+            };
+
+            var confirmInput = new PluginInstallConfirmation
+            {
+                Scan = confirmScan,
+                State = PluginCandidateState.Installable,
+                Note = "Synthetic note from the scan folder.",
+                EnableAfterInstall = true,
+            };
+
+            LanguageCode originalLanguage = I18n.CurrentLanguage;
+            var confirmTexts = new Dictionary<LanguageCode, string>();
+
+            try
+            {
+                foreach (LanguageCode language in Enum.GetValues<LanguageCode>())
+                {
+                    I18n.CurrentLanguage = language;
+                    string text = PluginInstallConfirmationText.Build(confirmInput);
+                    confirmTexts[language] = text;
+
+                    // ① 不留未替换的占位符。
+                    // 词条里的 {n} 个数与调用点实参个数不一致时，string.Format **不报错、不抛异常**，
+                    // 只是那一段信息静默消失或多出一个裸 {1} —— 两种都只有把正文打出来才看得见。
+                    int open = text.IndexOf('{');
+                    if (open >= 0)
+                    {
+                        int length = Math.Min(60, text.Length - open);
+                        Fail("确认页文案", $"{language} 页里残留未替换的占位符：" +
+                            text.Substring(open, length).Replace("\n", "\\n"));
+                    }
+
+                    if (text.Length < 200)
+                    {
+                        Fail("确认页文案", $"{language} 页只有 {text.Length} 个字符，正文明显没拼全");
+                    }
+                }
+
+                // ② 英文页里不许出现方块字与中文标点。
+                // 正文里的每一个字都来自词条，所以这一条实际上等价于「这些词条到底翻了没有」。
+                // 它抓到过一个真实漏翻：能力清单原本用 <c>string.Join("、", …)</c> 连接，
+                // 顿号是写死的中文标点，英文页会出现「Declared capabilities: Process、WindowControl」。
+                if (confirmTexts.TryGetValue(LanguageCode.En, out string? enText))
+                {
+                    char? leak = FindCjkLeak(enText);
+                    if (leak.HasValue)
+                    {
+                        int at = enText.IndexOf(leak.Value);
+                        int from = Math.Max(0, at - 25);
+                        int length = Math.Min(60, enText.Length - from);
+                        Fail("确认页文案",
+                            $"英文页里出现了中文/日文字符「{leak.Value}」(U+{(int)leak.Value:X4})：" +
+                            $"…{enText.Substring(from, length).Replace("\n", "\\n")}…");
+                    }
+                    else
+                    {
+                        Line($"  英文页：{enText.Length} 字符，无方块字与中文标点 ✓");
+                    }
+                }
+
+                // ③ 四种语言必须产生四份互不相同的正文。
+                // 两两相同说明有一门语言根本没走自己的词条 —— 而它看上去「有译文」。
+                var languages = confirmTexts.Keys.ToList();
+                for (int i = 0; i < languages.Count; i++)
+                {
+                    for (int j = i + 1; j < languages.Count; j++)
+                    {
+                        if (string.Equals(confirmTexts[languages[i]], confirmTexts[languages[j]], StringComparison.Ordinal))
+                        {
+                            Fail("确认页文案", $"{languages[i]} 与 {languages[j]} 的正文完全相同，必然有一门没走自己的词条");
+                        }
+                    }
+                }
+
+                // ④ 关键字段真的拼进去了（守「加了字段忘了接」这类半截改动）。
+                // 挑的是三段来源各异的字段：清单里的 ID、磁盘上的路径、宿主计算出的安装位置。
+                if (confirmTexts.TryGetValue(LanguageCode.ZhCn, out string? zhText))
+                {
+                    foreach ((string label, string needle) in new[]
+                    {
+                        ("插件 ID", confirmScan.Manifest!.Id),
+                        ("来源文件路径", confirmScan.DllPath),
+                        ("安装目标路径", PluginPaths.Root),
+                        ("能力原始 ID", "WindowControl"),
+                    })
+                    {
+                        if (!zhText.Contains(needle, StringComparison.Ordinal))
+                        {
+                            Fail("确认页文案", $"正文里找不到{label}「{needle}」—— 这一段没拼进去或拼错了来源");
+                        }
+                    }
+                }
+
+                // ⑤ 「装完是否立即启用」的两态必须产生不同正文。
+                // 这句话直接决定用户对结果的预期，两个分支接错（都取到同一个键）不会有任何报错。
+                string enabledText = PluginInstallConfirmationText.Build(confirmInput);
+                string disabledText = PluginInstallConfirmationText.Build(new PluginInstallConfirmation
+                {
+                    Scan = confirmScan,
+                    State = PluginCandidateState.Installable,
+                    Note = confirmInput.Note,
+                    EnableAfterInstall = false,
+                });
+
+                if (string.Equals(enabledText, disabledText, StringComparison.Ordinal))
+                {
+                    Fail("确认页文案", "「装完立即启用」与「装完保持未启用」产生了同一份正文，两个分支接错了");
+                }
+            }
+            finally
+            {
+                // 语言是全局状态：中途 return / 抛异常都必须还原，否则后面几段的断言
+                // 会在一个非中文环境里跑（而它们大多是中文比对）。
+                I18n.CurrentLanguage = originalLanguage;
+            }
+
+            // ⑥ 每个状态位都要有一句「装下去会覆盖掉什么」，且这句必须互不相同。
+            //
+            // 判据刻意写成「与兜底措辞相同的状态集合正好是哪几个」而不是「这几个必须不同」：
+            // 将来新增一个<b>会走到确认页</b>的状态位却忘了配文案时，它会落进这个集合里 ⇒ 断言红。
+            // 写成列举式的话，新状态位根本没有机会被这条断言看见（项目里已经栽过三次这种「断言跟丢了」）。
+            var expectFallbackStates = new[]
+            {
+                // Replaced 本来就是这句话的本体，不是兜底。
+                PluginCandidateState.Replaced,
+                // 以下三种到不了确认页：候选路径不为它们显示安装按钮，
+                // 手动路径的「识别未通过」也在更早的分支返回了。
+                PluginCandidateState.Duplicate,
+                PluginCandidateState.Reserved,
+                PluginCandidateState.Rejected,
+            };
+
+            var fallbackStates = new List<PluginCandidateState>();
+            string fallbackOutcome = PluginInstallConfirmationText.DescribeOutcome(PluginCandidateState.Replaced);
+
+            foreach (PluginCandidateState state in Enum.GetValues<PluginCandidateState>())
+            {
+                string outcome = PluginInstallConfirmationText.DescribeOutcome(state);
+                if (string.IsNullOrWhiteSpace(outcome))
+                {
+                    Fail("确认页文案", $"状态 {state} 没有对应的「会怎样」文案，但它是具名状态位");
+                }
+                else if (string.Equals(outcome, fallbackOutcome, StringComparison.Ordinal))
+                {
+                    fallbackStates.Add(state);
+                }
+            }
+
+            if (!fallbackStates.OrderBy(s => s).SequenceEqual(expectFallbackStates.OrderBy(s => s)))
+            {
+                Fail("确认页文案",
+                    "共用兜底措辞的状态是 [" + string.Join(", ", fallbackStates) + "]，预期是 [" +
+                    string.Join(", ", expectFallbackStates) + "] —— 新增了具名状态位却忘了给它配文案" +
+                    "（或反过来：某条文案被改成了与兜底相同）。");
+            }
+            else
+            {
+                Line($"  安装后果文案：{Enum.GetValues<PluginCandidateState>().Length} 个状态位全部有文案，其中 " +
+                    $"{fallbackStates.Count} 个共用兜底（{string.Join(" / ", fallbackStates)}） ✓");
+            }
+
             Line("");
             Line("[3j] 宿主服务面与能力门禁（命令 / Shell 动词 / 窗口控制 / 屏幕截取 / 系统功能）");
 
@@ -784,12 +980,19 @@ internal static class PluginSelfTest
                 }
             }
 
-            foreach ((PluginCapability capability, string label) in PluginCapabilityLabels.All)
+            foreach ((PluginCapability capability, string key) in PluginCapabilityLabels.All)
             {
-                if (string.IsNullOrWhiteSpace(label))
+                // 本表已改为「存键、运行时现取」（见 PluginCapabilityLabels 的类注释：
+                // 存文案的话，切语言后确认页还是旧语言），所以这里检查的是<b>解析后</b>的文本。
+                // 键名写错时 I18n.T 会把键名原样返回 —— 界面上于是出现一行裸键名：
+                // 既不空白、也不像错的，是最容易被放过的一种失效，所以要专门判一次。
+                // 跨四种语言的完整性由 scratch/check_i18n.py 静态核对（缺语言分支 / 空值）。
+                string label = I18n.T(key);
+                if (string.IsNullOrWhiteSpace(label) || string.Equals(label, key, StringComparison.Ordinal))
                 {
                     capabilityLabelsComplete = false;
-                    Fail("能力文案", $"能力位「{capability}」的确认页文案是空的 —— 确认框里会出现一行空白");
+                    Fail("能力文案", $"能力位「{capability}」的确认页文案取不到（键 {key}）—— " +
+                        "确认框里会出现一行空白，或一行谁都看不懂的裸键名");
                 }
 
                 // 反向核对：表里挂着一个枚举里已经没有的位，通常意味着能力位被改名后这里没跟上。
@@ -1801,6 +2004,37 @@ internal static class PluginSelfTest
         }
 
         return (false, $"抛出的不是 PluginCapabilityDeniedException，而是 {ex.GetType().Name}：{ex.Message}");
+    }
+
+    /// <summary>
+    /// 找出正文里第一个「中文/日文方块字或其专属标点」，用于「英文页里不该出现它们」这类断言。
+    /// <para>
+    /// 四个范围缺一不可：<c>U+3000–U+303F</c> 是 CJK 标点（「」、。），<c>U+3040–U+30FF</c> 是假名，
+    /// <c>U+4E00–U+9FFF</c> 是统一表意文字，最后是全角冒号与全角括号 —— 中文词条里
+    /// <c>「：」</c> 用得极多，只查汉字会放过一整类「英文页里全角冒号」的漏翻。
+    /// </para>
+    /// <para>
+    /// 反过来，<b>不是</b>漏翻的东西必须放行：省略号 <c>…</c>(U+2026)、emoji（如 ⚠️）、
+    /// 以及插件清单自带的字段值。所以这一条只用在<b>合成数据</b>的正文上 ——
+    /// 真实插件的名字可能是中文，那时命中不代表缺陷。
+    /// </para>
+    /// </summary>
+    private static char? FindCjkLeak(string text)
+    {
+        foreach (char c in text)
+        {
+            bool cjkPunctuation = c >= '\u3000' && c <= '\u303F';
+            bool kana = c >= '\u3040' && c <= '\u30FF';
+            bool ideograph = c >= '\u4E00' && c <= '\u9FFF';
+            bool fullWidth = c == '\uFF1A' || (c >= '\uFF08' && c <= '\uFF09');
+
+            if (cjkPunctuation || kana || ideograph || fullWidth)
+            {
+                return c;
+            }
+        }
+
+        return null;
     }
 
     private static int Write(StringBuilder report, string? reportPath, bool pass)

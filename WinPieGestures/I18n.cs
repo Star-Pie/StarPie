@@ -1261,40 +1261,337 @@ public static class I18n
 			[LanguageCode.En] = "Scan result: {0}",
 			[LanguageCode.Ja] = "スキャン結果：{0}"
 		};
-		dictionary["PluginsConfirmUpdate"] = new Dictionary<LanguageCode, string>
+		// ---- 能力位 → 安装确认页上那一行风险说明 ----
+		// 顺序与 PluginCapability 的声明顺序一致（由轻到重），表在 PluginCapabilityLabels.All 里。
+		// 这组词条原先根本不存在（整块硬编码中文），是自检 [3e] 的「英文页不许有方块字」
+		// 那条断言把它们逼出来的 —— 它藏在「已经接好 i18n 的确认页」内部，肉眼看不出来。
+		//
+		// 每一条都要能回答「用户看到这行字，脑子里出现的后果是不是插件真会做的事」。
+		// 开头「· 」是列表符号，属于排版字形，四种语言都一样，故留在文案里而不是拼在代码里。
+		dictionary["PluginCapabilityProcess"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "点击「确定」后将用扫描目录里的新版覆盖现有安装并立即启用。如果插件正在运行，宿主会先自动停用它再替换文件。",
-			[LanguageCode.ZhTw] = "點擊「確定」後將用掃描目錄裡的新版覆蓋現有安裝並立即啟用。如果外掛正在執行，宿主會先自動停用它再取代檔案。",
-			[LanguageCode.En] = "Clicking OK will overwrite the existing installation with the newer copy from the scan folder and enable it right away. If the plugin is running, StarPie disables it first, then replaces the files.",
-			[LanguageCode.Ja] = "「OK」を押すと、スキャンフォルダー内の新しい版で既存のインストールを上書きし、すぐに有効化します。プラグインが実行中の場合は、先に自動で無効化してからファイルを置き換えます。"
+			[LanguageCode.ZhCn] = "· 启动进程 / 执行命令",
+			[LanguageCode.ZhTw] = "· 啟動行程 / 執行命令",
+			[LanguageCode.En] = "· Start processes / run commands",
+			[LanguageCode.Ja] = "· プロセスの起動 / コマンドの実行"
 		};
-		dictionary["PluginsConfirmDowngrade"] = new Dictionary<LanguageCode, string>
+		dictionary["PluginCapabilityFileSystem"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "点击「确定」后将用更旧的版本覆盖现有安装。除非你明确需要退回旧版，否则不建议这样做。",
-			[LanguageCode.ZhTw] = "點擊「確定」後將用更舊的版本覆蓋現有安裝。除非你明確需要退回舊版，否則不建議這樣做。",
-			[LanguageCode.En] = "Clicking OK will overwrite the existing installation with an older version. Not recommended unless you specifically need to roll back.",
-			[LanguageCode.Ja] = "「OK」を押すと、より古い版で既存のインストールを上書きします。旧版へ戻す必要が明確でない限り推奨しません。"
+			[LanguageCode.ZhCn] = "· 读写你的文件",
+			[LanguageCode.ZhTw] = "· 讀寫你的檔案",
+			[LanguageCode.En] = "· Read and write your files",
+			[LanguageCode.Ja] = "· ファイルの読み書き"
 		};
-		dictionary["PluginsConfirmReplaced"] = new Dictionary<LanguageCode, string>
+		dictionary["PluginCapabilityNetwork"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "点击「确定」后将用扫描目录里的文件覆盖现有安装（版本号相同但内容不同）。",
-			[LanguageCode.ZhTw] = "點擊「確定」後將用掃描目錄裡的檔案覆蓋現有安裝（版本號相同但內容不同）。",
-			[LanguageCode.En] = "Clicking OK will overwrite the existing installation with the file from the scan folder (same version number, different content).",
-			[LanguageCode.Ja] = "「OK」を押すと、スキャンフォルダー内のファイルで既存のインストールを上書きします（バージョンは同じでも内容が異なります）。"
+			[LanguageCode.ZhCn] = "· 访问网络",
+			[LanguageCode.ZhTw] = "· 存取網路",
+			[LanguageCode.En] = "· Access the network",
+			[LanguageCode.Ja] = "· ネットワークへのアクセス"
 		};
-		dictionary["PluginsConfirmFresh"] = new Dictionary<LanguageCode, string>
+		dictionary["PluginCapabilityClipboard"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "点击「确定」后插件将被复制到 StarPie 的数据目录并立即启用。",
-			[LanguageCode.ZhTw] = "點擊「確定」後外掛將被複製到 StarPie 的資料目錄並立即啟用。",
-			[LanguageCode.En] = "Clicking OK copies the plugin into StarPie's data folder and enables it right away.",
-			[LanguageCode.Ja] = "「OK」を押すと、プラグインが StarPie のデータフォルダーにコピーされ、すぐに有効化されます。"
+			[LanguageCode.ZhCn] = "· 读取或修改剪贴板",
+			[LanguageCode.ZhTw] = "· 讀取或修改剪貼簿",
+			[LanguageCode.En] = "· Read or modify the clipboard",
+			[LanguageCode.Ja] = "· クリップボードの読み取り・変更"
 		};
-		dictionary["PluginsConfirmPrivileges"] = new Dictionary<LanguageCode, string>
+		dictionary["PluginCapabilityRegistry"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "插件以 StarPie 当前权限在进程内运行，请只安装你信任的来源。",
-			[LanguageCode.ZhTw] = "外掛以 StarPie 目前權限在行程內執行，請只安裝你信任的來源。",
-			[LanguageCode.En] = "Plugins run in-process with StarPie's own privileges, so only install sources you trust.",
-			[LanguageCode.Ja] = "プラグインは StarPie と同じ権限でプロセス内実行されるため、信頼できる提供元のみインストールしてください。"
+			[LanguageCode.ZhCn] = "· 读写注册表",
+			[LanguageCode.ZhTw] = "· 讀寫登錄檔",
+			[LanguageCode.En] = "· Read and write the registry",
+			[LanguageCode.Ja] = "· レジストリの読み書き"
+		};
+		dictionary["PluginCapabilityGlobalHook"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 安装全局键盘/鼠标钩子",
+			[LanguageCode.ZhTw] = "· 安裝全域鍵盤/滑鼠鉤子",
+			[LanguageCode.En] = "· Install global keyboard/mouse hooks",
+			[LanguageCode.Ja] = "· グローバルなキーボード・マウスフックの設置"
+		};
+		dictionary["PluginCapabilityUi"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 显示界面与通知",
+			[LanguageCode.ZhTw] = "· 顯示介面與通知",
+			[LanguageCode.En] = "· Show windows and notifications",
+			[LanguageCode.Ja] = "· ウィンドウと通知の表示"
+		};
+		dictionary["PluginCapabilityAdmin"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 需要管理员权限",
+			[LanguageCode.ZhTw] = "· 需要系統管理員權限",
+			[LanguageCode.En] = "· Require administrator privileges",
+			[LanguageCode.Ja] = "· 管理者権限が必要"
+		};
+		dictionary["PluginCapabilityWindowControl"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 移动 / 置顶 / 改变你正在使用的窗口",
+			[LanguageCode.ZhTw] = "· 移動 / 置頂 / 改變你正在使用中的視窗",
+			[LanguageCode.En] = "· Move, pin, or alter the window you are using",
+			[LanguageCode.Ja] = "· 使用中のウィンドウの移動 / 最前面表示 / 変更"
+		};
+		dictionary["PluginCapabilityScreenCapture"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 读取屏幕内容（截屏）",
+			[LanguageCode.ZhTw] = "· 讀取螢幕內容（截圖）",
+			[LanguageCode.En] = "· Read screen contents (screenshot)",
+			[LanguageCode.Ja] = "· 画面内容の読み取り（スクリーンショット）"
+		};
+		dictionary["PluginCapabilityInputSimulation"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 向当前窗口发送按键",
+			[LanguageCode.ZhTw] = "· 向目前視窗傳送按鍵",
+			[LanguageCode.En] = "· Send keystrokes to the current window",
+			[LanguageCode.Ja] = "· 現在のウィンドウへキー入力を送信"
+		};
+		dictionary["PluginCapabilityNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "（无）",
+			[LanguageCode.ZhTw] = "（無）",
+			[LanguageCode.En] = "(none)",
+			[LanguageCode.Ja] = "（なし）"
+		};
+
+		// ---- 安装确认页：文件事实 ----
+		// 这一组是「它到底是什么」的客观信息，两条安装路径（扫描目录候选 / 手动选 .dll）共用。
+		// 曾经手动安装那份是整块硬编码中文、候选那份走词条，同一个确认语义两条路 —— 现已归一。
+		//
+		// 与 PluginScanFailureSeparator 同理：**分隔符也是文案**。顿号「、」是中文标点，
+		// 英文里必须换成", " —— 写死顿号的话，英文页会出现
+		// 「Declared capabilities: Process、WindowControl」这种中英标点混排。
+		// 注意别把它和纯字形分隔符（全角空格 + 竖线那种）混为一谈：后者是图形，不随语言变。
+		dictionary["PluginsEnumSeparator"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "、",
+			[LanguageCode.ZhTw] = "、",
+			[LanguageCode.En] = ", ",
+			[LanguageCode.Ja] = "、"
+		};
+		dictionary["PluginsConfirmPluginId"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件 ID：{0}",
+			[LanguageCode.ZhTw] = "外掛 ID：{0}",
+			[LanguageCode.En] = "Plugin ID: {0}",
+			[LanguageCode.Ja] = "プラグイン ID：{0}"
+		};
+		dictionary["PluginsConfirmAuthor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "作者：{0}",
+			[LanguageCode.ZhTw] = "作者：{0}",
+			[LanguageCode.En] = "Author: {0}",
+			[LanguageCode.Ja] = "作者：{0}"
+		};
+		dictionary["PluginsConfirmDescription"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "说明：{0}",
+			[LanguageCode.ZhTw] = "說明：{0}",
+			[LanguageCode.En] = "Description: {0}",
+			[LanguageCode.Ja] = "説明：{0}"
+		};
+		dictionary["PluginsConfirmTargetFramework"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标框架：{0}",
+			[LanguageCode.ZhTw] = "目標框架：{0}",
+			[LanguageCode.En] = "Target framework: {0}",
+			[LanguageCode.Ja] = "ターゲットフレームワーク：{0}"
+		};
+		dictionary["PluginsConfirmMachine"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "平台架构：{0}",
+			[LanguageCode.ZhTw] = "平台架構：{0}",
+			[LanguageCode.En] = "Platform architecture: {0}",
+			[LanguageCode.Ja] = "プラットフォーム：{0}"
+		};
+		dictionary["PluginsConfirmFileSize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文件大小：{0}",
+			[LanguageCode.ZhTw] = "檔案大小：{0}",
+			[LanguageCode.En] = "File size: {0}",
+			[LanguageCode.Ja] = "ファイルサイズ：{0}"
+		};
+		dictionary["PluginsConfirmSha256"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "SHA256：{0}…",
+			[LanguageCode.ZhTw] = "SHA256：{0}…",
+			[LanguageCode.En] = "SHA256: {0}…",
+			[LanguageCode.Ja] = "SHA256：{0}…"
+		};
+		dictionary["PluginsConfirmSignature"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "数字签名：{0}",
+			[LanguageCode.ZhTw] = "數位簽章：{0}",
+			[LanguageCode.En] = "Digital signature: {0}",
+			[LanguageCode.Ja] = "デジタル署名：{0}"
+		};
+		dictionary["PluginsConfirmUnsigned"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "无（未签名）",
+			[LanguageCode.ZhTw] = "無（未簽章）",
+			[LanguageCode.En] = "None (unsigned)",
+			[LanguageCode.Ja] = "なし（未署名）"
+		};
+		dictionary["PluginsConfirmManifestSource"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清单来源：{0}",
+			[LanguageCode.ZhTw] = "清單來源：{0}",
+			[LanguageCode.En] = "Manifest source: {0}",
+			[LanguageCode.Ja] = "マニフェストの取得元：{0}"
+		};
+		dictionary["PluginsConfirmDeclaredCapabilities"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "声明能力：{0}",
+			[LanguageCode.ZhTw] = "宣告能力：{0}",
+			[LanguageCode.En] = "Declared capabilities: {0}",
+			[LanguageCode.Ja] = "宣言された機能：{0}"
+		};
+		dictionary["PluginsConfirmNoCapabilities"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "无",
+			[LanguageCode.ZhTw] = "無",
+			[LanguageCode.En] = "none",
+			[LanguageCode.Ja] = "なし"
+		};
+		dictionary["PluginsConfirmTargetPath"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "拟安装到：{0}",
+			[LanguageCode.ZhTw] = "擬安裝至：{0}",
+			[LanguageCode.En] = "Will be installed to: {0}",
+			[LanguageCode.Ja] = "インストール先：{0}"
+		};
+
+		// ---- 安装确认页：装下去会发生什么 ----
+		// 与 PluginCandidateState 一一对应。刻意与「启用语义」（下两个键）拆开：
+		// 「覆盖了哪一份」和「装完启不启用」是两件独立的事，写进一句话里就没法单独改一条。
+		dictionary["PluginsConfirmActFresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这是全新安装，复制进去不会动到已有的任何插件。",
+			[LanguageCode.ZhTw] = "這是全新安裝，複製進去不會動到既有的任何外掛。",
+			[LanguageCode.En] = "This is a fresh install; nothing already installed is touched.",
+			[LanguageCode.Ja] = "これは新規インストールです。既存のプラグインには影響しません。"
+		};
+		dictionary["PluginsConfirmActUpdate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这会用较新的版本覆盖现有安装。如果插件正在运行，宿主会先自动停用它再替换文件。",
+			[LanguageCode.ZhTw] = "這會用較新的版本覆蓋現有安裝。如果外掛正在執行，宿主會先自動停用它再取代檔案。",
+			[LanguageCode.En] = "This overwrites the existing installation with a newer version. If the plugin is running, StarPie disables it first, then replaces the files.",
+			[LanguageCode.Ja] = "これにより、より新しい版で既存のインストールを上書きします。プラグインが実行中の場合は、先に自動で無効化してからファイルを置き換えます。"
+		};
+		dictionary["PluginsConfirmActDowngrade"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 这会用更旧的版本覆盖现有安装。除非你明确需要退回旧版，否则不建议继续。",
+			[LanguageCode.ZhTw] = "⚠️ 這會用更舊的版本覆蓋現有安裝。除非你明確需要退回舊版，否則不建議繼續。",
+			[LanguageCode.En] = "⚠️ This overwrites the existing installation with an older version. Not recommended unless you specifically need to roll back.",
+			[LanguageCode.Ja] = "⚠️ これにより、より古い版で既存のインストールを上書きします。旧版へ戻す必要が明確でない限り推奨しません。"
+		};
+		dictionary["PluginsConfirmActReplaced"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这会覆盖现有安装：版本号相同，但文件内容不同（重编译或手改过）。",
+			[LanguageCode.ZhTw] = "這會覆蓋現有安裝：版本號相同，但檔案內容不同（重新編譯或手動改過）。",
+			[LanguageCode.En] = "This overwrites the existing installation: same version number, different file content (rebuilt or hand-edited).",
+			[LanguageCode.Ja] = "これは既存のインストールを上書きします（バージョンは同じでも、ファイルの内容が異なります）。"
+		};
+		dictionary["PluginsConfirmActInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装的那份与这枚文件完全相同（同版本、同内容），继续安装只会把同样的文件再复制一遍。",
+			[LanguageCode.ZhTw] = "已裝的那份與這枚檔案完全相同（同版本、同內容），繼續安裝只會把同樣的檔案再複製一遍。",
+			[LanguageCode.En] = "What is installed is identical to this file (same version, same content); continuing only copies the same file again.",
+			[LanguageCode.Ja] = "インストール済みのものとこのファイルは完全に同一です（同じバージョン・同じ内容）。続行しても同じファイルをコピーし直すだけです。"
+		};
+		dictionary["PluginsConfirmActVersionUnknown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装版本与这枚文件的版本号至少有一侧无法解析，判断不出新旧 —— 继续安装会直接覆盖现有安装。",
+			[LanguageCode.ZhTw] = "已裝版本與這枚檔案的版本號至少有一側無法解析，判斷不出新舊 —— 繼續安裝會直接覆蓋現有安裝。",
+			[LanguageCode.En] = "At least one of the version numbers cannot be parsed, so newer/older cannot be determined — continuing overwrites the existing installation.",
+			[LanguageCode.Ja] = "既存版とこのファイルのバージョン番号の少なくとも一方が解釈できないため、新旧を判断できません。続行すると既存のインストールを上書きします。"
+		};
+		dictionary["PluginsConfirmActExternal"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个 ID 目前由「外部路径登记」占用（见上方扫描结果）。继续安装会改由数据目录里的副本接管。",
+			[LanguageCode.ZhTw] = "這個 ID 目前由「外部路徑登記」佔用（見上方掃描結果）。繼續安裝會改由資料目錄裡的副本接管。",
+			[LanguageCode.En] = "This ID is currently held by an external-path registration (see the scan result above). Continuing makes the copy in the data folder take over.",
+			[LanguageCode.Ja] = "この ID は現在「外部パス登録」が使用しています（上のスキャン結果を参照）。続行すると、データフォルダー内のコピーが引き継ぎます。"
+		};
+		dictionary["PluginsConfirmEnableNow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "装完会立即启用。",
+			[LanguageCode.ZhTw] = "裝完會立即啟用。",
+			[LanguageCode.En] = "It will be enabled right after installation.",
+			[LanguageCode.Ja] = "インストール後すぐに有効化されます。"
+		};
+		dictionary["PluginsConfirmEnableLater"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "装完处于「未启用」状态：需要你到插件列表里勾选启用，它注册的动作才会出现在「手势与动作」页的动作类型下拉框中。",
+			[LanguageCode.ZhTw] = "裝完處於「未啟用」狀態：需要你到外掛清單裡勾選啟用，它註冊的動作才會出現在「手勢與動作」頁的動作類型下拉選單中。",
+			[LanguageCode.En] = "It stays disabled after installation: tick \"Enabled\" in the plugin list, and only then do its actions appear in the action-type dropdown on the Gestures & Actions page.",
+			[LanguageCode.Ja] = "インストール直後は「無効」のままです。プラグイン一覧で有効化してはじめて、登録した動作が「ジェスチャーと動作」ページの動作タイプのドロップダウンに現れます。"
+		};
+
+		// ---- 安装确认页：安全提示 ----
+		dictionary["PluginsConfirmSecurityTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 安全提示",
+			[LanguageCode.ZhTw] = "⚠️ 安全提示",
+			[LanguageCode.En] = "⚠️ Security notice",
+			[LanguageCode.Ja] = "⚠️ セキュリティ上の注意"
+		};
+		dictionary["PluginsConfirmSecurityBody"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件会以 StarPie 当前的权限在你的电脑上运行代码，请只安装你信任的来源。",
+			[LanguageCode.ZhTw] = "外掛會以 StarPie 目前的權限在你的電腦上執行代碼，請只安裝你信任的來源。",
+			[LanguageCode.En] = "Plugins run code on your computer with StarPie's own privileges, so only install sources you trust.",
+			[LanguageCode.Ja] = "プラグインは StarPie と同じ権限でお使いの PC 上でコードを実行します。信頼できる提供元のみインストールしてください。"
+		};
+		dictionary["PluginsConfirmAccept"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击「确定」表示你已了解并接受以上风险。",
+			[LanguageCode.ZhTw] = "點擊「確定」表示你已了解並接受以上風險。",
+			[LanguageCode.En] = "Clicking OK means you understand and accept these risks.",
+			[LanguageCode.Ja] = "「OK」を押すと、以上のリスクを理解し受け入れたものとみなします。"
+		};
+
+		// ---- 手动安装（选择 .dll）这条路的对话框与结果提示 ----
+		dictionary["PluginsPickDllTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择要安装的插件 (.dll)",
+			[LanguageCode.ZhTw] = "選擇要安裝的外掛 (.dll)",
+			[LanguageCode.En] = "Select a plugin to install (.dll)",
+			[LanguageCode.Ja] = "インストールするプラグインを選択 (.dll)"
+		};
+		dictionary["PluginsPickDllFilter"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件程序集 (*.dll)|*.dll|所有文件 (*.*)|*.*",
+			[LanguageCode.ZhTw] = "外掛組件 (*.dll)|*.dll|所有檔案 (*.*)|*.*",
+			[LanguageCode.En] = "Plugin assemblies (*.dll)|*.dll|All files (*.*)|*.*",
+			[LanguageCode.Ja] = "プラグイン アセンブリ (*.dll)|*.dll|すべてのファイル (*.*)|*.*"
+		};
+		dictionary["PluginsReadFileFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "读取所选文件时出错：\n{0}",
+			[LanguageCode.ZhTw] = "讀取所選檔案時發生錯誤：\n{0}",
+			[LanguageCode.En] = "Failed to read the selected file:\n{0}",
+			[LanguageCode.Ja] = "選択したファイルの読み込みに失敗しました:\n{0}"
+		};
+		dictionary["PluginsNotAPlugin"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个文件不能作为 StarPie 插件安装。\n\n原因：{0}\n详情：{1}\n\n建议：{2}\n\n文件：{3}",
+			[LanguageCode.ZhTw] = "這個檔案不能作為 StarPie 外掛安裝。\n\n原因：{0}\n詳情：{1}\n\n建議：{2}\n\n檔案：{3}",
+			[LanguageCode.En] = "This file cannot be installed as a StarPie plugin.\n\nReason: {0}\nDetails: {1}\n\nSuggestion: {2}\n\nFile: {3}",
+			[LanguageCode.Ja] = "このファイルは StarPie プラグインとしてインストールできません。\n\n理由：{0}\n詳細：{1}\n\n推奨：{2}\n\nファイル：{3}"
+		};
+		dictionary["PluginsInstalledNotify"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "{0} 安装完成，到列表中启用它即可使用。",
+			[LanguageCode.ZhTw] = "{0} 安裝完成，到清單中啟用它即可使用。",
+			[LanguageCode.En] = "{0} installed — enable it in the list to start using it.",
+			[LanguageCode.Ja] = "{0} をインストールしました。一覧で有効化すると使えます。"
+		};
+		dictionary["PluginsInstalledDisabled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件 {0} 已安装。\n\n它当前处于「未启用」状态。在列表里勾选「启用」后，它注册的动作才会出现在「手势与动作」页的动作类型下拉框中，从而可以分配到轮盘上。",
+			[LanguageCode.ZhTw] = "外掛 {0} 已安裝。\n\n它目前處於「未啟用」狀態。在清單裡勾選「啟用」後，它註冊的動作才會出現在「手勢與動作」頁的動作類型下拉選單中，從而可以分配到輪盤上。",
+			[LanguageCode.En] = "Plugin {0} is installed.\n\nIt is currently disabled. Tick \"Enabled\" in the list, and only then do its actions appear in the action-type dropdown on the Gestures & Actions page, where you can assign them to the wheel.",
+			[LanguageCode.Ja] = "プラグイン {0} をインストールしました。\n\n現在は「無効」の状態です。一覧で「有効」にチェックを入れてはじめて、登録した動作が「ジェスチャーと動作」ページの動作タイプのドロップダウンに現れ、ホイールに割り当てられるようになります。"
 		};
 		dictionary["PluginsConfirmTitle"] = new Dictionary<LanguageCode, string>
 		{

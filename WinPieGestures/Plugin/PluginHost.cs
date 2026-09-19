@@ -1087,11 +1087,7 @@ internal static class PluginHost
                 idCounts[id!] = idCounts.TryGetValue(id!, out int n) ? n + 1 : 1;
             }
 
-            var installed = new Dictionary<string, PluginRegistryEntry>(StringComparer.OrdinalIgnoreCase);
-            foreach (PluginRegistryEntry entry in PluginRegistryStore.SnapshotEntries())
-            {
-                installed[entry.Id] = entry;
-            }
+            IReadOnlyDictionary<string, PluginRegistryEntry> installed = SnapshotInstalledById();
 
             foreach (PluginScanResult scan in scans)
             {
@@ -1150,6 +1146,42 @@ internal static class PluginHost
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// 为一枚<b>用户手动选中</b>的 <c>.dll</c> 判定「装下去会发生什么」。
+    /// <para>
+    /// 与候选路径共用同一套判定（<see cref="ClassifyCandidate"/>），只有一维不同：
+    /// 手动选文件不存在「扫描目录内部两枚 dll 撞 ID」这种情况 —— 用户此刻选的是磁盘上
+    /// 任意一处的一枚文件，扫描目录里躺着什么与它无关，所以撞 ID 上下文传空集合。
+    /// </para>
+    /// <para>
+    /// 共用的意义在于「会发生什么」这句话<b>只写一遍</b>。两条路各判各的，很容易出现
+    /// 「候选卡片说这是更新、手动安装却当成全新安装」这种同一枚文件两种说法的情况。
+    /// </para>
+    /// </summary>
+    public static (PluginCandidateState State, string Note) ClassifyManualInstall(PluginScanResult scan)
+        => ClassifyCandidate(scan, EmptyIdCounts, SnapshotInstalledById());
+
+    /// <summary>
+    /// 「调用方没有扫描目录上下文」时用的空撞 ID 表。
+    /// <para>
+    /// 刻意用空集合而不是 <c>null</c>：判定函数里少一个判空分支，语义也更直白 ——
+    /// 「这个 ID 在扫描目录里只出现一次」，正是手动安装时的事实。
+    /// </para>
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, int> EmptyIdCounts =
+        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>已登记插件按 ID 建索引，供「和已装的那份比是什么关系」使用。</summary>
+    private static Dictionary<string, PluginRegistryEntry> SnapshotInstalledById()
+    {
+        var installed = new Dictionary<string, PluginRegistryEntry>(StringComparer.OrdinalIgnoreCase);
+        foreach (PluginRegistryEntry entry in PluginRegistryStore.SnapshotEntries())
+        {
+            installed[entry.Id] = entry;
+        }
+        return installed;
     }
 
     /// <summary>

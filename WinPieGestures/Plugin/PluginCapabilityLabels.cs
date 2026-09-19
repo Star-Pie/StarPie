@@ -26,8 +26,10 @@ namespace WinPieGestures.Plugins;
 /// 改动 <c>PluginSelfTest.cs</c> 时请按 AGENTS.md §5.1 的纪律比对段落号集合。
 /// </para>
 /// <para>
-/// <b>文案是硬编码中文</b>，与搬家之前一致 —— 这不是遗漏，本次不做 i18n 改造，
-/// 免得把「补两个能力标签」变成一次文案迁移。
+/// <b>文案现在走词条（2026-09-19 改）</b>。此前这里是硬编码中文，于是英文 / 日文界面上
+/// 会出现「This plugin declares the following capabilities: · 启动进程 / 执行命令」这种
+/// 中英混排 —— 而它藏在「已经接好 i18n 的确认页」里面，光看那页的代码发现不了。
+/// 抓住它的是自检 <c>[3e]</c>：合成一份英文确认页，断言里面一个方块字都不该有。
 /// </para>
 /// </summary>
 internal static class PluginCapabilityLabels
@@ -39,35 +41,40 @@ internal static class PluginCapabilityLabels
     /// 写不出这一行，通常意味着那个能力位本身该合并 —— 而写得出、却和别的一行说的是同一件事，
     /// 说明它该独立。
     /// </para>
+    /// <para>
+    /// 这里存的是<b>键</b>而不是文案：本表是 <c>static readonly</c>，在类型初始化时求值一次。
+    /// 若把 <c>I18n.T(…)</c> 的结果直接存进来，运行中切换语言后确认页仍是旧语言 ——
+    /// 而且是那种「重启就好」的偶发症状。所以一律在 <see cref="Describe"/> 里现取。
+    /// </para>
     /// </summary>
-    internal static readonly (PluginCapability Capability, string Text)[] All =
+    internal static readonly (PluginCapability Capability, string Key)[] All =
     {
-        (PluginCapability.Process, "· 启动进程 / 执行命令"),
-        (PluginCapability.FileSystem, "· 读写你的文件"),
-        (PluginCapability.Network, "· 访问网络"),
-        (PluginCapability.Clipboard, "· 读取或修改剪贴板"),
-        (PluginCapability.Registry, "· 读写注册表"),
-        (PluginCapability.GlobalHook, "· 安装全局键盘/鼠标钩子"),
-        (PluginCapability.Ui, "· 显示界面与通知"),
-        (PluginCapability.Admin, "· 需要管理员权限"),
+        (PluginCapability.Process, "PluginCapabilityProcess"),
+        (PluginCapability.FileSystem, "PluginCapabilityFileSystem"),
+        (PluginCapability.Network, "PluginCapabilityNetwork"),
+        (PluginCapability.Clipboard, "PluginCapabilityClipboard"),
+        (PluginCapability.Registry, "PluginCapabilityRegistry"),
+        (PluginCapability.GlobalHook, "PluginCapabilityGlobalHook"),
+        (PluginCapability.Ui, "PluginCapabilityUi"),
+        (PluginCapability.Admin, "PluginCapabilityAdmin"),
 
         // 下面三行是「后果可能在别的程序里发生」的三项，措辞刻意用具象动词：
         // 「移动窗口」比「窗口控制」更早让人想到自己正在做的事被打断。
-        (PluginCapability.WindowControl, "· 移动 / 置顶 / 改变你正在使用的窗口"),
-        (PluginCapability.ScreenCapture, "· 读取屏幕内容（截屏）"),
-        (PluginCapability.InputSimulation, "· 向当前窗口发送按键"),
+        (PluginCapability.WindowControl, "PluginCapabilityWindowControl"),
+        (PluginCapability.ScreenCapture, "PluginCapabilityScreenCapture"),
+        (PluginCapability.InputSimulation, "PluginCapabilityInputSimulation"),
     };
 
-    /// <summary>把一组能力位拼成确认页上的多行文本；没有任何能力时返回「（无）」。</summary>
+    /// <summary>把一组能力位拼成确认页上的多行文本；没有任何能力时返回「（无）」（同样走词条）。</summary>
     internal static string Describe(PluginCapability capabilities)
     {
         var parts = new List<string>();
 
-        foreach ((PluginCapability capability, string text) in All)
+        foreach ((PluginCapability capability, string key) in All)
         {
-            if (capabilities.HasFlag(capability)) parts.Add(text);
+            if (capabilities.HasFlag(capability)) parts.Add(I18n.T(key));
         }
 
-        return parts.Count == 0 ? "（无）" : string.Join("\n", parts);
+        return parts.Count == 0 ? I18n.T("PluginCapabilityNone") : string.Join("\n", parts);
     }
 }
