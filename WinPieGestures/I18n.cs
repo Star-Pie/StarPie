@@ -4096,6 +4096,1042 @@ public static class I18n
 			[LanguageCode.En] = "🔴 Please press key combination...",
 			[LanguageCode.Ja] = "🔴 ショートカットキーの組み合わせを押してください..."
 		};
+				dictionary["Tab1_UiStyleLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "主题风格:",
+			[LanguageCode.ZhTw] = "主題風格:",
+			[LanguageCode.En] = "Theme Style:",
+			[LanguageCode.Ja] = "テーマスタイル:"
+		};
+		dictionary["UiStyleClassicRing"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "经典圆环",
+			[LanguageCode.ZhTw] = "經典圓環",
+			[LanguageCode.En] = "Classic Ring",
+			[LanguageCode.Ja] = "クラシックリング"
+		};
+		dictionary["UiStyleCleanSectors"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "极简扇区",
+			[LanguageCode.ZhTw] = "極簡扇區",
+			[LanguageCode.En] = "Clean Sectors",
+			[LanguageCode.Ja] = "クリーンセクター"
+		};
+		dictionary["UiStyleGlassmorphism"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "液态毛玻璃",
+			[LanguageCode.ZhTw] = "液態毛玻璃",
+			[LanguageCode.En] = "Liquid Glassmorphism",
+			[LanguageCode.Ja] = "リキッドグラス"
+		};
+		dictionary["Tab1_ThemePresetLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "配色方案:",
+			[LanguageCode.ZhTw] = "配色方案:",
+			[LanguageCode.En] = "Color Scheme:",
+			[LanguageCode.Ja] = "カラースキーム:"
+		};
+		dictionary["ThemeItemSystem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "跟随系统",
+			[LanguageCode.ZhTw] = "跟隨系統",
+			[LanguageCode.En] = "Follow System",
+			[LanguageCode.Ja] = "システムに従う"
+		};
+		dictionary["ThemeItemDark"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "深色模式",
+			[LanguageCode.ZhTw] = "深色模式",
+			[LanguageCode.En] = "Dark Mode",
+			[LanguageCode.Ja] = "ダークモード"
+		};
+		dictionary["ThemeItemLight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "浅色模式",
+			[LanguageCode.ZhTw] = "淺色模式",
+			[LanguageCode.En] = "Light Mode",
+			[LanguageCode.Ja] = "ライトモード"
+		};
+		dictionary["ThemeItemMatchaForest"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "抹茶森林",
+			[LanguageCode.ZhTw] = "抹茶森林",
+			[LanguageCode.En] = "Matcha Forest",
+			[LanguageCode.Ja] = "抹茶フォレスト"
+		};
+		dictionary["ThemeItemGlacialIce"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "冰川透蓝",
+			[LanguageCode.ZhTw] = "冰川透藍",
+			[LanguageCode.En] = "Glacial Ice",
+			[LanguageCode.Ja] = "氷河アイスブルー"
+		};
+		dictionary["ThemeItemMorandiMuted"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "莫兰迪柔灰",
+			[LanguageCode.ZhTw] = "莫蘭迪柔灰",
+			[LanguageCode.En] = "Morandi Muted Gray",
+			[LanguageCode.Ja] = "モランディグレー"
+		};
+		dictionary["ThemeItemCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎨 自定义配色",
+			[LanguageCode.ZhTw] = "🎨 自訂配色",
+			[LanguageCode.En] = "🎨 Custom Colors",
+			[LanguageCode.Ja] = "🎨 カスタム配色"
+		};
+		dictionary["BtnNewCustomPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 新建配色",
+			[LanguageCode.ZhTw] = "➕ 新建配色",
+			[LanguageCode.En] = "➕ New Preset",
+			[LanguageCode.Ja] = "➕ 新規プリセット"
+		};
+		dictionary["TipNewCustomPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "基于当前色彩创建全新的自定义配色方案预设",
+			[LanguageCode.ZhTw] = "基於當前色彩創建全新的自訂配色方案預設",
+			[LanguageCode.En] = "Create a new custom color preset based on current colors",
+			[LanguageCode.Ja] = "現在の色に基づいて新しいカスタムカラースキームプリセットを作成"
+		};
+		dictionary["BtnRenameCustomPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✏️ 重命名预设",
+			[LanguageCode.ZhTw] = "✏️ 重新命名預設",
+			[LanguageCode.En] = "✏️ Rename Preset",
+			[LanguageCode.Ja] = "✏️ プリセット名を変更"
+		};
+		dictionary["TipRenameCustomPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重命名当前选中的自定义配色方案预设",
+			[LanguageCode.ZhTw] = "重命名當前選中的自訂配色方案預設",
+			[LanguageCode.En] = "Rename the selected custom color preset",
+			[LanguageCode.Ja] = "選択したカスタムカラープリセットの名前を変更"
+		};
+		dictionary["BtnDeleteCustomPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🗑️ 删除预设",
+			[LanguageCode.ZhTw] = "🗑️ 刪除預設",
+			[LanguageCode.En] = "🗑️ Delete Preset",
+			[LanguageCode.Ja] = "🗑️ プリセットを削除"
+		};
+		dictionary["TipDeleteCustomPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "删除当前选中的自定义配色方案预设",
+			[LanguageCode.ZhTw] = "刪除當前選中的自訂配色方案預設",
+			[LanguageCode.En] = "Delete the selected custom color preset",
+			[LanguageCode.Ja] = "選択したカスタムカラープリセットを削除"
+		};
+		dictionary["Tab1_CustomColorsSectionLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义颜色 (色盘调色 / 屏幕吸色):",
+			[LanguageCode.ZhTw] = "自訂顏色 (色盤調色 / 螢幕吸色):",
+			[LanguageCode.En] = "Custom Colors (Palette / Eyedropper):",
+			[LanguageCode.Ja] = "カスタムカラー (パレット / スポイト):"
+		};
+		dictionary["Tab1_SectorBgLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区底色:",
+			[LanguageCode.ZhTw] = "扇區底色:",
+			[LanguageCode.En] = "Sector Background:",
+			[LanguageCode.Ja] = "セクター背景色:"
+		};
+		dictionary["TipPickColor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开调色板选取颜色",
+			[LanguageCode.ZhTw] = "開啟調色盤選取顏色",
+			[LanguageCode.En] = "Open color picker to select color",
+			[LanguageCode.Ja] = "カラーパレットを開いて選択"
+		};
+		dictionary["TipEyedropColor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从屏幕任意位置吸取颜色",
+			[LanguageCode.ZhTw] = "從螢幕任意位置吸取顏色",
+			[LanguageCode.En] = "Pick color from anywhere on screen",
+			[LanguageCode.Ja] = "画面上の任意の位置から色を抽出"
+		};
+		dictionary["Tab1_SectorBorderLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区边框:",
+			[LanguageCode.ZhTw] = "扇區邊框:",
+			[LanguageCode.En] = "Sector Border:",
+			[LanguageCode.Ja] = "セクター境界線:"
+		};
+		dictionary["Tab1_HighlightBgLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "高亮底色:",
+			[LanguageCode.ZhTw] = "高亮底色:",
+			[LanguageCode.En] = "Highlight Background:",
+			[LanguageCode.Ja] = "ハイライト背景色:"
+		};
+		dictionary["Tab1_HighlightBorderLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "高亮边框:",
+			[LanguageCode.ZhTw] = "高亮邊框:",
+			[LanguageCode.En] = "Highlight Border:",
+			[LanguageCode.Ja] = "ハイライト境界線:"
+		};
+		dictionary["Tab1_TextColorLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文字颜色:",
+			[LanguageCode.ZhTw] = "文字顏色:",
+			[LanguageCode.En] = "Text Color:",
+			[LanguageCode.Ja] = "テキスト色:"
+		};
+		dictionary["BtnSavePresetChanges"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💾 保存当前配色修改",
+			[LanguageCode.ZhTw] = "💾 儲存當前配色修改",
+			[LanguageCode.En] = "💾 Save Preset Changes",
+			[LanguageCode.Ja] = "💾 配色の変更を保存"
+		};
+		dictionary["TipSavePresetChanges"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将当前调整的颜色直接保存到正在使用的配色预设中",
+			[LanguageCode.ZhTw] = "將當前調整的顏色直接儲存到正在使用的配色預設中",
+			[LanguageCode.En] = "Save current adjusted colors directly to the active preset",
+			[LanguageCode.Ja] = "現在調整した色を使用中のプリセットに直接保存"
+		};
+		dictionary["BtnSaveAsNewPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 另存为新预设...",
+			[LanguageCode.ZhTw] = "➕ 另存為新預設...",
+			[LanguageCode.En] = "➕ Save as New Preset...",
+			[LanguageCode.Ja] = "➕ 新規プリセットとして保存..."
+		};
+		dictionary["TipSaveAsNewPreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将当前调整的颜色另存为一个全新的独立配色预设",
+			[LanguageCode.ZhTw] = "將當前調整的顏色另存為一個全新的獨立配色預設",
+			[LanguageCode.En] = "Save adjusted colors as a brand new independent preset",
+			[LanguageCode.Ja] = "調整した色を新しい独立したプリセットとして保存"
+		};
+		dictionary["Tab1_HighlightGlowModeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "高亮边缘光晕模式:",
+			[LanguageCode.ZhTw] = "高亮邊緣光暈模式:",
+			[LanguageCode.En] = "Highlight Edge Glow Mode:",
+			[LanguageCode.Ja] = "ハイライトエッジグローモード:"
+		};
+		dictionary["GlowItemFollowHighlight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌈 跟随主题高亮色",
+			[LanguageCode.ZhTw] = "🌈 跟隨主題高亮色",
+			[LanguageCode.En] = "🌈 Follow Theme Highlight",
+			[LanguageCode.Ja] = "🌈 テーマのハイライトに従う"
+		};
+		dictionary["GlowItemLilacPurple"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💜 丁香晶紫",
+			[LanguageCode.ZhTw] = "💜 丁香晶紫",
+			[LanguageCode.En] = "💜 Lilac Purple",
+			[LanguageCode.Ja] = "💜 ライラックパープル"
+		};
+		dictionary["GlowItemGlacialBlue"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💙 冰川湛蓝",
+			[LanguageCode.ZhTw] = "💙 冰川湛藍",
+			[LanguageCode.En] = "💙 Glacial Blue",
+			[LanguageCode.Ja] = "💙 グレイシャルブルー"
+		};
+		dictionary["GlowItemEmeraldGreen"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💚 翡翠荧绿",
+			[LanguageCode.ZhTw] = "💚 翡翠熒綠",
+			[LanguageCode.En] = "💚 Emerald Green",
+			[LanguageCode.Ja] = "💚 エメラルドグリーン"
+		};
+		dictionary["GlowItemSakuraPink"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💖 樱花粉晕",
+			[LanguageCode.ZhTw] = "💖 櫻花粉暈",
+			[LanguageCode.En] = "💖 Sakura Pink",
+			[LanguageCode.Ja] = "💖 サクラピンク"
+		};
+		dictionary["GlowItemAmberGold"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🧡 琥珀金光",
+			[LanguageCode.ZhTw] = "🧡 琥珀金光",
+			[LanguageCode.En] = "🧡 Amber Gold",
+			[LanguageCode.Ja] = "🧡 アンバーゴールド"
+		};
+		dictionary["GlowItemCoralRed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔴 珊瑚赤光",
+			[LanguageCode.ZhTw] = "🔴 珊瑚赤光",
+			[LanguageCode.En] = "🔴 Coral Red",
+			[LanguageCode.Ja] = "🔴 コーラルレッド"
+		};
+		dictionary["GlowItemIceWhite"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚪ 冰魄纯白",
+			[LanguageCode.ZhTw] = "⚪ 冰魄純白",
+			[LanguageCode.En] = "⚪ Ice Pure White",
+			[LanguageCode.Ja] = "⚪ アイスピュアホワイト"
+		};
+		dictionary["GlowItemCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎨 自定义光晕颜色",
+			[LanguageCode.ZhTw] = "🎨 自訂光暈顏色",
+			[LanguageCode.En] = "🎨 Custom Glow Color",
+			[LanguageCode.Ja] = "🎨 カスタムグロー色"
+		};
+		dictionary["Tab1_GlowColorLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "光晕色值:",
+			[LanguageCode.ZhTw] = "光暈色值:",
+			[LanguageCode.En] = "Glow Color Value:",
+			[LanguageCode.Ja] = "グローカラー値:"
+		};
+		dictionary["TipPickGlowColor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开调色板选取光晕颜色",
+			[LanguageCode.ZhTw] = "開啟調色盤選取光暈顏色",
+			[LanguageCode.En] = "Open color picker to select glow color",
+			[LanguageCode.Ja] = "カラーパレットを開いてグロー色を選択"
+		};
+		dictionary["TipEyedropGlowColor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从屏幕任意位置吸取光晕颜色",
+			[LanguageCode.ZhTw] = "從螢幕任意位置吸取光暈顏色",
+			[LanguageCode.En] = "Pick glow color from anywhere on screen",
+			[LanguageCode.Ja] = "画面上の任意の位置からグロー色を抽出"
+		};
+		dictionary["Tab1_GlowRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "光晕弥散半径:",
+			[LanguageCode.ZhTw] = "光暈彌散半徑:",
+			[LanguageCode.En] = "Glow Blur Radius:",
+			[LanguageCode.Ja] = "グローぼかし半径:"
+		};
+		dictionary["Tab1_GlowOpacityLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "光晕不透明度:",
+			[LanguageCode.ZhTw] = "光暈不透明度:",
+			[LanguageCode.En] = "Glow Opacity:",
+			[LanguageCode.Ja] = "グロー不透明度:"
+		};
+		dictionary["Tier2ThemeExpanderHeader"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 二级轮盘风格与配色 (展开定制)",
+			[LanguageCode.ZhTw] = "🌐 二級輪盤風格與配色 (展開自訂)",
+			[LanguageCode.En] = "🌐 Tier-2 Wheel Style & Colors (Expand to Customize)",
+			[LanguageCode.Ja] = "🌐 第2階層ホイールスタイルと配色 (展開して設定)"
+		};
+		dictionary["Tab1_SubThemeNotice"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌟 当前正在单独定制二级级联轮盘专属视觉风格与色彩，支持与一级主轮盘自由组合！",
+			[LanguageCode.ZhTw] = "🌟 當前正在單獨自訂二級級聯輪盤專屬視覺風格與色彩，支援與一級主輪盤自由組合！",
+			[LanguageCode.En] = "🌟 Currently customizing visual style and colors for Tier-2 cascade wheel independently from Tier-1!",
+			[LanguageCode.Ja] = "🌟 現在、第1階層とは独立して第2階層カスケードホイールのビジュアルスタイルと配色を個別にカスタマイズ中！"
+		};
+		dictionary["Tab1_SubUiStyleLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘视觉风格:",
+			[LanguageCode.ZhTw] = "二級輪盤視覺風格:",
+			[LanguageCode.En] = "Tier-2 Visual Style:",
+			[LanguageCode.Ja] = "第2階層ビジュアルスタイル:"
+		};
+		dictionary["SubUiStyleItemFollowPrimary"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "跟随一级主轮盘风格",
+			[LanguageCode.ZhTw] = "跟隨一級主輪盤風格",
+			[LanguageCode.En] = "Follow Tier-1 Wheel Style",
+			[LanguageCode.Ja] = "第1階層ホイールスタイルに従う"
+		};
+		dictionary["Tab1_SubThemePresetLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘配色方案:",
+			[LanguageCode.ZhTw] = "二級輪盤配色方案:",
+			[LanguageCode.En] = "Tier-2 Color Scheme:",
+			[LanguageCode.Ja] = "第2階層カラースキーム:"
+		};
+		dictionary["SubThemeItemFollowPrimary"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "跟随一级主轮盘配色",
+			[LanguageCode.ZhTw] = "跟隨一級主輪盤配色",
+			[LanguageCode.En] = "Follow Tier-1 Color Scheme",
+			[LanguageCode.Ja] = "第1階層カラースキームに従う"
+		};
+		dictionary["SubCustomColorsExpanderTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎨 二级轮盘高级配色",
+			[LanguageCode.ZhTw] = "🎨 二級輪盤高級配色",
+			[LanguageCode.En] = "🎨 Tier-2 Wheel Advanced Colors",
+			[LanguageCode.Ja] = "🎨 第2階層ホイール高度な配色"
+		};
+		dictionary["SubCustomColorsExpanderDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "展开后可精准微调二级扇区底色、高亮光晕、边框线条、文字等各项色彩。",
+			[LanguageCode.ZhTw] = "展開後可精準微調二級扇區底色、高亮光暈、邊框線條、文字等各項色彩。",
+			[LanguageCode.En] = "Expand to fine-tune Tier-2 sector background, highlight glow, border lines, text, etc.",
+			[LanguageCode.Ja] = "展開して第2階層セクター背景、ハイライトグロー、境界線、テキストなどを微調整します。"
+		};
+		dictionary["Tab1_SubCustomColorsSectionLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义十六进制色彩 (色盘调色 / 屏幕吸色):",
+			[LanguageCode.ZhTw] = "自訂十六進位色彩 (色盤調色 / 螢幕吸色):",
+			[LanguageCode.En] = "Custom Hex Colors (Palette / Eyedropper):",
+			[LanguageCode.Ja] = "カスタム16進数カラー (パレット / スポイト):"
+		};
+		dictionary["TipSaveSubPresetChanges"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将当前调整的颜色直接保存到正在使用的二级配色预设中",
+			[LanguageCode.ZhTw] = "將當前調整的顏色直接儲存到正在使用的二級配色預設中",
+			[LanguageCode.En] = "Save current adjusted colors directly to the active Tier-2 preset",
+			[LanguageCode.Ja] = "現在調整した色を使用中の第2階層プリセットに直接保存"
+		};
+		dictionary["Tab1_SubHighlightGlowLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘高亮边缘光晕:",
+			[LanguageCode.ZhTw] = "二級輪盤高亮邊緣光暈:",
+			[LanguageCode.En] = "Tier-2 Highlight Edge Glow:",
+			[LanguageCode.Ja] = "第2階層ハイライトエッジグロー:"
+		};
+		dictionary["SubGlowItemFollowPrimary"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔘 跟随一级主轮盘光晕",
+			[LanguageCode.ZhTw] = "🔘 跟隨一級主輪盤光暈",
+			[LanguageCode.En] = "🔘 Follow Tier-1 Wheel Glow",
+			[LanguageCode.Ja] = "🔘 第1階層グローに従う"
+		};
+		dictionary["SubGlowItemFollowHighlight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌈 跟随二级主题高亮色",
+			[LanguageCode.ZhTw] = "🌈 跟隨二級主題高亮色",
+			[LanguageCode.En] = "🌈 Follow Tier-2 Theme Highlight",
+			[LanguageCode.Ja] = "🌈 第2階層テーマのハイライトに従う"
+		};
+		dictionary["SubGlowItemNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🚫 关闭边缘光晕",
+			[LanguageCode.ZhTw] = "🚫 關閉邊緣光暈",
+			[LanguageCode.En] = "🚫 Disable Edge Glow",
+			[LanguageCode.Ja] = "🚫 エッジグローを無効化"
+		};
+		dictionary["BtnResetSubTheme"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 恢复与一级轮盘相同主题",
+			[LanguageCode.ZhTw] = "🔄 恢復與一級輪盤相同主題",
+			[LanguageCode.En] = "🔄 Reset to Same Theme as Tier-1",
+			[LanguageCode.Ja] = "🔄 第1階層と同じテーマにリセット"
+		};
+		dictionary["Tab1_SectorCutStyleLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区切削形态:",
+			[LanguageCode.ZhTw] = "扇區切削形態:",
+			[LanguageCode.En] = "Sector Cut Shape:",
+			[LanguageCode.Ja] = "セクター切削形状:"
+		};
+		dictionary["CutStyleItemClassic"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "经典紧凑扇区",
+			[LanguageCode.ZhTw] = "經典緊湊扇區",
+			[LanguageCode.En] = "Classic Compact Sectors",
+			[LanguageCode.Ja] = "クラシックコンパクトセクター"
+		};
+		dictionary["CutStyleItemCircles"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "独立圆形卡片",
+			[LanguageCode.ZhTw] = "獨立圓形卡片",
+			[LanguageCode.En] = "Detached Circular Cards",
+			[LanguageCode.Ja] = "独立した円形カード"
+		};
+		dictionary["CutStyleItemCapsules"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "悬浮圆角胶囊",
+			[LanguageCode.ZhTw] = "懸浮圓角膠囊",
+			[LanguageCode.En] = "Floating Rounded Capsules",
+			[LanguageCode.Ja] = "フローティング角丸カプセル"
+		};
+		dictionary["CutStyleItemHexagons"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "蜂巢六边形矩阵",
+			[LanguageCode.ZhTw] = "蜂巢六邊形矩陣",
+			[LanguageCode.En] = "Honeycomb Hexagon Grid",
+			[LanguageCode.Ja] = "ハニカム六角形グリッド"
+		};
+		dictionary["Tab1_SectorGapLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区缝隙间距:",
+			[LanguageCode.ZhTw] = "扇區縫隙間距:",
+			[LanguageCode.En] = "Sector Gap Spacing:",
+			[LanguageCode.Ja] = "セクター間の隙間:"
+		};
+		dictionary["Tab1_SectorCornerRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区边缘平滑倒角:",
+			[LanguageCode.ZhTw] = "扇區邊緣平滑倒角:",
+			[LanguageCode.En] = "Sector Corner Radius:",
+			[LanguageCode.Ja] = "セクター角丸半径:"
+		};
+		dictionary["Tab1_WheelRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "轮盘整体半径:",
+			[LanguageCode.ZhTw] = "輪盤整體半徑:",
+			[LanguageCode.En] = "Wheel Outer Radius:",
+			[LanguageCode.Ja] = "ホイール全体半径:"
+		};
+		dictionary["Tab1_InnerRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区内半径:",
+			[LanguageCode.ZhTw] = "扇區內半徑:",
+			[LanguageCode.En] = "Sector Inner Radius:",
+			[LanguageCode.Ja] = "セクター内半径:"
+		};
+		dictionary["Tab1_CoreRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心核心圆半径:",
+			[LanguageCode.ZhTw] = "中心核心圓半徑:",
+			[LanguageCode.En] = "Center Core Radius:",
+			[LanguageCode.Ja] = "センターコア半径:"
+		};
+		dictionary["Tier2DimensionsExpanderHeader"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 二级轮盘几何形态与尺寸 (展开微调)",
+			[LanguageCode.ZhTw] = "🌐 二級輪盤幾何形態與尺寸 (展開微調)",
+			[LanguageCode.En] = "🌐 Tier-2 Wheel Geometry & Dimensions (Expand to Fine-Tune)",
+			[LanguageCode.Ja] = "🌐 第2階層ホイール幾何形状と寸法 (展開して微調整)"
+		};
+		dictionary["Tab1_SubDimensionsNotice"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌟 当前正在单独调节二级级联轮盘专属尺寸，与一级轮盘完全独立互不影响。",
+			[LanguageCode.ZhTw] = "🌟 當前正在單獨調節二級級聯輪盤專屬尺寸，與一級輪盤完全獨立互不影響。",
+			[LanguageCode.En] = "🌟 Currently adjusting Tier-2 cascade wheel dimensions independently from Tier-1.",
+			[LanguageCode.Ja] = "🌟 現在、第1階層とは独立して第2階層カスケードホイールの寸法を個別に調整中。"
+		};
+		dictionary["Tab1_SubOuterRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘整体外径:",
+			[LanguageCode.ZhTw] = "二級輪盤整體外徑:",
+			[LanguageCode.En] = "Tier-2 Outer Radius:",
+			[LanguageCode.Ja] = "第2階層ホイール外半径:"
+		};
+		dictionary["Tab1_SubGapLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级与一级轮盘间距:",
+			[LanguageCode.ZhTw] = "二級與一級輪盤間距:",
+			[LanguageCode.En] = "Tier-2 to Tier-1 Gap:",
+			[LanguageCode.Ja] = "第2階層と第1階層のホイール間隔:"
+		};
+		dictionary["Tab1_SubCornerRadiusLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级扇区边缘平滑倒角:",
+			[LanguageCode.ZhTw] = "二級扇區邊緣平滑倒角:",
+			[LanguageCode.En] = "Tier-2 Sector Corner Radius:",
+			[LanguageCode.Ja] = "第2階層セクター角丸半径:"
+		};
+		dictionary["Tab1_SubIconSizeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘图标尺寸:",
+			[LanguageCode.ZhTw] = "二級輪盤圖示尺寸:",
+			[LanguageCode.En] = "Tier-2 Icon Size:",
+			[LanguageCode.Ja] = "第2階層アイコンサイズ:"
+		};
+		dictionary["Tab1_SubFontSizeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘字体字号:",
+			[LanguageCode.ZhTw] = "二級輪盤字體字號:",
+			[LanguageCode.En] = "Tier-2 Font Size:",
+			[LanguageCode.Ja] = "第2階層フォントサイズ:"
+		};
+		dictionary["BtnResetSubDimensions"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 恢复二级轮盘默认尺寸",
+			[LanguageCode.ZhTw] = "🔄 恢復二級輪盤預設尺寸",
+			[LanguageCode.En] = "🔄 Reset Tier-2 to Default Dimensions",
+			[LanguageCode.Ja] = "🔄 第2階層をデフォルト寸法にリセット"
+		};
+		dictionary["LayoutOptionsSectionTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "图标与排版选项",
+			[LanguageCode.ZhTw] = "圖示與排版選項",
+			[LanguageCode.En] = "Icon & Layout Options",
+			[LanguageCode.Ja] = "アイコンとレイアウトのオプション"
+		};
+		dictionary["LayoutModeItemBoth"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "图标 + 文字 (双行居中)",
+			[LanguageCode.ZhTw] = "圖示 + 文字 (雙行居中)",
+			[LanguageCode.En] = "Icon + Text (Centered 2-line)",
+			[LanguageCode.Ja] = "アイコン + テキスト (中央揃え2行)"
+		};
+		dictionary["LayoutModeItemIconOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "仅显示图标 (极大化居中)",
+			[LanguageCode.ZhTw] = "僅顯示圖示 (極大化居中)",
+			[LanguageCode.En] = "Icon Only (Maximized Center)",
+			[LanguageCode.Ja] = "アイコンのみ (最大化中央)"
+		};
+		dictionary["LayoutModeItemTextOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "仅显示文字 (纯文字居中)",
+			[LanguageCode.ZhTw] = "僅顯示文字 (純文字居中)",
+			[LanguageCode.En] = "Text Only (Pure Text Center)",
+			[LanguageCode.Ja] = "テキストのみ (テキスト中央)"
+		};
+		dictionary["WheelFontItemSystem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 系统默认",
+			[LanguageCode.ZhTw] = "🖥️ 系統預設",
+			[LanguageCode.En] = "🖥️ System Default",
+			[LanguageCode.Ja] = "🖥️ システムデフォルト"
+		};
+		dictionary["WheelFontItemYaHei"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 微软雅黑",
+			[LanguageCode.ZhTw] = "🔤 微軟雅黑",
+			[LanguageCode.En] = "🔤 Microsoft YaHei",
+			[LanguageCode.Ja] = "🔤 メイリオ / 微软雅黑"
+		};
+		dictionary["WheelFontItemHarmony"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 鸿蒙字体",
+			[LanguageCode.ZhTw] = "🔤 鴻蒙字體",
+			[LanguageCode.En] = "🔤 HarmonyOS Sans",
+			[LanguageCode.Ja] = "🔤 HarmonyOS フォント"
+		};
+		dictionary["WheelFontItemPingFang"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 苹方字体",
+			[LanguageCode.ZhTw] = "🔤 蘋方字體",
+			[LanguageCode.En] = "🔤 PingFang SC",
+			[LanguageCode.Ja] = "🔤 PingFang フォント"
+		};
+		dictionary["WheelFontItemMiSans"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 小米兰亭",
+			[LanguageCode.ZhTw] = "🔤 小米蘭亭",
+			[LanguageCode.En] = "🔤 MiSans",
+			[LanguageCode.Ja] = "🔤 MiSans フォント"
+		};
+		dictionary["WheelFontItemSimHei"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 黑体",
+			[LanguageCode.ZhTw] = "🔤 黑體",
+			[LanguageCode.En] = "🔤 SimHei",
+			[LanguageCode.Ja] = "🔤 ゴシック体"
+		};
+		dictionary["WheelFontItemKaiTi"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 楷体",
+			[LanguageCode.ZhTw] = "🔤 楷體",
+			[LanguageCode.En] = "🔤 KaiTi",
+			[LanguageCode.Ja] = "🔤 明朝体 / 楷書体"
+		};
+		dictionary["WheelFontItemConsolas"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 等宽代码体",
+			[LanguageCode.ZhTw] = "🔤 等寬程式碼體",
+			[LanguageCode.En] = "🔤 Monospace Code",
+			[LanguageCode.Ja] = "🔤 等幅コードフォント"
+		};
+		dictionary["BtnResetTextOffset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 位置归位",
+			[LanguageCode.ZhTw] = "🔄 位置歸位",
+			[LanguageCode.En] = "🔄 Reset Position",
+			[LanguageCode.Ja] = "🔄 位置リセット"
+		};
+		dictionary["TipResetTextOffset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一键将文字相对位置与水平/垂直偏移恢复为默认",
+			[LanguageCode.ZhTw] = "一鍵將文字相對位置與水平/垂直偏移恢復為預設",
+			[LanguageCode.En] = "Reset text relative position and horizontal/vertical offsets to default",
+			[LanguageCode.Ja] = "テキストの相対位置と水平/垂直オフセットをデフォルトにリセット"
+		};
+		dictionary["PlacementItemBottom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬇️ 图标下方 (默认)",
+			[LanguageCode.ZhTw] = "⬇️ 圖示下方 (預設)",
+			[LanguageCode.En] = "⬇️ Below Icon (Default)",
+			[LanguageCode.Ja] = "⬇️ アイコンの下 (デフォルト)"
+		};
+		dictionary["PlacementItemTop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬆️ 图标上方",
+			[LanguageCode.ZhTw] = "⬆️ 圖示上方",
+			[LanguageCode.En] = "⬆️ Above Icon",
+			[LanguageCode.Ja] = "⬆️ アイコンの上"
+		};
+		dictionary["Tab1_TextOffsetXLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "水平 X:",
+			[LanguageCode.ZhTw] = "水平 X:",
+			[LanguageCode.En] = "Horizontal X:",
+			[LanguageCode.Ja] = "水平 X:"
+		};
+		dictionary["Tab1_TextOffsetYLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "垂直 Y:",
+			[LanguageCode.ZhTw] = "垂直 Y:",
+			[LanguageCode.En] = "Vertical Y:",
+			[LanguageCode.Ja] = "垂直 Y:"
+		};
+		dictionary["CoreSectionTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心核心圆与图案文字设置",
+			[LanguageCode.ZhTw] = "中心核心圓與圖案文字設定",
+			[LanguageCode.En] = "Center Core Circle & Pattern/Text Settings",
+			[LanguageCode.Ja] = "センターコア＆パターン・テキスト設定"
+		};
+		dictionary["ShowCoreIconTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启用中心图案/图标显示",
+			[LanguageCode.ZhTw] = "啟用中心圖案/圖示顯示",
+			[LanguageCode.En] = "Enable Center Pattern/Icon Display",
+			[LanguageCode.Ja] = "センターパターン/アイコン表示を有効化"
+		};
+		dictionary["Tab1_CorePatternTypeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "图案类型:",
+			[LanguageCode.ZhTw] = "圖案類型:",
+			[LanguageCode.En] = "Pattern Type:",
+			[LanguageCode.Ja] = "パターンタイプ:"
+		};
+		dictionary["CoreIconTypeItemCrosshair"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "精准十字准星",
+			[LanguageCode.ZhTw] = "精準十字準星",
+			[LanguageCode.En] = "Precision Crosshair",
+			[LanguageCode.Ja] = "高精度クロスヘア"
+		};
+		dictionary["CoreIconTypeItemWindows"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Windows 徽标",
+			[LanguageCode.ZhTw] = "Windows 徽標",
+			[LanguageCode.En] = "Windows Logo",
+			[LanguageCode.Ja] = "Windows ロゴ"
+		};
+		dictionary["CoreIconTypeItemBreatheDot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心呼吸光点",
+			[LanguageCode.ZhTw] = "中心呼吸光點",
+			[LanguageCode.En] = "Breathing Glow Dot",
+			[LanguageCode.Ja] = "センターブリージングライト"
+		};
+		dictionary["CoreIconTypeItemHomeReturn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "主页与返回",
+			[LanguageCode.ZhTw] = "首頁與返回",
+			[LanguageCode.En] = "Home & Back",
+			[LanguageCode.Ja] = "ホーム＆戻る"
+		};
+		dictionary["CoreIconTypeItemCompassStar"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "八向罗盘星芒",
+			[LanguageCode.ZhTw] = "八向羅盤星芒",
+			[LanguageCode.En] = "8-Point Compass Star",
+			[LanguageCode.Ja] = "8方向コンパススター"
+		};
+		dictionary["CoreIconTypeItemCatPaw"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "猫爪肉垫图案",
+			[LanguageCode.ZhTw] = "貓爪肉墊圖案",
+			[LanguageCode.En] = "Cat Paw Pad",
+			[LanguageCode.Ja] = "猫の肉球パターン"
+		};
+		dictionary["CoreIconTypeItemVector"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "矢量图标库选择",
+			[LanguageCode.ZhTw] = "向量圖示庫選擇",
+			[LanguageCode.En] = "Vector Icon Library",
+			[LanguageCode.Ja] = "ベクターアイコンライブラリ選択"
+		};
+		dictionary["CoreIconTypeItemCustomImage"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "本地自定义图片",
+			[LanguageCode.ZhTw] = "本地自訂圖片",
+			[LanguageCode.En] = "Local Custom Image",
+			[LanguageCode.Ja] = "ローカルカスタム画像"
+		};
+		dictionary["CustomCoreIconNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未选择图标",
+			[LanguageCode.ZhTw] = "未選擇圖示",
+			[LanguageCode.En] = "No Icon Selected",
+			[LanguageCode.Ja] = "アイコン未選択"
+		};
+		dictionary["BtnPickCoreIcon"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择图标...",
+			[LanguageCode.ZhTw] = "選擇圖示...",
+			[LanguageCode.En] = "Select Icon...",
+			[LanguageCode.Ja] = "アイコンを選択..."
+		};
+		dictionary["TipCoreImagePath"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义图片本地路径",
+			[LanguageCode.ZhTw] = "自訂圖片本地路徑",
+			[LanguageCode.En] = "Local path to custom image",
+			[LanguageCode.Ja] = "カスタム画像のローカルパス"
+		};
+		dictionary["BtnBrowseCoreImage"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "浏览图片...",
+			[LanguageCode.ZhTw] = "瀏覽圖片...",
+			[LanguageCode.En] = "Browse Image...",
+			[LanguageCode.Ja] = "画像を参照..."
+		};
+		dictionary["BtnClearCoreImage"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清除",
+			[LanguageCode.ZhTw] = "清除",
+			[LanguageCode.En] = "Clear",
+			[LanguageCode.Ja] = "クリア"
+		};
+		dictionary["CoreTextOptionsSectionTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心文字与选中显示定制",
+			[LanguageCode.ZhTw] = "中心文字與選中顯示自訂",
+			[LanguageCode.En] = "Center Text & Selection Display Customization",
+			[LanguageCode.Ja] = "センターテキスト＆選択表示カスタマイズ"
+		};
+		dictionary["CoreTextColorTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心文字颜色:",
+			[LanguageCode.ZhTw] = "中心文字顏色:",
+			[LanguageCode.En] = "Center Text Color:",
+			[LanguageCode.Ja] = "センターテキスト色:"
+		};
+		dictionary["LayerStyleItemDark"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌌 沉浸深邃暗黑 (推荐)",
+			[LanguageCode.ZhTw] = "🌌 沉浸深邃暗黑 (推薦)",
+			[LanguageCode.En] = "🌌 Immersive Deep Dark (Recommended)",
+			[LanguageCode.Ja] = "🌌 ディープダーク（推奨）"
+		};
+		dictionary["LayerStyleItemAuroraBlue"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🧊 晶莹极光蓝透",
+			[LanguageCode.ZhTw] = "🧊 晶瑩極光藍透",
+			[LanguageCode.En] = "🧊 Aurora Translucent Blue",
+			[LanguageCode.Ja] = "🧊 オーロラクリスタルブルー"
+		};
+		dictionary["LayerStyleItemObsidianPurple"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔮 钛金晶透曜紫",
+			[LanguageCode.ZhTw] = "🔮 鈦金晶透曜紫",
+			[LanguageCode.En] = "🔮 Titanium Crystal Purple",
+			[LanguageCode.Ja] = "🔮 チタンクリスタルパープル"
+		};
+		dictionary["LayerStyleItemLight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚪ 极简透白浅色",
+			[LanguageCode.ZhTw] = "⚪ 極簡透白淺色",
+			[LanguageCode.En] = "⚪ Minimalist Translucent Light",
+			[LanguageCode.Ja] = "⚪ ミニマルクリアライト"
+		};
+		dictionary["LayerStyleItemFollowTheme"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔘 跟随当前轮盘主题",
+			[LanguageCode.ZhTw] = "🔘 跟隨當前輪盤主題",
+			[LanguageCode.En] = "🔘 Follow Current Wheel Theme",
+			[LanguageCode.Ja] = "🔘 現在のホイールテーマに従う"
+		};
+		dictionary["LayerStyleItemCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎨 完全自定义色彩",
+			[LanguageCode.ZhTw] = "🎨 完全自訂色彩",
+			[LanguageCode.En] = "🎨 Fully Custom Colors",
+			[LanguageCode.Ja] = "🎨 完全カスタムカラー"
+		};
+		dictionary["LayerIconItemStar"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌟 璀璨星芒 (默认)",
+			[LanguageCode.ZhTw] = "🌟 璀璨星芒 (預設)",
+			[LanguageCode.En] = "🌟 Radiant Star (Default)",
+			[LanguageCode.Ja] = "🌟 輝く星（デフォルト）"
+		};
+		dictionary["LayerIconItemSnowflake"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "❄️ 冰晶雪花",
+			[LanguageCode.ZhTw] = "❄️ 冰晶雪花",
+			[LanguageCode.En] = "❄️ Crystal Snowflake",
+			[LanguageCode.Ja] = "❄️ クリスタルスノー"
+		};
+		dictionary["LayerIconItemGalaxy"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌀 宇宙星盘",
+			[LanguageCode.ZhTw] = "🌀 宇宙星盤",
+			[LanguageCode.En] = "🌀 Cosmic Galaxy",
+			[LanguageCode.Ja] = "🌀 コズミックスター"
+		};
+		dictionary["LayerIconItemBolt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 极速闪电",
+			[LanguageCode.ZhTw] = "⚡ 極速閃電",
+			[LanguageCode.En] = "⚡ Lightning Bolt",
+			[LanguageCode.Ja] = "⚡ スピードライトニング"
+		};
+		dictionary["LayerIconItemCrosshair"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 准星靶心",
+			[LanguageCode.ZhTw] = "🎯 準星靶心",
+			[LanguageCode.En] = "🎯 Crosshair Bullseye",
+			[LanguageCode.Ja] = "🎯 ターゲットブルズアイ"
+		};
+		dictionary["LayerIconItemGem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💎 纯净宝石",
+			[LanguageCode.ZhTw] = "💎 純淨寶石",
+			[LanguageCode.En] = "💎 Pristine Gem",
+			[LanguageCode.Ja] = "💎 ピュアジェム"
+		};
+		dictionary["LayerIconItemNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🚫 无前置图标",
+			[LanguageCode.ZhTw] = "🚫 無前置圖示",
+			[LanguageCode.En] = "🚫 No Leading Icon",
+			[LanguageCode.Ja] = "🚫 前置アイコンなし"
+		};
+		dictionary["Tab1_LayerCustomColorsSectionLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎨 徽标色彩微调:",
+			[LanguageCode.ZhTw] = "🎨 徽標色彩微調:",
+			[LanguageCode.En] = "🎨 Badge Color Fine-Tuning:",
+			[LanguageCode.Ja] = "🎨 バッジカラー微調整:"
+		};
+		dictionary["Tab1_LayerBgLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "徽标底色:",
+			[LanguageCode.ZhTw] = "徽標底色:",
+			[LanguageCode.En] = "Badge Background:",
+			[LanguageCode.Ja] = "バッジ背景色:"
+		};
+		dictionary["Tab1_LayerBorderLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "边框颜色:",
+			[LanguageCode.ZhTw] = "邊框顏色:",
+			[LanguageCode.En] = "Border Color:",
+			[LanguageCode.Ja] = "境界線色:"
+		};
+		dictionary["Tab1_LayerTextLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文字色彩:",
+			[LanguageCode.ZhTw] = "文字色彩:",
+			[LanguageCode.En] = "Text Color:",
+			[LanguageCode.Ja] = "テキスト色:"
+		};
+		dictionary["Tab1_LivePreviewTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "实时交互画布",
+			[LanguageCode.ZhTw] = "即時互動畫布",
+			[LanguageCode.En] = "Live Interactive Canvas",
+			[LanguageCode.Ja] = "リアルタイムプレビューキャンバス"
+		};
+		dictionary["Tab1_LivePreviewBadge"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "60FPS 同步渲染",
+			[LanguageCode.ZhTw] = "60FPS 同步渲染",
+			[LanguageCode.En] = "60FPS Synchronized Rendering",
+			[LanguageCode.Ja] = "60FPS 同期レンダリング"
+		};
+		dictionary["Tab1_LivePreviewHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 移动鼠标至下方轮盘可实时测试高亮与磁吸手感",
+			[LanguageCode.ZhTw] = "💡 移動滑鼠至下方輪盤可即時測試高亮與磁吸手感",
+			[LanguageCode.En] = "💡 Hover mouse over wheel below to test highlight and snapping feel",
+			[LanguageCode.Ja] = "💡 下のホイールにマウスを合わせると、ハイライトと吸着の感触をテストできます"
+		};
+		dictionary["TipPreviewZoomOut"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "缩小视图 (或使用鼠标滚轮)",
+			[LanguageCode.ZhTw] = "縮小檢視 (或使用滑鼠滾輪)",
+			[LanguageCode.En] = "Zoom Out (or use mouse wheel)",
+			[LanguageCode.Ja] = "縮小 (またはマウスホイールを使用)"
+		};
+		dictionary["TipPreviewZoomReset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击复位为 100%",
+			[LanguageCode.ZhTw] = "點擊重設為 100%",
+			[LanguageCode.En] = "Click to reset to 100%",
+			[LanguageCode.Ja] = "クリックして100%にリセット"
+		};
+		dictionary["TipPreviewZoomIn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "放大视图 (或使用鼠标滚轮)",
+			[LanguageCode.ZhTw] = "放大檢視 (或使用滑鼠滾輪)",
+			[LanguageCode.En] = "Zoom In (or use mouse wheel)",
+			[LanguageCode.Ja] = "拡大 (またはマウスホイールを使用)"
+		};
+		dictionary["TipPreviewResetView"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重置视图位置与缩放 (双击画布空白处也可复位)",
+			[LanguageCode.ZhTw] = "重設檢視位置與縮放 (按兩下畫布空白處也可重設)",
+			[LanguageCode.En] = "Reset view position and zoom (or double-click empty canvas)",
+			[LanguageCode.Ja] = "表示位置とズームをリセット (キャンバスの空白部分をダブルクリックでもリセット)"
+		};
+		dictionary["BtnResetAllGeometry"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一键重置为推荐几何尺寸",
+			[LanguageCode.ZhTw] = "一鍵重設為推薦幾何尺寸",
+			[LanguageCode.En] = "One-Click Reset to Recommended Dimensions",
+			[LanguageCode.Ja] = "推奨寸法にワンクリックでリセット"
+		};
+		dictionary["BtnResetSlotLayoutBatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 批量恢复继承全局",
+			[LanguageCode.ZhTw] = "🔄 批次恢復繼承全域",
+			[LanguageCode.En] = "🔄 Batch Reset to Inherit Global",
+			[LanguageCode.Ja] = "🔄 一括で全体継承にリセット"
+		};
+		dictionary["Tier1MainWheel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一级主轮盘",
+			[LanguageCode.ZhTw] = "一級主輪盤",
+			[LanguageCode.En] = "Tier-1 Wheel",
+			[LanguageCode.Ja] = "第1階層メインホイール"
+		};
+		dictionary["Tier2SubWheel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级级联轮盘",
+			[LanguageCode.ZhTw] = "二級級聯輪盤",
+			[LanguageCode.En] = "Tier-2 Cascade Wheel",
+			[LanguageCode.Ja] = "第2階層カスケードホイール"
+		};
+		dictionary["ActionNotConfigured"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未设置动作",
+			[LanguageCode.ZhTw] = "未設定動作",
+			[LanguageCode.En] = "Action Not Configured",
+			[LanguageCode.Ja] = "アクション未設定"
+		};
+		dictionary["CustomizingSlotFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📍 正在定制: {0} - 扇区 {1} [{2}]: {3}",
+			[LanguageCode.ZhTw] = "📍 正在自訂: {0} - 扇區 {1} [{2}]: {3}",
+			[LanguageCode.En] = "📍 Customizing: {0} - Sector {1} [{2}]: {3}",
+			[LanguageCode.Ja] = "📍 カスタマイズ中: {0} - セクター {1} [{2}]: {3}"
+		};
+		dictionary["CustomizingSubSlotFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📍 正在定制: {0} [{1}] -> 子项 {2}: {3}",
+			[LanguageCode.ZhTw] = "📍 正在自訂: {0} [{1}] -> 子項 {2}: {3}",
+			[LanguageCode.En] = "📍 Customizing: {0} [{1}] -> Sub-item {2}: {3}",
+			[LanguageCode.Ja] = "📍 カスタマイズ中: {0} [{1}] -> サブ項目 {2}: {3}"
+		};
+		dictionary["CustomizingBatchFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 批量修改模式 (已多选 {0} 个扇区: {1})",
+			[LanguageCode.ZhTw] = "🎯 批次修改模式 (已多選 {0} 個扇區: {1})",
+			[LanguageCode.En] = "🎯 Batch Edit Mode ({0} sectors selected: {1})",
+			[LanguageCode.Ja] = "🎯 一括編集モード ({0} 個のセクターを選択: {1})"
+		};
+		dictionary["PreviewLayerFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "第 {0} 层 ({0}/{1})",
+			[LanguageCode.ZhTw] = "第 {0} 層 ({0}/{1})",
+			[LanguageCode.En] = "Layer {0} ({0}/{1})",
+			[LanguageCode.Ja] = "レイヤー {0} ({0}/{1})"
+		};
+		dictionary["BatchLayoutHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 按住 Ctrl 点击可继续增减选择；下方选项将统一批量应用至全部选中扇区",
+			[LanguageCode.ZhTw] = "💡 按住 Ctrl 點擊可繼續增減選擇；下方選項將統一批次套用至全部選中扇區",
+			[LanguageCode.En] = "💡 Hold Ctrl and click to add/remove selection; options below will be batch applied to all selected sectors",
+			[LanguageCode.Ja] = "💡 Ctrlを押しながらクリックして選択を追加/削除。下のオプションは選択したすべてのセクターに一括適用されます"
+		};
 		Translations = dictionary;
 	}
 }

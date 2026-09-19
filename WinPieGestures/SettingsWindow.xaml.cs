@@ -2620,6 +2620,244 @@ public partial class SettingsWindow : Window
 		RefreshProcessListUI();
 
 		UpdateFocusActionTypeItemsSource();
+		// --- Phase 2: Tab 1 (Appearance / 外观样式) ---
+		if (AppearancePageHeader != null) AppearancePageHeader.Text = I18n.T("TabAppearance");
+		if (AppearancePageSubheader != null) AppearancePageSubheader.Text = I18n.T("AppearanceSubheader");
+		if (VisualThemeCardTitleText != null) VisualThemeCardTitleText.Text = I18n.T("VisualThemeCardTitle");
+		if (Tab1_UiStyleLabel != null) Tab1_UiStyleLabel.Text = I18n.T("Tab1_UiStyleLabel");
+		if (UiStyleClassicRingItem != null) UiStyleClassicRingItem.Content = I18n.T("UiStyleClassicRing");
+		if (UiStyleCleanSectorsItem != null) UiStyleCleanSectorsItem.Content = I18n.T("UiStyleCleanSectors");
+		if (UiStyleGlassmorphismItem != null) UiStyleGlassmorphismItem.Content = I18n.T("UiStyleGlassmorphism");
+		if (Tab1_ThemePresetLabel != null) Tab1_ThemePresetLabel.Text = I18n.T("Tab1_ThemePresetLabel");
+		if (ThemeItemSystem != null) ThemeItemSystem.Content = I18n.T("ThemeItemSystem");
+		if (ThemeItemDark != null) ThemeItemDark.Content = I18n.T("ThemeItemDark");
+		if (ThemeItemLight != null) ThemeItemLight.Content = I18n.T("ThemeItemLight");
+		if (ThemeItemMatchaForest != null) ThemeItemMatchaForest.Content = I18n.T("ThemeItemMatchaForest");
+		if (ThemeItemGlacialIce != null) ThemeItemGlacialIce.Content = I18n.T("ThemeItemGlacialIce");
+		if (ThemeItemMorandiMuted != null) ThemeItemMorandiMuted.Content = I18n.T("ThemeItemMorandiMuted");
+		if (ThemeCustomItem != null) ThemeCustomItem.Content = I18n.T("ThemeItemCustom");
+		if (NewCustomColorPresetButton != null) { NewCustomColorPresetButton.Content = I18n.T("BtnNewCustomPreset"); NewCustomColorPresetButton.ToolTip = I18n.T("TipNewCustomPreset"); }
+		if (RenameCustomColorPresetButton != null) { RenameCustomColorPresetButton.Content = I18n.T("BtnRenameCustomPreset"); RenameCustomColorPresetButton.ToolTip = I18n.T("TipRenameCustomPreset"); }
+		if (DeleteCustomColorPresetButton != null) { DeleteCustomColorPresetButton.Content = I18n.T("BtnDeleteCustomPreset"); DeleteCustomColorPresetButton.ToolTip = I18n.T("TipDeleteCustomPreset"); }
+		if (CustomColorsExpanderTitleText != null) CustomColorsExpanderTitleText.Text = I18n.T("CustomColorsExpanderTitle");
+		if (CustomColorsExpanderDescText != null) CustomColorsExpanderDescText.Text = I18n.T("CustomColorsExpanderDesc");
+		if (Tab1_CustomColorsSectionLabel != null) Tab1_CustomColorsSectionLabel.Text = I18n.T("Tab1_CustomColorsSectionLabel");
+		if (Tab1_SectorBgLabel != null) Tab1_SectorBgLabel.Text = I18n.T("Tab1_SectorBgLabel");
+		if (PickSectorBgColorBtn != null) PickSectorBgColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSectorBgColorBtn != null) EyedropSectorBgColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_SectorBorderLabel != null) Tab1_SectorBorderLabel.Text = I18n.T("Tab1_SectorBorderLabel");
+		if (PickSectorBorderColorBtn != null) PickSectorBorderColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSectorBorderColorBtn != null) EyedropSectorBorderColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_HighlightBgLabel != null) Tab1_HighlightBgLabel.Text = I18n.T("Tab1_HighlightBgLabel");
+		if (PickHighlightBgColorBtn != null) PickHighlightBgColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropHighlightBgColorBtn != null) EyedropHighlightBgColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_HighlightBorderLabel != null) Tab1_HighlightBorderLabel.Text = I18n.T("Tab1_HighlightBorderLabel");
+		if (PickHighlightBorderColorBtn != null) PickHighlightBorderColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropHighlightBorderColorBtn != null) EyedropHighlightBorderColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_TextColorLabel != null) Tab1_TextColorLabel.Text = I18n.T("Tab1_TextColorLabel");
+		if (PickTextColorBtn != null) PickTextColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropTextColorBtn != null) EyedropTextColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (SavePresetChangesButton != null) { SavePresetChangesButton.Content = I18n.T("BtnSavePresetChanges"); SavePresetChangesButton.ToolTip = I18n.T("TipSavePresetChanges"); }
+		if (SaveAsNewPresetButton != null) { SaveAsNewPresetButton.Content = I18n.T("BtnSaveAsNewPreset"); SaveAsNewPresetButton.ToolTip = I18n.T("TipSaveAsNewPreset"); }
+		if (DeletePresetInPanelButton != null) { DeletePresetInPanelButton.Content = I18n.T("BtnDeletePreset"); DeletePresetInPanelButton.ToolTip = I18n.T("TipDeleteCustomPreset"); }
+		if (Tab1_HighlightGlowModeLabel != null) Tab1_HighlightGlowModeLabel.Text = I18n.T("Tab1_HighlightGlowModeLabel");
+		if (GlowItemFollowHighlight != null) GlowItemFollowHighlight.Content = I18n.T("GlowItemFollowHighlight");
+		if (GlowItemLilacPurple != null) GlowItemLilacPurple.Content = I18n.T("GlowItemLilacPurple");
+		if (GlowItemGlacialBlue != null) GlowItemGlacialBlue.Content = I18n.T("GlowItemGlacialBlue");
+		if (GlowItemEmeraldGreen != null) GlowItemEmeraldGreen.Content = I18n.T("GlowItemEmeraldGreen");
+		if (GlowItemSakuraPink != null) GlowItemSakuraPink.Content = I18n.T("GlowItemSakuraPink");
+		if (GlowItemAmberGold != null) GlowItemAmberGold.Content = I18n.T("GlowItemAmberGold");
+		if (GlowItemCoralRed != null) GlowItemCoralRed.Content = I18n.T("GlowItemCoralRed");
+		if (GlowItemIceWhite != null) GlowItemIceWhite.Content = I18n.T("GlowItemIceWhite");
+		if (GlowItemCustom != null) GlowItemCustom.Content = I18n.T("GlowItemCustom");
+		if (Tab1_GlowColorLabel != null) Tab1_GlowColorLabel.Text = I18n.T("Tab1_GlowColorLabel");
+		if (PickGlowColorBtn != null) PickGlowColorBtn.ToolTip = I18n.T("TipPickGlowColor");
+		if (EyedropGlowColorBtn != null) EyedropGlowColorBtn.ToolTip = I18n.T("TipEyedropGlowColor");
+		if (Tab1_GlowRadiusLabel != null) Tab1_GlowRadiusLabel.Text = I18n.T("Tab1_GlowRadiusLabel");
+		if (Tab1_GlowOpacityLabel != null) Tab1_GlowOpacityLabel.Text = I18n.T("Tab1_GlowOpacityLabel");
+		if (Tier2ThemeExpander != null) Tier2ThemeExpander.Header = I18n.T("Tier2ThemeExpanderHeader");
+		if (Tab1_SubThemeNoticeText != null) Tab1_SubThemeNoticeText.Text = I18n.T("Tab1_SubThemeNotice");
+		if (Tab1_SubUiStyleLabel != null) Tab1_SubUiStyleLabel.Text = I18n.T("Tab1_SubUiStyleLabel");
+		if (SubUiStyleFollowPrimaryItem != null) SubUiStyleFollowPrimaryItem.Content = I18n.T("SubUiStyleItemFollowPrimary");
+		if (SubUiStyleClassicRingItem != null) SubUiStyleClassicRingItem.Content = I18n.T("UiStyleClassicRing");
+		if (SubUiStyleCleanSectorsItem != null) SubUiStyleCleanSectorsItem.Content = I18n.T("UiStyleCleanSectors");
+		if (SubUiStyleGlassmorphismItem != null) SubUiStyleGlassmorphismItem.Content = I18n.T("UiStyleGlassmorphism");
+		if (Tab1_SubThemePresetLabel != null) Tab1_SubThemePresetLabel.Text = I18n.T("Tab1_SubThemePresetLabel");
+		if (SubThemeFollowPrimaryItem != null) SubThemeFollowPrimaryItem.Content = I18n.T("SubThemeItemFollowPrimary");
+		if (SubThemeSystemItem != null) SubThemeSystemItem.Content = I18n.T("ThemeItemSystem");
+		if (SubThemeDarkItem != null) SubThemeDarkItem.Content = I18n.T("ThemeItemDark");
+		if (SubThemeLightItem != null) SubThemeLightItem.Content = I18n.T("ThemeItemLight");
+		if (SubThemeMatchaForestItem != null) SubThemeMatchaForestItem.Content = I18n.T("ThemeItemMatchaForest");
+		if (SubThemeGlacialIceItem != null) SubThemeGlacialIceItem.Content = I18n.T("ThemeItemGlacialIce");
+		if (SubThemeMorandiMutedItem != null) SubThemeMorandiMutedItem.Content = I18n.T("ThemeItemMorandiMuted");
+		if (SubThemeCustomItem != null) SubThemeCustomItem.Content = I18n.T("ThemeItemCustom");
+		if (NewSubCustomColorPresetButton != null) { NewSubCustomColorPresetButton.Content = I18n.T("BtnNewCustomPreset"); NewSubCustomColorPresetButton.ToolTip = I18n.T("TipNewCustomPreset"); }
+		if (RenameSubCustomColorPresetButton != null) { RenameSubCustomColorPresetButton.Content = I18n.T("BtnRenameCustomPreset"); RenameSubCustomColorPresetButton.ToolTip = I18n.T("TipRenameCustomPreset"); }
+		if (DeleteSubCustomColorPresetButton != null) { DeleteSubCustomColorPresetButton.Content = I18n.T("BtnDeleteCustomPreset"); DeleteSubCustomColorPresetButton.ToolTip = I18n.T("TipDeleteCustomPreset"); }
+		if (SubCustomColorsExpanderTitleText != null) SubCustomColorsExpanderTitleText.Text = I18n.T("SubCustomColorsExpanderTitle");
+		if (SubCustomColorsExpanderDescText != null) SubCustomColorsExpanderDescText.Text = I18n.T("SubCustomColorsExpanderDesc");
+		if (Tab1_SubCustomColorsSectionLabel != null) Tab1_SubCustomColorsSectionLabel.Text = I18n.T("Tab1_SubCustomColorsSectionLabel");
+		if (Tab1_SubSectorBgLabel != null) Tab1_SubSectorBgLabel.Text = I18n.T("Tab1_SectorBgLabel");
+		if (PickSubSectorBgColorBtn != null) PickSubSectorBgColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSubSectorBgColorBtn != null) EyedropSubSectorBgColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_SubSectorBorderLabel != null) Tab1_SubSectorBorderLabel.Text = I18n.T("Tab1_SectorBorderLabel");
+		if (PickSubSectorBorderColorBtn != null) PickSubSectorBorderColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSubSectorBorderColorBtn != null) EyedropSubSectorBorderColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_SubHighlightBgLabel != null) Tab1_SubHighlightBgLabel.Text = I18n.T("Tab1_HighlightBgLabel");
+		if (PickSubHighlightBgColorBtn != null) PickSubHighlightBgColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSubHighlightBgColorBtn != null) EyedropSubHighlightBgColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_SubHighlightBorderLabel != null) Tab1_SubHighlightBorderLabel.Text = I18n.T("Tab1_HighlightBorderLabel");
+		if (PickSubHighlightBorderColorBtn != null) PickSubHighlightBorderColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSubHighlightBorderColorBtn != null) EyedropSubHighlightBorderColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_SubTextColorLabel != null) Tab1_SubTextColorLabel.Text = I18n.T("Tab1_TextColorLabel");
+		if (PickSubTextColorBtn != null) PickSubTextColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSubTextColorBtn != null) EyedropSubTextColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (SaveSubPresetChangesButton != null) { SaveSubPresetChangesButton.Content = I18n.T("BtnSavePresetChanges"); SaveSubPresetChangesButton.ToolTip = I18n.T("TipSaveSubPresetChanges"); }
+		if (SaveAsNewSubPresetButton != null) { SaveAsNewSubPresetButton.Content = I18n.T("BtnSaveAsNewPreset"); SaveAsNewSubPresetButton.ToolTip = I18n.T("TipSaveAsNewPreset"); }
+		if (DeleteSubPresetInPanelButton != null) { DeleteSubPresetInPanelButton.Content = I18n.T("BtnDeletePreset"); DeleteSubPresetInPanelButton.ToolTip = I18n.T("TipDeleteCustomPreset"); }
+		if (Tab1_SubHighlightGlowLabel != null) Tab1_SubHighlightGlowLabel.Text = I18n.T("Tab1_SubHighlightGlowLabel");
+		if (SubGlowFollowPrimaryItem != null) SubGlowFollowPrimaryItem.Content = I18n.T("SubGlowItemFollowPrimary");
+		if (SubGlowFollowHighlightItem != null) SubGlowFollowHighlightItem.Content = I18n.T("SubGlowItemFollowHighlight");
+		if (SubGlowLilacPurpleItem != null) SubGlowLilacPurpleItem.Content = I18n.T("GlowItemLilacPurple");
+		if (SubGlowGlacialBlueItem != null) SubGlowGlacialBlueItem.Content = I18n.T("GlowItemGlacialBlue");
+		if (SubGlowEmeraldGreenItem != null) SubGlowEmeraldGreenItem.Content = I18n.T("GlowItemEmeraldGreen");
+		if (SubGlowSakuraPinkItem != null) SubGlowSakuraPinkItem.Content = I18n.T("GlowItemSakuraPink");
+		if (SubGlowAmberGoldItem != null) SubGlowAmberGoldItem.Content = I18n.T("GlowItemAmberGold");
+		if (SubGlowCoralRedItem != null) SubGlowCoralRedItem.Content = I18n.T("GlowItemCoralRed");
+		if (SubGlowIceWhiteItem != null) SubGlowIceWhiteItem.Content = I18n.T("GlowItemIceWhite");
+		if (SubGlowNoneItem != null) SubGlowNoneItem.Content = I18n.T("SubGlowItemNone");
+		if (SubGlowCustomItem != null) SubGlowCustomItem.Content = I18n.T("GlowItemCustom");
+		if (Tab1_SubGlowColorLabel != null) Tab1_SubGlowColorLabel.Text = I18n.T("Tab1_GlowColorLabel");
+		if (PickSubGlowColorBtn != null) PickSubGlowColorBtn.ToolTip = I18n.T("TipPickGlowColor");
+		if (EyedropSubGlowColorBtn != null) EyedropSubGlowColorBtn.ToolTip = I18n.T("TipEyedropGlowColor");
+		if (Tab1_SubGlowRadiusLabel != null) Tab1_SubGlowRadiusLabel.Text = I18n.T("Tab1_GlowRadiusLabel");
+		if (Tab1_SubGlowOpacityLabel != null) Tab1_SubGlowOpacityLabel.Text = I18n.T("Tab1_GlowOpacityLabel");
+		if (ResetSubThemeButton != null) ResetSubThemeButton.Content = I18n.T("BtnResetSubTheme");
+		if (DimensionsCardTitleText != null) DimensionsCardTitleText.Text = I18n.T("DimensionsCardTitle");
+		if (Tab1_SectorCutStyleLabel != null) Tab1_SectorCutStyleLabel.Text = I18n.T("Tab1_SectorCutStyleLabel");
+		if (CutStyleClassicItem != null) CutStyleClassicItem.Content = I18n.T("CutStyleItemClassic");
+		if (CutStyleCirclesItem != null) CutStyleCirclesItem.Content = I18n.T("CutStyleItemCircles");
+		if (CutStyleCapsulesItem != null) CutStyleCapsulesItem.Content = I18n.T("CutStyleItemCapsules");
+		if (CutStyleHexagonsItem != null) CutStyleHexagonsItem.Content = I18n.T("CutStyleItemHexagons");
+		if (Tab1_SectorGapLabel != null) Tab1_SectorGapLabel.Text = I18n.T("Tab1_SectorGapLabel");
+		if (Tab1_SectorCornerRadiusLabel != null) Tab1_SectorCornerRadiusLabel.Text = I18n.T("Tab1_SectorCornerRadiusLabel");
+		if (Tab1_WheelRadiusLabel != null) Tab1_WheelRadiusLabel.Text = I18n.T("Tab1_WheelRadiusLabel");
+		if (Tab1_InnerRadiusLabel != null) Tab1_InnerRadiusLabel.Text = I18n.T("Tab1_InnerRadiusLabel");
+		if (Tab1_CoreRadiusLabel != null) Tab1_CoreRadiusLabel.Text = I18n.T("Tab1_CoreRadiusLabel");
+		if (Tier2DimensionsExpander != null) Tier2DimensionsExpander.Header = I18n.T("Tier2DimensionsExpanderHeader");
+		if (Tab1_SubDimensionsNoticeText != null) Tab1_SubDimensionsNoticeText.Text = I18n.T("Tab1_SubDimensionsNotice");
+		if (Tab1_SubOuterRadiusLabel != null) Tab1_SubOuterRadiusLabel.Text = I18n.T("Tab1_SubOuterRadiusLabel");
+		if (Tab1_SubGapLabel != null) Tab1_SubGapLabel.Text = I18n.T("Tab1_SubGapLabel");
+		if (Tab1_SubCornerRadiusLabel != null) Tab1_SubCornerRadiusLabel.Text = I18n.T("Tab1_SubCornerRadiusLabel");
+		if (Tab1_SubIconSizeLabel != null) Tab1_SubIconSizeLabel.Text = I18n.T("Tab1_SubIconSizeLabel");
+		if (Tab1_SubFontSizeLabel != null) Tab1_SubFontSizeLabel.Text = I18n.T("Tab1_SubFontSizeLabel");
+		if (ResetSubDimensionsButton != null) ResetSubDimensionsButton.Content = I18n.T("BtnResetSubDimensions");
+		if (LayoutOptionsSectionTitle != null) LayoutOptionsSectionTitle.Text = I18n.T("LayoutOptionsSectionTitle");
+		if (LayoutTargetGlobalRadio != null) LayoutTargetGlobalRadio.Content = I18n.T("LayoutTargetGlobal");
+		if (LayoutTargetSlotRadio != null) LayoutTargetSlotRadio.Content = I18n.T("LayoutTargetSlot");
+		if (ClickSectorHintText != null) ClickSectorHintText.Text = I18n.T("ClickSectorHint");
+		if (ResetSlotLayoutButton != null) ResetSlotLayoutButton.Content = I18n.T("ResetSlotLayout");
+		if (IconLayoutModeTitleText != null) IconLayoutModeTitleText.Text = I18n.T("IconLayoutModeTitleText");
+		if (LayoutModeBothItem != null) LayoutModeBothItem.Content = I18n.T("LayoutModeItemBoth");
+		if (LayoutModeIconOnlyItem != null) LayoutModeIconOnlyItem.Content = I18n.T("LayoutModeItemIconOnly");
+		if (LayoutModeTextOnlyItem != null) LayoutModeTextOnlyItem.Content = I18n.T("LayoutModeItemTextOnly");
+		if (WheelFontFamilyTitleText != null) WheelFontFamilyTitleText.Text = I18n.T("WheelFontFamily");
+		if (WheelFontSystemItem != null) WheelFontSystemItem.Content = I18n.T("WheelFontItemSystem");
+		if (WheelFontYaHeiItem != null) WheelFontYaHeiItem.Content = I18n.T("WheelFontItemYaHei");
+		if (WheelFontHarmonyItem != null) WheelFontHarmonyItem.Content = I18n.T("WheelFontItemHarmony");
+		if (WheelFontPingFangItem != null) WheelFontPingFangItem.Content = I18n.T("WheelFontItemPingFang");
+		if (WheelFontMiSansItem != null) WheelFontMiSansItem.Content = I18n.T("WheelFontItemMiSans");
+		if (WheelFontSimHeiItem != null) WheelFontSimHeiItem.Content = I18n.T("WheelFontItemSimHei");
+		if (WheelFontKaiTiItem != null) WheelFontKaiTiItem.Content = I18n.T("WheelFontItemKaiTi");
+		if (WheelFontConsolasItem != null) WheelFontConsolasItem.Content = I18n.T("WheelFontItemConsolas");
+		if (SectorTextColorTitleText != null) SectorTextColorTitleText.Text = I18n.T("SectorTextColor");
+		if (PickSectorTextColorBtn != null) PickSectorTextColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropSectorTextColorBtn != null) EyedropSectorTextColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (SectorIconSizeTitleText != null) SectorIconSizeTitleText.Text = I18n.T("SectorIconSizeTitle");
+		if (SectorFontSizeTitleText != null) SectorFontSizeTitleText.Text = I18n.T("SectorFontSizeTitle");
+		if (SectorTextPlacementTitleText != null) SectorTextPlacementTitleText.Text = I18n.T("SectorTextPlacementTitle");
+		if (ResetTextOffsetBtn != null) { ResetTextOffsetBtn.Content = I18n.T("BtnResetTextOffset"); ResetTextOffsetBtn.ToolTip = I18n.T("TipResetTextOffset"); }
+		if (PlacementBottomItem != null) PlacementBottomItem.Content = I18n.T("PlacementItemBottom");
+		if (PlacementTopItem != null) PlacementTopItem.Content = I18n.T("PlacementItemTop");
+		if (Tab1_TextOffsetXLabel != null) Tab1_TextOffsetXLabel.Text = I18n.T("Tab1_TextOffsetXLabel");
+		if (Tab1_TextOffsetYLabel != null) Tab1_TextOffsetYLabel.Text = I18n.T("Tab1_TextOffsetYLabel");
+		if (CoreSectionTitle != null) CoreSectionTitle.Text = I18n.T("CoreSectionTitle");
+		if (ShowCoreIconCheckBox != null) ShowCoreIconCheckBox.Content = I18n.T("ShowCoreIconTitle");
+		if (Tab1_CorePatternTypeLabel != null) Tab1_CorePatternTypeLabel.Text = I18n.T("Tab1_CorePatternTypeLabel");
+		if (CoreIconExitItem != null) CoreIconExitItem.Content = I18n.T("CorePatternExit");
+		if (CoreIconCrosshairItem != null) CoreIconCrosshairItem.Content = I18n.T("CoreIconTypeItemCrosshair");
+		if (CoreIconWindowsItem != null) CoreIconWindowsItem.Content = I18n.T("CoreIconTypeItemWindows");
+		if (CoreIconBreatheDotItem != null) CoreIconBreatheDotItem.Content = I18n.T("CoreIconTypeItemBreatheDot");
+		if (CoreIconHomeReturnItem != null) CoreIconHomeReturnItem.Content = I18n.T("CoreIconTypeItemHomeReturn");
+		if (CoreIconPowerItem != null) CoreIconPowerItem.Content = I18n.T("CorePatternPower");
+		if (CoreIconCompassStarItem != null) CoreIconCompassStarItem.Content = I18n.T("CoreIconTypeItemCompassStar");
+		if (CoreIconCatPawItem != null) CoreIconCatPawItem.Content = I18n.T("CoreIconTypeItemCatPaw");
+		if (CoreIconVectorItem != null) CoreIconVectorItem.Content = I18n.T("CoreIconTypeItemVector");
+		if (CoreIconCustomImageItem != null) CoreIconCustomImageItem.Content = I18n.T("CoreIconTypeItemCustomImage");
+		if (CustomCoreIconNameLabel != null && CustomCoreIconNameLabel.Text == "未选择图标") CustomCoreIconNameLabel.Text = I18n.T("CustomCoreIconNone");
+		if (PickCoreIconButton != null) PickCoreIconButton.Content = I18n.T("BtnPickCoreIcon");
+		if (CoreImagePathTextBox != null) CoreImagePathTextBox.ToolTip = I18n.T("TipCoreImagePath");
+		if (BrowseCoreImageButton != null) BrowseCoreImageButton.Content = I18n.T("BtnBrowseCoreImage");
+		if (ClearCoreImageButton != null) ClearCoreImageButton.Content = I18n.T("BtnClearCoreImage");
+		if (CoreTransformSectionTitle != null) CoreTransformSectionTitle.Text = I18n.T("CoreTransformSectionTitle");
+		if (CoreIconScaleTitleText != null) CoreIconScaleTitleText.Text = I18n.T("CoreIconScaleTitle");
+		if (CoreImageOffsetXTitleText != null) CoreImageOffsetXTitleText.Text = I18n.T("CoreImageOffsetXTitle");
+		if (CoreImageOffsetYTitleText != null) CoreImageOffsetYTitleText.Text = I18n.T("CoreImageOffsetYTitle");
+		if (ResetCoreTransformButton != null) ResetCoreTransformButton.Content = I18n.T("BtnResetCoreTransform");
+		if (CoreTextOptionsSectionTitle != null) CoreTextOptionsSectionTitle.Text = I18n.T("CoreTextOptionsSectionTitle");
+		if (ShowSelectedActionTextCheckBox != null) ShowSelectedActionTextCheckBox.Content = I18n.T("ShowSelectedActionText");
+		if (CoreFontFamilyTitleText != null) CoreFontFamilyTitleText.Text = I18n.T("CoreFontFamily");
+		if (CoreFontSystemItem != null) CoreFontSystemItem.Content = I18n.T("WheelFontItemSystem");
+		if (CoreFontYaHeiItem != null) CoreFontYaHeiItem.Content = I18n.T("WheelFontItemYaHei");
+		if (CoreFontHarmonyItem != null) CoreFontHarmonyItem.Content = I18n.T("WheelFontItemHarmony");
+		if (CoreFontPingFangItem != null) CoreFontPingFangItem.Content = I18n.T("WheelFontItemPingFang");
+		if (CoreFontMiSansItem != null) CoreFontMiSansItem.Content = I18n.T("WheelFontItemMiSans");
+		if (CoreFontSimHeiItem != null) CoreFontSimHeiItem.Content = I18n.T("WheelFontItemSimHei");
+		if (CoreFontKaiTiItem != null) CoreFontKaiTiItem.Content = I18n.T("WheelFontItemKaiTi");
+		if (CoreFontConsolasItem != null) CoreFontConsolasItem.Content = I18n.T("WheelFontItemConsolas");
+		if (CoreFontSizeTitleText != null) CoreFontSizeTitleText.Text = I18n.T("CoreFontSizeTitle");
+		if (CoreTextColorAutoCheckBox != null) CoreTextColorAutoCheckBox.Content = I18n.T("CoreTextColorAuto");
+		if (CoreTextColorTitleText != null) CoreTextColorTitleText.Text = I18n.T("CoreTextColorTitle");
+		if (PickCoreTextColorBtn != null) PickCoreTextColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropCoreTextColorBtn != null) EyedropCoreTextColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (CoreImagePerformanceTipText != null) CoreImagePerformanceTipText.Text = I18n.T("CoreImagePerformanceTip");
+		if (LayerStyleDarkItem != null) LayerStyleDarkItem.Content = I18n.T("LayerStyleItemDark");
+		if (LayerStyleAuroraBlueItem != null) LayerStyleAuroraBlueItem.Content = I18n.T("LayerStyleItemAuroraBlue");
+		if (LayerStyleObsidianPurpleItem != null) LayerStyleObsidianPurpleItem.Content = I18n.T("LayerStyleItemObsidianPurple");
+		if (LayerStyleLightItem != null) LayerStyleLightItem.Content = I18n.T("LayerStyleItemLight");
+		if (LayerStyleFollowThemeItem != null) LayerStyleFollowThemeItem.Content = I18n.T("LayerStyleItemFollowTheme");
+		if (LayerStyleCustomItem != null) LayerStyleCustomItem.Content = I18n.T("LayerStyleItemCustom");
+		if (LayerIconStarItem != null) LayerIconStarItem.Content = I18n.T("LayerIconItemStar");
+		if (LayerIconSnowflakeItem != null) LayerIconSnowflakeItem.Content = I18n.T("LayerIconItemSnowflake");
+		if (LayerIconGalaxyItem != null) LayerIconGalaxyItem.Content = I18n.T("LayerIconItemGalaxy");
+		if (LayerIconBoltItem != null) LayerIconBoltItem.Content = I18n.T("LayerIconItemBolt");
+		if (LayerIconCrosshairItem != null) LayerIconCrosshairItem.Content = I18n.T("LayerIconItemCrosshair");
+		if (LayerIconGemItem != null) LayerIconGemItem.Content = I18n.T("LayerIconItemGem");
+		if (LayerIconNoneItem != null) LayerIconNoneItem.Content = I18n.T("LayerIconItemNone");
+		if (Tab1_LayerCustomColorsSectionLabel != null) Tab1_LayerCustomColorsSectionLabel.Text = I18n.T("Tab1_LayerCustomColorsSectionLabel");
+		if (Tab1_LayerBgLabel != null) Tab1_LayerBgLabel.Text = I18n.T("Tab1_LayerBgLabel");
+		if (PickLayerBgColorBtn != null) PickLayerBgColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropLayerBgColorBtn != null) EyedropLayerBgColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_LayerBorderLabel != null) Tab1_LayerBorderLabel.Text = I18n.T("Tab1_LayerBorderLabel");
+		if (PickLayerBorderColorBtn != null) PickLayerBorderColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropLayerBorderColorBtn != null) EyedropLayerBorderColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_LayerTextLabel != null) Tab1_LayerTextLabel.Text = I18n.T("Tab1_LayerTextLabel");
+		if (PickLayerTextColorBtn != null) PickLayerTextColorBtn.ToolTip = I18n.T("TipPickColor");
+		if (EyedropLayerTextColorBtn != null) EyedropLayerTextColorBtn.ToolTip = I18n.T("TipEyedropColor");
+		if (Tab1_LivePreviewTitle != null) Tab1_LivePreviewTitle.Text = I18n.T("Tab1_LivePreviewTitle");
+		if (Tab1_LivePreviewBadge != null) Tab1_LivePreviewBadge.Text = I18n.T("Tab1_LivePreviewBadge");
+		if (Tab1_LivePreviewHint != null) Tab1_LivePreviewHint.Text = I18n.T("Tab1_LivePreviewHint");
+		if (Tier1ConfigSegmentRadio != null) Tier1ConfigSegmentRadio.Content = I18n.T("Tier1ConfigSegment");
+		if (Tier2ConfigSegmentRadio != null) Tier2ConfigSegmentRadio.Content = I18n.T("Tier2ConfigSegment");
+		if (PreviewZoomOutBtn != null) PreviewZoomOutBtn.ToolTip = I18n.T("TipPreviewZoomOut");
+		if (PreviewZoomLabel != null) PreviewZoomLabel.ToolTip = I18n.T("TipPreviewZoomReset");
+		if (PreviewZoomInBtn != null) PreviewZoomInBtn.ToolTip = I18n.T("TipPreviewZoomIn");
+		if (PreviewResetViewBtn != null) PreviewResetViewBtn.ToolTip = I18n.T("TipPreviewResetView");
+		if (ResetDimensionsButton != null) ResetDimensionsButton.Content = I18n.T("BtnResetAllGeometry");
+
+		UpdateFocusEditorUi();
+		RenderLiveWheelPreview();
+
 		App.RefreshTrayMenu();
 	}
 
@@ -11308,36 +11546,36 @@ public partial class SettingsWindow : Window
 					if (_selectedMultiSlots.Count > 1)
 					{
 						string slotNames = string.Join(", ", _selectedMultiSlots.Select(s => (s + 1).ToString()));
-						CurrentTargetSlotLabel.Text = $"🎯 批量修改模式 (已多选 {_selectedMultiSlots.Count} 个扇区: {slotNames})";
+						CurrentTargetSlotLabel.Text = string.Format(I18n.T("CustomizingBatchFormat") ?? "🎯 批量修改模式 (已多选 {0} 个扇区: {1})", _selectedMultiSlots.Count, slotNames);
 						if (ClickSectorHintText != null)
 						{
-							ClickSectorHintText.Text = "💡 按住 Ctrl 点击可继续增减选择；下方选项将统一批量应用至全部选中扇区";
+							ClickSectorHintText.Text = I18n.T("BatchLayoutHint") ?? "💡 按住 Ctrl 点击可继续增减选择；下方选项将统一批量应用至全部选中扇区";
 						}
 						if (ResetSlotLayoutButton != null)
 						{
-							ResetSlotLayoutButton.Content = "🔄 批量恢复继承全局";
+							ResetSlotLayoutButton.Content = I18n.T("BtnResetSlotLayoutBatch") ?? "🔄 批量恢复继承全局";
 						}
 					}
 					else
 					{
-						string tierName = (_selectedLayoutTier == 2) ? "二级级联轮盘" : "一级主轮盘";
+						string tierName = (_selectedLayoutTier == 2) ? (I18n.T("Tier2SubWheel") ?? "二级级联轮盘") : (I18n.T("Tier1MainWheel") ?? "一级主轮盘");
 						string slotDirName = GetDirectionDisplayName(_selectedLayoutSlotIndex, profile?.SectorCount ?? 8);
-						string actName = action?.Name ?? "未设置动作";
+						string actName = action?.Name ?? (I18n.T("ActionNotConfigured") ?? "未设置动作");
 						if (_selectedLayoutTier == 2 && _selectedLayoutSubSlotIndex >= 0)
 						{
-							CurrentTargetSlotLabel.Text = $"📍 正在定制: {tierName} [{slotDirName}] -> 子项 {_selectedLayoutSubSlotIndex + 1}: {actName}";
+							CurrentTargetSlotLabel.Text = string.Format(I18n.T("CustomizingSubSlotFormat") ?? "📍 正在定制: {0} [{1}] -> 子项 {2}: {3}", tierName, slotDirName, _selectedLayoutSubSlotIndex + 1, actName);
 						}
 						else
 						{
-							CurrentTargetSlotLabel.Text = $"📍 正在定制: {tierName} - 扇区 {_selectedLayoutSlotIndex + 1} [{slotDirName}]: {actName}";
+							CurrentTargetSlotLabel.Text = string.Format(I18n.T("CustomizingSlotFormat") ?? "📍 正在定制: {0} - 扇区 {1} [{2}]: {3}", tierName, _selectedLayoutSlotIndex + 1, slotDirName, actName);
 						}
 						if (ClickSectorHintText != null)
 						{
-							ClickSectorHintText.Text = "💡 提示：在右侧画布中点击任意扇区可直接切换选中";
+							ClickSectorHintText.Text = I18n.T("ClickSectorHint");
 						}
 						if (ResetSlotLayoutButton != null)
 						{
-							ResetSlotLayoutButton.Content = "🔄 恢复继承全局";
+							ResetSlotLayoutButton.Content = I18n.T("ResetSlotLayout") ?? "🔄 恢复继承全局";
 						}
 					}
 				}
@@ -12371,7 +12609,7 @@ public partial class SettingsWindow : Window
 			totalLayers = config.Profiles[0].Layers.Count;
 		}
 		int showLayer = Math.Min(2, Math.Max(1, totalLayers));
-		PreviewLayerIndicatorText.Text = $"第 {showLayer} 层 ({showLayer}/{Math.Max(2, totalLayers)})";
+		PreviewLayerIndicatorText.Text = string.Format(I18n.T("PreviewLayerFormat") ?? "第 {0} 层 ({0}/{1})", showLayer, Math.Max(2, totalLayers));
 
 		if (string.Equals(config.LayerIndicatorStyle, "FollowTheme", StringComparison.OrdinalIgnoreCase))
 		{
