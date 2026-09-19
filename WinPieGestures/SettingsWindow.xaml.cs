@@ -3129,6 +3129,7 @@ public partial class SettingsWindow : Window
 		if (Tab4_Ms_173b8_P2 != null) Tab4_Ms_173b8_P2.Text = I18n.T("Tab4_Ms_173b8_P2");
 		if (Tab4_Ms_173b8_P3 != null) Tab4_Ms_173b8_P3.Text = I18n.T("Tab4_Ms_173b8_P3");
 		if (Tab4_Ms_173b8_P4 != null) Tab4_Ms_173b8_P4.Text = I18n.T("Tab4_Ms_173b8_P4");
+		if (Tab4_Ms_173b8_P5 != null) Tab4_Ms_173b8_P5.Text = I18n.T("Tab4_Ms_173b8_P5");
 		if (Tab4_Ms_173b7_Title != null) Tab4_Ms_173b7_Title.Text = I18n.T("Tab4_Ms_173b7_Title");
 		if (Tab4_Ms_173b7_P1 != null) Tab4_Ms_173b7_P1.Text = I18n.T("Tab4_Ms_173b7_P1");
 		if (Tab4_Ms_173b7_P2 != null) Tab4_Ms_173b7_P2.Text = I18n.T("Tab4_Ms_173b7_P2");

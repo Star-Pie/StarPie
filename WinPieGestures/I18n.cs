@@ -7921,6 +7921,13 @@ public static class I18n
 			[LanguageCode.En] = "• 🖼️ [OCR Robustness & Anti-Blackout]: Auto downsamples images over 2600px, bicubic upscaling for small text, fixes GDI+ 32bpp black frame glitch;",
 			[LanguageCode.Ja] = "• 🖼️ 【解像度適応＆黒画面防止】：2600px 超過画像の安全ダウンサンプリングと低解像度画像の補間拡大で認識率向上；"
 		};
+		dictionary["Tab4_Ms_173b8_P5"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 📄 【智能版面结构重建引擎】：基于词块空间几何信息，自动还原自然段落空行、同一长句智能平滑合并断行、保留表格分栏间隙，并消除汉字间误插空格。",
+			[LanguageCode.ZhTw] = "• 📄 【智慧版面結構重建引擎】：基於詞塊空間幾何資訊，自動還原自然段落空行、同一長句智慧平滑合併斷行、保留表格分欄間隙，並消除中文字間誤插空格。",
+			[LanguageCode.En] = "• 📄 [Intelligent Layout Reconstruction]: Restores paragraph breaks, merges broken lines smoothly based on geometry, preserves table columns, and eliminates stray spaces.",
+			[LanguageCode.Ja] = "• 📄 【インテリジェント段落再構築】：単語ブロックの幾何情報に基づき自然な段落・改行を自動復元し、表の列間隔を維持しつつ余計な空白を除去。"
+		};
 		dictionary["Tab4_Ms_173b7_Title"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "v1.7.3-beta.7 轮盘触发交互音效系统 (方案C 极低延迟)",
