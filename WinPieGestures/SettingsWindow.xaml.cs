@@ -3206,6 +3206,54 @@ public partial class SettingsWindow : Window
 		UpdateFocusEditorUi();
 		RenderLiveWheelPreview();
 
+		// --- Dynamic ComboBoxes Multi-Language Hot Refresh ---
+		RefreshLayoutOptionsUi();
+		UpdateFocusActionTypeItemsSource(force: true);
+		if (FocusTileLayoutComboBox != null)
+		{
+			var selVal = FocusTileLayoutComboBox.SelectedValue;
+			FocusTileLayoutComboBox.ItemsSource = null;
+			FocusTileLayoutComboBox.ItemsSource = SlotViewModel.StaticTileLayoutOptions;
+			if (selVal != null) FocusTileLayoutComboBox.SelectedValue = selVal;
+		}
+		if (FocusCommandTerminalComboBox != null)
+		{
+			var selVal = FocusCommandTerminalComboBox.SelectedValue;
+			FocusCommandTerminalComboBox.ItemsSource = null;
+			FocusCommandTerminalComboBox.ItemsSource = SlotViewModel.LocalizedTerminals;
+			if (selVal != null) FocusCommandTerminalComboBox.SelectedValue = selVal;
+		}
+		if (FocusSystemPresetComboBox != null)
+		{
+			var selVal = FocusSystemPresetComboBox.SelectedValue;
+			FocusSystemPresetComboBox.ItemsSource = null;
+			FocusSystemPresetComboBox.ItemsSource = SlotViewModel.SystemPresetList;
+			if (selVal != null) FocusSystemPresetComboBox.SelectedValue = selVal;
+		}
+		if (MappingsProfileComboBox != null)
+		{
+			var curProf = _selectedProfile;
+			MappingsProfileComboBox.ItemsSource = null;
+			MappingsProfileComboBox.ItemsSource = ConfigManager.CurrentConfig?.Profiles;
+			MappingsProfileComboBox.SelectedItem = curProf;
+		}
+		if (ProfilesListBox != null)
+		{
+			var curProf = _selectedProfile;
+			ProfilesListBox.ItemsSource = null;
+			ProfilesListBox.ItemsSource = ConfigManager.CurrentConfig?.Profiles;
+			ProfilesListBox.SelectedItem = curProf;
+		}
+		if (LayerSelectComboBox != null && _selectedProfile?.Layers != null)
+		{
+			int curLayerIdx = LayerSelectComboBox.SelectedIndex;
+			LayerSelectComboBox.ItemsSource = null;
+			LayerSelectComboBox.ItemsSource = _selectedProfile.Layers;
+			LayerSelectComboBox.SelectedIndex = curLayerIdx >= 0 ? curLayerIdx : 0;
+		}
+		RefreshConfigProfilesUi();
+		ReloadThemePresets();
+
 		App.RefreshTrayMenu();
 	}
 
@@ -6431,7 +6479,7 @@ public partial class SettingsWindow : Window
 		}
 	}
 
-	private void UpdateFocusActionTypeItemsSource(string? currentTag = null)
+	private void UpdateFocusActionTypeItemsSource(string? currentTag = null, bool force = false)
 	{
 		if (FocusActionTypeComboBox == null) return;
 		bool isSimple = string.Equals(ConfigManager.CurrentConfig?.ConfigMode, "Simple", StringComparison.OrdinalIgnoreCase);
@@ -6449,7 +6497,7 @@ public partial class SettingsWindow : Window
 			targetList = allTypes;
 		}
 
-		if (FocusActionTypeComboBox.ItemsSource is List<ActionTypeItem> currentList &&
+		if (!force && FocusActionTypeComboBox.ItemsSource is List<ActionTypeItem> currentList &&
 			currentList.Count == targetList.Count &&
 			currentList.Select(x => x.Tag).SequenceEqual(targetList.Select(x => x.Tag)))
 		{
@@ -6461,6 +6509,7 @@ public partial class SettingsWindow : Window
 		try
 		{
 			_isUpdatingFocusUi = true;
+			FocusActionTypeComboBox.ItemsSource = null;
 			FocusActionTypeComboBox.ItemsSource = targetList;
 			if (prevSelectedTag != null)
 			{
@@ -10291,7 +10340,7 @@ public partial class SettingsWindow : Window
 				{
 					ComboBoxItem comboBoxItem3 = new ComboBoxItem
 					{
-						Content = "\ud83c\udfa8 " + customColorPreset.Name + " (自定义预设)",
+						Content = "\ud83c\udfa8 " + customColorPreset.Name + " " + I18n.T("CustomPresetSuffix"),
 						Tag = "CustomPreset_" + customColorPreset.Id
 					};
 					if (num >= 0)
@@ -10329,7 +10378,7 @@ public partial class SettingsWindow : Window
 			{
 				ComboBoxItem newItem = new ComboBoxItem
 				{
-					Content = "\ud83c\udfa8 " + customColorPreset2.Name + " (自定义预设)",
+					Content = "\ud83c\udfa8 " + customColorPreset2.Name + " " + I18n.T("CustomPresetSuffix"),
 					Tag = "CustomPreset_" + customColorPreset2.Id
 				};
 				SubWheelThemeComboBox.Items.Add(newItem);
@@ -11786,23 +11835,23 @@ public partial class SettingsWindow : Window
 		{
 			IconLayoutModeComboBox.Items.Add(new ComboBoxItem
 			{
-				Content = "跟随全局默认 (Inherit Global)",
+				Content = I18n.T("LayoutModeItemInherit"),
 				Tag = "Inherit"
 			});
 		}
 		IconLayoutModeComboBox.Items.Add(new ComboBoxItem
 		{
-			Content = "图标 + 文字 (双行居中)",
+			Content = I18n.T("LayoutModeItemBoth"),
 			Tag = "IconAndText"
 		});
 		IconLayoutModeComboBox.Items.Add(new ComboBoxItem
 		{
-			Content = "仅显示图标 (极大化居中)",
+			Content = I18n.T("LayoutModeItemIconOnly"),
 			Tag = "IconOnly"
 		});
 		IconLayoutModeComboBox.Items.Add(new ComboBoxItem
 		{
-			Content = "仅显示文字 (纯文字居中)",
+			Content = I18n.T("LayoutModeItemTextOnly"),
 			Tag = "TextOnly"
 		});
 	}
@@ -12161,30 +12210,38 @@ public partial class SettingsWindow : Window
 		ScheduleAutoSave();
 	}
 
+	private static List<(string, string)> GetStandardFontFamilies()
+	{
+		return new List<(string, string)>
+		{
+			(I18n.T("FontSystemDefault"), "Microsoft YaHei UI, Segoe UI"),
+			(I18n.T("FontMicrosoftYaHei"), "Microsoft YaHei UI"),
+			(I18n.T("FontSegoeUI"), "Segoe UI"),
+			(I18n.T("FontHarmonyOS"), "HarmonyOS Sans SC"),
+			(I18n.T("FontPingFang"), "PingFang SC"),
+			(I18n.T("FontMiSans"), "MiSans"),
+			(I18n.T("FontSourceHanSans"), "Source Han Sans SC"),
+			(I18n.T("FontInter"), "Inter"),
+			(I18n.T("FontArial"), "Arial"),
+			(I18n.T("FontSimHei"), "SimHei"),
+			(I18n.T("FontKaiTi"), "KaiTi"),
+			(I18n.T("FontFangSong"), "FangSong"),
+			(I18n.T("FontMonospace"), "Consolas, Cascadia Code"),
+			(I18n.T("FontJetBrainsMono"), "JetBrains Mono, Consolas")
+		};
+	}
+
 	private void PopulateWheelFontFamilies()
 	{
 		if (WheelFontFamilyComboBox == null)
 		{
 			return;
 		}
+		string currentTag = (WheelFontFamilyComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString()
+			?? ConfigManager.CurrentConfig?.WheelFontFamily
+			?? "Microsoft YaHei UI, Segoe UI";
 		WheelFontFamilyComboBox.Items.Clear();
-		List<(string, string)> obj = new List<(string, string)>
-		{
-			("\ud83d\udda5\ufe0f 系统默认 (Microsoft YaHei UI / Segoe UI)", "Microsoft YaHei UI, Segoe UI"),
-			("\ud83d\udd24 微软雅黑 (Microsoft YaHei UI)", "Microsoft YaHei UI"),
-			("\ud83d\udd24 Segoe UI (Windows Fluent)", "Segoe UI"),
-			("\ud83d\udd24 鸿蒙字体 (HarmonyOS Sans SC)", "HarmonyOS Sans SC"),
-			("\ud83d\udd24 苹方字体 (PingFang SC)", "PingFang SC"),
-			("\ud83d\udd24 小米兰亭 (MiSans)", "MiSans"),
-			("\ud83d\udd24 思源黑体 (Source Han Sans SC)", "Source Han Sans SC"),
-			("\ud83d\udd24 Inter (Modern Sans)", "Inter"),
-			("\ud83d\udd24 Arial", "Arial"),
-			("\ud83d\udd24 黑体 (SimHei)", "SimHei"),
-			("\ud83d\udd24 楷体 (KaiTi)", "KaiTi"),
-			("\ud83d\udd24 仿宋 (FangSong)", "FangSong"),
-			("\ud83d\udd24 等宽代码体 (Consolas / Cascadia)", "Consolas, Cascadia Code"),
-			("\ud83d\udd24 JetBrains Mono", "JetBrains Mono, Consolas")
-		};
+		List<(string, string)> obj = GetStandardFontFamilies();
 		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var item2 in obj)
 		{
@@ -12221,6 +12278,7 @@ public partial class SettingsWindow : Window
 		catch
 		{
 		}
+		SetComboBoxSelectedValue(WheelFontFamilyComboBox, currentTag);
 	}
 
 	private void PopulateCoreFontFamilies()
@@ -12229,24 +12287,11 @@ public partial class SettingsWindow : Window
 		{
 			return;
 		}
+		string currentTag = (CoreFontFamilyComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString()
+			?? ConfigManager.CurrentConfig?.CoreFontFamily
+			?? "Microsoft YaHei UI, Segoe UI";
 		CoreFontFamilyComboBox.Items.Clear();
-		List<(string, string)> obj = new List<(string, string)>
-		{
-			("\ud83d\udda5\ufe0f 系统默认 (Microsoft YaHei UI / Segoe UI)", "Microsoft YaHei UI, Segoe UI"),
-			("\ud83d\udd24 微软雅黑 (Microsoft YaHei UI)", "Microsoft YaHei UI"),
-			("\ud83d\udd24 Segoe UI (Windows Fluent)", "Segoe UI"),
-			("\ud83d\udd24 鸿蒙字体 (HarmonyOS Sans SC)", "HarmonyOS Sans SC"),
-			("\ud83d\udd24 苹方字体 (PingFang SC)", "PingFang SC"),
-			("\ud83d\udd24 小米兰亭 (MiSans)", "MiSans"),
-			("\ud83d\udd24 思源黑体 (Source Han Sans SC)", "Source Han Sans SC"),
-			("\ud83d\udd24 Inter (Modern Sans)", "Inter"),
-			("\ud83d\udd24 Arial", "Arial"),
-			("\ud83d\udd24 黑体 (SimHei)", "SimHei"),
-			("\ud83d\udd24 楷体 (KaiTi)", "KaiTi"),
-			("\ud83d\udd24 仿宋 (FangSong)", "FangSong"),
-			("\ud83d\udd24 等宽代码体 (Consolas / Cascadia)", "Consolas, Cascadia Code"),
-			("\ud83d\udd24 JetBrains Mono", "JetBrains Mono, Consolas")
-		};
+		List<(string, string)> obj = GetStandardFontFamilies();
 		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var item2 in obj)
 		{
@@ -12283,6 +12328,7 @@ public partial class SettingsWindow : Window
 		catch
 		{
 		}
+		SetComboBoxSelectedValue(CoreFontFamilyComboBox, currentTag);
 	}
 
 	private static string GetFontDisplayName(System.Windows.Media.FontFamily font)
@@ -15493,24 +15539,57 @@ public partial class SettingsWindow : Window
 		App.RestartElevated();
 	}
 
+	public class ConfigProfileDisplayItem
+	{
+		public string Name { get; set; } = string.Empty;
+		public string DisplayName { get; set; } = string.Empty;
+		public override string ToString() => DisplayName;
+	}
+
+	private string GetSelectedConfigProfileName()
+	{
+		return ConfigProfilesComboBox?.SelectedValue as string
+			?? (ConfigProfilesComboBox?.SelectedItem as ConfigProfileDisplayItem)?.Name
+			?? ConfigProfilesComboBox?.SelectedItem as string
+			?? ConfigManager.CurrentConfig?.ActiveConfigProfileName
+			?? "默认配置";
+	}
+
 	private void RefreshConfigProfilesUi()
 	{
 		if (ConfigProfilesComboBox == null) return;
-		var profiles = ConfigManager.GetSavedConfigNames();
+		var rawProfiles = ConfigManager.GetSavedConfigNames();
 		string active = ConfigManager.CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
+
+		var profiles = rawProfiles.Select(p => new ConfigProfileDisplayItem
+		{
+			Name = p,
+			DisplayName = (string.Equals(p, "默认配置", StringComparison.OrdinalIgnoreCase) || string.Equals(p, "Default", StringComparison.OrdinalIgnoreCase))
+				? I18n.T("DefaultConfigProfile")
+				: p
+		}).ToList();
 
 		bool wasUpdating = _isUpdatingUi;
 		_isUpdatingUi = true;
 		try
 		{
 			ConfigProfilesComboBox.ItemsSource = null;
+			ConfigProfilesComboBox.SelectedValuePath = "Name";
+			ConfigProfilesComboBox.DisplayMemberPath = "DisplayName";
 			ConfigProfilesComboBox.ItemsSource = profiles;
-			int idx = profiles.FindIndex(p => string.Equals(p, active, StringComparison.OrdinalIgnoreCase));
-			ConfigProfilesComboBox.SelectedIndex = idx >= 0 ? idx : 0;
+			ConfigProfilesComboBox.SelectedValue = active;
+			if (ConfigProfilesComboBox.SelectedIndex < 0 && profiles.Count > 0)
+			{
+				ConfigProfilesComboBox.SelectedIndex = 0;
+			}
+
+			string displayActive = (string.Equals(active, "默认配置", StringComparison.OrdinalIgnoreCase) || string.Equals(active, "Default", StringComparison.OrdinalIgnoreCase))
+				? I18n.T("DefaultConfigProfile")
+				: active;
 
 			if (ActiveProfileBadgeText != null)
 			{
-				ActiveProfileBadgeText.Text = $"当前方案: {active}";
+				ActiveProfileBadgeText.Text = $"{I18n.T("ActiveProfilePrefix")}{displayActive}";
 			}
 
 			if (DeleteProfileBtn != null)
@@ -15527,7 +15606,10 @@ public partial class SettingsWindow : Window
 	private void ConfigProfilesComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 	{
 		if (_isUpdatingUi || ConfigProfilesComboBox == null) return;
-		if (ConfigProfilesComboBox.SelectedItem is string selectedName)
+		string? selectedName = ConfigProfilesComboBox.SelectedValue as string
+			?? (ConfigProfilesComboBox.SelectedItem as ConfigProfileDisplayItem)?.Name
+			?? ConfigProfilesComboBox.SelectedItem as string;
+		if (!string.IsNullOrEmpty(selectedName))
 		{
 			if (string.Equals(selectedName, ConfigManager.CurrentConfig?.ActiveConfigProfileName, StringComparison.OrdinalIgnoreCase))
 			{
@@ -15603,7 +15685,7 @@ public partial class SettingsWindow : Window
 
 	private void RenameProfileBtn_Click(object sender, RoutedEventArgs e)
 	{
-		string currentName = ConfigProfilesComboBox?.SelectedItem as string ?? ConfigManager.CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
+		string currentName = GetSelectedConfigProfileName();
 		var list = ConfigManager.GetSavedConfigNames();
 		InputDialog inputDialog = new InputDialog(
 			"重命名配置方案",
@@ -15641,7 +15723,7 @@ public partial class SettingsWindow : Window
 
 	private void DeleteProfileBtn_Click(object sender, RoutedEventArgs e)
 	{
-		string currentName = ConfigProfilesComboBox?.SelectedItem as string ?? ConfigManager.CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
+		string currentName = GetSelectedConfigProfileName();
 		var list = ConfigManager.GetSavedConfigNames();
 		if (list.Count <= 1)
 		{
@@ -15690,7 +15772,7 @@ public partial class SettingsWindow : Window
 
 	private void ExportConfigButton_Click(object sender, RoutedEventArgs e)
 	{
-		string targetProfile = ConfigProfilesComboBox?.SelectedItem as string ?? ConfigManager.CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
+		string targetProfile = GetSelectedConfigProfileName();
 		Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
 		{
 			Filter = "JSON 配置文件 (*.json)|*.json",
@@ -15781,7 +15863,7 @@ public partial class SettingsWindow : Window
 
 	private void ResetDefaultConfigBtn_Click(object sender, RoutedEventArgs e)
 	{
-		string currentName = ConfigProfilesComboBox?.SelectedItem as string ?? ConfigManager.CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
+		string currentName = GetSelectedConfigProfileName();
 		var res = System.Windows.MessageBox.Show(
 			this,
 			$"确定要将当前激活的方案「{currentName}」恢复为初始默认配置吗？\n该操作将重置手势动作与轮盘外观为初始推荐状态，其他已保存方案不受影响。",

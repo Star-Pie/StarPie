@@ -7984,6 +7984,1079 @@ public static class I18n
 			[LanguageCode.En] = "Create a new radial profile with custom name",
 			[LanguageCode.Ja] = "任意の名前で新しいホイールプロファイルを作成"
 		};
+		// --- Dynamic ComboBoxes: Layout Mode ---
+		dictionary["IconLayoutModeTitleText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "排版模式:",
+			[LanguageCode.ZhTw] = "排版模式:",
+			[LanguageCode.En] = "Layout Mode:",
+			[LanguageCode.Ja] = "レイアウトモード:"
+		};
+		dictionary["LayoutModeItemInherit"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "跟随全局默认 (Inherit Global)",
+			[LanguageCode.ZhTw] = "跟隨全域預設 (Inherit Global)",
+			[LanguageCode.En] = "Inherit Global Default",
+			[LanguageCode.Ja] = "グローバル既定に従う (Inherit Global)"
+		};
+		dictionary["LayoutModeItemBoth"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "图标 + 文字 (双行居中)",
+			[LanguageCode.ZhTw] = "圖示 + 文字 (雙行置中)",
+			[LanguageCode.En] = "Icon + Text (Centered)",
+			[LanguageCode.Ja] = "アイコン + テキスト (中央配置)"
+		};
+		dictionary["LayoutModeItemIconOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "仅显示图标 (极大化居中)",
+			[LanguageCode.ZhTw] = "僅顯示圖示 (極大化置中)",
+			[LanguageCode.En] = "Icon Only (Maximized)",
+			[LanguageCode.Ja] = "アイコンのみ (最大化)"
+		};
+		dictionary["LayoutModeItemTextOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "仅显示文字 (纯文字居中)",
+			[LanguageCode.ZhTw] = "僅顯示文字 (純文字置中)",
+			[LanguageCode.En] = "Text Only (Centered)",
+			[LanguageCode.Ja] = "テキストのみ (中央配置)"
+		};
+
+		// --- Dynamic ComboBoxes: Standard Fonts ---
+		dictionary["FontSystemDefault"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 系统默认 (Microsoft YaHei UI / Segoe UI)",
+			[LanguageCode.ZhTw] = "🖥️ 系統預設 (Microsoft JhengHei UI / Segoe UI)",
+			[LanguageCode.En] = "🖥️ System Default",
+			[LanguageCode.Ja] = "🖥️ システム既定 (Yu Gothic UI / Segoe UI)"
+		};
+		dictionary["FontMicrosoftYaHei"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 微软雅黑 (Microsoft YaHei UI)",
+			[LanguageCode.ZhTw] = "🔤 微軟正黑體 (Microsoft JhengHei UI)",
+			[LanguageCode.En] = "🔤 Microsoft YaHei",
+			[LanguageCode.Ja] = "🔤 メイリオ / 游ゴシック (Yu Gothic UI)"
+		};
+		dictionary["FontSegoeUI"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 Segoe UI (Windows Fluent)",
+			[LanguageCode.ZhTw] = "🔤 Segoe UI (Windows Fluent)",
+			[LanguageCode.En] = "🔤 Segoe UI",
+			[LanguageCode.Ja] = "🔤 Segoe UI (Windows Fluent)"
+		};
+		dictionary["FontHarmonyOS"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 鸿蒙字体 (HarmonyOS Sans SC)",
+			[LanguageCode.ZhTw] = "🔤 鴻蒙字型 (HarmonyOS Sans TC)",
+			[LanguageCode.En] = "🔤 HarmonyOS Sans",
+			[LanguageCode.Ja] = "🔤 HarmonyOS Sans"
+		};
+		dictionary["FontPingFang"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 苹方字体 (PingFang SC)",
+			[LanguageCode.ZhTw] = "🔤 蘋方字型 (PingFang TC)",
+			[LanguageCode.En] = "🔤 PingFang",
+			[LanguageCode.Ja] = "🔤 PingFang"
+		};
+		dictionary["FontMiSans"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 小米兰亭 (MiSans)",
+			[LanguageCode.ZhTw] = "🔤 小米蘭亭 (MiSans)",
+			[LanguageCode.En] = "🔤 MiSans",
+			[LanguageCode.Ja] = "🔤 MiSans"
+		};
+		dictionary["FontSourceHanSans"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 思源黑体 (Source Han Sans SC)",
+			[LanguageCode.ZhTw] = "🔤 思源黑體 (Source Han Sans TC)",
+			[LanguageCode.En] = "🔤 Source Han Sans",
+			[LanguageCode.Ja] = "🔤 源ノ角ゴシック (Source Han Sans JP)"
+		};
+		dictionary["FontInter"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 Inter (Modern Sans)",
+			[LanguageCode.ZhTw] = "🔤 Inter (Modern Sans)",
+			[LanguageCode.En] = "🔤 Inter",
+			[LanguageCode.Ja] = "🔤 Inter"
+		};
+		dictionary["FontArial"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 Arial",
+			[LanguageCode.ZhTw] = "🔤 Arial",
+			[LanguageCode.En] = "🔤 Arial",
+			[LanguageCode.Ja] = "🔤 Arial"
+		};
+		dictionary["FontSimHei"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 黑体 (SimHei)",
+			[LanguageCode.ZhTw] = "🔤 黑體 (SimHei)",
+			[LanguageCode.En] = "🔤 SimHei",
+			[LanguageCode.Ja] = "🔤 SimHei"
+		};
+		dictionary["FontKaiTi"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 楷体 (KaiTi)",
+			[LanguageCode.ZhTw] = "🔤 楷體 (KaiTi)",
+			[LanguageCode.En] = "🔤 KaiTi",
+			[LanguageCode.Ja] = "🔤 KaiTi"
+		};
+		dictionary["FontFangSong"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 仿宋 (FangSong)",
+			[LanguageCode.ZhTw] = "🔤 仿宋 (FangSong)",
+			[LanguageCode.En] = "🔤 FangSong",
+			[LanguageCode.Ja] = "🔤 FangSong"
+		};
+		dictionary["FontMonospace"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 等宽代码体 (Consolas / Cascadia)",
+			[LanguageCode.ZhTw] = "🔤 等寬程式碼字型 (Consolas / Cascadia)",
+			[LanguageCode.En] = "🔤 Monospace Code (Consolas / Cascadia)",
+			[LanguageCode.Ja] = "🔤 等幅コードフォント (Consolas / Cascadia)"
+		};
+		dictionary["FontJetBrainsMono"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 JetBrains Mono",
+			[LanguageCode.ZhTw] = "🔤 JetBrains Mono",
+			[LanguageCode.En] = "🔤 JetBrains Mono",
+			[LanguageCode.Ja] = "🔤 JetBrains Mono"
+		};
+
+		// --- Dynamic ComboBoxes: Profile & Layers ---
+		dictionary["GlobalProfileDefault"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Global (全局默认)",
+			[LanguageCode.ZhTw] = "Global (全域預設)",
+			[LanguageCode.En] = "Global (Default)",
+			[LanguageCode.Ja] = "Global (グローバル既定)"
+		};
+		dictionary["WheelLayerFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "第 {0} 层",
+			[LanguageCode.ZhTw] = "第 {0} 層",
+			[LanguageCode.En] = "Layer {0}",
+			[LanguageCode.Ja] = "レイヤー {0}"
+		};
+		dictionary["DefaultConfigProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "默认配置",
+			[LanguageCode.ZhTw] = "預設配置",
+			[LanguageCode.En] = "Default Scheme",
+			[LanguageCode.Ja] = "既定構成"
+		};
+		dictionary["ActiveProfilePrefix"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前方案: ",
+			[LanguageCode.ZhTw] = "目前配置方案: ",
+			[LanguageCode.En] = "Current Scheme: ",
+			[LanguageCode.Ja] = "現在の構成スキーム: "
+		};
+		dictionary["CustomPresetSuffix"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "(自定义预设)",
+			[LanguageCode.ZhTw] = "(自訂預設)",
+			[LanguageCode.En] = "(Custom Preset)",
+			[LanguageCode.Ja] = "(カスタムプリセット)"
+		};
+
+		// --- Dynamic ComboBoxes: System Preset Categories ---
+		dictionary["SysCategory_WindowManager"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysCategory_SystemTools"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysCategory_Media"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysCategory_WebBrowser"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysCategory_PowerControl"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "电源控制",
+			[LanguageCode.ZhTw] = "電源控制",
+			[LanguageCode.En] = "Power Options",
+			[LanguageCode.Ja] = "電源制御"
+		};
+
+		// --- Dynamic ComboBoxes: System Presets (41 Items) ---
+		dictionary["SysCategory_WindowSwitcher"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_WindowSwitcher"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "常驻窗口切换器 (Window Switcher / Ctrl+Alt+Tab)",
+			[LanguageCode.ZhTw] = "常駐視窗切換器 (Window Switcher / Ctrl+Alt+Tab)",
+			[LanguageCode.En] = "Window Switcher (Ctrl+Alt+Tab)",
+			[LanguageCode.Ja] = "ウィンドウ切り替え (Ctrl+Alt+Tab)"
+		};
+		dictionary["SysPresetName_WindowSwitcher"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口切换",
+			[LanguageCode.ZhTw] = "視窗切換",
+			[LanguageCode.En] = "Window Switcher",
+			[LanguageCode.Ja] = "ウィンドウ切替"
+		};
+		dictionary["SysCategory_AltTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_AltTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "快速切至上一窗口 (Alt+Tab)",
+			[LanguageCode.ZhTw] = "快速切至上一視窗 (Alt+Tab)",
+			[LanguageCode.En] = "Switch to Previous Window (Alt+Tab)",
+			[LanguageCode.Ja] = "前のウィンドウに切り替え (Alt+Tab)"
+		};
+		dictionary["SysPresetName_AltTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "切换窗口",
+			[LanguageCode.ZhTw] = "切換視窗",
+			[LanguageCode.En] = "Switch Window",
+			[LanguageCode.Ja] = "ウィンドウ切替"
+		};
+		dictionary["SysCategory_CloseWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_CloseWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭当前窗口 (Close / Alt+F4)",
+			[LanguageCode.ZhTw] = "關閉目前視窗 (Close / Alt+F4)",
+			[LanguageCode.En] = "Close Active Window (Alt+F4)",
+			[LanguageCode.Ja] = "現在のウィンドウを閉じる (Alt+F4)"
+		};
+		dictionary["SysPresetName_CloseWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭窗口",
+			[LanguageCode.ZhTw] = "關閉視窗",
+			[LanguageCode.En] = "Close Window",
+			[LanguageCode.Ja] = "ウィンドウを閉じる"
+		};
+		dictionary["SysCategory_Minimize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_Minimize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "最小化窗口 (Minimize / Win+Down)",
+			[LanguageCode.ZhTw] = "最小化視窗 (Minimize / Win+Down)",
+			[LanguageCode.En] = "Minimize Window (Win+Down)",
+			[LanguageCode.Ja] = "ウィンドウの最小化 (Win+Down)"
+		};
+		dictionary["SysPresetName_Minimize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "最小化",
+			[LanguageCode.ZhTw] = "最小化",
+			[LanguageCode.En] = "Minimize",
+			[LanguageCode.Ja] = "最小化"
+		};
+		dictionary["SysCategory_Maximize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_Maximize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "最大化/还原 (Maximize / Win+Up)",
+			[LanguageCode.ZhTw] = "最大化/還原 (Maximize / Win+Up)",
+			[LanguageCode.En] = "Maximize/Restore (Win+Up)",
+			[LanguageCode.Ja] = "最大化/元に戻す (Win+Up)"
+		};
+		dictionary["SysPresetName_Maximize"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "最大化",
+			[LanguageCode.ZhTw] = "最大化",
+			[LanguageCode.En] = "Maximize",
+			[LanguageCode.Ja] = "最大化"
+		};
+		dictionary["SysCategory_SnapLeft"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_SnapLeft"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "左半屏贴靠 (Snap Left / Win+Left)",
+			[LanguageCode.ZhTw] = "左半屏貼靠 (Snap Left / Win+Left)",
+			[LanguageCode.En] = "Snap Left (Win+Left)",
+			[LanguageCode.Ja] = "左にスナップ (Win+Left)"
+		};
+		dictionary["SysPresetName_SnapLeft"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "靠左分屏",
+			[LanguageCode.ZhTw] = "靠左分屏",
+			[LanguageCode.En] = "Snap Left",
+			[LanguageCode.Ja] = "左スナップ"
+		};
+		dictionary["SysCategory_SnapRight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_SnapRight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "右半屏贴靠 (Snap Right / Win+Right)",
+			[LanguageCode.ZhTw] = "右半屏貼靠 (Snap Right / Win+Right)",
+			[LanguageCode.En] = "Snap Right (Win+Right)",
+			[LanguageCode.Ja] = "右にスナップ (Win+Right)"
+		};
+		dictionary["SysPresetName_SnapRight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "靠右分屏",
+			[LanguageCode.ZhTw] = "靠右分屏",
+			[LanguageCode.En] = "Snap Right",
+			[LanguageCode.Ja] = "右スナップ"
+		};
+		dictionary["SysCategory_TaskView"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_TaskView"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务视图/多任务 (Task View / Win+Tab)",
+			[LanguageCode.ZhTw] = "工作檢視/多工 (Task View / Win+Tab)",
+			[LanguageCode.En] = "Task View (Win+Tab)",
+			[LanguageCode.Ja] = "タスクビュー (Win+Tab)"
+		};
+		dictionary["SysPresetName_TaskView"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务视图",
+			[LanguageCode.ZhTw] = "工作檢視",
+			[LanguageCode.En] = "Task View",
+			[LanguageCode.Ja] = "タスクビュー"
+		};
+		dictionary["SysCategory_PrevDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_PrevDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上一虚拟桌面 (Prev Desktop)",
+			[LanguageCode.ZhTw] = "上一虛擬桌面 (Prev Desktop)",
+			[LanguageCode.En] = "Previous Virtual Desktop",
+			[LanguageCode.Ja] = "前の仮想デスクトップ"
+		};
+		dictionary["SysPresetName_PrevDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上一桌面",
+			[LanguageCode.ZhTw] = "上一桌面",
+			[LanguageCode.En] = "Prev Desktop",
+			[LanguageCode.Ja] = "前デスクトップ"
+		};
+		dictionary["SysCategory_NextDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_NextDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下一虚拟桌面 (Next Desktop)",
+			[LanguageCode.ZhTw] = "下一虛擬桌面 (Next Desktop)",
+			[LanguageCode.En] = "Next Virtual Desktop",
+			[LanguageCode.Ja] = "次の仮想デスクトップ"
+		};
+		dictionary["SysPresetName_NextDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下一桌面",
+			[LanguageCode.ZhTw] = "下一桌面",
+			[LanguageCode.En] = "Next Desktop",
+			[LanguageCode.Ja] = "次デスクトップ"
+		};
+		dictionary["SysCategory_ShowDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_ShowDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "显示桌面 (Desktop / Win+D)",
+			[LanguageCode.ZhTw] = "顯示桌面 (Desktop / Win+D)",
+			[LanguageCode.En] = "Show Desktop (Win+D)",
+			[LanguageCode.Ja] = "デスクトップを表示 (Win+D)"
+		};
+		dictionary["SysPresetName_ShowDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "显示桌面",
+			[LanguageCode.ZhTw] = "顯示桌面",
+			[LanguageCode.En] = "Show Desktop",
+			[LanguageCode.Ja] = "デスクトップ表示"
+		};
+		dictionary["SysCategory_FullScreen"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_FullScreen"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全屏切换 (Full Screen / F11)",
+			[LanguageCode.ZhTw] = "全螢幕切換 (Full Screen / F11)",
+			[LanguageCode.En] = "Toggle Full Screen (F11)",
+			[LanguageCode.Ja] = "全画面表示切替 (F11)"
+		};
+		dictionary["SysPresetName_FullScreen"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全屏切换",
+			[LanguageCode.ZhTw] = "全螢幕切換",
+			[LanguageCode.En] = "Full Screen",
+			[LanguageCode.Ja] = "全画面表示"
+		};
+		dictionary["SysCategory_Screenshot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "窗口管理",
+			[LanguageCode.ZhTw] = "視窗管理",
+			[LanguageCode.En] = "Window Management",
+			[LanguageCode.Ja] = "ウィンドウ管理"
+		};
+		dictionary["SysPreset_Screenshot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "屏幕截图 (Screenshot / Win+Shift+S)",
+			[LanguageCode.ZhTw] = "螢幕截圖 (Screenshot / Win+Shift+S)",
+			[LanguageCode.En] = "Screen Snipping (Win+Shift+S)",
+			[LanguageCode.Ja] = "画面切り取り (Win+Shift+S)"
+		};
+		dictionary["SysPresetName_Screenshot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "屏幕截图",
+			[LanguageCode.ZhTw] = "螢幕截圖",
+			[LanguageCode.En] = "Screenshot",
+			[LanguageCode.Ja] = "スクリーンショット"
+		};
+		dictionary["SysCategory_TaskManager"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_TaskManager"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务管理器 (Task Manager / Ctrl+Shift+Esc)",
+			[LanguageCode.ZhTw] = "工作管理員 (Task Manager / Ctrl+Shift+Esc)",
+			[LanguageCode.En] = "Task Manager (Ctrl+Shift+Esc)",
+			[LanguageCode.Ja] = "タスクマネージャー (Ctrl+Shift+Esc)"
+		};
+		dictionary["SysPresetName_TaskManager"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务管理器",
+			[LanguageCode.ZhTw] = "工作管理員",
+			[LanguageCode.En] = "Task Manager",
+			[LanguageCode.Ja] = "タスクマネージャー"
+		};
+		dictionary["SysCategory_Explorer"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_Explorer"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文件资源管理器 (Explorer / Win+E)",
+			[LanguageCode.ZhTw] = "檔案總管 (Explorer / Win+E)",
+			[LanguageCode.En] = "File Explorer (Win+E)",
+			[LanguageCode.Ja] = "エクスプローラー (Win+E)"
+		};
+		dictionary["SysPresetName_Explorer"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "资源管理器",
+			[LanguageCode.ZhTw] = "檔案總管",
+			[LanguageCode.En] = "Explorer",
+			[LanguageCode.Ja] = "エクスプローラー"
+		};
+		dictionary["SysCategory_OpenSettings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_OpenSettings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie 控制台 (StarPie Settings)",
+			[LanguageCode.ZhTw] = "StarPie 控制台 (StarPie Settings)",
+			[LanguageCode.En] = "StarPie Settings Console",
+			[LanguageCode.Ja] = "StarPie 設定コンソール"
+		};
+		dictionary["SysPresetName_OpenSettings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie控制台",
+			[LanguageCode.ZhTw] = "StarPie控制台",
+			[LanguageCode.En] = "StarPie Settings",
+			[LanguageCode.Ja] = "StarPie設定"
+		};
+		dictionary["SysCategory_Settings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_Settings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Windows 设置 (Settings / Win+I)",
+			[LanguageCode.ZhTw] = "Windows 設定 (Settings / Win+I)",
+			[LanguageCode.En] = "Windows Settings (Win+I)",
+			[LanguageCode.Ja] = "Windows 設定 (Win+I)"
+		};
+		dictionary["SysPresetName_Settings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统设置",
+			[LanguageCode.ZhTw] = "系統設定",
+			[LanguageCode.En] = "Settings",
+			[LanguageCode.Ja] = "Windows設定"
+		};
+		dictionary["SysCategory_Calculator"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_Calculator"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "计算器 (Calculator / calc.exe)",
+			[LanguageCode.ZhTw] = "計算機 (Calculator / calc.exe)",
+			[LanguageCode.En] = "Calculator (calc.exe)",
+			[LanguageCode.Ja] = "電卓 (calc.exe)"
+		};
+		dictionary["SysPresetName_Calculator"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "计算器",
+			[LanguageCode.ZhTw] = "計算機",
+			[LanguageCode.En] = "Calculator",
+			[LanguageCode.Ja] = "電卓"
+		};
+		dictionary["SysCategory_RunDialog"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_RunDialog"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "运行窗口 (Run / Win+R)",
+			[LanguageCode.ZhTw] = "執行視窗 (Run / Win+R)",
+			[LanguageCode.En] = "Run Dialog (Win+R)",
+			[LanguageCode.Ja] = "ファイル名を指定して実行 (Win+R)"
+		};
+		dictionary["SysPresetName_RunDialog"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "运行",
+			[LanguageCode.ZhTw] = "執行",
+			[LanguageCode.En] = "Run",
+			[LanguageCode.Ja] = "ファイル名を指定して実行"
+		};
+		dictionary["SysCategory_WindowsSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_WindowsSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统搜索 (Search / Win+S)",
+			[LanguageCode.ZhTw] = "系統搜尋 (Search / Win+S)",
+			[LanguageCode.En] = "Windows Search (Win+S)",
+			[LanguageCode.Ja] = "Windows 検索 (Win+S)"
+		};
+		dictionary["SysPresetName_WindowsSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "搜索",
+			[LanguageCode.ZhTw] = "搜尋",
+			[LanguageCode.En] = "Search",
+			[LanguageCode.Ja] = "検索"
+		};
+		dictionary["SysCategory_QuickSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_QuickSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全盘文件与程序秒搜 (Quick Finder)",
+			[LanguageCode.ZhTw] = "全磁碟檔案與程式秒搜 (Quick Finder)",
+			[LanguageCode.En] = "Quick File & App Finder",
+			[LanguageCode.Ja] = "高速ファイル・アプリ検索"
+		};
+		dictionary["SysPresetName_QuickSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "快速秒搜",
+			[LanguageCode.ZhTw] = "快速秒搜",
+			[LanguageCode.En] = "Quick Finder",
+			[LanguageCode.Ja] = "クイック検索"
+		};
+		dictionary["SysCategory_ClipboardHistory"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_ClipboardHistory"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "剪贴板历史 (Clipboard / Win+V)",
+			[LanguageCode.ZhTw] = "剪貼簿歷程記錄 (Clipboard / Win+V)",
+			[LanguageCode.En] = "Clipboard History (Win+V)",
+			[LanguageCode.Ja] = "クリップボード履歴 (Win+V)"
+		};
+		dictionary["SysPresetName_ClipboardHistory"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "剪贴板",
+			[LanguageCode.ZhTw] = "剪貼簿",
+			[LanguageCode.En] = "Clipboard",
+			[LanguageCode.Ja] = "クリップボード"
+		};
+		dictionary["SysCategory_Lock"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统工具",
+			[LanguageCode.ZhTw] = "系統工具",
+			[LanguageCode.En] = "System Tools",
+			[LanguageCode.Ja] = "システムツール"
+		};
+		dictionary["SysPreset_Lock"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "锁定电脑 (Lock Workstation)",
+			[LanguageCode.ZhTw] = "鎖定電腦 (Lock Workstation)",
+			[LanguageCode.En] = "Lock Workstation (Win+L)",
+			[LanguageCode.Ja] = "PCをロック (Win+L)"
+		};
+		dictionary["SysPresetName_Lock"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "锁定电脑",
+			[LanguageCode.ZhTw] = "鎖定電腦",
+			[LanguageCode.En] = "Lock PC",
+			[LanguageCode.Ja] = "PCロック"
+		};
+		dictionary["SysCategory_VolumeUp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_VolumeUp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "音量增加 (Volume Up)",
+			[LanguageCode.ZhTw] = "音量增加 (Volume Up)",
+			[LanguageCode.En] = "Volume Up",
+			[LanguageCode.Ja] = "音量を上げる"
+		};
+		dictionary["SysPresetName_VolumeUp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "音量加",
+			[LanguageCode.ZhTw] = "音量加",
+			[LanguageCode.En] = "Volume Up",
+			[LanguageCode.Ja] = "音量+"
+		};
+		dictionary["SysCategory_VolumeDown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_VolumeDown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "音量减小 (Volume Down)",
+			[LanguageCode.ZhTw] = "音量減小 (Volume Down)",
+			[LanguageCode.En] = "Volume Down",
+			[LanguageCode.Ja] = "音量を下げる"
+		};
+		dictionary["SysPresetName_VolumeDown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "音量减",
+			[LanguageCode.ZhTw] = "音量減",
+			[LanguageCode.En] = "Volume Down",
+			[LanguageCode.Ja] = "音量-"
+		};
+		dictionary["SysCategory_VolumeMute"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_VolumeMute"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "静音切换 (Mute)",
+			[LanguageCode.ZhTw] = "靜音切換 (Mute)",
+			[LanguageCode.En] = "Mute / Unmute",
+			[LanguageCode.Ja] = "消音 (ミュート)"
+		};
+		dictionary["SysPresetName_VolumeMute"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "静音切换",
+			[LanguageCode.ZhTw] = "靜音切換",
+			[LanguageCode.En] = "Mute",
+			[LanguageCode.Ja] = "ミュート切替"
+		};
+		dictionary["SysCategory_PlayPause"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_PlayPause"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "播放/暂停 (Play/Pause)",
+			[LanguageCode.ZhTw] = "播放/暫停 (Play/Pause)",
+			[LanguageCode.En] = "Play / Pause",
+			[LanguageCode.Ja] = "再生 / 一時停止"
+		};
+		dictionary["SysPresetName_PlayPause"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "播放/暂停",
+			[LanguageCode.ZhTw] = "播放/暫停",
+			[LanguageCode.En] = "Play/Pause",
+			[LanguageCode.Ja] = "再生/一時停止"
+		};
+		dictionary["SysCategory_NextTrack"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_NextTrack"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下一曲 (Next Track)",
+			[LanguageCode.ZhTw] = "下一首 (Next Track)",
+			[LanguageCode.En] = "Next Track",
+			[LanguageCode.Ja] = "次のトラック"
+		};
+		dictionary["SysPresetName_NextTrack"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下一曲",
+			[LanguageCode.ZhTw] = "下一首",
+			[LanguageCode.En] = "Next Track",
+			[LanguageCode.Ja] = "次へ"
+		};
+		dictionary["SysCategory_PrevTrack"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_PrevTrack"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上一曲 (Previous Track)",
+			[LanguageCode.ZhTw] = "上一首 (Previous Track)",
+			[LanguageCode.En] = "Previous Track",
+			[LanguageCode.Ja] = "前のトラック"
+		};
+		dictionary["SysPresetName_PrevTrack"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上一曲",
+			[LanguageCode.ZhTw] = "上一首",
+			[LanguageCode.En] = "Prev Track",
+			[LanguageCode.Ja] = "前へ"
+		};
+		dictionary["SysCategory_StopMedia"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "媒体音效",
+			[LanguageCode.ZhTw] = "媒體音訊",
+			[LanguageCode.En] = "Media & Audio",
+			[LanguageCode.Ja] = "メディア・オーディオ"
+		};
+		dictionary["SysPreset_StopMedia"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "停止播放 (Stop)",
+			[LanguageCode.ZhTw] = "停止播放 (Stop)",
+			[LanguageCode.En] = "Stop Media",
+			[LanguageCode.Ja] = "メディア停止"
+		};
+		dictionary["SysPresetName_StopMedia"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "停止",
+			[LanguageCode.ZhTw] = "停止",
+			[LanguageCode.En] = "Stop",
+			[LanguageCode.Ja] = "停止"
+		};
+		dictionary["SysCategory_NewTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_NewTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新建标签页 (New Tab / Ctrl+T)",
+			[LanguageCode.ZhTw] = "新分頁 (New Tab / Ctrl+T)",
+			[LanguageCode.En] = "New Tab (Ctrl+T)",
+			[LanguageCode.Ja] = "新しいタブ (Ctrl+T)"
+		};
+		dictionary["SysPresetName_NewTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新建标签",
+			[LanguageCode.ZhTw] = "新分頁",
+			[LanguageCode.En] = "New Tab",
+			[LanguageCode.Ja] = "新規タブ"
+		};
+		dictionary["SysCategory_CloseTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_CloseTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭标签页 (Close Tab / Ctrl+W)",
+			[LanguageCode.ZhTw] = "關閉分頁 (Close Tab / Ctrl+W)",
+			[LanguageCode.En] = "Close Tab (Ctrl+W)",
+			[LanguageCode.Ja] = "タブを閉じる (Ctrl+W)"
+		};
+		dictionary["SysPresetName_CloseTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭标签",
+			[LanguageCode.ZhTw] = "關閉分頁",
+			[LanguageCode.En] = "Close Tab",
+			[LanguageCode.Ja] = "タブを閉じる"
+		};
+		dictionary["SysCategory_ReopenTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_ReopenTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "恢复关闭标签 (Reopen / Ctrl+Shift+T)",
+			[LanguageCode.ZhTw] = "重新開啟已關閉的分頁 (Ctrl+Shift+T)",
+			[LanguageCode.En] = "Reopen Closed Tab (Ctrl+Shift+T)",
+			[LanguageCode.Ja] = "閉じたタブを開く (Ctrl+Shift+T)"
+		};
+		dictionary["SysPresetName_ReopenTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "恢复标签",
+			[LanguageCode.ZhTw] = "恢復分頁",
+			[LanguageCode.En] = "Reopen Tab",
+			[LanguageCode.Ja] = "タブを復元"
+		};
+		dictionary["SysCategory_Refresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_Refresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "刷新页面 (Refresh / F5)",
+			[LanguageCode.ZhTw] = "重新整理 (Refresh / F5)",
+			[LanguageCode.En] = "Refresh Page (F5)",
+			[LanguageCode.Ja] = "ページの再読み込み (F5)"
+		};
+		dictionary["SysPresetName_Refresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "刷新",
+			[LanguageCode.ZhTw] = "重新整理",
+			[LanguageCode.En] = "Refresh",
+			[LanguageCode.Ja] = "再読み込み"
+		};
+		dictionary["SysCategory_HardRefresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_HardRefresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "强制刷新 (Hard Refresh / Ctrl+F5)",
+			[LanguageCode.ZhTw] = "強制重新整理 (Hard Refresh / Ctrl+F5)",
+			[LanguageCode.En] = "Hard Refresh (Ctrl+F5)",
+			[LanguageCode.Ja] = "強制再読み込み (Ctrl+F5)"
+		};
+		dictionary["SysPresetName_HardRefresh"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "强制刷新",
+			[LanguageCode.ZhTw] = "強制重新整理",
+			[LanguageCode.En] = "Hard Refresh",
+			[LanguageCode.Ja] = "強制再読み込み"
+		};
+		dictionary["SysCategory_ZoomIn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_ZoomIn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "页面放大 (Zoom In / Ctrl++)",
+			[LanguageCode.ZhTw] = "放大 (Zoom In / Ctrl++)",
+			[LanguageCode.En] = "Zoom In (Ctrl++)",
+			[LanguageCode.Ja] = "拡大 (Ctrl++)"
+		};
+		dictionary["SysPresetName_ZoomIn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "放大",
+			[LanguageCode.ZhTw] = "放大",
+			[LanguageCode.En] = "Zoom In",
+			[LanguageCode.Ja] = "拡大"
+		};
+		dictionary["SysCategory_ZoomOut"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_ZoomOut"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "页面缩小 (Zoom Out / Ctrl+-)",
+			[LanguageCode.ZhTw] = "縮小 (Zoom Out / Ctrl+-)",
+			[LanguageCode.En] = "Zoom Out (Ctrl+-)",
+			[LanguageCode.Ja] = "縮小 (Ctrl+-)"
+		};
+		dictionary["SysPresetName_ZoomOut"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "缩小",
+			[LanguageCode.ZhTw] = "縮小",
+			[LanguageCode.En] = "Zoom Out",
+			[LanguageCode.Ja] = "縮小"
+		};
+		dictionary["SysCategory_ZoomReset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "网页浏览",
+			[LanguageCode.ZhTw] = "網頁瀏覽",
+			[LanguageCode.En] = "Web Browsing",
+			[LanguageCode.Ja] = "ウェブ閲覧"
+		};
+		dictionary["SysPreset_ZoomReset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "默认缩放 (Reset Zoom / Ctrl+0)",
+			[LanguageCode.ZhTw] = "重設縮放 (Reset Zoom / Ctrl+0)",
+			[LanguageCode.En] = "Reset Zoom (Ctrl+0)",
+			[LanguageCode.Ja] = "既定倍率 (Ctrl+0)"
+		};
+		dictionary["SysPresetName_ZoomReset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "默认缩放",
+			[LanguageCode.ZhTw] = "重設縮放",
+			[LanguageCode.En] = "Reset Zoom",
+			[LanguageCode.Ja] = "既定倍率"
+		};
+		dictionary["SysCategory_Sleep"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "电源控制",
+			[LanguageCode.ZhTw] = "電源控制",
+			[LanguageCode.En] = "Power Options",
+			[LanguageCode.Ja] = "電源制御"
+		};
+		dictionary["SysPreset_Sleep"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统睡眠 (Sleep)",
+			[LanguageCode.ZhTw] = "系統睡眠 (Sleep)",
+			[LanguageCode.En] = "Sleep",
+			[LanguageCode.Ja] = "スリープ"
+		};
+		dictionary["SysPresetName_Sleep"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "睡眠",
+			[LanguageCode.ZhTw] = "睡眠",
+			[LanguageCode.En] = "Sleep",
+			[LanguageCode.Ja] = "スリープ"
+		};
+		dictionary["SysCategory_Restart"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "电源控制",
+			[LanguageCode.ZhTw] = "電源控制",
+			[LanguageCode.En] = "Power Options",
+			[LanguageCode.Ja] = "電源制御"
+		};
+		dictionary["SysPreset_Restart"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重启电脑 (Restart)",
+			[LanguageCode.ZhTw] = "重新啟動電腦 (Restart)",
+			[LanguageCode.En] = "Restart PC",
+			[LanguageCode.Ja] = "再起動"
+		};
+		dictionary["SysPresetName_Restart"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重启",
+			[LanguageCode.ZhTw] = "重新啟動",
+			[LanguageCode.En] = "Restart",
+			[LanguageCode.Ja] = "再起動"
+		};
+		dictionary["SysCategory_Shutdown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "电源控制",
+			[LanguageCode.ZhTw] = "電源控制",
+			[LanguageCode.En] = "Power Options",
+			[LanguageCode.Ja] = "電源制御"
+		};
+		dictionary["SysPreset_Shutdown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭电脑 (Shutdown)",
+			[LanguageCode.ZhTw] = "關閉電腦 (Shutdown)",
+			[LanguageCode.En] = "Shut Down PC",
+			[LanguageCode.Ja] = "シャットダウン"
+		};
+		dictionary["SysPresetName_Shutdown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关机",
+			[LanguageCode.ZhTw] = "關機",
+			[LanguageCode.En] = "Shut Down",
+			[LanguageCode.Ja] = "シャットダウン"
+		};
 		Translations = dictionary;
 	}
 }

@@ -63,7 +63,7 @@ public class WheelProfile : INotifyPropertyChanged
 		{
 			if (string.Equals(ProcessName, "Global", StringComparison.OrdinalIgnoreCase))
 			{
-				return "🌐 Global (全局默认)";
+				return $"🌐 {I18n.T("GlobalProfileDefault")}";
 			}
 			string name = !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName.Trim() : ProcessName.Trim();
 			string procs = !string.IsNullOrWhiteSpace(BoundProcesses) ? BoundProcesses.Trim() : ProcessName.Trim();

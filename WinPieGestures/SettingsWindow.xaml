@@ -2603,7 +2603,7 @@
                 <Border Name="Tab2_MultiLayerHeaderPanel" VerticalAlignment="Center" Margin="14,0,0,0" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5,2">
                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="Tab2LayerLabel" Text="🌀 轮盘层:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="3,0,5,0" />
-                    <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="95" VerticalAlignment="Center" DisplayMemberPath="Name" SelectionChanged="LayerSelectComboBox_SelectionChanged" />
+                    <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="95" VerticalAlignment="Center" DisplayMemberPath="DisplayName" SelectionChanged="LayerSelectComboBox_SelectionChanged" />
                     <Button Name="AddLayerBtn" Content="➕ 加层" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="4,0,2,0" ToolTip="新增一层独立轮盘配置（支持无限多层）" Click="AddLayerBtn_Click" />
                     <Button Name="CopyLayerBtn" Content="📑 复制" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="复制当前层的所有扇区动作与中心核圆到新层" Click="CopyLayerBtn_Click" />
                     <Button Name="RenameLayerBtn" Content="✏️" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="重命名当前轮盘层" Click="RenameLayerBtn_Click" />

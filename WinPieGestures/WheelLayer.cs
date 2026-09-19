@@ -19,7 +19,30 @@ public class WheelLayer : INotifyPropertyChanged
 			{
 				_name = value;
 				OnPropertyChanged(nameof(Name));
+				OnPropertyChanged(nameof(DisplayName));
 			}
+		}
+	}
+
+	/// <summary>
+	/// UI 层展示名称（若为默认 "第 N 层" / "Layer N" 则依据当前语言本地化，若为用户自定义名称则保持原样）
+	/// </summary>
+	[System.Text.Json.Serialization.JsonIgnore]
+	public string DisplayName
+	{
+		get
+		{
+			if (string.IsNullOrWhiteSpace(_name))
+			{
+				return _name;
+			}
+			var m = System.Text.RegularExpressions.Regex.Match(_name.Trim(), @"^(?:第\s*(\d+)\s*[层層]|Layer\s*(\d+)|レイヤー\s*(\d+))$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+			if (m.Success)
+			{
+				string numStr = m.Groups[1].Success ? m.Groups[1].Value : (m.Groups[2].Success ? m.Groups[2].Value : m.Groups[3].Value);
+				return string.Format(I18n.T("WheelLayerFmt"), numStr);
+			}
+			return _name;
 		}
 	}
 
