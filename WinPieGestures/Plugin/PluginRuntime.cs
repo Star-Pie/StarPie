@@ -413,6 +413,7 @@ internal sealed class PluginRuntime
             {
                 Handled = true,
                 Success = false,
+                Failure = PluginFailureKind.HostError,
                 Message = "插件动作运行时发生内部错误，详情见日志。",
             });
 
@@ -425,6 +426,7 @@ internal sealed class PluginRuntime
             {
                 Handled = true,
                 Success = false,
+                Failure = PluginFailureKind.HostError,
                 Message = "认领动作运行时发生内部错误，详情见日志。",
             });
     public IDisposable RegisterWheelOpening(string pluginId, Action<ActionContext> handler) =>

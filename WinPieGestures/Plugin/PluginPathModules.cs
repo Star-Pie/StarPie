@@ -170,10 +170,14 @@ internal sealed class ActionExecutionPathModule : PluginPathModule
 
         if (!activation.IsReady)
         {
+            // Disabled / Quarantined / RequiresRestart / Incompatible 都归到 NotEnabled：
+            // 共同点是「这个插件此刻用不了」。具体是哪一种由 Message 说给用户听，
+            // 而代码要区分的那一步（「插件没启用」而不是「参数写错了」）在这里就够了。
             return new PluginExecuteOutcome
             {
                 Handled = true,
                 Success = false,
+                Failure = PluginFailureKind.NotEnabled,
                 Message = activation.Error,
             };
         }
@@ -185,6 +189,7 @@ internal sealed class ActionExecutionPathModule : PluginPathModule
             {
                 Handled = true,
                 Success = false,
+                Failure = PluginFailureKind.ActionNotFound,
                 Message = $"插件已加载，但没有注册动作 {request.FullId}。插件版本可能已变化，请重新编辑该槽位。",
             };
         }
@@ -196,6 +201,7 @@ internal sealed class ActionExecutionPathModule : PluginPathModule
             {
                 Handled = true,
                 Success = false,
+                Failure = PluginFailureKind.ValidationFailed,
                 Message = $"{registration.DisplayName} 参数不合法：{validation.Describe()}",
             };
         }

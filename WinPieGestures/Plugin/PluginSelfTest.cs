@@ -1597,12 +1597,15 @@ internal static class PluginSelfTest
         if (PluginHost.Catalog.SnapshotActions().Count != 0) return "探针开始前 Catalog 仍有动作残留。";
 
         PluginExecuteOutcome disabledOutcome = PluginHost.ExecutePluginAction(probe);
-        line($"  禁用状态调用：处理={disabledOutcome.Handled} 成功={disabledOutcome.Success} 信息={disabledOutcome.Message}");
+        line($"  禁用状态调用：处理={disabledOutcome.Handled} 成功={disabledOutcome.Success} 原因={disabledOutcome.Failure} 信息={disabledOutcome.Message}");
         if (instance.IsLoaded) return "用户已禁用插件却被动作路径自动加载。";
-        if (disabledOutcome.Success || string.IsNullOrWhiteSpace(disabledOutcome.Message) ||
-            !disabledOutcome.Message.Contains("未启用", StringComparison.Ordinal))
+
+        // 判据用结构化的 Failure 而不是 Message 的文案 ——
+        // 这段文案迟早要接 i18n，那时 Contains("未启用") 会在非中文语言下静默失效，
+        // 而「禁用插件竟然被执行了」这条断言恰恰是最不能失效的一条。
+        if (disabledOutcome.Success || disabledOutcome.Failure != PluginFailureKind.NotEnabled)
         {
-            return $"禁用插件的动作没有被明确拒绝：{disabledOutcome.Message}";
+            return $"禁用插件的动作没有被明确拒绝（原因={disabledOutcome.Failure}）：{disabledOutcome.Message}";
         }
 
         instance.Entry.Enabled = true;
@@ -1627,9 +1630,10 @@ internal static class PluginSelfTest
         {
             failure = "缺少必填参数的探针被执行成功，参数校验未在插件调用前生效。";
         }
-        else if (string.IsNullOrWhiteSpace(outcome.Message) || !outcome.Message.Contains("参数不合法", StringComparison.Ordinal))
+        else if (outcome.Failure != PluginFailureKind.ValidationFailed)
         {
-            failure = $"插件虽然被加载，但没有进入预期的参数校验分支：{outcome.Message}";
+            // 同上：判据是结构化原因，不是 Message 里的中文。
+            failure = $"插件虽然被加载，但没有进入预期的参数校验分支（原因={outcome.Failure}）：{outcome.Message}";
         }
 
         PluginStopResult stopResult = PluginHost.DisableAsync(pluginId, PluginStopReason.SelfTest).GetAwaiter().GetResult();

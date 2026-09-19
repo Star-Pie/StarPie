@@ -8,6 +8,44 @@ using StarPie.Plugin;
 namespace WinPieGestures.Plugins;
 
 /// <summary>一次插件动作调用的结果。</summary>
+/// <summary>
+/// 插件动作没跑成的<b>原因类别</b>。
+/// <para>
+/// <b>为什么需要它</b>：在它出现之前，调用方要判断「失败在哪一步」只能拿
+/// <see cref="PluginExecuteOutcome.Message"/> 去 <c>Contains</c> 文案（自检里就有两处：
+/// <c>Contains("未启用")</c> 与 <c>Contains("参数不合法")</c>）。那种写法的寿命只到
+/// 「这条文案被接进 i18n」为止 —— 之后非中文语言下断言会静默失效，
+/// 而静默失效是本项目最不能接受的一类缺陷。文案可以翻译，判据不能。
+/// </para>
+/// <para>
+/// <b>它与 <see cref="PluginExecuteOutcome.Success"/> 不是一回事</b>：
+/// <c>Success=false</c> 只说明没成功，这里说明为什么。
+/// </para>
+/// </summary>
+internal enum PluginFailureKind
+{
+    /// <summary>没有失败（成功时保持这个值）。</summary>
+    None = 0,
+
+    /// <summary>插件已安装但未启用，或被停用/隔离策略拒用。</summary>
+    NotEnabled,
+
+    /// <summary>找不到注册的动作 —— 插件版本变了，配置里的 FullId 对不上。</summary>
+    ActionNotFound,
+
+    /// <summary>参数校验没通过（缺必填项，或格式不合法）。</summary>
+    ValidationFailed,
+
+    /// <summary>调用被取消 —— 插件正在停用，或调用租约没能取得。</summary>
+    CancelledByStop,
+
+    /// <summary>插件自己的执行逻辑出了问题（抛异常 / 超时 / 返回 null）。</summary>
+    PluginFailed,
+
+    /// <summary>宿主这一侧的错（有 bug，看日志）。</summary>
+    HostError,
+}
+
 internal readonly struct PluginExecuteOutcome
 {
     /// <summary>是否存在匹配的插件贡献点。false 时调用方应按「未知动作」处理。</summary>
@@ -19,6 +57,13 @@ internal readonly struct PluginExecuteOutcome
     public bool QueuedToBackground { get; init; }
 
     public string Message { get; init; }
+
+    /// <summary>
+    /// 失败原因类别 —— 供代码判断，<b>不要</b>拿 <see cref="Message"/> 的文案去做判据。
+    /// 与 <see cref="Success"/> 的关系：成功时恒为 <see cref="PluginFailureKind.None"/>；
+    /// 但 <c>Success=false</c> 不一定都填了它（新加的失败分支要记得填）。
+    /// </summary>
+    public PluginFailureKind Failure { get; init; }
 
     public static readonly PluginExecuteOutcome NotHandled = new() { Handled = false, Message = "" };
 }
@@ -65,6 +110,7 @@ internal static class PluginInvoker
             {
                 Handled = true,
                 Success = false,
+                Failure = PluginFailureKind.CancelledByStop,
                 Message = leaseError,
             };
         }
@@ -300,6 +346,7 @@ internal static class PluginInvoker
     {
         Handled = true,
         Success = false,
+        Failure = PluginFailureKind.CancelledByStop,
         Message = $"{registration.DisplayName} 因插件正在停用而取消。",
     };
 
@@ -372,6 +419,7 @@ internal static class PluginInvoker
         {
             Handled = true,
             Success = false,
+            Failure = PluginFailureKind.PluginFailed,
             Message = $"{registration.DisplayName} 执行失败：{message}",
         };
     }
