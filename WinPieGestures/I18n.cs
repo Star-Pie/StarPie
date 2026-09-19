@@ -6867,6 +6867,13 @@ public static class I18n
 			[LanguageCode.En] = "Uses Windows Native offline OCR engine by default (Zero latency · Privacy safe)",
 			[LanguageCode.Ja] = "Windowsローカル標準OCRオフラインエンジンを既定で使用（低遅延・高セキュリティ）"
 		};
+		dictionary["FocusOcrStatusFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前识别引擎: {0} · 点击右侧测试或更换接口",
+			[LanguageCode.ZhTw] = "當前識別引擎: {0} · 點擊右側測試或更換介面",
+			[LanguageCode.En] = "Active Engine: {0} · Click right to test or reconfigure",
+			[LanguageCode.Ja] = "現在の認識エンジン: {0} · 右側をクリックしてテストまたは設定"
+		};
 		dictionary["FocusOcrTestScreenshotBtnText"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "✂️ 立即测试截屏",

@@ -17,6 +17,7 @@ public partial class OcrSettingsDialog : Window
 		InitializeComponent();
 		AppThemeManager.ApplyTheme(this, AppThemeManager.CurrentEffectiveTheme);
 		ApplyLocalization();
+		LoadConfig();
 	}
 
 	private void Window_Loaded(object sender, RoutedEventArgs e)

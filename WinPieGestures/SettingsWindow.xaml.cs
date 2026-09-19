@@ -1532,19 +1532,22 @@ public partial class SettingsWindow : Window
 
 	private void UpdateOcrBadgeUi()
 	{
-		if (Tab4OcrProviderBadge == null) return;
+		if (Tab4OcrProviderBadge == null && FocusOcrStatusText == null) return;
 		OcrSettings cfg = ConfigManager.CurrentConfig?.OcrConfig ?? new OcrSettings();
 		string prov = cfg.Provider switch
 		{
-			"Ai" => $"🤖 AI 视觉大模型 ({cfg.AiModel})",
-			"Custom" => "🌐 自定义 HTTP 微服务",
-			"Cloud" => $"☁️ {cfg.CloudProvider} 云端",
-			_ => "🖥️ Windows 本地离线引擎"
+			"Ai" => string.IsNullOrWhiteSpace(cfg.AiModel) ? I18n.T("OcrProviderAi") : $"{I18n.T("OcrProviderAi")} ({cfg.AiModel})",
+			"Custom" => I18n.T("OcrProviderCustom"),
+			"Cloud" => $"☁️ {cfg.CloudProvider} Cloud OCR",
+			_ => $"🖥️ {I18n.T("OcrBadgeLocalEngine")}"
 		};
-		Tab4OcrProviderBadge.Text = prov;
+		if (Tab4OcrProviderBadge != null)
+		{
+			Tab4OcrProviderBadge.Text = prov;
+		}
 		if (FocusOcrStatusText != null)
 		{
-			FocusOcrStatusText.Text = $"当前识别引擎: {prov} · 点击右侧测试或更换接口";
+			FocusOcrStatusText.Text = string.Format(I18n.T("FocusOcrStatusFmt"), prov);
 		}
 	}
 
@@ -2453,10 +2456,7 @@ public partial class SettingsWindow : Window
 		{
 			OcrCardDescText.Text = I18n.T("OcrCardDesc");
 		}
-		if (Tab4OcrProviderBadge != null)
-		{
-			Tab4OcrProviderBadge.Text = I18n.T("OcrBadgeLocalEngine");
-		}
+		UpdateOcrBadgeUi();
 		if (Tab4TestOcrBtn != null)
 		{
 			Tab4TestOcrBtn.Content = I18n.T("BtnTestOcr");
