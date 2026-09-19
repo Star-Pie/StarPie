@@ -2855,6 +2855,212 @@ public partial class SettingsWindow : Window
 		if (PreviewResetViewBtn != null) PreviewResetViewBtn.ToolTip = I18n.T("TipPreviewResetView");
 		if (ResetDimensionsButton != null) ResetDimensionsButton.Content = I18n.T("BtnResetAllGeometry");
 
+
+		// --- Phase 3: Tab 2 (Gestures & Actions / 手势动作) ---
+		// Group 1: Layer Toolbar
+		if (Tab2LayerLabel != null) Tab2LayerLabel.Text = I18n.T("LayerLabel");
+		if (AddLayerBtn != null) { AddLayerBtn.Content = I18n.T("AddLayerBtnText"); AddLayerBtn.ToolTip = I18n.T("AddLayerBtnToolTip"); }
+		if (CopyLayerBtn != null) { CopyLayerBtn.Content = I18n.T("CopyLayerBtnText"); CopyLayerBtn.ToolTip = I18n.T("CopyLayerBtnToolTip"); }
+		if (RenameLayerBtn != null) RenameLayerBtn.ToolTip = I18n.T("RenameLayerBtnToolTip");
+		if (DeleteLayerBtn != null) DeleteLayerBtn.ToolTip = I18n.T("DeleteLayerBtnToolTip");
+		if (LayerSwitchTriggerLabel != null) LayerSwitchTriggerLabel.Text = I18n.T("LayerSwitchTriggerLabel");
+		if (LayerSwitchTriggerComboBox != null) LayerSwitchTriggerComboBox.ToolTip = I18n.T("LayerSwitchTriggerComboBoxToolTip");
+		if (LayerSwitchModeScrollItem != null) LayerSwitchModeScrollItem.Content = I18n.T("LayerSwitchModeScroll");
+		if (LayerSwitchModeTabItem != null) LayerSwitchModeTabItem.Content = I18n.T("LayerSwitchModeTab");
+		if (GesturesPageSubheader != null) GesturesPageSubheader.Text = I18n.T("GesturesPageSubheader");
+		if (MappingsViewModeCanvasRadio != null) MappingsViewModeCanvasRadio.Content = I18n.T("MappingsViewModeCanvasText");
+		if (MappingsViewModeListRadio != null) MappingsViewModeListRadio.Content = I18n.T("MappingsViewModeListText");
+
+		// Group 2: Profile Card
+		if (CurrentProfileLabel != null) CurrentProfileLabel.Text = I18n.T("CurrentProfileLabel");
+		if (AddProfileBtn2 != null) { AddProfileBtn2.Content = I18n.T("AddProfileBtnText"); AddProfileBtn2.ToolTip = I18n.T("AddProfileBtnToolTip"); }
+		if (AddProfileFromProgramMenuItem != null) AddProfileFromProgramMenuItem.Header = I18n.T("AddProfileFromProgram");
+		if (AddProfileCaptureWindowMenuItem != null) AddProfileCaptureWindowMenuItem.Header = I18n.T("AddProfileCaptureWindow");
+		if (AddProfileBrowseExeMenuItem != null) AddProfileBrowseExeMenuItem.Header = I18n.T("AddProfileBrowseExe");
+		if (AddProfileCustomMenuItem != null) AddProfileCustomMenuItem.Header = I18n.T("AddProfileCustom");
+		if (RenameProfileBtn2 != null) { RenameProfileBtn2.Content = I18n.T("RenameProfileBtnText"); RenameProfileBtn2.ToolTip = I18n.T("RenameProfileBtnToolTip"); }
+		if (DeleteProfileBtn2 != null) DeleteProfileBtn2.ToolTip = I18n.T("DeleteProfileBtnToolTip");
+		if (GlobalProfileHintText != null) GlobalProfileHintText.Text = I18n.T("GlobalProfileHint");
+		if (ProfileBoundProcessesLabel != null) ProfileBoundProcessesLabel.Text = I18n.T("ProfileBoundProcessesLabel");
+		if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.ToolTip = I18n.T("ProfileBoundProcessesToolTip");
+		if (ProfileCaptureWindowBtn != null) { ProfileCaptureWindowBtn.Content = I18n.T("ProfileCaptureWindowBtnText"); ProfileCaptureWindowBtn.ToolTip = I18n.T("ProfileCaptureWindowBtnToolTip"); }
+		if (ProfilePickProgramBtn != null) { ProfilePickProgramBtn.Content = I18n.T("ProfilePickProgramBtnText"); ProfilePickProgramBtn.ToolTip = I18n.T("ProfilePickProgramBtnToolTip"); }
+		if (ProfileBrowseExeBtn != null) { ProfileBrowseExeBtn.Content = I18n.T("ProfileBrowseExeBtnText"); ProfileBrowseExeBtn.ToolTip = I18n.T("ProfileBrowseExeBtnToolTip"); }
+		if (ProfileBoundProcessesHintText != null) ProfileBoundProcessesHintText.Text = I18n.T("ProfileBoundProcessesHint");
+		if (SectorCountLabel != null) SectorCountLabel.Text = I18n.T("SectorCountLabel");
+		if (MappingsSectorCount4Radio != null) MappingsSectorCount4Radio.Content = I18n.T("SectorCount4Text");
+		if (MappingsSectorCount8Radio != null) MappingsSectorCount8Radio.Content = I18n.T("SectorCount8Text");
+		if (MappingsSectorCount12Radio != null) MappingsSectorCount12Radio.Content = I18n.T("SectorCount12Text");
+		if (EnableGlobalInheritanceCheckBox != null) { EnableGlobalInheritanceCheckBox.Content = I18n.T("EnableGlobalInheritanceText"); EnableGlobalInheritanceCheckBox.ToolTip = I18n.T("EnableGlobalInheritanceToolTip"); }
+
+		// Group 3: Focus Editor Navigation & Center Core
+		if (FocusSlotInheritedBadge != null) FocusSlotInheritedBadge.ToolTip = I18n.T("FocusSlotInheritedBadgeToolTip");
+		if (FocusSlotInheritedBadgeText != null) FocusSlotInheritedBadgeText.Text = I18n.T("FocusSlotInheritedBadgeText");
+		if (FocusBackToParentBtn != null) FocusBackToParentBtn.Content = I18n.T("FocusBackToParentBtnText");
+		if (FocusPrevSlotBtn != null) FocusPrevSlotBtn.Content = I18n.T("FocusPrevSlotBtnText");
+		if (FocusNextSlotBtn != null) FocusNextSlotBtn.Content = I18n.T("FocusNextSlotBtnText");
+		if (FocusCenterCoreBtn != null) FocusCenterCoreBtn.Content = I18n.T("FocusCenterCoreBtnText");
+		if (EnableCenterActionCheckBox != null) EnableCenterActionCheckBox.Content = I18n.T("EnableCenterActionText");
+		if (CenterDeadzoneReleaseHintText != null) CenterDeadzoneReleaseHintText.Text = I18n.T("CenterDeadzoneReleaseHint");
+		if (CenterPresetsToggleBtn != null) CenterPresetsToggleBtn.Content = I18n.T("CenterPresetsToggleBtnText");
+		if (CenterInfoToggleBtn != null) CenterInfoToggleBtn.Content = I18n.T("CenterInfoToggleBtnText");
+		if (CenterPatternPriorityNoticeText != null) CenterPatternPriorityNoticeText.Text = I18n.T("CenterPatternPriorityNotice");
+		if (CenterPresetFillLabel != null) CenterPresetFillLabel.Text = I18n.T("CenterPresetFillLabel");
+		if (CenterPresetOpenSettingsBtn != null) CenterPresetOpenSettingsBtn.Content = I18n.T("CenterPresetSettings");
+		if (CenterPresetDesktopBtn != null) CenterPresetDesktopBtn.Content = I18n.T("CenterPresetDesktop");
+		if (CenterPresetLockBtn != null) CenterPresetLockBtn.Content = I18n.T("CenterPresetLock");
+		if (CenterPresetWebUrlBtn != null) CenterPresetWebUrlBtn.Content = I18n.T("CenterPresetWebUrl");
+		if (CenterPresetExplorerBtn != null) CenterPresetExplorerBtn.Content = I18n.T("CenterPresetExplorer");
+		if (CenterFlingExplanationText != null) CenterFlingExplanationText.Text = I18n.T("CenterFlingExplanation");
+		if (FocusTier2EmptyTitleText != null) FocusTier2EmptyTitleText.Text = I18n.T("FocusTier2EmptyTitle");
+		if (FocusTier2EmptySubtitleText != null) FocusTier2EmptySubtitleText.Text = I18n.T("FocusTier2EmptySubtitle");
+		if (FocusAddFirstSubActionBtn != null) FocusAddFirstSubActionBtn.Content = I18n.T("FocusAddFirstSubActionText");
+
+		// Group 4: Focus Editor Icon & Name
+		if (FocusPickIconButton != null) FocusPickIconButton.ToolTip = I18n.T("FocusPickIconButtonToolTip");
+		if (FocusIconLabel != null) FocusIconLabel.Text = I18n.T("FocusIconLabel");
+		if (FocusActionNameLabel != null) FocusActionNameLabel.Text = I18n.T("FocusActionNameLabel");
+
+		// Group 5: Focus Editor Action Types & Dynamic Panels
+		if (FocusActionTypeLabel != null) FocusActionTypeLabel.Text = I18n.T("FocusActionTypeLabel");
+		if (FocusRestoreInheritBtn != null) { FocusRestoreInheritBtn.Content = I18n.T("FocusRestoreInheritBtnText"); FocusRestoreInheritBtn.ToolTip = I18n.T("FocusRestoreInheritBtnToolTip"); }
+		if (FocusTestActionBtn != null) FocusTestActionBtn.Content = I18n.T("FocusTestActionBtnText");
+		if (TogglePauseHotkeysBtn != null) { TogglePauseHotkeysBtn.Content = I18n.T("TogglePauseHotkeysBtnText"); TogglePauseHotkeysBtn.ToolTip = I18n.T("TogglePauseHotkeysBtnToolTip"); }
+		if (FocusHotkeyBuilderBtn != null) FocusHotkeyBuilderBtn.Content = I18n.T("FocusHotkeyBuilderBtnText");
+		if (FocusLaunchPathTextBox != null) FocusLaunchPathTextBox.ToolTip = I18n.T("FocusLaunchPathToolTip");
+		if (FocusLaunchPickProgramBtn != null) { FocusLaunchPickProgramBtn.Content = I18n.T("FocusLaunchPickProgramBtnText"); FocusLaunchPickProgramBtn.ToolTip = I18n.T("FocusLaunchPickProgramBtnToolTip"); }
+		if (FocusLaunchCaptureWindowBtn != null) { FocusLaunchCaptureWindowBtn.Content = I18n.T("FocusLaunchCaptureWindowBtnText"); FocusLaunchCaptureWindowBtn.ToolTip = I18n.T("FocusLaunchCaptureWindowBtnToolTip"); }
+		if (FocusLaunchBrowseExeBtn != null) { FocusLaunchBrowseExeBtn.Content = I18n.T("FocusLaunchBrowseExeBtnText"); FocusLaunchBrowseExeBtn.ToolTip = I18n.T("FocusLaunchBrowseExeBtnToolTip"); }
+		if (FocusLaunchArgsLabel != null) FocusLaunchArgsLabel.Text = I18n.T("FocusLaunchArgsLabel");
+		if (FocusLaunchArgsTextBox != null) FocusLaunchArgsTextBox.ToolTip = I18n.T("FocusLaunchArgsToolTip");
+		if (FocusLaunchAsUserTitleText != null) FocusLaunchAsUserTitleText.Text = I18n.T("FocusLaunchAsUserTitle");
+		if (FocusLaunchAsUserSubtitleText != null) FocusLaunchAsUserSubtitleText.Text = I18n.T("FocusLaunchAsUserSubtitle");
+		if (FocusWebUrlTextBox != null) FocusWebUrlTextBox.ToolTip = I18n.T("FocusWebUrlToolTip");
+		if (FocusWebBrowserDefaultItem != null) FocusWebBrowserDefaultItem.Content = I18n.T("BrowserChoiceDefault");
+		if (FocusWebBrowserCustomItem != null) FocusWebBrowserCustomItem.Content = I18n.T("BrowserChoiceCustom");
+		if (FocusCustomBrowserPathTextBox != null) FocusCustomBrowserPathTextBox.ToolTip = I18n.T("FocusCustomBrowserPathToolTip");
+		if (FocusCustomBrowserBrowseBtn != null) FocusCustomBrowserBrowseBtn.Content = I18n.T("FocusCustomBrowserBrowseBtnText");
+		if (FocusWebPresetsLabel != null) FocusWebPresetsLabel.Text = I18n.T("FocusWebPresetsLabel");
+		if (FocusWebPresetBingBtn != null) FocusWebPresetBingBtn.Content = I18n.T("FocusWebPresetBingText");
+		if (FocusFolderPathTextBox != null) FocusFolderPathTextBox.ToolTip = I18n.T("FocusFolderPathToolTip");
+		if (FocusFolderBrowseBtn != null) FocusFolderBrowseBtn.Content = I18n.T("FocusFolderBrowseBtnText");
+		if (FocusFolderPresetsLabel != null) FocusFolderPresetsLabel.Text = I18n.T("FocusFolderPresetsLabel");
+		if (FocusFolderPresetThisPcBtn != null) { FocusFolderPresetThisPcBtn.Content = I18n.T("FocusFolderPresetThisPcText"); FocusFolderPresetThisPcBtn.ToolTip = I18n.T("FocusFolderPresetThisPcToolTip"); }
+		if (FocusFolderPresetRecycleBinBtn != null) { FocusFolderPresetRecycleBinBtn.Content = I18n.T("FocusFolderPresetRecycleBinText"); FocusFolderPresetRecycleBinBtn.ToolTip = I18n.T("FocusFolderPresetRecycleBinToolTip"); }
+		if (FocusFolderPresetDesktopBtn != null) FocusFolderPresetDesktopBtn.Content = I18n.T("FocusFolderPresetDesktopText");
+		if (FocusFolderPresetDownloadsBtn != null) FocusFolderPresetDownloadsBtn.Content = I18n.T("FocusFolderPresetDownloadsText");
+		if (FocusFolderPresetDocumentsBtn != null) FocusFolderPresetDocumentsBtn.Content = I18n.T("FocusFolderPresetDocumentsText");
+		if (FocusCommandTextBox != null) FocusCommandTextBox.ToolTip = I18n.T("FocusCommandToolTip");
+		if (FocusWindowSubModeLabel != null) FocusWindowSubModeLabel.Text = I18n.T("FocusWindowSubModeLabel");
+		if (FocusWindowModeTileItem != null) FocusWindowModeTileItem.Content = I18n.T("WindowModeTile");
+		if (FocusWindowModeCycleItem != null) FocusWindowModeCycleItem.Content = I18n.T("WindowModeCycle");
+		if (FocusWindowModeCycleReverseItem != null) FocusWindowModeCycleReverseItem.Content = I18n.T("WindowModeCycleReverse");
+		if (FocusWindowModeRestoreItem != null) FocusWindowModeRestoreItem.Content = I18n.T("WindowModeRestore");
+		if (FocusWindowModeTopmostItem != null) FocusWindowModeTopmostItem.Content = I18n.T("WindowModeTopmost");
+		if (FocusWindowModeMoveMonitorItem != null) FocusWindowModeMoveMonitorItem.Content = I18n.T("WindowModeMoveMonitor");
+		if (FocusWindowModeOpacityItem != null) FocusWindowModeOpacityItem.Content = I18n.T("WindowModeOpacity");
+		if (FocusWindowModeSwitchItem != null) FocusWindowModeSwitchItem.Content = I18n.T("WindowModeSwitch");
+		if (FocusPopulateTileSubActionsBtn != null) { FocusPopulateTileSubActionsBtn.Content = I18n.T("FocusPopulateTileSubActionsBtnText"); FocusPopulateTileSubActionsBtn.ToolTip = I18n.T("FocusPopulateTileSubActionsBtnToolTip"); }
+		if (FocusTileCommonLayoutsLabel != null) FocusTileCommonLayoutsLabel.Text = I18n.T("FocusTileCommonLayoutsLabel");
+		if (FocusTilePreset2LBtn != null) FocusTilePreset2LBtn.Content = I18n.T("FocusTilePreset2LText");
+		if (FocusTilePreset2TBtn != null) FocusTilePreset2TBtn.Content = I18n.T("FocusTilePreset2TText");
+		if (FocusTilePreset3L12Btn != null) FocusTilePreset3L12Btn.Content = I18n.T("FocusTilePreset3L12Text");
+		if (FocusTilePreset4GBtn != null) FocusTilePreset4GBtn.Content = I18n.T("FocusTilePreset4GText");
+		if (FocusTilePreset3RBtn != null) FocusTilePreset3RBtn.Content = I18n.T("FocusTilePreset3RText");
+		if (FocusTileCycleHintText != null) FocusTileCycleHintText.Text = I18n.T("FocusTileCycleHint");
+		if (FocusTileRestoreHintText != null) FocusTileRestoreHintText.Text = I18n.T("FocusTileRestoreHint");
+		if (FocusTileTopmostHintText != null) FocusTileTopmostHintText.Text = I18n.T("FocusTileTopmostHint");
+		if (FocusTileMoveMonitorHintText != null) FocusTileMoveMonitorHintText.Text = I18n.T("FocusTileMoveMonitorHint");
+		if (FocusTileOpacityLabel != null) FocusTileOpacityLabel.Text = I18n.T("FocusTileOpacityLabel");
+		if (FocusTileOpacityPresetsLabel != null) FocusTileOpacityPresetsLabel.Text = I18n.T("FocusTileOpacityPresetsLabel");
+		if (FocusOpacity70Btn != null) FocusOpacity70Btn.Content = I18n.T("FocusOpacity70Text");
+		if (FocusOpacity80Btn != null) FocusOpacity80Btn.Content = I18n.T("FocusOpacity80Text");
+		if (FocusOpacity90Btn != null) FocusOpacity90Btn.Content = I18n.T("FocusOpacity90Text");
+		if (FocusOpacity100Btn != null) FocusOpacity100Btn.Content = I18n.T("FocusOpacity100Text");
+		if (FocusSwitchWindowIndexLabel != null) FocusSwitchWindowIndexLabel.Text = I18n.T("FocusSwitchWindowIndexLabel");
+		if (FocusSwitchWindowIndexHintText != null) FocusSwitchWindowIndexHintText.Text = I18n.T("FocusSwitchWindowIndexHint");
+		if (FocusSwitchWindowQuickSelectLabel != null) FocusSwitchWindowQuickSelectLabel.Text = I18n.T("FocusSwitchWindowQuickSelectLabel");
+		if (FocusSwitchSlot1Btn != null) FocusSwitchSlot1Btn.Content = I18n.T("FocusSwitchSlot1Text");
+		if (FocusSwitchSlot2Btn != null) FocusSwitchSlot2Btn.Content = I18n.T("FocusSwitchSlot2Text");
+		if (FocusSwitchSlot3Btn != null) FocusSwitchSlot3Btn.Content = I18n.T("FocusSwitchSlot3Text");
+		if (FocusSwitchSlot4Btn != null) FocusSwitchSlot4Btn.Content = I18n.T("FocusSwitchSlot4Text");
+		if (FocusOcrTestScreenshotBtn != null) { FocusOcrTestScreenshotBtn.Content = I18n.T("FocusOcrTestScreenshotBtnText"); FocusOcrTestScreenshotBtn.ToolTip = I18n.T("FocusOcrTestScreenshotBtnToolTip"); }
+		if (FocusOcrConfigBtn != null) { FocusOcrConfigBtn.Content = I18n.T("FocusOcrConfigBtnText"); FocusOcrConfigBtn.ToolTip = I18n.T("FocusOcrConfigBtnToolTip"); }
+		if (FocusPickShellToolBtn != null) { FocusPickShellToolBtn.Content = I18n.T("FocusPickShellToolBtnText"); FocusPickShellToolBtn.ToolTip = I18n.T("FocusPickShellToolBtnToolTip"); }
+		if (FocusInheritIconLabel != null) FocusInheritIconLabel.Text = I18n.T("FocusInheritIconLabel");
+		if (FocusClearInheritedIconBtn != null) { FocusClearInheritedIconBtn.Content = I18n.T("FocusClearInheritedIconBtnText"); FocusClearInheritedIconBtn.ToolTip = I18n.T("FocusClearInheritedIconBtnToolTip"); }
+		if (FocusInheritIconPathTextBox != null) FocusInheritIconPathTextBox.ToolTip = I18n.T("FocusInheritIconPathToolTip");
+		if (FocusInheritIconPickProgramBtn != null) { FocusInheritIconPickProgramBtn.Content = I18n.T("FocusInheritIconPickProgramBtnText"); FocusInheritIconPickProgramBtn.ToolTip = I18n.T("FocusInheritIconPickProgramBtnToolTip"); }
+		if (FocusInheritIconCaptureWindowBtn != null) { FocusInheritIconCaptureWindowBtn.Content = I18n.T("FocusInheritIconCaptureWindowBtnText"); FocusInheritIconCaptureWindowBtn.ToolTip = I18n.T("FocusInheritIconCaptureWindowBtnToolTip"); }
+		if (FocusInheritIconBrowseBtn != null) { FocusInheritIconBrowseBtn.Content = I18n.T("FocusInheritIconBrowseBtnText"); FocusInheritIconBrowseBtn.ToolTip = I18n.T("FocusInheritIconBrowseBtnToolTip"); }
+		if (FocusSubActionsSectionLabel != null) FocusSubActionsSectionLabel.Text = I18n.T("FocusSubActionsSectionLabel");
+		if (FocusAddSubActionBtn != null) FocusAddSubActionBtn.Content = I18n.T("FocusAddSubActionBtnText");
+		if (FocusClearSubActionsBtn != null) FocusClearSubActionsBtn.Content = I18n.T("FocusClearSubActionsBtnText");
+		if (FocusUndoSubActionsBtn != null) { FocusUndoSubActionsBtn.Content = I18n.T("FocusUndoSubActionsBtnText"); FocusUndoSubActionsBtn.ToolTip = I18n.T("FocusUndoSubActionsBtnToolTip"); }
+
+		// Group 6: Batch Mode
+		if (FocusBatchBadgeText != null) FocusBatchBadgeText.Text = I18n.T("FocusBatchBadgeText");
+		if (FocusBatchTitleText != null) FocusBatchTitleText.Text = I18n.T("FocusBatchTitleText");
+		if (FocusBatchSubtitleText != null) FocusBatchSubtitleText.Text = I18n.T("FocusBatchSubtitleText");
+		if (FocusBatchExitBtn != null) FocusBatchExitBtn.Content = I18n.T("FocusBatchExitBtnText");
+		if (BatchLayoutModeHeaderLabel != null) BatchLayoutModeHeaderLabel.Text = I18n.T("BatchLayoutModeLabel");
+		if (BatchLayoutBothBtn != null) { BatchLayoutBothBtn.Content = I18n.T("BatchLayoutBothBtnText"); BatchLayoutBothBtn.ToolTip = I18n.T("BatchLayoutBothBtnToolTip"); }
+		if (BatchLayoutIconOnlyBtn != null) { BatchLayoutIconOnlyBtn.Content = I18n.T("BatchLayoutIconOnlyBtnText"); BatchLayoutIconOnlyBtn.ToolTip = I18n.T("BatchLayoutIconOnlyBtnToolTip"); }
+		if (BatchLayoutTextOnlyBtn != null) { BatchLayoutTextOnlyBtn.Content = I18n.T("BatchLayoutTextOnlyBtnText"); BatchLayoutTextOnlyBtn.ToolTip = I18n.T("BatchLayoutTextOnlyBtnToolTip"); }
+		if (BatchLayoutInheritBtn != null) { BatchLayoutInheritBtn.Content = I18n.T("BatchLayoutInheritBtnText"); BatchLayoutInheritBtn.ToolTip = I18n.T("BatchLayoutInheritBtnToolTip"); }
+		if (BatchFontSizeHeaderLabel != null) BatchFontSizeHeaderLabel.Text = I18n.T("BatchFontSizeLabel");
+		if (BatchIconSizeHeaderLabel != null) BatchIconSizeHeaderLabel.Text = I18n.T("BatchIconSizeLabel");
+		if (BatchTextColorHeaderLabel != null) BatchTextColorHeaderLabel.Text = I18n.T("BatchTextColorLabel");
+		if (BatchTextColorPaletteBtn != null) BatchTextColorPaletteBtn.ToolTip = I18n.T("BatchTextColorPaletteToolTip");
+		if (BatchTextColorEyedropperBtn != null) BatchTextColorEyedropperBtn.ToolTip = I18n.T("BatchTextColorEyedropperToolTip");
+		if (BatchOffsetXHeaderLabel != null) BatchOffsetXHeaderLabel.Text = I18n.T("BatchOffsetXLabel");
+		if (BatchOffsetYHeaderLabel != null) BatchOffsetYHeaderLabel.Text = I18n.T("BatchOffsetYLabel");
+		if (BatchResetCustomHintText != null) BatchResetCustomHintText.Text = I18n.T("BatchResetCustomHint");
+		if (BatchResetCustomBtn != null) BatchResetCustomBtn.Content = I18n.T("BatchResetCustomBtnText");
+
+		// Group 7: Splitter & Canvas
+		if (Tab2GridSplitter != null) Tab2GridSplitter.ToolTip = I18n.T("Tab2GridSplitterToolTip");
+		if (LiveCanvasHeaderTitleText != null) LiveCanvasHeaderTitleText.Text = I18n.T("LiveCanvasHeaderTitle");
+		if (MappingsLinkSubActionsBtn != null) MappingsLinkSubActionsBtn.ToolTip = I18n.T("MappingsLinkSubActionsToolTip");
+		if (MappingsFpsBadgeText != null) MappingsFpsBadgeText.Text = I18n.T("MappingsFpsBadgeText");
+		if (MappingsCanvasInstructionsText != null) MappingsCanvasInstructionsText.Text = I18n.T("MappingsCanvasInstructions");
+		if (MappingsTier1SegmentRadio != null) MappingsTier1SegmentRadio.Content = I18n.T("MappingsTier1SegmentText");
+		if (MappingsTier2SegmentRadio != null) MappingsTier2SegmentRadio.Content = I18n.T("MappingsTier2SegmentText");
+		if (MappingsShowTextToggleBtn != null) { MappingsShowTextToggleBtn.Content = I18n.T("MappingsShowTextToggleBtnText"); MappingsShowTextToggleBtn.ToolTip = I18n.T("MappingsShowTextToggleBtnToolTip"); }
+		if (MappingsZoomOutBtn != null) MappingsZoomOutBtn.ToolTip = I18n.T("MappingsZoomOutBtnToolTip");
+		if (MappingsZoomLabel != null) MappingsZoomLabel.ToolTip = I18n.T("MappingsZoomLabelToolTip");
+		if (MappingsZoomInBtn != null) MappingsZoomInBtn.ToolTip = I18n.T("MappingsZoomInBtnToolTip");
+		if (MappingsResetViewBtn != null) MappingsResetViewBtn.ToolTip = I18n.T("MappingsResetViewBtnToolTip");
+		if (MappingsSaveNoticeText != null) MappingsSaveNoticeText.Text = I18n.T("MappingsSaveNotice");
+
+		// Group 8: Compact List Headers
+		if (ListModeProfileHeaderTitle != null) ListModeProfileHeaderTitle.Text = I18n.T("ListModeProfileHeaderTitle");
+		if (ListModeProfileHeaderDesc != null) ListModeProfileHeaderDesc.Text = I18n.T("ListModeProfileHeaderDesc");
+		if (ListModeSectorHeaderTitle != null) ListModeSectorHeaderTitle.Text = I18n.T("ListModeSectorHeaderTitle");
+		if (ListModeSectorHeaderDesc != null) ListModeSectorHeaderDesc.Text = I18n.T("ListModeSectorHeaderDesc");
+		if (ListModeActionListHeaderTitle != null) ListModeActionListHeaderTitle.Text = I18n.T("ListModeActionListHeaderTitle");
+		if (ListModeActionListHeaderDesc1 != null) ListModeActionListHeaderDesc1.Text = I18n.T("ListModeActionListHeaderDesc1");
+		if (ListModeActionListHeaderDesc2 != null) ListModeActionListHeaderDesc2.Text = I18n.T("ListModeActionListHeaderDesc2");
+
+		// Group 10: Tile Settings Expander
+		if (TileExcludeMinimizedHintText != null) TileExcludeMinimizedHintText.Text = I18n.T("TileExcludeMinimizedHint");
+		if (TileCaptureExcludeProcessBtn != null) { TileCaptureExcludeProcessBtn.Content = I18n.T("TileCaptureExcludeProcessBtnText"); TileCaptureExcludeProcessBtn.ToolTip = I18n.T("TileCaptureExcludeProcessBtnToolTip"); }
+		if (TileMarginTopTextBox != null) TileMarginTopTextBox.ToolTip = I18n.T("TileMarginTopToolTip");
+		if (TileMarginBottomTextBox != null) TileMarginBottomTextBox.ToolTip = I18n.T("TileMarginBottomToolTip");
+		if (TileMarginLeftTextBox != null) TileMarginLeftTextBox.ToolTip = I18n.T("TileMarginLeftToolTip");
+		if (TileMarginRightTextBox != null) TileMarginRightTextBox.ToolTip = I18n.T("TileMarginRightToolTip");
+		if (TileGapTextBox != null) TileGapTextBox.ToolTip = I18n.T("TileGapToolTip");
+		if (TilePresetClassic4Btn != null) { TilePresetClassic4Btn.Content = I18n.T("TilePresetClassic4BtnText"); TilePresetClassic4Btn.ToolTip = I18n.T("TilePresetClassic4BtnToolTip"); }
+		if (TileMoveLayoutUpBtn != null) TileMoveLayoutUpBtn.ToolTip = I18n.T("TileMoveLayoutUpToolTip");
+		if (TileMoveLayoutDownBtn != null) TileMoveLayoutDownBtn.ToolTip = I18n.T("TileMoveLayoutDownToolTip");
+		if (TileSelectAllLayoutsBtn != null) { TileSelectAllLayoutsBtn.Content = I18n.T("TileSelectAllLayoutsBtnText"); TileSelectAllLayoutsBtn.ToolTip = I18n.T("TileSelectAllLayoutsBtnToolTip"); }
+		if (TileClearAllLayoutsBtn != null) { TileClearAllLayoutsBtn.Content = I18n.T("TileClearAllLayoutsBtnText"); TileClearAllLayoutsBtn.ToolTip = I18n.T("TileClearAllLayoutsBtnToolTip"); }
+
+		SetTileSettingsExpanded(TileSettingsContentPanel?.Visibility == Visibility.Visible);
+		UpdateLinkSubActionsButtonUi();
+		RefreshSlots();
+		RenderMappingsWheelPreview();
+
 		UpdateFocusEditorUi();
 		RenderLiveWheelPreview();
 
@@ -5224,13 +5430,13 @@ public partial class SettingsWindow : Window
 				// Center Core
 				if (FocusSlotBadgeBorder != null) FocusSlotBadgeBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 158, 11));
 				if (FocusSlotBadgeText != null) FocusSlotBadgeText.Text = "🎯";
-				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = "中心核心圆动作 (Center Core)";
-				if (FocusSlotTagText != null) FocusSlotTagText.Text = "核心圆";
+				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = I18n.T("FocusSlotCenterCoreTitle");
+				if (FocusSlotTagText != null) FocusSlotTagText.Text = I18n.T("FocusSlotCenterCoreTag");
 				if (FocusSlotSubtitleText != null)
 				{
 					FocusSlotSubtitleText.Text = isInherited
-						? $"💡 专属方案未配置中心动作，已自动继承全局方案「{displayItem.Name}」"
-						: "在开启外甩脱离取消时，鼠标在中心内径死区内松开即可触发";
+						? string.Format(I18n.T("FocusSlotCenterCoreSubtitleInherited"), displayItem.Name)
+						: I18n.T("FocusSlotCenterCoreSubtitleDefault");
 				}
 				if (FocusBackToParentBtn != null) FocusBackToParentBtn.Visibility = Visibility.Collapsed;
 				if (FocusCenterCoreBanner != null) FocusCenterCoreBanner.Visibility = Visibility.Visible;
@@ -5251,9 +5457,9 @@ public partial class SettingsWindow : Window
 				if (FocusSlotBadgeBorder != null) FocusSlotBadgeBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(168, 85, 247));
 				if (FocusSlotBadgeText != null) FocusSlotBadgeText.Text = "🌟";
 				string parentDir = (_selectedSlotIndex >= 0 && _selectedSlotIndex < directions.Length) ? directions[_selectedSlotIndex] : $"{_selectedSlotIndex + 1}";
-				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = $"扇区 {_selectedSlotIndex + 1} [{parentDir}] 级联子动作";
-				if (FocusSlotTagText != null) FocusSlotTagText.Text = "二级级联 (未添加)";
-				if (FocusSlotSubtitleText != null) FocusSlotSubtitleText.Text = "当前扇区尚未配置二级级联子动作，点击【➕ 添加第 1 个二级子动作】以创建";
+				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = string.Format(I18n.T("FocusSlotTier2EmptyTitleFormat"), _selectedSlotIndex + 1, parentDir);
+				if (FocusSlotTagText != null) FocusSlotTagText.Text = I18n.T("FocusSlotTier2EmptyTag");
+				if (FocusSlotSubtitleText != null) FocusSlotSubtitleText.Text = I18n.T("FocusSlotTier2EmptySubtitle");
 				if (FocusBackToParentBtn != null) FocusBackToParentBtn.Visibility = Visibility.Visible;
 				if (FocusCenterCoreBanner != null) FocusCenterCoreBanner.Visibility = Visibility.Collapsed;
 				if (CenterPatternPriorityTip != null) CenterPatternPriorityTip.Visibility = Visibility.Collapsed;
@@ -5271,9 +5477,9 @@ public partial class SettingsWindow : Window
 				if (FocusSlotBadgeBorder != null) FocusSlotBadgeBorder.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(168, 85, 247));
 				if (FocusSlotBadgeText != null) FocusSlotBadgeText.Text = "🌟";
 				string parentDir = (_selectedSlotIndex >= 0 && _selectedSlotIndex < directions.Length) ? directions[_selectedSlotIndex] : $"{_selectedSlotIndex + 1}";
-				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = $"二级动作 [{displayItem.Name}]";
-				if (FocusSlotTagText != null) FocusSlotTagText.Text = $"所属父级: 扇区 {_selectedSlotIndex + 1} [{parentDir}]";
-				if (FocusSlotSubtitleText != null) FocusSlotSubtitleText.Text = "向外划动二级扇区即可触发此动作";
+				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = string.Format(I18n.T("FocusSlotTier2SubActionTitleFormat"), displayItem.Name);
+				if (FocusSlotTagText != null) FocusSlotTagText.Text = string.Format(I18n.T("FocusSlotTier2SubActionTagFormat"), _selectedSlotIndex + 1, parentDir);
+				if (FocusSlotSubtitleText != null) FocusSlotSubtitleText.Text = I18n.T("FocusSlotTier2SubActionSubtitle");
 				if (FocusBackToParentBtn != null) FocusBackToParentBtn.Visibility = Visibility.Visible;
 				if (FocusCenterCoreBanner != null) FocusCenterCoreBanner.Visibility = Visibility.Collapsed;
 				if (CenterPatternPriorityTip != null) CenterPatternPriorityTip.Visibility = Visibility.Collapsed;
@@ -5289,13 +5495,13 @@ public partial class SettingsWindow : Window
 				string dirName = (_selectedSlotIndex >= 0 && _selectedSlotIndex < directions.Length) ? directions[_selectedSlotIndex] : $"{_selectedSlotIndex + 1}";
 				string badgeChar = dirName.Length > 0 ? dirName.Substring(0, 1) : $"{_selectedSlotIndex + 1}";
 				if (FocusSlotBadgeText != null) FocusSlotBadgeText.Text = badgeChar;
-				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = $"扇区 {_selectedSlotIndex + 1} [{dirName}]";
-				if (FocusSlotTagText != null) FocusSlotTagText.Text = "一级主扇区";
+				if (FocusSlotTitleText != null) FocusSlotTitleText.Text = string.Format(I18n.T("FocusSlotPrimaryTitleFormat"), _selectedSlotIndex + 1, dirName);
+				if (FocusSlotTagText != null) FocusSlotTagText.Text = I18n.T("FocusSlotPrimaryTag");
 				if (FocusSlotSubtitleText != null)
 				{
 					FocusSlotSubtitleText.Text = isInherited
-						? $"💡 专属方案未配置本槽位，已自动继承全局方案「{displayItem.Name}」"
-						: "点击右侧轮盘直接选中扇区，或在下方配置动作与级联子菜单";
+						? string.Format(I18n.T("FocusSlotPrimarySubtitleInherited"), displayItem.Name)
+						: I18n.T("FocusSlotPrimarySubtitleDefault");
 				}
 				if (FocusBackToParentBtn != null) FocusBackToParentBtn.Visibility = Visibility.Collapsed;
 				if (FocusCenterCoreBanner != null) FocusCenterCoreBanner.Visibility = Visibility.Collapsed;
@@ -5432,7 +5638,7 @@ public partial class SettingsWindow : Window
 					}
 					if (FocusInheritIconStatusLabel != null)
 					{
-						FocusInheritIconStatusLabel.Text = hasInherit ? $"已关联: {System.IO.Path.GetFileName(displayItem.InheritAppIconPath)}" : "未关联 (显示默认动作图标)";
+						FocusInheritIconStatusLabel.Text = hasInherit ? string.Format(I18n.T("FocusInheritIconLinkedFormat"), System.IO.Path.GetFileName(displayItem.InheritAppIconPath)) : I18n.T("FocusInheritIconUnlinked");
 						FocusInheritIconStatusLabel.Foreground = hasInherit ? System.Windows.Media.Brushes.MediumSpringGreen : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
 					}
 					if (FocusClearInheritedIconBtn != null)
@@ -5570,7 +5776,7 @@ public partial class SettingsWindow : Window
 
 		if (FocusSubActionsCountLabel != null)
 		{
-			FocusSubActionsCountLabel.Text = isUsingInheritedSubs ? $"({count} 项 - 全局继承)" : $"({count} 项)";
+			FocusSubActionsCountLabel.Text = isUsingInheritedSubs ? $"({count} 项 - 全局继承)" : string.Format(I18n.T("FocusSubActionsCountFormat"), count);
 		}
 
 		if (subActions == null || subActions.Count == 0)
@@ -8019,25 +8225,25 @@ public partial class SettingsWindow : Window
 			{
 				if (_selectedMultiSlots.Count > 1)
 				{
-					MappingsCurrentEditIndicator.Text = $"🎯 批量修改模式 (已多选 {_selectedMultiSlots.Count} 个扇区)";
+					MappingsCurrentEditIndicator.Text = string.Format(I18n.T("MappingsEditIndicatorBatch"), _selectedMultiSlots.Count);
 					MappingsCurrentEditIndicator.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(56, 189, 248));
 				}
 				else if (_selectedSlotIndex == -1)
 				{
-					MappingsCurrentEditIndicator.Text = "🎯 正在编辑: 中心核心圆动作";
+					MappingsCurrentEditIndicator.Text = I18n.T("MappingsEditIndicatorCenter");
 					MappingsCurrentEditIndicator.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 158, 11));
 				}
 				else if (_selectedSubActionIndex.HasValue)
 				{
 					ActionItem? parent = (profile.Actions != null && _selectedSlotIndex < profile.Actions.Count) ? profile.Actions[_selectedSlotIndex] : null;
 					string subName = (parent?.SubActions != null && _selectedSubActionIndex.Value < parent.SubActions.Count) ? parent.SubActions[_selectedSubActionIndex.Value].Name : "";
-					MappingsCurrentEditIndicator.Text = $"🌟 正在编辑: 二级动作 [{subName}]";
+					MappingsCurrentEditIndicator.Text = string.Format(I18n.T("MappingsEditIndicatorSub"), subName);
 					MappingsCurrentEditIndicator.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(168, 85, 247));
 				}
 				else
 				{
 					string dirName = (_selectedSlotIndex >= 0 && _selectedSlotIndex < directions.Length) ? directions[_selectedSlotIndex] : $"{_selectedSlotIndex + 1}";
-					MappingsCurrentEditIndicator.Text = $"🎯 正在编辑: 扇区 {_selectedSlotIndex + 1} [{dirName}]";
+					MappingsCurrentEditIndicator.Text = string.Format(I18n.T("MappingsEditIndicatorPrimary"), _selectedSlotIndex + 1, dirName);
 					MappingsCurrentEditIndicator.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(56, 189, 248));
 				}
 			}
@@ -8534,7 +8740,7 @@ public partial class SettingsWindow : Window
 		}
 		if (MappingsLinkSubActionsText != null)
 		{
-			MappingsLinkSubActionsText.Text = isLinked ? "一二级链接: 开启" : "一二级链接: 关闭";
+			MappingsLinkSubActionsText.Text = isLinked ? I18n.T("MappingsLinkSubActionsOn") : I18n.T("MappingsLinkSubActionsOff");
 			MappingsLinkSubActionsText.Foreground = (Brush)(TryFindResource(isLinked ? "AccentPrimaryBrush" : "TextSecondaryBrush") 
 				?? (isLinked ? Brushes.SkyBlue : Brushes.Gray));
 		}
@@ -8613,7 +8819,7 @@ public partial class SettingsWindow : Window
 		}
 		if (FocusBatchTagText != null)
 		{
-			FocusBatchTagText.Text = $"已多选 {count} 个扇区";
+			FocusBatchTagText.Text = string.Format(I18n.T("FocusBatchTagFormat"), count);
 		}
 		if (FocusBatchTitleText != null)
 		{
@@ -8626,7 +8832,7 @@ public partial class SettingsWindow : Window
 		}
 		if (MappingsCurrentEditIndicator != null)
 		{
-			MappingsCurrentEditIndicator.Text = $"🎯 批量修改模式 (已多选 {count} 个扇区)";
+			MappingsCurrentEditIndicator.Text = string.Format(I18n.T("MappingsEditIndicatorBatch"), count);
 			MappingsCurrentEditIndicator.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(56, 189, 248));
 		}
 		SyncBatchControlsFromFirstSelected();
@@ -18046,11 +18252,11 @@ public partial class SettingsWindow : Window
 		}
 		if (TileSettingsStatusText != null)
 		{
-			TileSettingsStatusText.Text = isExpanded ? "已展开" : "已收纳 (点击展开)";
+			TileSettingsStatusText.Text = isExpanded ? I18n.T("TileSettingsExpanded") : I18n.T("TileSettingsCollapsed");
 		}
 		if (TileSettingsToggleLabel != null)
 		{
-			TileSettingsToggleLabel.Text = isExpanded ? "收起配置" : "展开配置";
+			TileSettingsToggleLabel.Text = isExpanded ? I18n.T("TileSettingsToggleCollapse") : I18n.T("TileSettingsToggleExpand");
 		}
 		if (TileSettingsExpandArrow != null)
 		{

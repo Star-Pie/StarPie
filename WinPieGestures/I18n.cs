@@ -5132,6 +5132,1854 @@ public static class I18n
 			[LanguageCode.En] = "💡 Hold Ctrl and click to add/remove selection; options below will be batch applied to all selected sectors",
 			[LanguageCode.Ja] = "💡 Ctrlを押しながらクリックして選択を追加/削除。下のオプションは選択したすべてのセクターに一括適用されます"
 		};
+				dictionary["LayerLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌀 轮盘层:",
+			[LanguageCode.ZhTw] = "🌀 輪盤層:",
+			[LanguageCode.En] = "🌀 Wheel Layer:",
+			[LanguageCode.Ja] = "🌀 ホイールレイヤー:"
+		};
+		dictionary["AddLayerBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 加层",
+			[LanguageCode.ZhTw] = "➕ 加層",
+			[LanguageCode.En] = "➕ Add Layer",
+			[LanguageCode.Ja] = "➕ レイヤー追加"
+		};
+		dictionary["AddLayerBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新增一层独立轮盘配置（支持无限多层）",
+			[LanguageCode.ZhTw] = "新增一層獨立輪盤設定（支援無限多層）",
+			[LanguageCode.En] = "Add a new independent wheel layer (unlimited layers supported)",
+			[LanguageCode.Ja] = "新しい独立したホイールレイヤーを追加（無制限）"
+		};
+		dictionary["CopyLayerBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📑 复制",
+			[LanguageCode.ZhTw] = "📑 複製",
+			[LanguageCode.En] = "📑 Copy",
+			[LanguageCode.Ja] = "📑 複製"
+		};
+		dictionary["CopyLayerBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "复制当前层的所有扇区动作与中心核圆到新层",
+			[LanguageCode.ZhTw] = "複製目前層的所有扇區動作與中心核圓至新層",
+			[LanguageCode.En] = "Copy all sector actions and center core of current layer to a new layer",
+			[LanguageCode.Ja] = "現在のレイヤーの全セクターアクションと中心コアを新規レイヤーに複製"
+		};
+		dictionary["RenameLayerBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重命名当前轮盘层",
+			[LanguageCode.ZhTw] = "重新命名目前輪盤層",
+			[LanguageCode.En] = "Rename current wheel layer",
+			[LanguageCode.Ja] = "現在のホイールレイヤーの名前を変更"
+		};
+		dictionary["DeleteLayerBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "删除当前轮盘层（至少保留一层）",
+			[LanguageCode.ZhTw] = "刪除目前輪盤層（至少保留一層）",
+			[LanguageCode.En] = "Delete current wheel layer (at least one layer must be kept)",
+			[LanguageCode.Ja] = "現在のホイールレイヤーを削除（最低1レイヤー保持）"
+		};
+		dictionary["LayerSwitchTriggerLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 切换:",
+			[LanguageCode.ZhTw] = "🔄 切換:",
+			[LanguageCode.En] = "🔄 Switch:",
+			[LanguageCode.Ja] = "🔄 切替:"
+		};
+		dictionary["LayerSwitchTriggerComboBoxToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "多层轮盘切换方式：支持鼠标滚轮上下滑动切换或 Tab 键循环切换",
+			[LanguageCode.ZhTw] = "多層輪盤切換方式：支援滑鼠滾輪上下滾動切換或 Tab 鍵循環切換",
+			[LanguageCode.En] = "Multi-layer wheel switching method: switch via mouse wheel scroll or Tab key cycle",
+			[LanguageCode.Ja] = "マルチレイヤー切替方式：マウスホイールの上下スクロールまたはTabキー巡回切替"
+		};
+		dictionary["LayerSwitchModeScroll"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖱️ 滚轮切换",
+			[LanguageCode.ZhTw] = "🖱️ 滾輪切換",
+			[LanguageCode.En] = "🖱️ Wheel Scroll",
+			[LanguageCode.Ja] = "🖱️ マウスホイール"
+		};
+		dictionary["LayerSwitchModeTab"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⌨️ Tab 键切换",
+			[LanguageCode.ZhTw] = "⌨️ Tab 鍵切換",
+			[LanguageCode.En] = "⌨️ Tab Key",
+			[LanguageCode.Ja] = "⌨️ Tabキー"
+		};
+		dictionary["GesturesPageSubheader"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "支持针对不同前台应用程序设置专属的多向手势轮盘、按键动作、中心核圆与级联子动作。",
+			[LanguageCode.ZhTw] = "支援針對不同前景應用程式設定專屬的多向手勢輪盤、按鍵動作、中心核圓與級聯子動作。",
+			[LanguageCode.En] = "Configure dedicated radial gesture wheels, hotkeys, center core, and cascaded sub-actions for different foreground applications.",
+			[LanguageCode.Ja] = "前面の各アプリケーションに応じた専用の多方向ジェスチャーホイール、ショートカット、中心コア、カスケードサブアクションを設定できます。"
+		};
+		dictionary["MappingsViewModeCanvasText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 画布联动精调 (推荐)",
+			[LanguageCode.ZhTw] = "🎯 畫布聯動精調 (推薦)",
+			[LanguageCode.En] = "🎯 Interactive Canvas (Recommended)",
+			[LanguageCode.Ja] = "🎯 インタラクティブキャンバス（推奨）"
+		};
+		dictionary["MappingsViewModeListText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📋 紧凑全览列表",
+			[LanguageCode.ZhTw] = "📋 緊湊全覽清單",
+			[LanguageCode.En] = "📋 Compact Overview List",
+			[LanguageCode.Ja] = "📋 コンパクト一覧リスト"
+		};
+		dictionary["CurrentProfileLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前配置方案:",
+			[LanguageCode.ZhTw] = "目前設定方案:",
+			[LanguageCode.En] = "Current Profile:",
+			[LanguageCode.Ja] = "現在のプロファイル:"
+		};
+		dictionary["AddProfileBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 新增",
+			[LanguageCode.ZhTw] = "➕ 新增",
+			[LanguageCode.En] = "➕ Add",
+			[LanguageCode.Ja] = "➕ 追加"
+		};
+		dictionary["AddProfileBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "添加新的轮盘配置方案（点击可选择从程序添加、捕捉窗口或自定义命名）",
+			[LanguageCode.ZhTw] = "新增輪盤設定方案（點擊可選擇從程式新增、捕捉視窗或自訂命名）",
+			[LanguageCode.En] = "Add a new wheel profile (choose from installed app, window capture, or custom name)",
+			[LanguageCode.Ja] = "新しいプロファイルを追加（インストール済みアプリ、ウィンドウキャプチャ、またはカスタム名から選択）"
+		};
+		dictionary["AddProfileFromProgram"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 从已安装软件中添加 (专属程序配置)...",
+			[LanguageCode.ZhTw] = "🖥️ 從已安裝軟體中新增 (專屬程式設定)...",
+			[LanguageCode.En] = "🖥️ Add from Installed Programs (App Profile)...",
+			[LanguageCode.Ja] = "🖥️ インストール済みソフトから追加（専用プロファイル）..."
+		};
+		dictionary["AddProfileCaptureWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 捕捉运行中窗口添加 (专属程序配置)...",
+			[LanguageCode.ZhTw] = "🎯 捕捉執行中視窗新增 (專屬程式設定)...",
+			[LanguageCode.En] = "🎯 Capture Running Window (App Profile)...",
+			[LanguageCode.Ja] = "🎯 実行中ウィンドウからキャプチャ（専用プロファイル）..."
+		};
+		dictionary["AddProfileBrowseExe"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📁 浏览本地程序文件添加 (.exe / .lnk)...",
+			[LanguageCode.ZhTw] = "📁 瀏覽本機程式檔案新增 (.exe / .lnk)...",
+			[LanguageCode.En] = "📁 Browse Local Executable File (.exe / .lnk)...",
+			[LanguageCode.Ja] = "📁 ローカル実行ファイルを参照して追加 (.exe / .lnk)..."
+		};
+		dictionary["AddProfileCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✏️ 新建自定义名称方案 (工作流/模式配置)...",
+			[LanguageCode.ZhTw] = "✏️ 新建自訂名稱方案 (工作流程/模式設定)...",
+			[LanguageCode.En] = "✏️ Create Custom Named Profile (Workflow/Mode)...",
+			[LanguageCode.Ja] = "✏️ カスタム名プロファイルを新規作成（ワークフロー/モード）..."
+		};
+		dictionary["RenameProfileBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✏️ 重命名",
+			[LanguageCode.ZhTw] = "✏️ 重新命名",
+			[LanguageCode.En] = "✏️ Rename",
+			[LanguageCode.Ja] = "✏️ 名前変更"
+		};
+		dictionary["RenameProfileBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重命名选中的配置方案",
+			[LanguageCode.ZhTw] = "重新命名選取的設定方案",
+			[LanguageCode.En] = "Rename selected profile",
+			[LanguageCode.Ja] = "選択したプロファイルの名前を変更"
+		};
+		dictionary["DeleteProfileBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "删除当前选中的配置方案",
+			[LanguageCode.ZhTw] = "刪除目前選取的設定方案",
+			[LanguageCode.En] = "Delete selected profile",
+			[LanguageCode.Ja] = "選択したプロファイルを削除"
+		};
+		dictionary["GlobalProfileHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全局通用基础方案：当活动前台程序未配置专属轮盘时，手势将自动应用此全局方案。",
+			[LanguageCode.ZhTw] = "全域通用基礎方案：當使用中的前景程式未設定專屬輪盤時，手勢將自動套用此全域方案。",
+			[LanguageCode.En] = "Global default profile: when the active foreground app has no dedicated wheel, gestures will automatically use this global profile.",
+			[LanguageCode.Ja] = "グローバル基本プロファイル：アクティブな前面アプリに専用ホイールが設定されていない場合、自動的にこのグローバル設定が適用されます。"
+		};
+		dictionary["ProfileBoundProcessesLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 绑定程序情景:",
+			[LanguageCode.ZhTw] = "🎯 綁定程式情境:",
+			[LanguageCode.En] = "🎯 Bound Processes:",
+			[LanguageCode.Ja] = "🎯 バインド対象プロセス:"
+		};
+		dictionary["ProfileBoundProcessesToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标程序进程名（如 photoshop.exe 或 code.exe）。支持以英文逗号分隔多个进程。",
+			[LanguageCode.ZhTw] = "目標程式處理程序名稱（如 photoshop.exe 或 code.exe）。支援以半形逗號分隔多個處理程序。",
+			[LanguageCode.En] = "Target process name (e.g. photoshop.exe or code.exe). Multiple processes separated by commas.",
+			[LanguageCode.Ja] = "対象プロセス名（例: photoshop.exe または code.exe）。カンマ区切りで複数指定可能。"
+		};
+		dictionary["ProfileCaptureWindowBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 捕捉窗口...",
+			[LanguageCode.ZhTw] = "🎯 捕捉視窗...",
+			[LanguageCode.En] = "🎯 Capture Window...",
+			[LanguageCode.Ja] = "🎯 ウィンドウ捕捉..."
+		};
+		dictionary["ProfileCaptureWindowBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接点击桌面上运行中的目标软件窗口，自动识别并绑定其进程",
+			[LanguageCode.ZhTw] = "直接點擊桌面上執行中的目標軟體視窗，自動識別並綁定其處理程序",
+			[LanguageCode.En] = "Click any running window on desktop to automatically detect and bind its process",
+			[LanguageCode.Ja] = "デスクトップ上で実行中のウィンドウをクリックしてプロセスを自動識別・バインド"
+		};
+		dictionary["ProfilePickProgramBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 软件库...",
+			[LanguageCode.ZhTw] = "🖥️ 軟體庫...",
+			[LanguageCode.En] = "🖥️ App Library...",
+			[LanguageCode.Ja] = "🖥️ アプリ一覧..."
+		};
+		dictionary["ProfilePickProgramBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从已安装的软件列表中选择程序并绑定",
+			[LanguageCode.ZhTw] = "從已安裝的軟體清單中選擇程式並綁定",
+			[LanguageCode.En] = "Select an application from installed programs list to bind",
+			[LanguageCode.Ja] = "インストール済みアプリ一覧からプログラムを選択してバインド"
+		};
+		dictionary["ProfileBrowseExeBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📁 浏览...",
+			[LanguageCode.ZhTw] = "📁 瀏覽...",
+			[LanguageCode.En] = "📁 Browse...",
+			[LanguageCode.Ja] = "📁 参照..."
+		};
+		dictionary["ProfileBrowseExeBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "浏览选取本地可执行程序文件 (.exe / .lnk)",
+			[LanguageCode.ZhTw] = "瀏覽選取本機可執行程式檔案 (.exe / .lnk)",
+			[LanguageCode.En] = "Browse and select local executable file (.exe / .lnk)",
+			[LanguageCode.Ja] = "ローカルの実行可能ファイル (.exe / .lnk) を参照"
+		};
+		dictionary["ProfileBoundProcessesHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。",
+			[LanguageCode.ZhTw] = "💡 提示：在此程式處於前景使用中狀態時喚起輪盤將自動套用本方案。支援以半形逗號分隔多個處理程序名稱 (例如 chrome.exe, msedge.exe)。",
+			[LanguageCode.En] = "💡 Hint: When this program is active in foreground, invoking the wheel will automatically apply this profile. Multiple process names can be comma-separated (e.g. chrome.exe, msedge.exe).",
+			[LanguageCode.Ja] = "💡 ヒント：このプログラムが前面でアクティブな時にホイールを呼び出すと自動適用されます。カンマ区切りで複数のプロセス名を指定できます（例: chrome.exe, msedge.exe）。"
+		};
+		dictionary["SectorCountLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区方位数量:",
+			[LanguageCode.ZhTw] = "扇區方位數量:",
+			[LanguageCode.En] = "Sector Count:",
+			[LanguageCode.Ja] = "セクター数:"
+		};
+		dictionary["SectorCount4Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "4 键十字方位",
+			[LanguageCode.ZhTw] = "4 鍵十字方位",
+			[LanguageCode.En] = "4 Sectors (Cross)",
+			[LanguageCode.Ja] = "4方向（十字）"
+		};
+		dictionary["SectorCount8Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "8 键全向方位 (推荐)",
+			[LanguageCode.ZhTw] = "8 鍵全向方位 (推薦)",
+			[LanguageCode.En] = "8 Sectors (Omni, Recommended)",
+			[LanguageCode.Ja] = "8方向（全方位・推奨）"
+		};
+		dictionary["SectorCount12Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "12 键钟表方位",
+			[LanguageCode.ZhTw] = "12 鍵鐘錶方位",
+			[LanguageCode.En] = "12 Sectors (Clock)",
+			[LanguageCode.Ja] = "12方向（時計盤）"
+		};
+		dictionary["EnableGlobalInheritanceText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 继承全局方案未配置槽位",
+			[LanguageCode.ZhTw] = "🌐 繼承全域方案未設定位置",
+			[LanguageCode.En] = "🌐 Inherit Unset Slots from Global",
+			[LanguageCode.Ja] = "🌐 未設定スロットをグローバルから継承"
+		};
+		dictionary["EnableGlobalInheritanceToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当专属程序方案中的某个扇区未配置动作时，自动级联继承并执行全局方案对应方位的动作",
+			[LanguageCode.ZhTw] = "當專屬程式方案中的某個扇區未設定動作時，自動級聯繼承並執行全域方案對應方位的動作",
+			[LanguageCode.En] = "When a sector is not configured in an app profile, automatically inherit and execute the corresponding sector action from the global profile",
+			[LanguageCode.Ja] = "専用プロファイルで未設定のセクターがある場合、グローバル設定の同方向アクションを自動継承して実行します"
+		};
+		dictionary["FocusSlotInheritedBadgeToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前槽位在专属方案中未配置，已自动继承全局方案同向动作",
+			[LanguageCode.ZhTw] = "目前位置在專屬方案中未設定，已自動繼承全域方案同向動作",
+			[LanguageCode.En] = "Slot not configured in app profile; automatically inheriting action from global profile",
+			[LanguageCode.Ja] = "専用プロファイルで未設定のため、グローバル設定の同方向アクションを自動継承しています"
+		};
+		dictionary["FocusSlotInheritedBadgeText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 全局继承",
+			[LanguageCode.ZhTw] = "🌐 全域繼承",
+			[LanguageCode.En] = "🌐 Inherited",
+			[LanguageCode.Ja] = "🌐 継承済み"
+		};
+		dictionary["FocusBackToParentBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "◀ 返回父级扇区",
+			[LanguageCode.ZhTw] = "◀ 返回父級扇區",
+			[LanguageCode.En] = "◀ Back to Parent Sector",
+			[LanguageCode.Ja] = "◀ 親セクターに戻る"
+		};
+		dictionary["FocusPrevSlotBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "◀ 上一槽",
+			[LanguageCode.ZhTw] = "◀ 上一槽",
+			[LanguageCode.En] = "◀ Prev Slot",
+			[LanguageCode.Ja] = "◀ 前のスロット"
+		};
+		dictionary["FocusNextSlotBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下一槽 ▶",
+			[LanguageCode.ZhTw] = "下一槽 ▶",
+			[LanguageCode.En] = "Next Slot ▶",
+			[LanguageCode.Ja] = "次のスロット ▶"
+		};
+		dictionary["FocusCenterCoreBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 中心核圆",
+			[LanguageCode.ZhTw] = "🎯 中心核圓",
+			[LanguageCode.En] = "🎯 Center Core",
+			[LanguageCode.Ja] = "🎯 中心コア"
+		};
+		dictionary["EnableCenterActionText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启用中心核圆动作",
+			[LanguageCode.ZhTw] = "啟用中心核圓動作",
+			[LanguageCode.En] = "Enable Center Core Action",
+			[LanguageCode.Ja] = "中心コアアクションを有効化"
+		};
+		dictionary["CenterDeadzoneReleaseHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "死区松开触发 · 外甩脱离取消",
+			[LanguageCode.ZhTw] = "死區放開觸發 · 外甩脫離取消",
+			[LanguageCode.En] = "Release in Deadzone to Trigger · Fling Out to Cancel",
+			[LanguageCode.Ja] = "デッドゾーン解放でトリガー・外側フリックでキャンセル"
+		};
+		dictionary["CenterPresetsToggleBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 常用预设 ▾",
+			[LanguageCode.ZhTw] = "⚡ 常用預設 ▾",
+			[LanguageCode.En] = "⚡ Common Presets ▾",
+			[LanguageCode.Ja] = "⚡ 定番プリセット ▾"
+		};
+		dictionary["CenterInfoToggleBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "ℹ️ 说明 ▾",
+			[LanguageCode.ZhTw] = "ℹ️ 說明 ▾",
+			[LanguageCode.En] = "ℹ️ Info ▾",
+			[LanguageCode.Ja] = "ℹ️ 説明 ▾"
+		};
+		dictionary["CenterPatternPriorityNotice"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前已启用自定义中心图案，轮盘中心将优先展示该图案；在中心死区内松开鼠标仍会照常触发本功能。",
+			[LanguageCode.ZhTw] = "目前已啟用自訂中心圖案，輪盤中心將優先展示該圖案；在中心死區內放開滑鼠仍會照常觸發本功能。",
+			[LanguageCode.En] = "Custom center pattern is active and prioritized in display; releasing in deadzone will still trigger this action.",
+			[LanguageCode.Ja] = "カスタム中心パターンが有効な場合そちらが優先表示されますが、中心デッドゾーン内でマウスを離せば通常通り機能が実行されます。"
+		};
+		dictionary["CenterPresetFillLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一键填入:",
+			[LanguageCode.ZhTw] = "一鍵填入:",
+			[LanguageCode.En] = "Quick Fill:",
+			[LanguageCode.Ja] = "ワンクリック入力:"
+		};
+		dictionary["CenterPresetSettings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 控制台",
+			[LanguageCode.ZhTw] = "⚙️ 控制台",
+			[LanguageCode.En] = "⚙️ Settings Console",
+			[LanguageCode.Ja] = "⚙️ 設定画面"
+		};
+		dictionary["CenterPresetDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 显示桌面",
+			[LanguageCode.ZhTw] = "🖥️ 顯示桌面",
+			[LanguageCode.En] = "🖥️ Show Desktop",
+			[LanguageCode.Ja] = "🖥️ デスクトップ表示"
+		};
+		dictionary["CenterPresetLock"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔒 锁定屏幕",
+			[LanguageCode.ZhTw] = "🔒 鎖定螢幕",
+			[LanguageCode.En] = "🔒 Lock Screen",
+			[LanguageCode.Ja] = "🔒 画面ロック"
+		};
+		dictionary["CenterPresetWebUrl"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 常用网站",
+			[LanguageCode.ZhTw] = "🌐 常用網站",
+			[LanguageCode.En] = "🌐 Favorite Website",
+			[LanguageCode.Ja] = "🌐 お気に入りサイト"
+		};
+		dictionary["CenterPresetExplorer"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📁 资源管理",
+			[LanguageCode.ZhTw] = "📁 檔案總管",
+			[LanguageCode.En] = "📁 File Explorer",
+			[LanguageCode.Ja] = "📁 エクスプローラー"
+		};
+		dictionary["CenterFlingExplanation"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 外甩脱离机制说明：开启「外甩脱离取消」后，手势若在中心内径死区内释放光标，将直接触发在此配置的动作（如呼出控制台、启动工具或热键）；若需废弃/取消手势，直接向外快速甩出轮盘边缘即可。",
+			[LanguageCode.ZhTw] = "💡 外甩脫離機制說明：開啟「外甩脫離取消」後，手勢若在中心內徑死區內釋放游標，將直接觸發在此設定的動作（如呼出控制台、啟動工具或快速鍵）；若需廢棄/取消手勢，直接向外快速甩出輪盤邊緣即可。",
+			[LanguageCode.En] = "💡 Fling Cancellation Guide: When 'Fling Out to Cancel' is enabled, releasing the cursor inside the center deadzone triggers this action (e.g. open console, tool, hotkey); to cancel, simply fling the cursor outward past the wheel edge.",
+			[LanguageCode.Ja] = "💡 外側フリックキャンセル説明：「外側フリックキャンセル」有効時、中心デッドゾーン内でカーソルを離すと本機能（設定画面、ツール、ショートカットなど）が実行されます。ジェスチャーを中止したい場合は外側へ素早くフリックします。"
+		};
+		dictionary["FocusTier2EmptyTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌟 当前主扇区尚未配置二级级联子动作",
+			[LanguageCode.ZhTw] = "🌟 目前主扇區尚未設定二級級聯子動作",
+			[LanguageCode.En] = "🌟 No Tier-2 Sub-Actions Configured for this Sector",
+			[LanguageCode.Ja] = "🌟 このセクターには第2階層サブアクションが設定されていません"
+		};
+		dictionary["FocusTier2EmptySubtitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "向外划动此扇区时可展开二级子菜单。支持添加 1~4 个二级子动作。",
+			[LanguageCode.ZhTw] = "向外劃動此扇區時可展開二級子選單。支援新增 1~4 個二級子動作。",
+			[LanguageCode.En] = "Swipe outward from this sector to expand the sub-menu. Supports 1 to 4 sub-actions.",
+			[LanguageCode.Ja] = "外側にスワイプすると第2階層サブメニューが展開します。1〜4個のサブアクションを追加可能。"
+		};
+		dictionary["FocusAddFirstSubActionText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 添加第 1 个二级子动作",
+			[LanguageCode.ZhTw] = "➕ 新增第 1 個二級子動作",
+			[LanguageCode.En] = "➕ Add 1st Sub-Action",
+			[LanguageCode.Ja] = "➕ 最初のサブアクションを追加"
+		};
+		dictionary["FocusPickIconButtonToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击选取矢量图标或自定SVG",
+			[LanguageCode.ZhTw] = "點擊選取向量圖示或自訂SVG",
+			[LanguageCode.En] = "Click to select vector icon or custom SVG",
+			[LanguageCode.Ja] = "クリックしてベクターアイコンまたはカスタムSVGを選択"
+		};
+		dictionary["FocusIconLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "图标...",
+			[LanguageCode.ZhTw] = "圖示...",
+			[LanguageCode.En] = "Icon...",
+			[LanguageCode.Ja] = "アイコン..."
+		};
+		dictionary["FocusActionNameLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "轮盘显示文本:",
+			[LanguageCode.ZhTw] = "輪盤顯示文字:",
+			[LanguageCode.En] = "Wheel Label:",
+			[LanguageCode.Ja] = "ホイール表示テキスト:"
+		};
+		dictionary["FocusActionTypeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "触发动作类型:",
+			[LanguageCode.ZhTw] = "觸發動作類型:",
+			[LanguageCode.En] = "Action Type:",
+			[LanguageCode.Ja] = "トリガー動作タイプ:"
+		};
+		dictionary["FocusRestoreInheritBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 恢复继承全局",
+			[LanguageCode.ZhTw] = "🌐 恢復繼承全域",
+			[LanguageCode.En] = "🌐 Restore Global",
+			[LanguageCode.Ja] = "🌐 グローバル継承に戻す"
+		};
+		dictionary["FocusRestoreInheritBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清除当前槽位的专属覆写，恢复继承全局方案对应方位的动作",
+			[LanguageCode.ZhTw] = "清除目前位置的專屬覆寫，恢復繼承全域方案對應方位的動作",
+			[LanguageCode.En] = "Clear local override for this slot and restore inheritance from global profile",
+			[LanguageCode.Ja] = "このスロットの個別上書きを解除し、グローバル設定の継承に戻します"
+		};
+		dictionary["FocusTestActionBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "▶ 测试触发",
+			[LanguageCode.ZhTw] = "▶ 測試觸發",
+			[LanguageCode.En] = "▶ Test Trigger",
+			[LanguageCode.Ja] = "▶ テスト実行"
+		};
+		dictionary["TogglePauseHotkeysBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⏸️ 暂停全局热键",
+			[LanguageCode.ZhTw] = "⏸️ 暫停全域快速鍵",
+			[LanguageCode.En] = "⏸️ Pause Global Hotkeys",
+			[LanguageCode.Ja] = "⏸️ グローバルショートカットを一時停止"
+		};
+		dictionary["TogglePauseHotkeysBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "暂停桌面系统及其他软件的所有全局快捷键，在此独占录入快捷键而不会触发系统（如 Win+D、Alt+Tab、截屏等）或其他软件",
+			[LanguageCode.ZhTw] = "暫停桌面系統及其他軟體的所有全域快速鍵，在此獨佔錄入快速鍵而不會觸發系統（如 Win+D、Alt+Tab、截圖等）或其他軟體",
+			[LanguageCode.En] = "Pause all global shortcuts in Windows and other apps to record combinations without triggering system hotkeys (Win+D, Alt+Tab, etc.)",
+			[LanguageCode.Ja] = "システムや他アプリのグローバルショートカットを一時停止し、誤爆せずに安全に入力記録します"
+		};
+		dictionary["FocusHotkeyBuilderBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 拼装组合",
+			[LanguageCode.ZhTw] = "⚙️ 拼裝組合",
+			[LanguageCode.En] = "⚙️ Hotkey Builder",
+			[LanguageCode.Ja] = "⚙️ 組み合わせビルダー"
+		};
+		dictionary["FocusLaunchPathToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "应用程序路径",
+			[LanguageCode.ZhTw] = "應用程式路徑",
+			[LanguageCode.En] = "Application executable path",
+			[LanguageCode.Ja] = "アプリケーション実行パス"
+		};
+		dictionary["FocusLaunchPickProgramBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📦 软件库选择...",
+			[LanguageCode.ZhTw] = "📦 軟體庫選擇...",
+			[LanguageCode.En] = "📦 Select from Apps...",
+			[LanguageCode.Ja] = "📦 アプリ一覧から選択..."
+		};
+		dictionary["FocusLaunchPickProgramBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从已安装的软件、微软商店与开始菜单中模糊搜索选取",
+			[LanguageCode.ZhTw] = "從已安裝的軟體、微軟商店與開始功能表中模糊搜尋選取",
+			[LanguageCode.En] = "Search and select from installed apps, Microsoft Store, and Start Menu",
+			[LanguageCode.Ja] = "インストール済みアプリ、MSストア、スタートメニューから検索選択"
+		};
+		dictionary["FocusLaunchCaptureWindowBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 捕捉运行窗口...",
+			[LanguageCode.ZhTw] = "🎯 捕捉執行視窗...",
+			[LanguageCode.En] = "🎯 Capture Window...",
+			[LanguageCode.Ja] = "🎯 実行中ウィンドウを捕捉..."
+		};
+		dictionary["FocusLaunchCaptureWindowBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径",
+			[LanguageCode.ZhTw] = "直接探測並捕捉桌面上正在執行的使用中視窗與程式執行路徑",
+			[LanguageCode.En] = "Detect and capture running window and its executable path directly from desktop",
+			[LanguageCode.Ja] = "デスクトップ上で実行中のウィンドウと実行パスを検出して捕捉"
+		};
+		dictionary["FocusLaunchBrowseExeBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 浏览...",
+			[LanguageCode.ZhTw] = "📂 瀏覽...",
+			[LanguageCode.En] = "📂 Browse...",
+			[LanguageCode.Ja] = "📂 参照..."
+		};
+		dictionary["FocusLaunchBrowseExeBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "手动浏览可执行文件或快捷方式",
+			[LanguageCode.ZhTw] = "手動瀏覽可執行檔案或捷徑",
+			[LanguageCode.En] = "Browse executable file or shortcut manually",
+			[LanguageCode.Ja] = "実行ファイルやショートカットを手動で参照"
+		};
+		dictionary["FocusLaunchArgsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启动参数:",
+			[LanguageCode.ZhTw] = "啟動參數:",
+			[LanguageCode.En] = "Arguments:",
+			[LanguageCode.Ja] = "引数:"
+		};
+		dictionary["FocusLaunchArgsToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启动命令行参数 (可选)",
+			[LanguageCode.ZhTw] = "啟動命令列參數 (選填)",
+			[LanguageCode.En] = "Command line launch arguments (optional)",
+			[LanguageCode.Ja] = "コマンドライン引数（省略可能）"
+		};
+		dictionary["FocusLaunchAsUserTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🛡️ 以常规普通权限启动 (解决高权限下外部文件无法拖入目标软件的问题)",
+			[LanguageCode.ZhTw] = "🛡️ 以一般普通權限啟動 (解決高權限下外部檔案無法拖入目標軟體的問題)",
+			[LanguageCode.En] = "🛡️ Launch with Standard User Privileges (Fixes drag-and-drop file restrictions under elevated admin)",
+			[LanguageCode.Ja] = "🛡️ 標準ユーザー権限で起動（管理者権限下でのファイルドラッグ＆ドロップ制限を解決）"
+		};
+		dictionary["FocusLaunchAsUserSubtitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当 StarPie 以管理员权限运行时，通过 Windows Shell 降权启动目标程序，恢复文件拖拽交互支持。",
+			[LanguageCode.ZhTw] = "當 StarPie 以系統管理員權限執行時，透過 Windows Shell 降權啟動目標程式，恢復檔案拖曳互動支援。",
+			[LanguageCode.En] = "When StarPie runs as administrator, launches target app via Windows Shell de-elevation to restore drag-and-drop functionality.",
+			[LanguageCode.Ja] = "StarPieが管理者権限で動作している際、Windows Shell経由で通常権限起動しドラッグ＆ドロップ操作を復元します。"
+		};
+		dictionary["FocusWebUrlToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标网址，如 https://github.com",
+			[LanguageCode.ZhTw] = "目標網址，如 https://github.com",
+			[LanguageCode.En] = "Target URL, e.g. https://github.com",
+			[LanguageCode.Ja] = "対象URL（例: https://github.com）"
+		};
+		dictionary["BrowserChoiceDefault"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 系统默认",
+			[LanguageCode.ZhTw] = "🌐 系統預設",
+			[LanguageCode.En] = "🌐 System Default",
+			[LanguageCode.Ja] = "🌐 システム既定"
+		};
+		dictionary["BrowserChoiceCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义浏览器...",
+			[LanguageCode.ZhTw] = "自訂瀏覽器...",
+			[LanguageCode.En] = "Custom Browser...",
+			[LanguageCode.Ja] = "カスタムブラウザ..."
+		};
+		dictionary["FocusCustomBrowserPathToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义浏览器可执行文件路径",
+			[LanguageCode.ZhTw] = "自訂瀏覽器可執行檔案路徑",
+			[LanguageCode.En] = "Custom browser executable path",
+			[LanguageCode.Ja] = "カスタムブラウザ実行パス"
+		};
+		dictionary["FocusCustomBrowserBrowseBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 选择...",
+			[LanguageCode.ZhTw] = "📂 選擇...",
+			[LanguageCode.En] = "📂 Select...",
+			[LanguageCode.Ja] = "📂 選択..."
+		};
+		dictionary["FocusWebPresetsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "常用网址:",
+			[LanguageCode.ZhTw] = "常用網址:",
+			[LanguageCode.En] = "Favorite Sites:",
+			[LanguageCode.Ja] = "定番サイト:"
+		};
+		dictionary["FocusWebPresetBingText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Bing 搜索",
+			[LanguageCode.ZhTw] = "Bing 搜尋",
+			[LanguageCode.En] = "Bing Search",
+			[LanguageCode.Ja] = "Bing検索"
+		};
+		dictionary["FocusFolderPathToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "本地文件夹绝对路径",
+			[LanguageCode.ZhTw] = "本機資料夾絕對路徑",
+			[LanguageCode.En] = "Absolute local folder path",
+			[LanguageCode.Ja] = "ローカルフォルダの絶対パス"
+		};
+		dictionary["FocusFolderBrowseBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 浏览...",
+			[LanguageCode.ZhTw] = "📂 瀏覽...",
+			[LanguageCode.En] = "📂 Browse...",
+			[LanguageCode.Ja] = "📂 参照..."
+		};
+		dictionary["FocusFolderPresetsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "常用目录:",
+			[LanguageCode.ZhTw] = "常用目錄:",
+			[LanguageCode.En] = "Common Folders:",
+			[LanguageCode.Ja] = "定番フォルダ:"
+		};
+		dictionary["FocusFolderPresetThisPcText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💻 此电脑",
+			[LanguageCode.ZhTw] = "💻 本機",
+			[LanguageCode.En] = "💻 This PC",
+			[LanguageCode.Ja] = "💻 PC"
+		};
+		dictionary["FocusFolderPresetThisPcToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接打开系统「此电脑」命名空间",
+			[LanguageCode.ZhTw] = "直接開啟系統「本機」命名空間",
+			[LanguageCode.En] = "Open This PC namespace",
+			[LanguageCode.Ja] = "「PC」を開く"
+		};
+		dictionary["FocusFolderPresetRecycleBinText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🗑️ 回收站",
+			[LanguageCode.ZhTw] = "🗑️ 資源回收筒",
+			[LanguageCode.En] = "🗑️ Recycle Bin",
+			[LanguageCode.Ja] = "🗑️ ごみ箱"
+		};
+		dictionary["FocusFolderPresetRecycleBinToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接打开系统「回收站」命名空间",
+			[LanguageCode.ZhTw] = "直接開啟系統「資源回收筒」命名空間",
+			[LanguageCode.En] = "Open Recycle Bin namespace",
+			[LanguageCode.Ja] = "「ごみ箱」を開く"
+		};
+		dictionary["FocusFolderPresetDesktopText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 桌面",
+			[LanguageCode.ZhTw] = "🖥️ 桌面",
+			[LanguageCode.En] = "🖥️ Desktop",
+			[LanguageCode.Ja] = "🖥️ デスクトップ"
+		};
+		dictionary["FocusFolderPresetDownloadsText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📥 下载",
+			[LanguageCode.ZhTw] = "📥 下載",
+			[LanguageCode.En] = "📥 Downloads",
+			[LanguageCode.Ja] = "📥 ダウンロード"
+		};
+		dictionary["FocusFolderPresetDocumentsText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📄 文档",
+			[LanguageCode.ZhTw] = "📄 文件",
+			[LanguageCode.En] = "📄 Documents",
+			[LanguageCode.Ja] = "📄 ドキュメント"
+		};
+		dictionary["FocusCommandToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "要执行的命令行语句，如 ping -t 127.0.0.1",
+			[LanguageCode.ZhTw] = "要執行的命令列語句，如 ping -t 127.0.0.1",
+			[LanguageCode.En] = "Command line to execute, e.g. ping -t 127.0.0.1",
+			[LanguageCode.Ja] = "実行するコマンドライン（例: ping -t 127.0.0.1）"
+		};
+		dictionary["FocusWindowSubModeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "控制模式:",
+			[LanguageCode.ZhTw] = "控制模式:",
+			[LanguageCode.En] = "Control Mode:",
+			[LanguageCode.Ja] = "制御モード:"
+		};
+		dictionary["WindowModeTile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔲 平铺窗口排布",
+			[LanguageCode.ZhTw] = "🔲 平鋪視窗排布",
+			[LanguageCode.En] = "🔲 Tile Windows",
+			[LanguageCode.Ja] = "🔲 ウィンドウ整列"
+		};
+		dictionary["WindowModeCycle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 循环切换平铺",
+			[LanguageCode.ZhTw] = "🔄 循環切換平鋪",
+			[LanguageCode.En] = "🔄 Cycle Tile Layouts",
+			[LanguageCode.Ja] = "🔄 レイアウト巡回"
+		};
+		dictionary["WindowModeCycleReverse"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬅️ 反向循环平铺",
+			[LanguageCode.ZhTw] = "⬅️ 反向循環平鋪",
+			[LanguageCode.En] = "⬅️ Cycle Tile Reverse",
+			[LanguageCode.Ja] = "⬅️ 逆順レイアウト巡回"
+		};
+		dictionary["WindowModeRestore"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⏪ 还原平铺快照",
+			[LanguageCode.ZhTw] = "⏪ 還原平鋪快照",
+			[LanguageCode.En] = "⏪ Restore Tile Snapshot",
+			[LanguageCode.Ja] = "⏪ 整列スナップショット復元"
+		};
+		dictionary["WindowModeTopmost"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📌 窗口置顶 / 取消置顶",
+			[LanguageCode.ZhTw] = "📌 視窗最上層顯示 / 取消最上層",
+			[LanguageCode.En] = "📌 Toggle Window Always On Top",
+			[LanguageCode.Ja] = "📌 最前面表示 / 解除"
+		};
+		dictionary["WindowModeMoveMonitor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 移到下一显示器",
+			[LanguageCode.ZhTw] = "🖥️ 移至下一台螢幕",
+			[LanguageCode.En] = "🖥️ Move to Next Monitor",
+			[LanguageCode.Ja] = "🖥️ 次のディスプレイへ移動"
+		};
+		dictionary["WindowModeOpacity"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "👁️ 窗口透明度调节",
+			[LanguageCode.ZhTw] = "👁️ 視窗透明度調節",
+			[LanguageCode.En] = "👁️ Adjust Window Opacity",
+			[LanguageCode.Ja] = "👁️ ウィンドウ不透明度調整"
+		};
+		dictionary["WindowModeSwitch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🗂️ 任务栏切换 (Win+N)",
+			[LanguageCode.ZhTw] = "🗂️ 工作列切換 (Win+N)",
+			[LanguageCode.En] = "🗂️ Switch Taskbar App (Win+N)",
+			[LanguageCode.Ja] = "🗂️ タスクバー切替 (Win+N)"
+		};
+		dictionary["FocusPopulateTileSubActionsBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✨ 预设 8 布局二级轮盘",
+			[LanguageCode.ZhTw] = "✨ 預設 8 版面二級輪盤",
+			[LanguageCode.En] = "✨ Preset 8 Layouts Sub-Wheel",
+			[LanguageCode.Ja] = "✨ 8分割レイアウトをプリセット"
+		};
+		dictionary["FocusPopulateTileSubActionsBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自动在二级级联菜单中填充 8 种常用平铺布局",
+			[LanguageCode.ZhTw] = "自動在二級級聯選單中填入 8 種常用平鋪版面",
+			[LanguageCode.En] = "Automatically populate 8 common tiling layouts into the tier-2 sub-wheel",
+			[LanguageCode.Ja] = "第2階層サブホイールに8種類の定番ウィンドウ整列レイアウトを自動設定"
+		};
+		dictionary["FocusTileCommonLayoutsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "常用布局:",
+			[LanguageCode.ZhTw] = "常用版面:",
+			[LanguageCode.En] = "Common Layouts:",
+			[LanguageCode.Ja] = "定番レイアウト:"
+		};
+		dictionary["FocusTilePreset2LText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "左右对半 (2L)",
+			[LanguageCode.ZhTw] = "左右對半 (2L)",
+			[LanguageCode.En] = "Split Left-Right (2L)",
+			[LanguageCode.Ja] = "左右2分割 (2L)"
+		};
+		dictionary["FocusTilePreset2TText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上下对半 (2T)",
+			[LanguageCode.ZhTw] = "上下對半 (2T)",
+			[LanguageCode.En] = "Split Top-Bottom (2T)",
+			[LanguageCode.Ja] = "上下2分割 (2T)"
+		};
+		dictionary["FocusTilePreset3L12Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "左大列 (3L12)",
+			[LanguageCode.ZhTw] = "左大欄 (3L12)",
+			[LanguageCode.En] = "Left Large Column (3L12)",
+			[LanguageCode.Ja] = "左主列 (3L12)"
+		};
+		dictionary["FocusTilePreset4GText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "四宫格 (4G)",
+			[LanguageCode.ZhTw] = "四宮格 (4G)",
+			[LanguageCode.En] = "2x2 Grid (4G)",
+			[LanguageCode.Ja] = "4分割グリッド (4G)"
+		};
+		dictionary["FocusTilePreset3RText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "三等分 (3R)",
+			[LanguageCode.ZhTw] = "三等分 (3R)",
+			[LanguageCode.En] = "Three Columns (3R)",
+			[LanguageCode.Ja] = "3等分 (3R)"
+		};
+		dictionary["FocusTileCycleHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 触发手势时，自动在下方「平铺窗口设置」中勾选的排布列表中循环轮换下一个布局。",
+			[LanguageCode.ZhTw] = "💡 觸發手勢時，自動在下方「平鋪視窗設定」中勾選的版面清單中循環輪換下一個版面。",
+			[LanguageCode.En] = "💡 When triggered, automatically cycles to the next layout checked in 'Tiling Window Settings' below.",
+			[LanguageCode.Ja] = "💡 ジェスチャー実行時、下の「ウィンドウ整列設定」でチェックされたレイアウトを順次切り替えます。"
+		};
+		dictionary["FocusTileRestoreHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⏪ 还原所有窗口到平铺前的初始大小与屏幕坐标位置。",
+			[LanguageCode.ZhTw] = "⏪ 還原所有視窗至平鋪前的初始大小與螢幕座標位置。",
+			[LanguageCode.En] = "⏪ Restores all windows to their size and screen positions before tiling.",
+			[LanguageCode.Ja] = "⏪ すべてのウィンドウを整列前の元のサイズと位置に復元します。"
+		};
+		dictionary["FocusTileTopmostHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📌 将当前鼠标所在窗口或前台活动窗口固定置顶于最前（再次触发即可恢复）。",
+			[LanguageCode.ZhTw] = "📌 將目前滑鼠所在視窗或前景使用中視窗固定置頂於最前（再次觸發即可恢復）。",
+			[LanguageCode.En] = "📌 Pin window under cursor or active window always on top (trigger again to unpin).",
+			[LanguageCode.Ja] = "📌 カーソル位置またはアクティブなウィンドウを最前面に固定（再実行で解除）。"
+		};
+		dictionary["FocusTileMoveMonitorHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 将当前活动窗口移动至下一个物理显示器对应的工作区位置。",
+			[LanguageCode.ZhTw] = "🖥️ 將目前使用中視窗移動至下一台實體螢幕對應的工作區位置。",
+			[LanguageCode.En] = "🖥️ Move active window to corresponding workspace on the next physical monitor.",
+			[LanguageCode.Ja] = "🖥️ 現在のアクティブウィンドウを次のディスプレイの対応エリアに移動します。"
+		};
+		dictionary["FocusTileOpacityLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "不透明度:",
+			[LanguageCode.ZhTw] = "不透明度:",
+			[LanguageCode.En] = "Opacity:",
+			[LanguageCode.Ja] = "不透明度:"
+		};
+		dictionary["FocusTileOpacityPresetsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "快捷预设:",
+			[LanguageCode.ZhTw] = "捷徑預設:",
+			[LanguageCode.En] = "Quick Presets:",
+			[LanguageCode.Ja] = "クイックプリセット:"
+		};
+		dictionary["FocusOpacity70Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "70% 极淡",
+			[LanguageCode.ZhTw] = "70% 極淡",
+			[LanguageCode.En] = "70% Faint",
+			[LanguageCode.Ja] = "70% 薄い"
+		};
+		dictionary["FocusOpacity80Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "80% 查阅",
+			[LanguageCode.ZhTw] = "80% 查閱",
+			[LanguageCode.En] = "80% Glance",
+			[LanguageCode.Ja] = "80% 参照"
+		};
+		dictionary["FocusOpacity90Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "90% 透视",
+			[LanguageCode.ZhTw] = "90% 透視",
+			[LanguageCode.En] = "90% Translucent",
+			[LanguageCode.Ja] = "90% 半透明"
+		};
+		dictionary["FocusOpacity100Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "100% 不透明",
+			[LanguageCode.ZhTw] = "100% 不透明",
+			[LanguageCode.En] = "100% Opaque",
+			[LanguageCode.Ja] = "100% 不透明"
+		};
+		dictionary["FocusSwitchWindowIndexLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务栏序号 (1~20):",
+			[LanguageCode.ZhTw] = "工作列編號 (1~20):",
+			[LanguageCode.En] = "Taskbar Slot Index (1~20):",
+			[LanguageCode.Ja] = "タスクバー位置番号 (1〜20):"
+		};
+		dictionary["FocusSwitchWindowIndexHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "等同快捷键 Win + 序号",
+			[LanguageCode.ZhTw] = "等同快速鍵 Win + 編號",
+			[LanguageCode.En] = "Equivalent to Win + Number shortcut",
+			[LanguageCode.Ja] = "ショートカット Win + 数字 に相当"
+		};
+		dictionary["FocusSwitchWindowQuickSelectLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "快速选择:",
+			[LanguageCode.ZhTw] = "快速選擇:",
+			[LanguageCode.En] = "Quick Select:",
+			[LanguageCode.Ja] = "クイック選択:"
+		};
+		dictionary["FocusSwitchSlot1Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "#1 槽位",
+			[LanguageCode.ZhTw] = "#1 位置",
+			[LanguageCode.En] = "#1 Slot",
+			[LanguageCode.Ja] = "#1 スロット"
+		};
+		dictionary["FocusSwitchSlot2Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "#2 槽位",
+			[LanguageCode.ZhTw] = "#2 位置",
+			[LanguageCode.En] = "#2 Slot",
+			[LanguageCode.Ja] = "#2 スロット"
+		};
+		dictionary["FocusSwitchSlot3Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "#3 槽位",
+			[LanguageCode.ZhTw] = "#3 位置",
+			[LanguageCode.En] = "#3 Slot",
+			[LanguageCode.Ja] = "#3 スロット"
+		};
+		dictionary["FocusSwitchSlot4Text"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "#4 槽位",
+			[LanguageCode.ZhTw] = "#4 位置",
+			[LanguageCode.En] = "#4 Slot",
+			[LanguageCode.Ja] = "#4 スロット"
+		};
+		dictionary["FocusOcrDefaultStatus"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "默认调用 Windows 本地原生 OCR 离线引擎 (0延迟 · 隐私安全)",
+			[LanguageCode.ZhTw] = "預設呼叫 Windows 本機原生 OCR 離線引擎 (0延遲 · 隱私安全)",
+			[LanguageCode.En] = "Uses Windows Native offline OCR engine by default (Zero latency · Privacy safe)",
+			[LanguageCode.Ja] = "Windowsローカル標準OCRオフラインエンジンを既定で使用（低遅延・高セキュリティ）"
+		};
+		dictionary["FocusOcrTestScreenshotBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✂️ 立即测试截屏",
+			[LanguageCode.ZhTw] = "✂️ 立即測試截圖",
+			[LanguageCode.En] = "✂️ Test Snipping Now",
+			[LanguageCode.Ja] = "✂️ 今すぐキャプチャテスト"
+		};
+		dictionary["FocusOcrTestScreenshotBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "立即启动全屏框选测试 OCR 识别效果",
+			[LanguageCode.ZhTw] = "立即啟動全螢幕框選測試 OCR 辨識效果",
+			[LanguageCode.En] = "Launch fullscreen region selection immediately to test OCR",
+			[LanguageCode.Ja] = "全画面範囲選択を起動してOCR認識効果をテスト"
+		};
+		dictionary["FocusOcrConfigBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 接口配置",
+			[LanguageCode.ZhTw] = "⚙️ 介面設定",
+			[LanguageCode.En] = "⚙️ OCR Settings",
+			[LanguageCode.Ja] = "⚙️ OCRエンジン設定"
+		};
+		dictionary["FocusOcrConfigBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "配置 OCR 引擎（本地引擎 / AI 视觉大模型 / 自定义 HTTP）",
+			[LanguageCode.ZhTw] = "設定 OCR 引擎（本機引擎 / AI 視覺大模型 / 自訂 HTTP）",
+			[LanguageCode.En] = "Configure OCR engine (Windows Native / Vision AI / Custom HTTP)",
+			[LanguageCode.Ja] = "OCRエンジンの設定（ローカルエンジン / AI Vision / カスタムHTTP）"
+		};
+		dictionary["FocusShellToolDefaultTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未挑选功能 (点击右侧挑选)",
+			[LanguageCode.ZhTw] = "未挑選功能 (點擊右側挑選)",
+			[LanguageCode.En] = "No Tool Selected (Click right to choose)",
+			[LanguageCode.Ja] = "機能未選択（右側をクリックして選択）"
+		};
+		dictionary["FocusShellToolDefaultDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从系统原生增强与右键扩展中选择常用高频功能",
+			[LanguageCode.ZhTw] = "從系統原生增強與右鍵擴充中選擇常用高頻功能",
+			[LanguageCode.En] = "Choose common utilities from native Windows enhancements and context menu extensions",
+			[LanguageCode.Ja] = "Windows標準拡張機能や右クリックメニューから定番機能を選択"
+		};
+		dictionary["FocusPickShellToolBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 挑选功能...",
+			[LanguageCode.ZhTw] = "⚡ 挑選功能...",
+			[LanguageCode.En] = "⚡ Pick Tool...",
+			[LanguageCode.Ja] = "⚡ 機能を選択..."
+		};
+		dictionary["FocusPickShellToolBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开系统与右键工具库，支持搜索与分类",
+			[LanguageCode.ZhTw] = "開啟系統與右鍵工具庫，支援搜尋與分類",
+			[LanguageCode.En] = "Open system and context menu tools catalog with search and filters",
+			[LanguageCode.Ja] = "システムとコンテキストメニューのツール一覧を開く（検索・分類対応）"
+		};
+		dictionary["FocusInheritIconLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🏷️ 关联外部程序图标:",
+			[LanguageCode.ZhTw] = "🏷️ 關聯外部程式圖示:",
+			[LanguageCode.En] = "🏷️ Linked App Icon:",
+			[LanguageCode.Ja] = "🏷️ 外部アプリアイコン連携:"
+		};
+		dictionary["FocusInheritIconUnlinked"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未关联 (显示默认动作图标)",
+			[LanguageCode.ZhTw] = "未關聯 (顯示預設動作圖示)",
+			[LanguageCode.En] = "Unlinked (shows default action icon)",
+			[LanguageCode.Ja] = "未連携（標準アクションアイコン表示）"
+		};
+		dictionary["FocusInheritIconLinkedFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已关联: {0}",
+			[LanguageCode.ZhTw] = "已關聯: {0}",
+			[LanguageCode.En] = "Linked: {0}",
+			[LanguageCode.Ja] = "連携中: {0}"
+		};
+		dictionary["FocusClearInheritedIconBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✕ 清除关联",
+			[LanguageCode.ZhTw] = "✕ 清除關聯",
+			[LanguageCode.En] = "✕ Unlink",
+			[LanguageCode.Ja] = "✕ 連携解除"
+		};
+		dictionary["FocusClearInheritedIconBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清除关联的外部程序图标，恢复默认矢量图标",
+			[LanguageCode.ZhTw] = "清除關聯的外部程式圖示，恢復預設向量圖示",
+			[LanguageCode.En] = "Clear linked program icon and restore default vector icon",
+			[LanguageCode.Ja] = "関連付けられた外部アイコンを解除し、標準ベクターアイコンに戻す"
+		};
+		dictionary["FocusInheritIconPathToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关联提取图标的外部程序或快捷方式路径",
+			[LanguageCode.ZhTw] = "關聯擷取圖示的外部程式或捷徑路徑",
+			[LanguageCode.En] = "Path of external application or shortcut to extract icon from",
+			[LanguageCode.Ja] = "アイコンを抽出する外部アプリまたはショートカットのパス"
+		};
+		dictionary["FocusInheritIconPickProgramBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📦 软件库...",
+			[LanguageCode.ZhTw] = "📦 軟體庫...",
+			[LanguageCode.En] = "📦 App Library...",
+			[LanguageCode.Ja] = "📦 アプリ一覧..."
+		};
+		dictionary["FocusInheritIconPickProgramBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从已安装软件与微软商店应用中选取官方高清图标",
+			[LanguageCode.ZhTw] = "從已安裝軟體與微軟商店應用中選取官方高畫質圖示",
+			[LanguageCode.En] = "Select official high-res icon from installed software or Microsoft Store",
+			[LanguageCode.Ja] = "インストール済みアプリやMSストアから公式高解像度アイコンを選択"
+		};
+		dictionary["FocusInheritIconCaptureWindowBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 捕捉窗口...",
+			[LanguageCode.ZhTw] = "🎯 捕捉視窗...",
+			[LanguageCode.En] = "🎯 Capture Window...",
+			[LanguageCode.Ja] = "🎯 ウィンドウ捕捉..."
+		};
+		dictionary["FocusInheritIconCaptureWindowBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接捕捉桌面上运行中的软件并继承其图标",
+			[LanguageCode.ZhTw] = "直接捕捉桌面上執行中的軟體並繼承其圖示",
+			[LanguageCode.En] = "Capture running window from desktop to inherit its icon directly",
+			[LanguageCode.Ja] = "デスクトップで実行中のアプリをキャプチャしてアイコンを継承"
+		};
+		dictionary["FocusInheritIconBrowseBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 浏览...",
+			[LanguageCode.ZhTw] = "📂 瀏覽...",
+			[LanguageCode.En] = "📂 Browse...",
+			[LanguageCode.Ja] = "📂 参照..."
+		};
+		dictionary["FocusInheritIconBrowseBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "手动浏览提取 .exe / .ico / .lnk 图标",
+			[LanguageCode.ZhTw] = "手動瀏覽擷取 .exe / .ico / .lnk 圖示",
+			[LanguageCode.En] = "Browse file system to extract icon from .exe / .ico / .lnk",
+			[LanguageCode.Ja] = ".exe / .ico / .lnk ファイルを手動参照してアイコンを抽出"
+		};
+		dictionary["FocusSubActionsSectionLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级级联子动作:",
+			[LanguageCode.ZhTw] = "二級級聯子動作:",
+			[LanguageCode.En] = "Tier-2 Sub-Actions:",
+			[LanguageCode.Ja] = "第2階層サブアクション:"
+		};
+		dictionary["FocusSubActionsCountFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "({0} 项)",
+			[LanguageCode.ZhTw] = "({0} 項)",
+			[LanguageCode.En] = "({0} items)",
+			[LanguageCode.Ja] = "（{0}件）"
+		};
+		dictionary["FocusAddSubActionBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 添加二级动作",
+			[LanguageCode.ZhTw] = "➕ 新增二級動作",
+			[LanguageCode.En] = "➕ Add Sub-Action",
+			[LanguageCode.Ja] = "➕ サブアクション追加"
+		};
+		dictionary["FocusClearSubActionsBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🗑️ 清空",
+			[LanguageCode.ZhTw] = "🗑️ 清空",
+			[LanguageCode.En] = "🗑️ Clear",
+			[LanguageCode.Ja] = "🗑️ クリア"
+		};
+		dictionary["FocusUndoSubActionsBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "↩️ 撤销",
+			[LanguageCode.ZhTw] = "↩️ 復原",
+			[LanguageCode.En] = "↩️ Undo",
+			[LanguageCode.Ja] = "↩️ 元に戻す"
+		};
+		dictionary["FocusUndoSubActionsBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "撤销上一次的修改或清空，恢复二级动作列表",
+			[LanguageCode.ZhTw] = "復原上一次的修改或清空，恢復二級動作清單",
+			[LanguageCode.En] = "Undo the last modification or clear, restoring sub-action list",
+			[LanguageCode.Ja] = "直前の変更またはクリアを元に戻し、サブアクションリストを復元"
+		};
+		dictionary["FocusBatchBadgeText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "多选",
+			[LanguageCode.ZhTw] = "多選",
+			[LanguageCode.En] = "Multi",
+			[LanguageCode.Ja] = "複数選択"
+		};
+		dictionary["FocusBatchTitleText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "批量修改模式",
+			[LanguageCode.ZhTw] = "批次修改模式",
+			[LanguageCode.En] = "Batch Edit Mode",
+			[LanguageCode.Ja] = "一括編集モード"
+		};
+		dictionary["FocusBatchTagFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已多选 {0} 个扇区",
+			[LanguageCode.ZhTw] = "已多選 {0} 個扇區",
+			[LanguageCode.En] = "{0} sectors selected",
+			[LanguageCode.Ja] = "{0}個のセクターを選択中"
+		};
+		dictionary["FocusBatchSubtitleText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "在右侧画布中按住 Ctrl 点击可增减多选扇区；在此统一调整排版属性",
+			[LanguageCode.ZhTw] = "在右側畫布中按住 Ctrl 點擊可增減多選扇區；在此統一調整排版屬性",
+			[LanguageCode.En] = "Ctrl+Click sectors on the canvas to multi-select; adjust layout properties together here",
+			[LanguageCode.Ja] = "右側のキャンバスでCtrlキーを押しながらクリックして複数選択；レイアウトプロパティを一括調整"
+		};
+		dictionary["FocusBatchExitBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✕ 退出多选",
+			[LanguageCode.ZhTw] = "✕ 結束多選",
+			[LanguageCode.En] = "✕ Exit Multi-Select",
+			[LanguageCode.Ja] = "✕ 複数選択を終了"
+		};
+		dictionary["BatchLayoutModeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "批量切换排版模式:",
+			[LanguageCode.ZhTw] = "批次切換排版模式:",
+			[LanguageCode.En] = "Batch Layout Mode:",
+			[LanguageCode.Ja] = "一括レイアウトモード:"
+		};
+		dictionary["BatchLayoutBothBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖼️+🔤 图文",
+			[LanguageCode.ZhTw] = "🖼️+🔤 圖文",
+			[LanguageCode.En] = "🖼️+🔤 Both",
+			[LanguageCode.Ja] = "🖼️+🔤 画像＋文字"
+		};
+		dictionary["BatchLayoutBothBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将所有选中扇区批量设为图文并茂居中",
+			[LanguageCode.ZhTw] = "將所有選取扇區批次設為圖文並茂置中",
+			[LanguageCode.En] = "Set all selected sectors to show both icon and text centered",
+			[LanguageCode.Ja] = "選択した全セクターをアイコンと文字の両方表示に設定"
+		};
+		dictionary["BatchLayoutIconOnlyBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖼️ 仅图标",
+			[LanguageCode.ZhTw] = "🖼️ 僅圖示",
+			[LanguageCode.En] = "🖼️ Icon Only",
+			[LanguageCode.Ja] = "🖼️ アイコンのみ"
+		};
+		dictionary["BatchLayoutIconOnlyBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将所有选中扇区批量设为仅显示图标",
+			[LanguageCode.ZhTw] = "將所有選取扇區批次設為僅顯示圖示",
+			[LanguageCode.En] = "Set all selected sectors to show icon only",
+			[LanguageCode.Ja] = "選択した全セクターをアイコンのみ表示に設定"
+		};
+		dictionary["BatchLayoutTextOnlyBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 仅文字",
+			[LanguageCode.ZhTw] = "🔤 僅文字",
+			[LanguageCode.En] = "🔤 Text Only",
+			[LanguageCode.Ja] = "🔤 文字のみ"
+		};
+		dictionary["BatchLayoutTextOnlyBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将所有选中扇区批量设为仅显示文字",
+			[LanguageCode.ZhTw] = "將所有選取扇區批次設為僅顯示文字",
+			[LanguageCode.En] = "Set all selected sectors to show text only",
+			[LanguageCode.Ja] = "選択した全セクターを文字のみ表示に設定"
+		};
+		dictionary["BatchLayoutInheritBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 继承全局",
+			[LanguageCode.ZhTw] = "🌐 繼承全域",
+			[LanguageCode.En] = "🌐 Inherit Global",
+			[LanguageCode.Ja] = "🌐 グローバル継承"
+		};
+		dictionary["BatchLayoutInheritBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将所有选中扇区排版模式批量恢复继承全局",
+			[LanguageCode.ZhTw] = "將所有選取扇區排版模式批次恢復繼承全域",
+			[LanguageCode.En] = "Reset layout mode of all selected sectors to inherit global",
+			[LanguageCode.Ja] = "選択した全セクターのレイアウトをグローバル設定の継承にリセット"
+		};
+		dictionary["BatchFontSizeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文字字号大小:",
+			[LanguageCode.ZhTw] = "文字字型大小:",
+			[LanguageCode.En] = "Font Size:",
+			[LanguageCode.Ja] = "フォントサイズ:"
+		};
+		dictionary["BatchIconSizeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "图标尺寸大小:",
+			[LanguageCode.ZhTw] = "圖示尺寸大小:",
+			[LanguageCode.En] = "Icon Size:",
+			[LanguageCode.Ja] = "アイコンサイズ:"
+		};
+		dictionary["BatchTextColorLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "批量文字颜色:",
+			[LanguageCode.ZhTw] = "批次文字顏色:",
+			[LanguageCode.En] = "Text Color:",
+			[LanguageCode.Ja] = "テキストカラー:"
+		};
+		dictionary["BatchTextColorPaletteToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开调色板选取颜色",
+			[LanguageCode.ZhTw] = "開啟調色盤選取顏色",
+			[LanguageCode.En] = "Open color palette",
+			[LanguageCode.Ja] = "カラーパレットを開く"
+		};
+		dictionary["BatchTextColorEyedropperToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从屏幕任意位置吸取颜色",
+			[LanguageCode.ZhTw] = "從螢幕任意位置吸取顏色",
+			[LanguageCode.En] = "Pick color from anywhere on screen",
+			[LanguageCode.Ja] = "画面上の任意の位置から色を抽出"
+		};
+		dictionary["BatchOffsetXLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "水平 X 偏移:",
+			[LanguageCode.ZhTw] = "水平 X 偏移:",
+			[LanguageCode.En] = "Horizontal X Offset:",
+			[LanguageCode.Ja] = "水平Xオフセット:"
+		};
+		dictionary["BatchOffsetYLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "垂直 Y 偏移:",
+			[LanguageCode.ZhTw] = "垂直 Y 偏移:",
+			[LanguageCode.En] = "Vertical Y Offset:",
+			[LanguageCode.Ja] = "垂直Yオフセット:"
+		};
+		dictionary["BatchResetCustomHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 清除所有选中槽位的独立定制，恢复跟随全局统一外观",
+			[LanguageCode.ZhTw] = "💡 清除所有選取位置的獨立自訂，恢復跟隨全域統一外觀",
+			[LanguageCode.En] = "💡 Clear custom styling for all selected slots and restore uniform global appearance",
+			[LanguageCode.Ja] = "💡 選択したすべてのスロットの個別カスタマイズを解除し、グローバルの統一デザインに戻します"
+		};
+		dictionary["BatchResetCustomBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 清除自定义，恢复跟随全局统一",
+			[LanguageCode.ZhTw] = "🔄 清除自訂，恢復跟隨全域統一",
+			[LanguageCode.En] = "🔄 Reset Custom Styling, Follow Global",
+			[LanguageCode.Ja] = "🔄 個別設定を解除しグローバルに統一"
+		};
+		dictionary["Tab2GridSplitterToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "拖拽调整画布与配置区比例，双击恢复默认比例",
+			[LanguageCode.ZhTw] = "拖曳調整畫布與設定區比例，按兩下恢復預設比例",
+			[LanguageCode.En] = "Drag to adjust canvas and settings ratio, double-click to reset",
+			[LanguageCode.Ja] = "ドラッグでキャンバスと設定エリアの比率を調整、ダブルクリックでリセット"
+		};
+		dictionary["LiveCanvasHeaderTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "实时交互画布",
+			[LanguageCode.ZhTw] = "即時互動畫布",
+			[LanguageCode.En] = "Interactive Wheel Canvas",
+			[LanguageCode.Ja] = "インタラクティブキャンバス"
+		};
+		dictionary["MappingsLinkSubActionsToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "开启时：拖拽一级扇区将连同绑定的二级子轮盘一起对调换位\n关闭时：仅对调一级扇区主动作，保留各方位现存的二级子菜单",
+			[LanguageCode.ZhTw] = "開啟時：拖曳一級扇區將連同綁定的二級子輪盤一起對調換位\n關閉時：僅對調一級扇區主動作，保留各方位現存的二級子選單",
+			[LanguageCode.En] = "When enabled: dragging a primary sector will swap its bound tier-2 sub-wheel together\nWhen disabled: only swaps the primary sector action, keeping existing sub-menus in place",
+			[LanguageCode.Ja] = "有効時：第1階層セクターをドラッグすると紐づく第2階層サブホイールも一緒に位置交換\n無効時：第1階層のアクションのみを入れ替え、各方向のサブメニューは保持"
+		};
+		dictionary["MappingsLinkSubActionsOn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一二级链接: 开启",
+			[LanguageCode.ZhTw] = "一二級連結: 開啟",
+			[LanguageCode.En] = "Link Sub-Wheels: ON",
+			[LanguageCode.Ja] = "サブホイール連動: 有効"
+		};
+		dictionary["MappingsLinkSubActionsOff"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一二级链接: 关闭",
+			[LanguageCode.ZhTw] = "一二級連結: 關閉",
+			[LanguageCode.En] = "Link Sub-Wheels: OFF",
+			[LanguageCode.Ja] = "サブホイール連動: 無効"
+		};
+		dictionary["MappingsFpsBadgeText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "60FPS 同步",
+			[LanguageCode.ZhTw] = "60FPS 同步",
+			[LanguageCode.En] = "60FPS Sync",
+			[LanguageCode.Ja] = "60FPS 同期"
+		};
+		dictionary["MappingsCanvasInstructions"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 点击内圈选一级扇区，点击外环选二级动作，点击中心选核圆；按住拖动可对调功能位置！",
+			[LanguageCode.ZhTw] = "💡 點擊內圈選一級扇區，點擊外環選二級動作，點擊中心選核圓；按住拖曳可對調功能位置！",
+			[LanguageCode.En] = "💡 Click inner ring for sector, outer ring for sub-action, center for core; drag to swap positions!",
+			[LanguageCode.Ja] = "💡 内側クリックで主セクター、外側でサブアクション、中央でコアを選択；ドラッグで位置を入れ替え！"
+		};
+		dictionary["MappingsTier1SegmentText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔘 一级主轮盘",
+			[LanguageCode.ZhTw] = "🔘 一級主輪盤",
+			[LanguageCode.En] = "🔘 Tier-1 Primary Wheel",
+			[LanguageCode.Ja] = "🔘 第1階層メインホイール"
+		};
+		dictionary["MappingsTier2SegmentText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌟 二级级联",
+			[LanguageCode.ZhTw] = "🌟 二級級聯",
+			[LanguageCode.En] = "🌟 Tier-2 Cascaded",
+			[LanguageCode.Ja] = "🌟 第2階層カスケード"
+		};
+		dictionary["MappingsShowTextToggleBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔤 图文",
+			[LanguageCode.ZhTw] = "🔤 圖文",
+			[LanguageCode.En] = "🔤 Text",
+			[LanguageCode.Ja] = "🔤 文字"
+		};
+		dictionary["MappingsShowTextToggleBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "开启/关闭动作名称复合展示（开启后在扇区中直观渲染动作名称与图标，让拖拽对调一目了然）",
+			[LanguageCode.ZhTw] = "開啟/關閉動作名稱複合展示（開啟後在扇區中直觀轉譯動作名稱與圖示，讓拖曳對調一目了然）",
+			[LanguageCode.En] = "Toggle compound display of action names (renders text and icons inside sectors for intuitive dragging)",
+			[LanguageCode.Ja] = "アクション名の複合表示のオン/オフ（セクター内に名前とアイコンを表示し、ドラッグ交換を直感的に）"
+		};
+		dictionary["MappingsZoomOutBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "缩小视图",
+			[LanguageCode.ZhTw] = "縮小檢視",
+			[LanguageCode.En] = "Zoom Out",
+			[LanguageCode.Ja] = "縮小"
+		};
+		dictionary["MappingsZoomLabelToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击复位为 100%",
+			[LanguageCode.ZhTw] = "點擊重設為 100%",
+			[LanguageCode.En] = "Click to reset zoom to 100%",
+			[LanguageCode.Ja] = "クリックで100%にリセット"
+		};
+		dictionary["MappingsZoomInBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "放大视图",
+			[LanguageCode.ZhTw] = "放大檢視",
+			[LanguageCode.En] = "Zoom In",
+			[LanguageCode.Ja] = "拡大"
+		};
+		dictionary["MappingsResetViewBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重置视图",
+			[LanguageCode.ZhTw] = "重設檢視",
+			[LanguageCode.En] = "Reset View",
+			[LanguageCode.Ja] = "ビューをリセット"
+		};
+		dictionary["MappingsSaveNotice"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 修改在内存中即时生效，点击主窗口右下角【保存并生效】持久化至硬盘。",
+			[LanguageCode.ZhTw] = "💡 修改在記憶體中即時生效，點擊主視窗右下角【儲存並生效】持久化至硬碟。",
+			[LanguageCode.En] = "💡 Changes take effect immediately in memory; click [Save & Apply] at the bottom-right to persist to disk.",
+			[LanguageCode.Ja] = "💡 変更はメモリ上で即時反映されます。右下の【保存して適用】をクリックして永続化してください。"
+		};
+		dictionary["ListModeProfileHeaderTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前配置方案",
+			[LanguageCode.ZhTw] = "目前設定方案",
+			[LanguageCode.En] = "Current Profile",
+			[LanguageCode.Ja] = "現在のプロファイル"
+		};
+		dictionary["ListModeProfileHeaderDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择或新建针对特定程序（如 Chrome、VS Code）或特定工作流的轮盘配置方案（支持双击重命名）。",
+			[LanguageCode.ZhTw] = "選擇或新建針對特定程式（如 Chrome、VS Code）或特定工作流程的輪盤設定方案（支援按兩下重新命名）。",
+			[LanguageCode.En] = "Select or create wheel profiles for specific programs (like Chrome, VS Code) or workflows (double-click to rename).",
+			[LanguageCode.Ja] = "特定アプリ（Chrome、VS Codeなど）やワークフロー用のプロファイルを選択または作成（ダブルクリックで名前変更）。"
+		};
+		dictionary["ListModeSectorHeaderTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区方位数量",
+			[LanguageCode.ZhTw] = "扇區方位數量",
+			[LanguageCode.En] = "Sector Count",
+			[LanguageCode.Ja] = "セクター分割数"
+		};
+		dictionary["ListModeSectorHeaderDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "切换手势轮盘的切分数量。4 键最快最不易误触，8 键为标准全能方位，12 键适合功能密集场景。",
+			[LanguageCode.ZhTw] = "切換手勢輪盤的劃分數量。4 鍵最快最不易誤觸，8 鍵為標準全能方位，12 鍵適合功能密集場景。",
+			[LanguageCode.En] = "Change radial wheel sector divisions. 4 sectors is fastest and prevents misclicks; 8 is standard all-around; 12 is for dense workflows.",
+			[LanguageCode.Ja] = "ホイールの分割数を変更します。4方向は最速で誤爆しにくく、8方向は標準的、12方向は高密度な操作に最適です。"
+		};
+		dictionary["ListModeActionListHeaderTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区动作映射列表",
+			[LanguageCode.ZhTw] = "扇區動作對應清單",
+			[LanguageCode.En] = "Sector Action Mappings",
+			[LanguageCode.Ja] = "セクターアクション割り当て一覧"
+		};
+		dictionary["ListModeActionListHeaderDesc1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "为每个方位指定触发动作与图标。支持热键组合（如 Ctrl+C）、启动本地程序与系统级操作。",
+			[LanguageCode.ZhTw] = "為每個方位指定觸發動作與圖示。支援快速鍵組合（如 Ctrl+C）、啟動本機程式與系統層級操作。",
+			[LanguageCode.En] = "Assign actions and icons to each direction. Supports hotkeys (Ctrl+C), launching apps, and system actions.",
+			[LanguageCode.Ja] = "各方向にトリガーアクションとアイコンを割り当てます。ショートカット、アプリ起動、システム操作に対応。"
+		};
+		dictionary["ListModeActionListHeaderDesc2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击右侧功能卡的 ▲ / ▼ 箭头，将功能移动到相邻的轮盘位置槽。",
+			[LanguageCode.ZhTw] = "點擊右側功能卡的 ▲ / ▼ 箭頭，將功能移動至相鄰的輪盤位置。",
+			[LanguageCode.En] = "Click ▲ / ▼ arrows on slot cards to move functions to adjacent wheel positions.",
+			[LanguageCode.Ja] = "各スロット右側の ▲ / ▼ 矢印をクリックして、アクションを隣接スロットに移動します。"
+		};
+		dictionary["PickIconToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击选取矢量图标",
+			[LanguageCode.ZhTw] = "點擊選取向量圖示",
+			[LanguageCode.En] = "Click to select vector icon",
+			[LanguageCode.Ja] = "クリックしてベクターアイコンを選択"
+		};
+		dictionary["HotkeyBuilderButtonText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 拼装",
+			[LanguageCode.ZhTw] = "⚙️ 拼裝",
+			[LanguageCode.En] = "⚙️ Build",
+			[LanguageCode.Ja] = "⚙️ ビルド"
+		};
+		dictionary["HotkeyBuilderToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开快捷热键拼装组合器（支持 Alt+Tab、Win+Tab、Shift+Alt、多位连续数值等）",
+			[LanguageCode.ZhTw] = "開啟快速熱鍵拼裝組合器（支援 Alt+Tab、Win+Tab、Shift+Alt、多位連續數值等）",
+			[LanguageCode.En] = "Open hotkey combo builder (supports Alt+Tab, Win+Tab, Shift+Alt, multi-digit sequence, etc.)",
+			[LanguageCode.Ja] = "ホットキー作成ビルダーを開く（Alt+Tab、Win+Tab、Shift+Alt、複数桁キー列などに対応）"
+		};
+		dictionary["AppPathToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择的应用程序路径",
+			[LanguageCode.ZhTw] = "選擇的應用程式路徑",
+			[LanguageCode.En] = "Selected application executable path",
+			[LanguageCode.Ja] = "選択したアプリの実行パス"
+		};
+		dictionary["BrowseAppToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择应用程序或快捷方式...",
+			[LanguageCode.ZhTw] = "選擇應用程式或捷徑...",
+			[LanguageCode.En] = "Browse for application or shortcut...",
+			[LanguageCode.Ja] = "アプリまたはショートカットを選択..."
+		};
+		dictionary["WebUrlToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标网址，如 https://github.com",
+			[LanguageCode.ZhTw] = "目標網址，如 https://github.com",
+			[LanguageCode.En] = "Target URL, e.g. https://github.com",
+			[LanguageCode.Ja] = "対象URL（例: https://github.com）"
+		};
+		dictionary["FolderPathToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择的本地文件夹路径",
+			[LanguageCode.ZhTw] = "選擇的本機資料夾路徑",
+			[LanguageCode.En] = "Selected local folder path",
+			[LanguageCode.Ja] = "選択したフォルダパス"
+		};
+		dictionary["BrowseFolderToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择本地文件夹...",
+			[LanguageCode.ZhTw] = "選擇本機資料夾...",
+			[LanguageCode.En] = "Select local folder...",
+			[LanguageCode.Ja] = "フォルダを選択..."
+		};
+		dictionary["CommandParamToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "要运行的命令，如 ping -n 3 127.0.0.1",
+			[LanguageCode.ZhTw] = "要執行的命令，如 ping -n 3 127.0.0.1",
+			[LanguageCode.En] = "Command to run, e.g. ping -n 3 127.0.0.1",
+			[LanguageCode.Ja] = "実行コマンド（例: ping -n 3 127.0.0.1）"
+		};
+		dictionary["SwitchWindowIndexToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务栏第 N 个应用（顺序同任务栏/Win+N 槽位，稳定）；图标与切换目标一致；固定未运行的槽位无法启动，托盘驻留不计入",
+			[LanguageCode.ZhTw] = "工作列第 N 個應用（順序同工作列/Win+N 位置，穩定）；圖示與切換目標一致；固定未執行的位置無法啟動，系統匣駐留不計入",
+			[LanguageCode.En] = "Taskbar N-th app (matches Win+N position); icon matches target; pinned non-running apps cannot launch, tray apps excluded",
+			[LanguageCode.Ja] = "タスクバーのN番目アプリ（Win+N相当）；対象アイコンを表示；未起動ピン留めアプリは起動不可"
+		};
+		dictionary["TileLayoutToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "平铺布局预设",
+			[LanguageCode.ZhTw] = "平鋪版面預設",
+			[LanguageCode.En] = "Tile layout preset",
+			[LanguageCode.Ja] = "ウィンドウ整列プリセット"
+		};
+		dictionary["LaunchArgsToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启动参数 (如命令行参数或URL)",
+			[LanguageCode.ZhTw] = "啟動參數 (如命令列參數或URL)",
+			[LanguageCode.En] = "Launch arguments (command line parameters or URL)",
+			[LanguageCode.Ja] = "起動引数（コマンドライン引数またはURL）"
+		};
+		dictionary["ManageSubActionsToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "配置该扇区的二级级联子动作菜单",
+			[LanguageCode.ZhTw] = "設定該扇區的二級級聯子動作選單",
+			[LanguageCode.En] = "Configure tier-2 cascaded sub-action menu for this sector",
+			[LanguageCode.Ja] = "このセクターの第2階層サブアクションメニューを設定"
+		};
+		dictionary["TileSettingsCollapsed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已收纳 (点击展开)",
+			[LanguageCode.ZhTw] = "已收納 (點擊展開)",
+			[LanguageCode.En] = "Collapsed (click to expand)",
+			[LanguageCode.Ja] = "折りたたみ中（クリックで展開）"
+		};
+		dictionary["TileSettingsExpanded"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已展开 (点击收起)",
+			[LanguageCode.ZhTw] = "已展開 (點擊收起)",
+			[LanguageCode.En] = "Expanded (click to collapse)",
+			[LanguageCode.Ja] = "展開中（クリックで折りたたむ）"
+		};
+		dictionary["TileSettingsToggleExpand"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "展开配置",
+			[LanguageCode.ZhTw] = "展開設定",
+			[LanguageCode.En] = "Expand Settings",
+			[LanguageCode.Ja] = "設定を展開"
+		};
+		dictionary["TileSettingsToggleCollapse"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "收起配置",
+			[LanguageCode.ZhTw] = "收起設定",
+			[LanguageCode.En] = "Collapse Settings",
+			[LanguageCode.Ja] = "設定を閉じる"
+		};
+		dictionary["TileExcludeMinimizedHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "默认关闭：最小化窗口不参与，仅排布可见窗口。",
+			[LanguageCode.ZhTw] = "預設關閉：最小化視窗不參與，僅排布可見視窗。",
+			[LanguageCode.En] = "Default off: minimized windows are excluded, only tiling visible windows.",
+			[LanguageCode.Ja] = "デフォルト無効：最小化されたウィンドウは除外され、表示中ウィンドウのみ整列します。"
+		};
+		dictionary["TileCaptureExcludeProcessBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 捕捉排除进程...",
+			[LanguageCode.ZhTw] = "🎯 捕捉排除處理程序...",
+			[LanguageCode.En] = "🎯 Capture Excluded Process...",
+			[LanguageCode.Ja] = "🎯 除外プロセスを捕捉..."
+		};
+		dictionary["TileCaptureExcludeProcessBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开智能窗口捕捉器，选取桌面运行中的程序加入平铺排除名单（自动安全排除 StarPie 自身）",
+			[LanguageCode.ZhTw] = "開啟智慧視窗捕捉器，選取桌面執行中的程式加入平鋪排除清單（自動安全排除 StarPie 自身）",
+			[LanguageCode.En] = "Open window capture tool to pick running apps to exclude from tiling (StarPie itself is always safely excluded)",
+			[LanguageCode.Ja] = "ウィンドウキャプチャを開いて整列除外リストに追加（StarPie自身は自動で安全除外）"
+		};
+		dictionary["TileMarginTopToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上边距（0~1000 物理像素）",
+			[LanguageCode.ZhTw] = "上邊距（0~1000 實體像素）",
+			[LanguageCode.En] = "Top margin (0~1000 physical px)",
+			[LanguageCode.Ja] = "上マージン（0〜1000物理px）"
+		};
+		dictionary["TileMarginBottomToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下边距（0~1000 物理像素）",
+			[LanguageCode.ZhTw] = "下邊距（0~1000 實體像素）",
+			[LanguageCode.En] = "Bottom margin (0~1000 physical px)",
+			[LanguageCode.Ja] = "下マージン（0〜1000物理px）"
+		};
+		dictionary["TileMarginLeftToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "左边距（0~1000 物理像素）",
+			[LanguageCode.ZhTw] = "左邊距（0~1000 實體像素）",
+			[LanguageCode.En] = "Left margin (0~1000 physical px)",
+			[LanguageCode.Ja] = "左マージン（0〜1000物理px）"
+		};
+		dictionary["TileMarginRightToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "右边距（0~1000 物理像素）",
+			[LanguageCode.ZhTw] = "右邊距（0~1000 實體像素）",
+			[LanguageCode.En] = "Right margin (0~1000 physical px)",
+			[LanguageCode.Ja] = "右マージン（0〜1000物理px）"
+		};
+		dictionary["TileGapToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "相邻窗口之间的空隙（0~500 物理像素）",
+			[LanguageCode.ZhTw] = "相鄰視窗之間的間隙（0~500 實體像素）",
+			[LanguageCode.En] = "Gap between adjacent windows (0~500 physical px)",
+			[LanguageCode.Ja] = "隣接ウィンドウ間の間隔（0〜500物理px）"
+		};
+		dictionary["TilePresetClassic4BtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✨ 经典常用 (4项)",
+			[LanguageCode.ZhTw] = "✨ 經典常用 (4項)",
+			[LanguageCode.En] = "✨ Classic 4 Layouts",
+			[LanguageCode.Ja] = "✨ 定番4種レイアウト"
+		};
+		dictionary["TilePresetClassic4BtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一键勾选 2L、2T、3L12、4G 四种高频排布",
+			[LanguageCode.ZhTw] = "一鍵勾選 2L、2T、3L12、4G 四種高頻版面",
+			[LanguageCode.En] = "One-click check 4 common layouts: 2L, 2T, 3L12, 4G",
+			[LanguageCode.Ja] = "定番の4種レイアウト（2L、2T、3L12、4G）を一括選択"
+		};
+		dictionary["TileMoveLayoutUpToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "上移",
+			[LanguageCode.ZhTw] = "上移",
+			[LanguageCode.En] = "Move Up",
+			[LanguageCode.Ja] = "上へ移動"
+		};
+		dictionary["TileMoveLayoutDownToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下移",
+			[LanguageCode.ZhTw] = "下移",
+			[LanguageCode.En] = "Move Down",
+			[LanguageCode.Ja] = "下へ移動"
+		};
+		dictionary["TileSelectAllLayoutsBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全",
+			[LanguageCode.ZhTw] = "全",
+			[LanguageCode.En] = "All",
+			[LanguageCode.Ja] = "全"
+		};
+		dictionary["TileSelectAllLayoutsBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全部参与循环",
+			[LanguageCode.ZhTw] = "全部參與循環",
+			[LanguageCode.En] = "All participate in cycle",
+			[LanguageCode.Ja] = "すべて巡回対象にする"
+		};
+		dictionary["TileClearAllLayoutsBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "空",
+			[LanguageCode.ZhTw] = "空",
+			[LanguageCode.En] = "None",
+			[LanguageCode.Ja] = "空"
+		};
+		dictionary["TileClearAllLayoutsBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清空（等效全部参与）",
+			[LanguageCode.ZhTw] = "清空（等效全部參與）",
+			[LanguageCode.En] = "Clear all (equivalent to all participate)",
+			[LanguageCode.Ja] = "すべてクリア（全参加と同等）"
+		};
+		dictionary["FocusSlotCenterCoreTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心核心圆动作 (Center Core)",
+			[LanguageCode.ZhTw] = "中心核心圓動作 (Center Core)",
+			[LanguageCode.En] = "Center Core Action",
+			[LanguageCode.Ja] = "中心コアアクション"
+		};
+		dictionary["FocusSlotCenterCoreTag"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "核心圆",
+			[LanguageCode.ZhTw] = "核心圓",
+			[LanguageCode.En] = "Center Core",
+			[LanguageCode.Ja] = "中心コア"
+		};
+		dictionary["FocusSlotCenterCoreSubtitleInherited"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 专属方案未配置中心动作，已自动继承全局方案「{0}」",
+			[LanguageCode.ZhTw] = "💡 專屬方案未設定中心動作，已自動繼承全域方案「{0}」",
+			[LanguageCode.En] = "💡 Not configured in app profile; inherited from global profile \"{0}\"",
+			[LanguageCode.Ja] = "💡 専用プロファイル未設定のため、グローバル「{0}」から自動継承"
+		};
+		dictionary["FocusSlotCenterCoreSubtitleDefault"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "在开启外甩脱离取消时，鼠标在中心内径死区内松开即可触发",
+			[LanguageCode.ZhTw] = "在開啟外甩脫離取消時，滑鼠在中心內徑死區內放開即可觸發",
+			[LanguageCode.En] = "When fling-out cancel is enabled, release cursor in center deadzone to trigger",
+			[LanguageCode.Ja] = "外側フリックキャンセル有効時、中心デッドゾーン内でマウスを離すとトリガー"
+		};
+		dictionary["FocusSlotTier2EmptyTitleFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区 {0} [{1}] 级联子动作",
+			[LanguageCode.ZhTw] = "扇區 {0} [{1}] 級聯子動作",
+			[LanguageCode.En] = "Sector {0} [{1}] Cascaded Sub-Actions",
+			[LanguageCode.Ja] = "セクター {0} [{1}] カスケードサブアクション"
+		};
+		dictionary["FocusSlotTier2EmptyTag"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级级联 (未添加)",
+			[LanguageCode.ZhTw] = "二級級聯 (未新增)",
+			[LanguageCode.En] = "Tier-2 Sub-Wheel (Empty)",
+			[LanguageCode.Ja] = "第2階層（未追加）"
+		};
+		dictionary["FocusSlotTier2EmptySubtitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前扇区尚未配置二级级联子动作，点击【➕ 添加第 1 个二级子动作】以创建",
+			[LanguageCode.ZhTw] = "目前扇區尚未設定二級級聯子動作，點擊【➕ 新增第 1 個二級子動作】以建立",
+			[LanguageCode.En] = "No sub-actions configured yet; click [+ Add 1st Sub-Action] to create",
+			[LanguageCode.Ja] = "第2階層サブアクションが未設定です。「➕ 最初のサブアクションを追加」をクリックして作成"
+		};
+		dictionary["FocusSlotTier2SubActionTitleFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级动作 [{0}]",
+			[LanguageCode.ZhTw] = "二級動作 [{0}]",
+			[LanguageCode.En] = "Sub-Action [{0}]",
+			[LanguageCode.Ja] = "サブアクション [{0}]"
+		};
+		dictionary["FocusSlotTier2SubActionTagFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "所属父级: 扇区 {0} [{1}]",
+			[LanguageCode.ZhTw] = "所屬父級: 扇區 {0} [{1}]",
+			[LanguageCode.En] = "Parent: Sector {0} [{1}]",
+			[LanguageCode.Ja] = "親: セクター {0} [{1}]"
+		};
+		dictionary["FocusSlotTier2SubActionSubtitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "向外划动二级扇区即可触发此动作",
+			[LanguageCode.ZhTw] = "向外劃動二級扇區即可觸發此動作",
+			[LanguageCode.En] = "Swipe outward onto this sub-sector to trigger this action",
+			[LanguageCode.Ja] = "第2階層セクターへ外側にスワイプしてこのアクションをトリガー"
+		};
+		dictionary["FocusSlotPrimaryTitleFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区 {0} [{1}]",
+			[LanguageCode.ZhTw] = "扇區 {0} [{1}]",
+			[LanguageCode.En] = "Sector {0} [{1}]",
+			[LanguageCode.Ja] = "セクター {0} [{1}]"
+		};
+		dictionary["FocusSlotPrimaryTag"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一级主扇区",
+			[LanguageCode.ZhTw] = "一級主扇區",
+			[LanguageCode.En] = "Tier-1 Primary Sector",
+			[LanguageCode.Ja] = "第1階層主セクター"
+		};
+		dictionary["FocusSlotPrimarySubtitleInherited"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 专属方案未配置本槽位，已自动继承全局方案「{0}」",
+			[LanguageCode.ZhTw] = "💡 專屬方案未設定本位置，已自動繼承全域方案「{0}」",
+			[LanguageCode.En] = "💡 Slot not configured in app profile; inherited from global profile \"{0}\"",
+			[LanguageCode.Ja] = "💡 専用プロファイル未設定のため、グローバル「{0}」から自動継承"
+		};
+		dictionary["FocusSlotPrimarySubtitleDefault"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击右侧轮盘直接选中扇区，或在下方配置动作与级联子菜单",
+			[LanguageCode.ZhTw] = "點擊右側輪盤直接選取扇區，或在下方設定動作與級聯子選單",
+			[LanguageCode.En] = "Click the wheel on the right to select a sector, or configure actions below",
+			[LanguageCode.Ja] = "右側のホイールをクリックして選択するか、以下でアクションとサブメニューを設定"
+		};
+		dictionary["MappingsEditIndicatorBatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 批量修改模式 (已多选 {0} 个扇区)",
+			[LanguageCode.ZhTw] = "🎯 批次修改模式 (已多選 {0} 個扇區)",
+			[LanguageCode.En] = "🎯 Batch Edit Mode ({0} sectors selected)",
+			[LanguageCode.Ja] = "🎯 一括編集モード（{0}個のセクターを選択中）"
+		};
+		dictionary["MappingsEditIndicatorCenter"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 正在编辑: 中心核心圆动作",
+			[LanguageCode.ZhTw] = "🎯 正在編輯: 中心核心圓動作",
+			[LanguageCode.En] = "🎯 Editing: Center Core Action",
+			[LanguageCode.Ja] = "🎯 編集中: 中心コアアクション"
+		};
+		dictionary["MappingsEditIndicatorSub"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌟 正在编辑: 二级动作 [{0}]",
+			[LanguageCode.ZhTw] = "🌟 正在編輯: 二級動作 [{0}]",
+			[LanguageCode.En] = "🌟 Editing: Sub-Action [{0}]",
+			[LanguageCode.Ja] = "🌟 編集中: サブアクション [{0}]"
+		};
+		dictionary["MappingsEditIndicatorPrimary"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 正在编辑: 扇区 {0} [{1}]",
+			[LanguageCode.ZhTw] = "🎯 正在編輯: 扇區 {0} [{1}]",
+			[LanguageCode.En] = "🎯 Editing: Sector {0} [{1}]",
+			[LanguageCode.Ja] = "🎯 編集中: セクター {0} [{1}]"
+		};
+		dictionary["MappingsEditIndicatorDragging"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 正在拖拽 [{0}]，{1}",
+			[LanguageCode.ZhTw] = "🔄 正在拖曳 [{0}]，{1}",
+			[LanguageCode.En] = "🔄 Dragging [{0}], {1}",
+			[LanguageCode.Ja] = "🔄 [{0}] をドラッグ中、{1}"
+		};
+		dictionary["MappingsEditIndicatorSubSwapped"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 已对调二级动作顺序：[{0}] ↔ [{1}]！",
+			[LanguageCode.ZhTw] = "🎯 已對調二級動作順序：[{0}] ↔ [{1}]！",
+			[LanguageCode.En] = "🎯 Swapped sub-action order: [{0}] ↔ [{1}]!",
+			[LanguageCode.Ja] = "🎯 サブアクション順序を入れ替えました: [{0}] ↔ [{1}]!"
+		};
+		dictionary["MappingsEditIndicatorSubCrossSwapped"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 已跨扇区对调二级动作：[{0}] ↔ [{1}]！",
+			[LanguageCode.ZhTw] = "🎯 已跨扇區對調二級動作：[{0}] ↔ [{1}]！",
+			[LanguageCode.En] = "🎯 Swapped sub-actions across sectors: [{0}] ↔ [{1}]!",
+			[LanguageCode.Ja] = "🎯 セクター間でサブアクションを入れ替えました: [{0}] ↔ [{1}]!"
+		};
+		dictionary["MappingsEditIndicatorSubMoved"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 已将二级动作 [{0}] 移动至目标扇区！",
+			[LanguageCode.ZhTw] = "🎯 已將二級動作 [{0}] 移動至目標扇區！",
+			[LanguageCode.En] = "🎯 Moved sub-action [{0}] to target sector!",
+			[LanguageCode.Ja] = "🎯 サブアクション [{0}] を対象セクターに移動しました！"
+		};
+		dictionary["MappingsEditIndicatorSwapped"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 已将 [{0}] 与 [{1}] 成功对调位置{2}！",
+			[LanguageCode.ZhTw] = "🎯 已將 [{0}] 與 [{1}] 成功對調位置{2}！",
+			[LanguageCode.En] = "🎯 Successfully swapped [{0}] and [{1}]{2}!",
+			[LanguageCode.Ja] = "🎯 [{0}] と [{1}] の位置を入れ替えました{2}！"
+		};
+		dictionary["MappingsEditIndicatorLinkedHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = " (已联动二级菜单)",
+			[LanguageCode.ZhTw] = " (已聯動二級選單)",
+			[LanguageCode.En] = " (linked sub-wheel)",
+			[LanguageCode.Ja] = "（サブホイール連動）"
+		};
 		Translations = dictionary;
 	}
 }

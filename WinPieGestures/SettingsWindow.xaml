@@ -2602,7 +2602,7 @@
                 <!-- 紧凑型多层轮盘管理工具栏 (仅高级全量模式展示，移至标题右侧留白处) -->
                 <Border Name="Tab2_MultiLayerHeaderPanel" VerticalAlignment="Center" Margin="14,0,0,0" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5,2">
                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="🌀 轮盘层:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="3,0,5,0" />
+                    <TextBlock x:Name="Tab2LayerLabel" Text="🌀 轮盘层:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="3,0,5,0" />
                     <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="95" VerticalAlignment="Center" DisplayMemberPath="Name" SelectionChanged="LayerSelectComboBox_SelectionChanged" />
                     <Button Name="AddLayerBtn" Content="➕ 加层" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="4,0,2,0" ToolTip="新增一层独立轮盘配置（支持无限多层）" Click="AddLayerBtn_Click" />
                     <Button Name="CopyLayerBtn" Content="📑 复制" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="复制当前层的所有扇区动作与中心核圆到新层" Click="CopyLayerBtn_Click" />
@@ -2611,8 +2611,8 @@
                     <Border Width="1" Height="12" Background="{DynamicResource CardBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
                     <TextBlock Name="LayerSwitchTriggerLabel" Text="🔄 切换:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="2,0,4,0" />
                     <ComboBox Name="LayerSwitchTriggerComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="108" VerticalAlignment="Center" ToolTip="多层轮盘切换方式：支持鼠标滚轮上下滑动切换或 Tab 键循环切换" SelectionChanged="LayerSwitchTriggerComboBox_SelectionChanged">
-                      <ComboBoxItem Content="🖱️ 滚轮切换" Tag="Wheel" />
-                      <ComboBoxItem Content="⌨️ Tab 键切换" Tag="Tab" />
+                      <ComboBoxItem x:Name="LayerSwitchModeScrollItem" Content="🖱️ 滚轮切换" Tag="Wheel" />
+                      <ComboBoxItem x:Name="LayerSwitchModeTabItem" Content="⌨️ Tab 键切换" Tag="Tab" />
                     </ComboBox>
                   </StackPanel>
                 </Border>
@@ -2656,7 +2656,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                       </Grid.ColumnDefinitions>
-                      <TextBlock Text="当前配置方案:" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
+                      <TextBlock x:Name="CurrentProfileLabel" Text="当前配置方案:" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
                       <ComboBox Name="MappingsProfileComboBox" Grid.Column="1" MinWidth="130" Style="{StaticResource FlatComboBoxStyle}" Height="30" DisplayMemberPath="DisplayTitle" SelectionChanged="MappingsProfileComboBox_SelectionChanged" VerticalAlignment="Center" />
                       
                       <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
@@ -2664,10 +2664,10 @@
                         <Button Name="AddProfileBtn2" Content="➕ 新增" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="添加新的轮盘配置方案（点击可选择从程序添加、捕捉窗口或自定义命名）" Click="AddProfileBtn2_Click">
                           <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
-                              <MenuItem Header="🖥️ 从已安装软件中添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileButton_Click" />
-                              <MenuItem Header="🎯 捕捉运行中窗口添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByCapture_Click" />
-                              <MenuItem Header="📁 浏览本地程序文件添加 (.exe / .lnk)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByBrowse_Click" />
-                              <MenuItem Header="✏️ 新建自定义名称方案 (工作流/模式配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddCustomProfileButton_Click" />
+                              <MenuItem x:Name="AddProfileFromProgramMenuItem" Header="🖥️ 从已安装软件中添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileButton_Click" />
+                              <MenuItem x:Name="AddProfileCaptureWindowMenuItem" Header="🎯 捕捉运行中窗口添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByCapture_Click" />
+                              <MenuItem x:Name="AddProfileBrowseExeMenuItem" Header="📁 浏览本地程序文件添加 (.exe / .lnk)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByBrowse_Click" />
+                              <MenuItem x:Name="AddProfileCustomMenuItem" Header="✏️ 新建自定义名称方案 (工作流/模式配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddCustomProfileButton_Click" />
                             </ContextMenu>
                           </Button.ContextMenu>
                         </Button>
@@ -2683,7 +2683,7 @@
                         <Grid Name="ProfileGlobalHintPanel">
                           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🌐" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock Text="全局通用基础方案：当活动前台程序未配置专属轮盘时，手势将自动应用此全局方案。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                            <TextBlock x:Name="GlobalProfileHintText" Text="全局通用基础方案：当活动前台程序未配置专属轮盘时，手势将自动应用此全局方案。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
                           </StackPanel>
                         </Grid>
 
@@ -2695,7 +2695,7 @@
                               <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="🎯 绑定程序情景:" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
+                            <TextBlock x:Name="ProfileBoundProcessesLabel" Text="🎯 绑定程序情景:" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
                             <TextBox Name="ProfileBoundProcessesTextBox" Grid.Column="1" Height="28" FontSize="11" VerticalContentAlignment="Center" ToolTip="目标程序进程名（如 photoshop.exe 或 code.exe）。支持以英文逗号分隔多个进程。" TextChanged="ProfileBoundProcessesTextBox_TextChanged" />
                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
                               <Button Name="ProfileCaptureWindowBtn" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="直接点击桌面上运行中的目标软件窗口，自动识别并绑定其进程" Click="ProfileCaptureWindowBtn_Click" />
@@ -2703,7 +2703,7 @@
                               <Button Name="ProfileBrowseExeBtn" Content="📁 浏览..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" ToolTip="浏览选取本地可执行程序文件 (.exe / .lnk)" Click="ProfileBrowseExeBtn_Click" />
                             </StackPanel>
                           </Grid>
-                          <TextBlock Text="💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                          <TextBlock x:Name="ProfileBoundProcessesHintText" Text="💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                       </StackPanel>
                     </Border>
@@ -2715,7 +2715,7 @@
                           <ColumnDefinition Width="*" />
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="扇区方位数量:" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0" />
+                        <TextBlock x:Name="SectorCountLabel" Text="扇区方位数量:" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0" />
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                           <RadioButton Name="MappingsSectorCount4Radio" GroupName="MappingsSectorCountGroup" Content="4 键十字方位" Margin="0,0,20,0" Checked="MappingsSectorCountRadio_Checked" />
                           <RadioButton Name="MappingsSectorCount8Radio" GroupName="MappingsSectorCountGroup" Content="8 键全向方位 (推荐)" Margin="0,0,20,0" IsChecked="True" Checked="MappingsSectorCountRadio_Checked" />
@@ -2752,7 +2752,7 @@
                             <TextBlock Name="FocusSlotTagText" Text="一级主扇区" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
                           </Border>
                           <Border Name="FocusSlotInheritedBadge" Visibility="Collapsed" CornerRadius="4" Background="#183B82F6" BorderBrush="#803B82F6" BorderThickness="1" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center" ToolTip="当前槽位在专属方案中未配置，已自动继承全局方案同向动作">
-                            <TextBlock Text="🌐 全局继承" FontSize="10.5" FontWeight="SemiBold" Foreground="#3B82F6" />
+                            <TextBlock x:Name="FocusSlotInheritedBadgeText" Text="🌐 全局继承" FontSize="10.5" FontWeight="SemiBold" Foreground="#3B82F6" />
                           </Border>
                         </StackPanel>
                         <TextBlock Name="FocusSlotSubtitleText" Text="点击右侧轮盘直接选中扇区，或使用右侧按钮切换槽位" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
@@ -2779,7 +2779,7 @@
                           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <CheckBox Name="EnableCenterActionCheckBox" Content="启用中心核圆动作" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,10,0" Checked="EnableCenterActionCheckBox_Changed" Unchecked="EnableCenterActionCheckBox_Changed" />
                             <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                              <TextBlock Text="死区松开触发 · 外甩脱离取消" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock x:Name="CenterDeadzoneReleaseHintText" Text="死区松开触发 · 外甩脱离取消" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
                             </Border>
                           </StackPanel>
                           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -2792,7 +2792,7 @@
                         <Border Name="CenterPatternPriorityTip" Visibility="Collapsed" Margin="0,6,0,0" Background="#18F59E0B" BorderBrush="#80F59E0B" BorderThickness="1" CornerRadius="6" Padding="8,5">
                           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="🎨" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock Text="当前已启用自定义中心图案，轮盘中心将优先展示该图案；在中心死区内松开鼠标仍会照常触发本功能。" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <TextBlock x:Name="CenterPatternPriorityNoticeText" Text="当前已启用自定义中心图案，轮盘中心将优先展示该图案；在中心死区内松开鼠标仍会照常触发本功能。" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                           </StackPanel>
                         </Border>
 
@@ -2800,19 +2800,19 @@
                         <StackPanel Name="CenterPresetsContainer" Visibility="Collapsed" Margin="0,8,0,0">
                           <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0">
                             <WrapPanel VerticalAlignment="Center">
-                              <TextBlock Text="一键填入:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                              <Button Content="⚙️ 控制台" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_OpenSettings" />
-                              <Button Content="🖥️ 显示桌面" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_Desktop" />
-                              <Button Content="🔒 锁定屏幕" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_Lock" />
-                              <Button Content="🌐 常用网站" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_WebUrl" />
-                              <Button Content="📁 资源管理" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_Explorer" />
+                              <TextBlock x:Name="CenterPresetFillLabel" Text="一键填入:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                              <Button x:Name="CenterPresetOpenSettingsBtn" Content="⚙️ 控制台" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_OpenSettings" />
+                              <Button x:Name="CenterPresetDesktopBtn" Content="🖥️ 显示桌面" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_Desktop" />
+                              <Button x:Name="CenterPresetLockBtn" Content="🔒 锁定屏幕" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_Lock" />
+                              <Button x:Name="CenterPresetWebUrlBtn" Content="🌐 常用网站" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_WebUrl" />
+                              <Button x:Name="CenterPresetExplorerBtn" Content="📁 资源管理" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,4,4" FontSize="10.5" Click="ApplyCenterPreset_Explorer" />
                             </WrapPanel>
                           </Border>
                         </StackPanel>
 
                         <!-- 展开区 2：机制说明 -->
                         <Border Name="CenterInfoContainer" Visibility="Collapsed" Margin="0,8,0,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" Padding="8">
-                          <TextBlock Text="💡 外甩脱离机制说明：开启「外甩脱离取消」后，手势若在中心内径死区内释放光标，将直接触发在此配置的动作（如呼出控制台、启动工具或热键）；若需废弃/取消手势，直接向外快速甩出轮盘边缘即可。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                          <TextBlock x:Name="CenterFlingExplanationText" Text="💡 外甩脱离机制说明：开启「外甩脱离取消」后，手势若在中心内径死区内释放光标，将直接触发在此配置的动作（如呼出控制台、启动工具或热键）；若需废弃/取消手势，直接向外快速甩出轮盘边缘即可。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                         </Border>
                       </StackPanel>
                     </Border>
@@ -2820,9 +2820,9 @@
                     <!-- 暂无二级子动作提示卡片 (仅当切换至二级级联且未添加任何子动作时显示) -->
                     <Border Name="FocusTier2EmptyNoticeBorder" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="20,16" Margin="0,0,0,12">
                       <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="🌟 当前主扇区尚未配置二级级联子动作" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="向外划动此扇区时可展开二级子菜单。支持添加 1~4 个二级子动作。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,12" />
-                        <Button Content="➕ 添加第 1 个二级子动作" Style="{StaticResource PrimaryButtonStyle}" Height="32" Padding="16,0" HorizontalAlignment="Center" Click="FocusAddSubActionBtn_Click" />
+                        <TextBlock x:Name="FocusTier2EmptyTitleText" Text="🌟 当前主扇区尚未配置二级级联子动作" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
+                        <TextBlock x:Name="FocusTier2EmptySubtitleText" Text="向外划动此扇区时可展开二级子菜单。支持添加 1~4 个二级子动作。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,4,0,12" />
+                        <Button x:Name="FocusAddFirstSubActionBtn" Content="➕ 添加第 1 个二级子动作" Style="{StaticResource PrimaryButtonStyle}" Height="32" Padding="16,0" HorizontalAlignment="Center" Click="FocusAddSubActionBtn_Click" />
                       </StackPanel>
                     </Border>
 
@@ -2860,7 +2860,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                           </Grid.ColumnDefinitions>
-                          <TextBlock Text="触发动作类型:" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
+                          <TextBlock x:Name="FocusActionTypeLabel" Text="触发动作类型:" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
                           <ComboBox Name="FocusActionTypeComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" SelectionChanged="FocusActionTypeComboBox_SelectionChanged" />
                           <Button Name="FocusRestoreInheritBtn" Grid.Column="2" Content="🌐 恢复继承全局" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="8,0,0,0" Visibility="Collapsed" ToolTip="清除当前槽位的专属覆写，恢复继承全局方案对应方位的动作" Click="FocusRestoreInheritBtn_Click" />
                           <Button Name="FocusTestActionBtn" Grid.Column="3" Content="▶ 测试触发" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="10,0" Margin="8,0,0,0" Click="FocusTestActionBtn_Click" />
@@ -2877,7 +2877,7 @@
                             </Grid.ColumnDefinitions>
                             <local:HotkeyRecorderBox x:Name="FocusHotkeyRecorder" Height="32" FontSize="12" />
                             <Button Name="TogglePauseHotkeysBtn" Grid.Column="1" Content="⏸️ 暂停全局热键" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="8,0" Margin="6,0,0,0" ToolTip="暂停桌面系统及其他软件的所有全局快捷键，在此独占录入快捷键而不会触发系统（如 Win+D、Alt+Tab、截屏等）或其他软件" Click="TogglePauseHotkeysBtn_Click" />
-                            <Button Grid.Column="2" Content="⚙️ 拼装组合" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="8,0" Margin="6,0,0,0" Click="FocusHotkeyBuilder_Click" />
+                            <Button x:Name="FocusHotkeyBuilderBtn" Grid.Column="2" Content="⚙️ 拼装组合" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="8,0" Margin="6,0,0,0" Click="FocusHotkeyBuilder_Click" />
                           </Grid>
                         </StackPanel>
 
@@ -2891,22 +2891,22 @@
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox Name="FocusLaunchPathTextBox" Height="30" FontSize="11.5" ToolTip="应用程序路径" TextChanged="FocusLaunchPathTextBox_TextChanged" />
-                            <Button Grid.Column="1" Content="📦 软件库选择..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="从已安装的软件、微软商店与开始菜单中模糊搜索选取" Click="FocusPickProgramFromLibrary_Click" />
-                            <Button Grid.Column="2" Content="🎯 捕捉运行窗口..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径" Click="FocusCaptureRunningWindow_Click" />
-                            <Button Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="手动浏览可执行文件或快捷方式" Click="FocusBrowseLaunchExe_Click" />
+                            <Button x:Name="FocusLaunchPickProgramBtn" Grid.Column="1" Content="📦 软件库选择..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="从已安装的软件、微软商店与开始菜单中模糊搜索选取" Click="FocusPickProgramFromLibrary_Click" />
+                            <Button x:Name="FocusLaunchCaptureWindowBtn" Grid.Column="2" Content="🎯 捕捉运行窗口..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径" Click="FocusCaptureRunningWindow_Click" />
+                            <Button x:Name="FocusLaunchBrowseExeBtn" Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="手动浏览可执行文件或快捷方式" Click="FocusBrowseLaunchExe_Click" />
                           </Grid>
                           <Grid>
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="启动参数:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
+                            <TextBlock x:Name="FocusLaunchArgsLabel" Text="启动参数:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
                             <TextBox Name="FocusLaunchArgsTextBox" Grid.Column="1" Height="28" FontSize="11" ToolTip="启动命令行参数 (可选)" TextChanged="FocusLaunchArgsTextBox_TextChanged" />
                           </Grid>
                           <CheckBox Name="FocusLaunchStandardUserCheckBox" Style="{StaticResource ToggleSwitchStyle}" Margin="0,6,0,0" Checked="FocusLaunchStandardUserCheckBox_Changed" Unchecked="FocusLaunchStandardUserCheckBox_Changed">
                             <StackPanel Margin="6,0,0,0">
-                              <TextBlock Text="🛡️ 以常规普通权限启动 (解决高权限下外部文件无法拖入目标软件的问题)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
-                              <TextBlock Text="当 StarPie 以管理员权限运行时，通过 Windows Shell 降权启动目标程序，恢复文件拖拽交互支持。" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                              <TextBlock x:Name="FocusLaunchAsUserTitleText" Text="🛡️ 以常规普通权限启动 (解决高权限下外部文件无法拖入目标软件的问题)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                              <TextBlock x:Name="FocusLaunchAsUserSubtitleText" Text="当 StarPie 以管理员权限运行时，通过 Windows Shell 降权启动目标程序，恢复文件拖拽交互支持。" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                             </StackPanel>
                           </CheckBox>
                         </StackPanel>
@@ -2920,11 +2920,11 @@
                             </Grid.ColumnDefinitions>
                             <TextBox Name="FocusWebUrlTextBox" Height="30" FontSize="11.5" ToolTip="目标网址，如 https://github.com" TextChanged="FocusWebUrlTextBox_TextChanged" />
                             <ComboBox Name="FocusWebBrowserComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" Margin="6,0,0,0" SelectionChanged="FocusWebBrowserComboBox_SelectionChanged">
-                              <ComboBoxItem Tag="Default" Content="🌐 系统默认" IsSelected="True" />
+                              <ComboBoxItem x:Name="FocusWebBrowserDefaultItem" Tag="Default" Content="🌐 系统默认" IsSelected="True" />
                               <ComboBoxItem Tag="Chrome" Content="Google Chrome" />
                               <ComboBoxItem Tag="Edge" Content="Microsoft Edge" />
                               <ComboBoxItem Tag="Firefox" Content="Mozilla Firefox" />
-                              <ComboBoxItem Tag="Custom" Content="自定义浏览器..." />
+                              <ComboBoxItem x:Name="FocusWebBrowserCustomItem" Tag="Custom" Content="自定义浏览器..." />
                             </ComboBox>
                           </Grid>
                           <StackPanel Name="FocusCustomBrowserPathPanel" Visibility="Collapsed" Margin="0,0,0,6">
@@ -2934,15 +2934,15 @@
                                 <ColumnDefinition Width="Auto" />
                               </Grid.ColumnDefinitions>
                               <TextBox Name="FocusCustomBrowserPathTextBox" Height="28" FontSize="11" ToolTip="自定义浏览器可执行文件路径" TextChanged="FocusCustomBrowserPathTextBox_TextChanged" />
-                              <Button Grid.Column="1" Content="📂 选择..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusBrowseCustomBrowser_Click" />
+                              <Button x:Name="FocusCustomBrowserBrowseBtn" Grid.Column="1" Content="📂 选择..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusBrowseCustomBrowser_Click" />
                             </Grid>
                           </StackPanel>
                           <!-- 常用网址快捷芯片 -->
                           <WrapPanel Margin="0,2,0,0">
-                            <TextBlock Text="常用网址:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <TextBlock x:Name="FocusWebPresetsLabel" Text="常用网址:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                             <Button Content="GitHub" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyUrlPreset_GitHub" />
                             <Button Content="Bilibili" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyUrlPreset_Bilibili" />
-                            <Button Content="Bing 搜索" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyUrlPreset_Bing" />
+                            <Button x:Name="FocusWebPresetBingBtn" Content="Bing 搜索" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyUrlPreset_Bing" />
                             <Button Content="Google" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyUrlPreset_Google" />
                           </WrapPanel>
                         </StackPanel>
@@ -2955,16 +2955,16 @@
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox Name="FocusFolderPathTextBox" Height="30" FontSize="11.5" ToolTip="本地文件夹绝对路径" TextChanged="FocusFolderPathTextBox_TextChanged" />
-                            <Button Grid.Column="1" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" Click="FocusBrowseFolder_Click" />
+                            <Button x:Name="FocusFolderBrowseBtn" Grid.Column="1" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" Click="FocusBrowseFolder_Click" />
                           </Grid>
                           <!-- 文件夹预设 -->
                           <WrapPanel>
-                            <TextBlock Text="常用目录:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                            <Button Content="💻 此电脑" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_ThisPC" ToolTip="直接打开系统「此电脑」命名空间" />
-                            <Button Content="🗑️ 回收站" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_RecycleBin" ToolTip="直接打开系统「回收站」命名空间" />
-                            <Button Content="🖥️ 桌面" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_Desktop" />
-                            <Button Content="📥 下载" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_Downloads" />
-                            <Button Content="📄 文档" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_Documents" />
+                            <TextBlock x:Name="FocusFolderPresetsLabel" Text="常用目录:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                            <Button x:Name="FocusFolderPresetThisPcBtn" Content="💻 此电脑" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_ThisPC" ToolTip="直接打开系统「此电脑」命名空间" />
+                            <Button x:Name="FocusFolderPresetRecycleBinBtn" Content="🗑️ 回收站" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_RecycleBin" ToolTip="直接打开系统「回收站」命名空间" />
+                            <Button x:Name="FocusFolderPresetDesktopBtn" Content="🖥️ 桌面" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_Desktop" />
+                            <Button x:Name="FocusFolderPresetDownloadsBtn" Content="📥 下载" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_Downloads" />
+                            <Button x:Name="FocusFolderPresetDocumentsBtn" Content="📄 文档" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="ApplyFolderPreset_Documents" />
                           </WrapPanel>
                         </StackPanel>
 
@@ -2988,16 +2988,16 @@
                               <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="控制模式:" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
+                            <TextBlock x:Name="FocusWindowSubModeLabel" Text="控制模式:" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
                             <ComboBox Name="FocusWindowSubModeComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" SelectionChanged="FocusWindowSubModeComboBox_SelectionChanged">
-                              <ComboBoxItem Tag="Tile" Content="🔲 平铺窗口排布" />
-                              <ComboBoxItem Tag="TileCycle" Content="🔄 循环切换平铺" />
-                              <ComboBoxItem Tag="TileCycleBack" Content="⬅️ 反向循环平铺" />
-                              <ComboBoxItem Tag="TileRestore" Content="⏪ 还原平铺快照" />
-                              <ComboBoxItem Tag="ToggleTopmost" Content="📌 窗口置顶 / 取消置顶" />
-                              <ComboBoxItem Tag="MoveMonitor" Content="🖥️ 移到下一显示器" />
-                              <ComboBoxItem Tag="WindowOpacity" Content="👁️ 窗口透明度调节" />
-                              <ComboBoxItem Tag="SwitchWindow" Content="🗂️ 任务栏切换 (Win+N)" />
+                              <ComboBoxItem x:Name="FocusWindowModeTileItem" Tag="Tile" Content="🔲 平铺窗口排布" />
+                              <ComboBoxItem x:Name="FocusWindowModeCycleItem" Tag="TileCycle" Content="🔄 循环切换平铺" />
+                              <ComboBoxItem x:Name="FocusWindowModeCycleReverseItem" Tag="TileCycleBack" Content="⬅️ 反向循环平铺" />
+                              <ComboBoxItem x:Name="FocusWindowModeRestoreItem" Tag="TileRestore" Content="⏪ 还原平铺快照" />
+                              <ComboBoxItem x:Name="FocusWindowModeTopmostItem" Tag="ToggleTopmost" Content="📌 窗口置顶 / 取消置顶" />
+                              <ComboBoxItem x:Name="FocusWindowModeMoveMonitorItem" Tag="MoveMonitor" Content="🖥️ 移到下一显示器" />
+                              <ComboBoxItem x:Name="FocusWindowModeOpacityItem" Tag="WindowOpacity" Content="👁️ 窗口透明度调节" />
+                              <ComboBoxItem x:Name="FocusWindowModeSwitchItem" Tag="SwitchWindow" Content="🗂️ 任务栏切换 (Win+N)" />
                             </ComboBox>
                           </Grid>
 
@@ -3013,40 +3013,40 @@
                             </Grid>
                             <!-- 常用平铺排布芯片快捷点选 -->
                             <WrapPanel Margin="0,2,0,0">
-                              <TextBlock Text="常用布局:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                              <Button Content="左右对半 (2L)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_2L" />
-                              <Button Content="上下对半 (2T)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_2T" />
-                              <Button Content="左大列 (3L12)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_3L12" />
-                              <Button Content="四宫格 (4G)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_4G" />
-                              <Button Content="三等分 (3R)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_3R" />
+                              <TextBlock x:Name="FocusTileCommonLayoutsLabel" Text="常用布局:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                              <Button x:Name="FocusTilePreset2LBtn" Content="左右对半 (2L)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_2L" />
+                              <Button x:Name="FocusTilePreset2TBtn" Content="上下对半 (2T)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_2T" />
+                              <Button x:Name="FocusTilePreset3L12Btn" Content="左大列 (3L12)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_3L12" />
+                              <Button x:Name="FocusTilePreset4GBtn" Content="四宫格 (4G)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_4G" />
+                              <Button x:Name="FocusTilePreset3RBtn" Content="三等分 (3R)" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusTilePreset_3R" />
                             </WrapPanel>
                           </StackPanel>
 
                           <!-- 子模式 2: 循环/反向平铺 -->
                           <StackPanel Name="FocusWindowCycleSubPanel" Visibility="Collapsed" Margin="0,2,0,0">
                             <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
-                              <TextBlock Text="💡 触发手势时，自动在下方「平铺窗口设置」中勾选的排布列表中循环轮换下一个布局。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                              <TextBlock x:Name="FocusTileCycleHintText" Text="💡 触发手势时，自动在下方「平铺窗口设置」中勾选的排布列表中循环轮换下一个布局。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                             </Border>
                           </StackPanel>
 
                           <!-- 子模式 3: 还原平铺快照 -->
                           <StackPanel Name="FocusWindowRestoreSubPanel" Visibility="Collapsed" Margin="0,2,0,0">
                             <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
-                              <TextBlock Text="⏪ 还原所有窗口到平铺前的初始大小与屏幕坐标位置。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                              <TextBlock x:Name="FocusTileRestoreHintText" Text="⏪ 还原所有窗口到平铺前的初始大小与屏幕坐标位置。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                             </Border>
                           </StackPanel>
 
                           <!-- 子模式 4: 窗口置顶 -->
                           <StackPanel Name="FocusWindowTopmostSubPanel" Visibility="Collapsed" Margin="0,2,0,0">
                             <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
-                              <TextBlock Text="📌 将当前鼠标所在窗口或前台活动窗口固定置顶于最前（再次触发即可恢复）。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                              <TextBlock x:Name="FocusTileTopmostHintText" Text="📌 将当前鼠标所在窗口或前台活动窗口固定置顶于最前（再次触发即可恢复）。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                             </Border>
                           </StackPanel>
 
                           <!-- 子模式 5: 移到下一屏 -->
                           <StackPanel Name="FocusWindowMoveMonitorSubPanel" Visibility="Collapsed" Margin="0,2,0,0">
                             <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
-                              <TextBlock Text="🖥️ 将当前活动窗口移动至下一个物理显示器对应的工作区位置。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                              <TextBlock x:Name="FocusTileMoveMonitorHintText" Text="🖥️ 将当前活动窗口移动至下一个物理显示器对应的工作区位置。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                             </Border>
                           </StackPanel>
 
@@ -3058,16 +3058,16 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="42" />
                               </Grid.ColumnDefinitions>
-                              <TextBlock Text="不透明度:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
+                              <TextBlock x:Name="FocusTileOpacityLabel" Text="不透明度:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
                               <Slider Name="FocusWindowOpacitySlider" Grid.Column="1" Minimum="30" Maximum="100" Value="80" SmallChange="5" LargeChange="10" VerticalAlignment="Center" ValueChanged="FocusWindowOpacitySlider_ValueChanged" />
                               <TextBlock Name="FocusWindowOpacityLabel" Grid.Column="2" Text="80%" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" />
                             </Grid>
                             <WrapPanel>
-                              <TextBlock Text="快捷预设:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                              <Button Content="70% 极淡" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_70" />
-                              <Button Content="80% 查阅" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_80" />
-                              <Button Content="90% 透视" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_90" />
-                              <Button Content="100% 不透明" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_100" />
+                              <TextBlock x:Name="FocusTileOpacityPresetsLabel" Text="快捷预设:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                              <Button x:Name="FocusOpacity70Btn" Content="70% 极淡" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_70" />
+                              <Button x:Name="FocusOpacity80Btn" Content="80% 查阅" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_80" />
+                              <Button x:Name="FocusOpacity90Btn" Content="90% 透视" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_90" />
+                              <Button x:Name="FocusOpacity100Btn" Content="100% 不透明" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusOpacityPreset_100" />
                             </WrapPanel>
                           </StackPanel>
 
@@ -3079,16 +3079,16 @@
                                 <ColumnDefinition Width="70" />
                                 <ColumnDefinition Width="*" />
                               </Grid.ColumnDefinitions>
-                              <TextBlock Text="任务栏序号 (1~20):" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
+                              <TextBlock x:Name="FocusSwitchWindowIndexLabel" Text="任务栏序号 (1~20):" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
                               <TextBox Name="FocusWindowSwitchTextBox" Grid.Column="1" Height="30" FontSize="12" TextAlignment="Center" TextChanged="FocusWindowSwitchTextBox_TextChanged" />
-                              <TextBlock Grid.Column="2" Text="等同快捷键 Win + 序号" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                              <TextBlock x:Name="FocusSwitchWindowIndexHintText" Grid.Column="2" Text="等同快捷键 Win + 序号" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
                             </Grid>
                             <WrapPanel>
-                              <TextBlock Text="快速选择:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                              <Button Content="#1 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_1" />
-                              <Button Content="#2 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_2" />
-                              <Button Content="#3 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_3" />
-                              <Button Content="#4 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_4" />
+                              <TextBlock x:Name="FocusSwitchWindowQuickSelectLabel" Text="快速选择:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                              <Button x:Name="FocusSwitchSlot1Btn" Content="#1 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_1" />
+                              <Button x:Name="FocusSwitchSlot2Btn" Content="#2 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_2" />
+                              <Button x:Name="FocusSwitchSlot3Btn" Content="#3 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_3" />
+                              <Button x:Name="FocusSwitchSlot4Btn" Content="#4 槽位" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,2" FontSize="10" Click="FocusSwitchPreset_4" />
                             </WrapPanel>
                           </StackPanel>
                         </StackPanel>
@@ -3112,8 +3112,8 @@
                                 <TextBlock Name="FocusOcrStatusText" Text="默认调用 Windows 本地原生 OCR 离线引擎 (0延迟 · 隐私安全)" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                               </StackPanel>
                             </Border>
-                            <Button Grid.Column="1" Content="✂️ 立即测试截屏" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="10,0" Margin="6,0,0,0" Click="FocusTestOcr_Click" ToolTip="立即启动全屏框选测试 OCR 识别效果" />
-                            <Button Grid.Column="2" Content="⚙️ 接口配置" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="8,0" Margin="6,0,0,0" Click="FocusOpenOcrSettings_Click" ToolTip="配置 OCR 引擎（本地引擎 / AI 视觉大模型 / 自定义 HTTP）" />
+                            <Button x:Name="FocusOcrTestScreenshotBtn" Grid.Column="1" Content="✂️ 立即测试截屏" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="10,0" Margin="6,0,0,0" Click="FocusTestOcr_Click" ToolTip="立即启动全屏框选测试 OCR 识别效果" />
+                            <Button x:Name="FocusOcrConfigBtn" Grid.Column="2" Content="⚙️ 接口配置" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="8,0" Margin="6,0,0,0" Click="FocusOpenOcrSettings_Click" ToolTip="配置 OCR 引擎（本地引擎 / AI 视觉大模型 / 自定义 HTTP）" />
                           </Grid>
                         </StackPanel>
 
@@ -3151,7 +3151,7 @@
                               </Grid.ColumnDefinitions>
                               <WrapPanel VerticalAlignment="Center">
                                 <Image Name="FocusInheritIconPreviewImage" Width="16" Height="16" Stretch="Uniform" Margin="0,0,6,0" Visibility="Collapsed" />
-                                <TextBlock Text="🏷️ 关联外部程序图标:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
+                                <TextBlock x:Name="FocusInheritIconLabel" Text="🏷️ 关联外部程序图标:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
                                 <TextBlock Name="FocusInheritIconStatusLabel" Text="未关联 (显示默认动作图标)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                               </WrapPanel>
                               <Button Name="FocusClearInheritedIconBtn" Grid.Column="1" Content="✕ 清除关联" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" FontSize="10.5" Click="FocusClearInheritedIcon_Click" ToolTip="清除关联的外部程序图标，恢复默认矢量图标" Visibility="Collapsed" />
@@ -3164,9 +3164,9 @@
                                 <ColumnDefinition Width="Auto" />
                               </Grid.ColumnDefinitions>
                               <TextBox Name="FocusInheritIconPathTextBox" Height="28" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" IsReadOnly="True" ToolTip="关联提取图标的外部程序或快捷方式路径" TextChanged="FocusInheritIconPathTextBox_TextChanged" />
-                              <Button Grid.Column="1" Content="📦 软件库..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusPickInheritProgram_Click" ToolTip="从已安装软件与微软商店应用中选取官方高清图标" />
-                              <Button Grid.Column="2" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusCaptureInheritWindow_Click" ToolTip="直接捕捉桌面上运行中的软件并继承其图标" />
-                              <Button Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusBrowseInheritIcon_Click" ToolTip="手动浏览提取 .exe / .ico / .lnk 图标" />
+                              <Button x:Name="FocusInheritIconPickProgramBtn" Grid.Column="1" Content="📦 软件库..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusPickInheritProgram_Click" ToolTip="从已安装软件与微软商店应用中选取官方高清图标" />
+                              <Button x:Name="FocusInheritIconCaptureWindowBtn" Grid.Column="2" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusCaptureInheritWindow_Click" ToolTip="直接捕捉桌面上运行中的软件并继承其图标" />
+                              <Button x:Name="FocusInheritIconBrowseBtn" Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="6,0,0,0" Click="FocusBrowseInheritIcon_Click" ToolTip="手动浏览提取 .exe / .ico / .lnk 图标" />
                             </Grid>
                           </StackPanel>
                         </Border>
@@ -3182,7 +3182,7 @@
                             <ColumnDefinition Width="Auto" />
                           </Grid.ColumnDefinitions>
                           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="二级级联子动作:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" />
+                            <TextBlock x:Name="FocusSubActionsSectionLabel" Text="二级级联子动作:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" />
                             <TextBlock Name="FocusSubActionsCountLabel" Text="(0 项)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
                           </StackPanel>
                           <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -3228,7 +3228,7 @@
                     <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,10">
                       <StackPanel>
                         <!-- 1. 批量排版模式 -->
-                        <TextBlock Text="批量切换排版模式:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
+                        <TextBlock x:Name="BatchLayoutModeHeaderLabel" Text="批量切换排版模式:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
                         <Grid Margin="0,0,0,10">
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -3252,7 +3252,7 @@
                           <!-- 批量文字字号 -->
                           <StackPanel Grid.Column="0">
                             <Grid>
-                              <TextBlock Text="文字字号大小:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock x:Name="BatchFontSizeHeaderLabel" Text="文字字号大小:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                               <TextBlock Name="BatchFontSizeLabel" Text="11.0 px" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider Name="BatchFontSizeSlider" Minimum="8" Maximum="20" Value="11.0" SmallChange="0.5" LargeChange="1.0" TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,4,0,0" ValueChanged="BatchFontSizeSlider_ValueChanged" />
@@ -3260,7 +3260,7 @@
                           <!-- 批量图标大小 -->
                           <StackPanel Grid.Column="2">
                             <Grid>
-                              <TextBlock Text="图标尺寸大小:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock x:Name="BatchIconSizeHeaderLabel" Text="图标尺寸大小:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                               <TextBlock Name="BatchIconSizeLabel" Text="20 px" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider Name="BatchIconSizeSlider" Minimum="12" Maximum="36" Value="20" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,4,0,0" ValueChanged="BatchIconSizeSlider_ValueChanged" />
@@ -3268,7 +3268,7 @@
                         </Grid>
 
                         <!-- 3. 批量文字颜色 -->
-                        <TextBlock Text="批量文字颜色:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,4" />
+                        <TextBlock x:Name="BatchTextColorHeaderLabel" Text="批量文字颜色:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,4" />
                         <Grid Margin="0,0,0,8">
                           <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="28" />
@@ -3278,8 +3278,8 @@
                           </Grid.ColumnDefinitions>
                           <Border Name="BatchTextColorPreview" Width="20" Height="20" CornerRadius="4" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Margin="0,0,6,0" VerticalAlignment="Center" />
                           <TextBox Name="BatchTextColorTextBox" Grid.Column="1" Height="28" VerticalContentAlignment="Center" Margin="0,0,6,0" TextChanged="BatchTextColorTextBox_TextChanged" />
-                          <Button Grid.Column="2" Content="🎨" Width="28" Height="28" Padding="0" Margin="0,0,4,0" ToolTip="打开调色板选取颜色" Tag="BatchCustomText" Style="{StaticResource ModernButtonStyle}" Click="PickCustomColor_Click" />
-                          <Button Grid.Column="3" Content="🔍" Width="28" Height="28" Padding="0" ToolTip="从屏幕任意位置吸取颜色" Tag="BatchCustomText" Style="{StaticResource ModernButtonStyle}" Click="PickEyedropper_Click" />
+                          <Button x:Name="BatchTextColorPaletteBtn" Grid.Column="2" Content="🎨" Width="28" Height="28" Padding="0" Margin="0,0,4,0" ToolTip="打开调色板选取颜色" Tag="BatchCustomText" Style="{StaticResource ModernButtonStyle}" Click="PickCustomColor_Click" />
+                          <Button x:Name="BatchTextColorEyedropperBtn" Grid.Column="3" Content="🔍" Width="28" Height="28" Padding="0" ToolTip="从屏幕任意位置吸取颜色" Tag="BatchCustomText" Style="{StaticResource ModernButtonStyle}" Click="PickEyedropper_Click" />
                         </Grid>
 
                         <!-- 4. 批量边距微调 (X/Y 偏移) -->
@@ -3291,14 +3291,14 @@
                           </Grid.ColumnDefinitions>
                           <StackPanel Grid.Column="0">
                             <Grid>
-                              <TextBlock Text="水平 X 偏移:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock x:Name="BatchOffsetXHeaderLabel" Text="水平 X 偏移:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                               <TextBlock Name="BatchTextOffsetXLabel" Text="0 px" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider Name="BatchTextOffsetXSlider" Minimum="-40" Maximum="40" Value="0" SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,4,0,0" ValueChanged="BatchTextOffsetSlider_ValueChanged" />
                           </StackPanel>
                           <StackPanel Grid.Column="2">
                             <Grid>
-                              <TextBlock Text="垂直 Y 偏移:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                              <TextBlock x:Name="BatchOffsetYHeaderLabel" Text="垂直 Y 偏移:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                               <TextBlock Name="BatchTextOffsetYLabel" Text="0 px" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" />
                             </Grid>
                             <Slider Name="BatchTextOffsetYSlider" Minimum="-40" Maximum="40" Value="0" SmallChange="1" LargeChange="5" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" Margin="0,4,0,0" ValueChanged="BatchTextOffsetSlider_ValueChanged" />
@@ -3312,7 +3312,7 @@
                               <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="💡 清除所有选中槽位的独立定制，恢复跟随全局统一外观" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <TextBlock x:Name="BatchResetCustomHintText" Text="💡 清除所有选中槽位的独立定制，恢复跟随全局统一外观" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
                             <Button Name="BatchResetCustomBtn" Grid.Column="1" Content="🔄 清除自定义，恢复跟随全局统一" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="10,0" Margin="8,0,0,0" Click="BatchResetCustomBtn_Click" />
                           </Grid>
                         </Border>
@@ -3325,7 +3325,7 @@
             </ScrollViewer>
 
             <!-- 分割线与拖拽调整手柄 (GridSplitter) -->
-            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+            <GridSplitter x:Name="Tab2GridSplitter" Grid.Column="1" Width="8" HorizontalAlignment="Center" VerticalAlignment="Stretch"
                           Background="Transparent" ShowsPreview="False" Cursor="SizeWE"
                           DragCompleted="Tab2GridSplitter_DragCompleted" MouseDoubleClick="Tab2GridSplitter_MouseDoubleClick"
                           ToolTip="拖拽调整画布与配置区比例，双击恢复默认比例">
@@ -3355,7 +3355,7 @@
                       <ColumnDefinition Width="Auto" />
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="实时交互画布" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="LiveCanvasHeaderTitleText" Text="实时交互画布" FontSize="13.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                     <Button Name="MappingsLinkSubActionsBtn" Grid.Column="1" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="0,0,8,0" ToolTip="开启时：拖拽一级扇区将连同绑定的二级子轮盘一起对调换位&#x0a;关闭时：仅对调一级扇区主动作，保留各方位现存的二级子菜单" Click="MappingsLinkSubActionsBtn_Click">
                       <StackPanel Orientation="Horizontal">
                         <TextBlock Name="MappingsLinkSubActionsIcon" Text="🔗" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center" />
@@ -3363,10 +3363,10 @@
                       </StackPanel>
                     </Button>
                     <Border Grid.Column="2" Background="#ECFDF5" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                      <TextBlock Text="60FPS 同步" FontSize="10" FontWeight="Bold" Foreground="#059669" />
+                      <TextBlock x:Name="MappingsFpsBadgeText" Text="60FPS 同步" FontSize="10" FontWeight="Bold" Foreground="#059669" />
                     </Border>
                   </Grid>
-                  <TextBlock Text="💡 点击内圈选一级扇区，点击外环选二级动作，点击中心选核圆；按住拖动可对调功能位置！" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                  <TextBlock x:Name="MappingsCanvasInstructionsText" Text="💡 点击内圈选一级扇区，点击外环选二级动作，点击中心选核圆；按住拖动可对调功能位置！" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
 
                   <!-- 一二级轮盘预览分段切换 -->
                   <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="3">
@@ -3420,7 +3420,7 @@
                 </Border>
 
                 <!-- 底部保存/提示 -->
-                <TextBlock Grid.Row="2" Text="💡 修改在内存中即时生效，点击主窗口右下角【保存并生效】持久化至硬盘。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+                <TextBlock x:Name="MappingsSaveNoticeText" Grid.Row="2" Text="💡 修改在内存中即时生效，点击主窗口右下角【保存并生效】持久化至硬盘。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
               </Grid>
             </Border>
           </Grid>
@@ -3436,8 +3436,8 @@
                       <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel>
-                      <TextBlock Text="当前配置方案" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                      <TextBlock Text="选择或新建针对特定程序（如 Chrome、VS Code）或特定工作流的轮盘配置方案（支持双击重命名）。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,10" />
+                      <TextBlock x:Name="ListModeProfileHeaderTitle" Text="当前配置方案" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock x:Name="ListModeProfileHeaderDesc" Text="选择或新建针对特定程序（如 Chrome、VS Code）或特定工作流的轮盘配置方案（支持双击重命名）。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,10" />
                       <ListBox Name="ProfilesListBox" Height="100" DisplayMemberPath="DisplayTitle" SelectionChanged="ProfilesListBox_SelectionChanged" MouseDoubleClick="ProfilesListBox_MouseDoubleClick" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0,0,0">
@@ -3450,8 +3450,8 @@
                 </Border>
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18" Margin="0,0,0,14">
                   <StackPanel>
-                    <TextBlock Text="扇区方位数量" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="切换手势轮盘的切分数量。4 键最快最不易误触，8 键为标准全能方位，12 键适合功能密集场景。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,10" />
+                    <TextBlock x:Name="ListModeSectorHeaderTitle" Text="扇区方位数量" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock x:Name="ListModeSectorHeaderDesc" Text="切换手势轮盘的切分数量。4 键最快最不易误触，8 键为标准全能方位，12 键适合功能密集场景。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,10" />
                     <StackPanel Orientation="Horizontal">
                       <RadioButton Name="SectorCount4Radio" GroupName="SectorCountGroup" Content="4 键十字方位" Margin="0,0,24,0" Checked="SectorCountRadio_Checked" />
                       <RadioButton Name="SectorCount8Radio" GroupName="SectorCountGroup" Content="8 键全向方位 (推荐)" Margin="0,0,24,0" IsChecked="True" Checked="SectorCountRadio_Checked" />
@@ -3461,9 +3461,9 @@
                 </Border>
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="18">
                   <StackPanel>
-                    <TextBlock Text="扇区动作映射列表" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="为每个方位指定触发动作与图标。支持热键组合（如 Ctrl+C）、启动本地程序与系统级操作。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,2" />
-                    <TextBlock Text="点击右侧功能卡的 ▲ / ▼ 箭头，将功能移动到相邻的轮盘位置槽。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,14" />
+                    <TextBlock x:Name="ListModeActionListHeaderTitle" Text="扇区动作映射列表" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock x:Name="ListModeActionListHeaderDesc1" Text="为每个方位指定触发动作与图标。支持热键组合（如 Ctrl+C）、启动本地程序与系统级操作。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,2" />
+                    <TextBlock x:Name="ListModeActionListHeaderDesc2" Text="点击右侧功能卡的 ▲ / ▼ 箭头，将功能移动到相邻的轮盘位置槽。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,14" />
                     <ItemsControl Name="SlotsItemsControl">
                       <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -3503,7 +3503,7 @@
                                   <ColumnDefinition Width="58" />
                                 </Grid.ColumnDefinitions>
 
-                                <Button Grid.Column="0" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="6,0" Margin="0,0,8,0" Click="PickIcon_Click" ToolTip="点击选取矢量图标">
+                                <Button Grid.Column="0" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="6,0" Margin="0,0,8,0" Click="PickIcon_Click" ToolTip="{Binding PickIconToolTip}">
                                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                                     <Image Width="14" Height="14" Stretch="Uniform" Margin="0,0,4,0" Source="{Binding InheritedAppIcon}" Visibility="{Binding HasInheritedAppIcon, Converter={StaticResource BoolToVis}}" />
                                     <Path Width="14" Height="14" Stretch="Uniform" Fill="{DynamicResource AccentPrimaryBrush}" Margin="0,0,4,0" Data="{Binding VectorIconData}" Visibility="{Binding ShowVectorIcon, Converter={StaticResource BoolToVis}}" />
@@ -3522,15 +3522,15 @@
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <local:HotkeyRecorderBox Height="30" FontSize="12" HotkeyText="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Button Grid.Column="1" Content="⚙️ 拼装" Margin="4,0,0,0" Height="30" Padding="6,0" Cursor="Hand" ToolTip="打开快捷热键拼装组合器（支持 Alt+Tab、Win+Tab、Shift+Alt、多位连续数值等）" Click="HotkeyBuilderButton_Click" Style="{StaticResource ModernButtonStyle}" />
+                                    <Button Grid.Column="1" Content="{Binding HotkeyBuilderButtonText}" Margin="4,0,0,0" Height="30" Padding="6,0" Cursor="Hand" ToolTip="{Binding HotkeyBuilderToolTip}" Click="HotkeyBuilderButton_Click" Style="{StaticResource ModernButtonStyle}" />
                                   </Grid>
                                   <Grid Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}">
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="*" />
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox IsReadOnly="True" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="选择的应用程序路径" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Button Grid.Column="1" Width="34" Style="{StaticResource ModernButtonStyle}" Height="30" ToolTip="选择应用程序或快捷方式..." Click="Browse_Click">
+                                    <TextBox IsReadOnly="True" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextSecondaryBrush}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding AppPathToolTip}" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="1" Width="34" Style="{StaticResource ModernButtonStyle}" Height="30" ToolTip="{Binding BrowseAppToolTip}" Click="Browse_Click">
                                       <TextBlock Text="📁" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Button>
                                   </Grid>
@@ -3539,22 +3539,16 @@
                                       <ColumnDefinition Width="*" />
                                       <ColumnDefinition Width="90" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="目标网址，如 https://github.com" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <ComboBox Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" SelectedValue="{Binding BrowserChoice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Tag">
-                                      <ComboBoxItem Tag="Default" Content="默认" />
-                                      <ComboBoxItem Tag="Chrome" Content="Chrome" />
-                                      <ComboBoxItem Tag="Edge" Content="Edge" />
-                                      <ComboBoxItem Tag="Firefox" Content="Firefox" />
-                                      <ComboBoxItem Tag="Custom" Content="自定义" />
-                                    </ComboBox>
+                                    <TextBox Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding WebUrlToolTip}" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <ComboBox Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" SelectedValue="{Binding BrowserChoice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding BrowserOptions}" />
                                   </Grid>
                                   <Grid Visibility="{Binding IsFolderType, Converter={StaticResource BoolToVis}}">
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="*" />
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="选择的本地文件夹路径" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Button Grid.Column="1" Width="34" Style="{StaticResource ModernButtonStyle}" Height="30" ToolTip="选择本地文件夹..." Click="BrowseFolder_Click">
+                                    <TextBox Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding FolderPathToolTip}" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Button Grid.Column="1" Width="34" Style="{StaticResource ModernButtonStyle}" Height="30" ToolTip="{Binding BrowseFolderToolTip}" Click="BrowseFolder_Click">
                                       <TextBlock Text="📂" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                     </Button>
                                   </Grid>
@@ -3564,17 +3558,17 @@
                                       <ColumnDefinition Width="*" />
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBox Grid.Column="0" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="要运行的命令，如 ping -n 3 127.0.0.1" />
+                                    <TextBox Grid.Column="0" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" Margin="0,0,4,0" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding CommandParamToolTip}" />
                                     <ComboBox Grid.Column="1" Width="118" ItemsSource="{Binding Terminals}" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" SelectedValue="{Binding CommandTerminal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" />
                                   </Grid>
                                   <Grid Visibility="{Binding IsSwitchWindowType, Converter={StaticResource BoolToVis}}">
-                                    <TextBox Text="{Binding NthWindowIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" ToolTip="任务栏第 N 个应用（顺序同任务栏/Win+N 槽位，稳定）；图标与切换目标一致；固定未运行的槽位无法启动，托盘驻留不计入" />
+                                    <TextBox Text="{Binding NthWindowIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding SwitchWindowIndexToolTip}" />
                                   </Grid>
-                                  <ComboBox SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" Visibility="{Binding IsTileType, Converter={StaticResource BoolToVis}}" ToolTip="平铺布局预设" />
+                                  <ComboBox SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" Visibility="{Binding IsTileType, Converter={StaticResource BoolToVis}}" ToolTip="{Binding TileLayoutToolTip}" />
                                 </Grid>
 
-                                <TextBox Grid.Column="4" Width="68" Margin="0,0,8,0" Height="30" FontSize="11" ToolTip="启动参数 (如命令行参数或URL)" VerticalContentAlignment="Center" Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsLaunchType}" Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}" />
-                                <Button Grid.Column="5" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="0,0,6,0" ToolTip="配置该扇区的二级级联子动作菜单" Content="{Binding SubActionButtonText}" Click="ManageSubActions_Click" />
+                                <TextBox Grid.Column="4" Width="68" Margin="0,0,8,0" Height="30" FontSize="11" ToolTip="{Binding LaunchArgsToolTip}" VerticalContentAlignment="Center" Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsLaunchType}" Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}" />
+                                <Button Grid.Column="5" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="0,0,6,0" ToolTip="{Binding ManageSubActionsToolTip}" Content="{Binding SubActionButtonText}" Click="ManageSubActions_Click" />
 
                                 <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,6,0">
                                   <Button Width="28" Height="30" Padding="0" Margin="0,0,4,0" Style="{StaticResource ModernButtonStyle}" Content="▲" IsEnabled="{Binding CanMoveUp}" ToolTip="{Binding MoveUpToolTip}" Click="MoveSlotUp_Click" AutomationProperties.Name="{Binding MoveUpToolTip}" />
@@ -3625,7 +3619,7 @@
                       <CheckBox Name="TileIncludeMinimizedCheckBox" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10" Checked="TileIncludeMinimizedCheckBox_Changed" Unchecked="TileIncludeMinimizedCheckBox_Changed">
                         <StackPanel Margin="6,0,0,0">
                           <TextBlock Name="TileMinimizeText" Text="包含最小化窗口（还原后参与平铺）" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
-                          <TextBlock Text="默认关闭：最小化窗口不参与，仅排布可见窗口。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                          <TextBlock x:Name="TileExcludeMinimizedHintText" Text="默认关闭：最小化窗口不参与，仅排布可见窗口。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
                         </StackPanel>
                       </CheckBox>
                       <TextBlock Name="TileExcludeText" Text="平铺排除名单（进程 exe 名，逗号分隔，如 notepad,spotify）：" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
@@ -3635,7 +3629,7 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBox Name="TileExcludeProcessesTextBox" Height="32" FontSize="12" VerticalContentAlignment="Center" Padding="8,0" TextChanged="TileExcludeProcessesTextBox_TextChanged" />
-                        <Button Grid.Column="1" Content="🎯 捕捉排除进程..." Style="{StaticResource ModernButtonStyle}" Height="32" Padding="10,0" Margin="6,0,0,0" ToolTip="打开智能窗口捕捉器，选取桌面运行中的程序加入平铺排除名单（自动安全排除 StarPie 自身）" Click="TileCaptureCurrentProcess_Click" />
+                        <Button x:Name="TileCaptureExcludeProcessBtn" Grid.Column="1" Content="🎯 捕捉排除进程..." Style="{StaticResource ModernButtonStyle}" Height="32" Padding="10,0" Margin="6,0,0,0" ToolTip="打开智能窗口捕捉器，选取桌面运行中的程序加入平铺排除名单（自动安全排除 StarPie 自身）" Click="TileCaptureCurrentProcess_Click" />
                       </Grid>
                       <TextBlock Name="TileMarginText" Text="屏幕边距（上 / 下 / 左 / 右，物理像素，0 = 贴边）：" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6" />
                       <Grid Margin="0,0,0,10">
@@ -3661,7 +3655,7 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Name="TileCycleRangeText" Text="循环切换布局（勾选参与项，▲▼ 调顺序；不勾任何项=全部参与）：" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                        <Button Grid.Column="1" Content="✨ 经典常用 (4项)" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" FontSize="10.5" ToolTip="一键勾选 2L、2T、3L12、4G 四种高频排布" Click="TileCyclePresetClassic_Click" />
+                        <Button x:Name="TilePresetClassic4Btn" Grid.Column="1" Content="✨ 经典常用 (4项)" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" FontSize="10.5" ToolTip="一键勾选 2L、2T、3L12、4G 四种高频排布" Click="TileCyclePresetClassic_Click" />
                       </Grid>
                       <Grid>
                         <Grid.ColumnDefinitions>
@@ -3676,10 +3670,10 @@
                           </ListBox.ItemTemplate>
                         </ListBox>
                         <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                          <Button Content="▲" Height="28" Width="36" Padding="0" FontSize="11" Style="{StaticResource ModernButtonStyle}" Click="TileCycleUp_Click" ToolTip="上移" />
-                          <Button Content="▼" Height="28" Width="36" Padding="0" FontSize="11" Margin="0,4,0,0" Style="{StaticResource ModernButtonStyle}" Click="TileCycleDown_Click" ToolTip="下移" />
-                          <Button Content="全" Height="26" Width="36" Padding="0" FontSize="10" Margin="0,6,0,0" Style="{StaticResource ModernButtonStyle}" Click="TileCycleAll_Click" ToolTip="全部参与循环" />
-                          <Button Content="空" Height="26" Width="36" Padding="0" FontSize="10" Margin="0,4,0,0" Style="{StaticResource ModernButtonStyle}" Click="TileCycleNone_Click" ToolTip="清空（等效全部参与）" />
+                          <Button x:Name="TileMoveLayoutUpBtn" Content="▲" Height="28" Width="36" Padding="0" FontSize="11" Style="{StaticResource ModernButtonStyle}" Click="TileCycleUp_Click" ToolTip="上移" />
+                          <Button x:Name="TileMoveLayoutDownBtn" Content="▼" Height="28" Width="36" Padding="0" FontSize="11" Margin="0,4,0,0" Style="{StaticResource ModernButtonStyle}" Click="TileCycleDown_Click" ToolTip="下移" />
+                          <Button x:Name="TileSelectAllLayoutsBtn" Content="全" Height="26" Width="36" Padding="0" FontSize="10" Margin="0,6,0,0" Style="{StaticResource ModernButtonStyle}" Click="TileCycleAll_Click" ToolTip="全部参与循环" />
+                          <Button x:Name="TileClearAllLayoutsBtn" Content="空" Height="26" Width="36" Padding="0" FontSize="10" Margin="0,4,0,0" Style="{StaticResource ModernButtonStyle}" Click="TileCycleNone_Click" ToolTip="清空（等效全部参与）" />
                         </StackPanel>
                       </Grid>
                     </StackPanel>

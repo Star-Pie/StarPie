@@ -992,6 +992,29 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 
 	public string MoveDownToolTip => I18n.T("SectorMoveDown");
 
+	public string PickIconToolTip => I18n.T("PickIconToolTip");
+	public string HotkeyBuilderButtonText => I18n.T("HotkeyBuilderButtonText");
+	public string HotkeyBuilderToolTip => I18n.T("HotkeyBuilderToolTip");
+	public string AppPathToolTip => I18n.T("AppPathToolTip");
+	public string BrowseAppToolTip => I18n.T("BrowseAppToolTip");
+	public string WebUrlToolTip => I18n.T("WebUrlToolTip");
+	public string FolderPathToolTip => I18n.T("FolderPathToolTip");
+	public string BrowseFolderToolTip => I18n.T("BrowseFolderToolTip");
+	public string CommandParamToolTip => I18n.T("CommandParamToolTip");
+	public string SwitchWindowIndexToolTip => I18n.T("SwitchWindowIndexToolTip");
+	public string TileLayoutToolTip => I18n.T("TileLayoutToolTip");
+	public string LaunchArgsToolTip => I18n.T("LaunchArgsToolTip");
+	public string ManageSubActionsToolTip => I18n.T("ManageSubActionsToolTip");
+
+	public List<ActionTypeOption> BrowserOptions => new List<ActionTypeOption>
+	{
+		new ActionTypeOption { Tag = "Default", DisplayText = I18n.T("BrowserChoiceDefault") },
+		new ActionTypeOption { Tag = "Chrome", DisplayText = "Chrome" },
+		new ActionTypeOption { Tag = "Edge", DisplayText = "Edge" },
+		new ActionTypeOption { Tag = "Firefox", DisplayText = "Firefox" },
+		new ActionTypeOption { Tag = "Custom", DisplayText = I18n.T("BrowserChoiceCustom") }
+	};
+
 	private readonly Action _languageChangedHandler;
 
 	private bool _isDisposed;
@@ -1093,6 +1116,22 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 		OnPropertyChanged(nameof(MoveDownToolTip));
 		OnPropertyChanged(nameof(IconDisplayText));
 		OnPropertyChanged(nameof(SubActionButtonText));
+		OnPropertyChanged(nameof(PickIconToolTip));
+		OnPropertyChanged(nameof(HotkeyBuilderButtonText));
+		OnPropertyChanged(nameof(HotkeyBuilderToolTip));
+		OnPropertyChanged(nameof(AppPathToolTip));
+		OnPropertyChanged(nameof(BrowseAppToolTip));
+		OnPropertyChanged(nameof(WebUrlToolTip));
+		OnPropertyChanged(nameof(BrowserOptions));
+		OnPropertyChanged(nameof(FolderPathToolTip));
+		OnPropertyChanged(nameof(BrowseFolderToolTip));
+		OnPropertyChanged(nameof(CommandParamToolTip));
+		OnPropertyChanged(nameof(SwitchWindowIndexToolTip));
+		OnPropertyChanged(nameof(TileLayoutToolTip));
+		OnPropertyChanged(nameof(LaunchArgsToolTip));
+		OnPropertyChanged(nameof(ManageSubActionsToolTip));
+		OnPropertyChanged(nameof(Terminals));
+		OnPropertyChanged(nameof(TileLayoutOptions));
 	}
 
 	public void Dispose()
