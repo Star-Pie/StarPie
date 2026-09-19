@@ -1504,11 +1504,7 @@ public partial class SettingsWindow : Window
 		if (UpdatePkgStandaloneRadio != null) UpdatePkgStandaloneRadio.IsChecked = isStandalone;
 		if (UpdatePkgLightweightRadio != null) UpdatePkgLightweightRadio.IsChecked = !isStandalone;
 
-		string lastCheck = string.IsNullOrEmpty(ConfigManager.CurrentConfig.LastCheckUpdateTime) ? "未检查" : ConfigManager.CurrentConfig.LastCheckUpdateTime;
-		if (UpdateStatusDescText != null)
-		{
-			UpdateStatusDescText.Text = $"当前运行版本: StarPie v{AppVersionInfo.DisplayVersion} (64位)。上次检查: {lastCheck}";
-		}
+		UpdateSoftwareUpdateStatusUi();
 		UpdateOcrBadgeUi();
 		UpdateRollbackBadgeAndCandidates();
 		UpdateLayerSwitchTriggerUi();
@@ -1527,6 +1523,95 @@ public partial class SettingsWindow : Window
 				Tab2LeftColumn.Width = new GridLength(1.15, GridUnitType.Star);
 				Tab2RightColumn.Width = new GridLength(1.0, GridUnitType.Star);
 			}
+		}
+	}
+
+	private void UpdateSoftwareUpdateStatusUi()
+	{
+		if (UpdateStatusBadgeText == null || UpdateStatusDescText == null) return;
+
+		// 1. 如果已就绪安装（更新包或回退包下载完成）
+		if (UpdateReadyToInstallPanel?.Visibility == Visibility.Visible)
+		{
+			if (UpdateStatusBadge != null)
+			{
+				UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 16, 185, 129));
+			}
+			UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
+			if (_selectedRollbackRelease != null && (UpdateNewVersionPanel == null || UpdateNewVersionPanel.Visibility != Visibility.Visible))
+			{
+				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusRollbackComplete");
+			}
+			else
+			{
+				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusDownloadComplete");
+			}
+			return;
+		}
+
+		// 2. 如果正在下载中，保持当前下载状态
+		if (UpdateDownloadProgressPanel?.Visibility == Visibility.Visible)
+		{
+			return;
+		}
+
+		// 3. 如果在检查更新中
+		if (CheckUpdateNowBtn != null && !CheckUpdateNowBtn.IsEnabled && UpdateStatusBadgeText.Text == I18n.T("UpdateStatusChecking"))
+		{
+			return;
+		}
+
+		// 4. 根据最新 release 信息判断
+		if (_latestReleaseInfo != null)
+		{
+			if (_latestReleaseInfo.IsNewerVersion)
+			{
+				UpdateStatusBadgeText.Text = string.Format(I18n.T("UpdateStatusFoundNew"), _latestReleaseInfo.TagName);
+				UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 158, 11));
+				if (UpdateStatusBadge != null)
+				{
+					UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 245, 158, 11));
+				}
+				UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusFoundNewDesc"), _latestReleaseInfo.TagName, $"{_latestReleaseInfo.PublishedAt:yyyy-MM-dd HH:mm}");
+
+				if (UpdateNewVersionTagText != null)
+				{
+					UpdateNewVersionTagText.Text = string.Format(I18n.T("UpdateNewVersionTag"), _latestReleaseInfo.TagName);
+				}
+				if (UpdateReleaseChannelTag != null)
+				{
+					UpdateReleaseChannelTag.Text = _latestReleaseInfo.IsPrerelease ? I18n.T("ReleaseChannelBeta") : I18n.T("ReleaseChannelStable");
+				}
+				if (UpdateReleaseDateText != null)
+				{
+					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{_latestReleaseInfo.PublishedAt:yyyy-MM-dd HH:mm}");
+				}
+			}
+			else
+			{
+				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusUpToDate");
+				UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
+				if (UpdateStatusBadge != null)
+				{
+					UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 16, 185, 129));
+				}
+				UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusUpToDateDesc"), AppVersionInfo.DisplayVersion, _latestReleaseInfo.TagName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
+			}
+		}
+		else
+		{
+			// 初始默认状态（未在本次运行检查线上版本，使用上次持久化的检查时间）
+			UpdateStatusBadgeText.Text = I18n.T("UpdateStatusLatest");
+			if (UpdateStatusBadge != null)
+			{
+				UpdateStatusBadge.SetResourceReference(Border.BackgroundProperty, "NavTabActiveBgBrush");
+			}
+			UpdateStatusBadgeText.SetResourceReference(TextBlock.ForegroundProperty, "AccentPrimaryBrush");
+
+			string lastCheck = string.IsNullOrEmpty(ConfigManager.CurrentConfig?.LastCheckUpdateTime)
+				? I18n.T("UpdateLastCheckNever")
+				: ConfigManager.CurrentConfig.LastCheckUpdateTime;
+			UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusCurrentVerDescFmt"), AppVersionInfo.DisplayVersion, lastCheck);
 		}
 	}
 
@@ -2379,6 +2464,7 @@ public partial class SettingsWindow : Window
 		{
 			CheckUpdateNowBtn.Content = I18n.T("BtnCheckUpdate");
 		}
+		UpdateSoftwareUpdateStatusUi();
 		if (UpdateSilentCheckTitleText != null)
 		{
 			UpdateSilentCheckTitleText.Text = I18n.T("UpdateSilentCheckTitle");
@@ -3085,6 +3171,10 @@ public partial class SettingsWindow : Window
 		if (UpdateDownloadSpeedText != null && (UpdateDownloadSpeedText.Text.Contains("计算中") || UpdateDownloadSpeedText.Text.Contains("Calculating") || UpdateDownloadSpeedText.Text.Contains("計算中")))
 		{
 			UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedCalculating");
+		}
+		if (UpdateDownloadSpeedText != null && (UpdateDownloadSpeedText.Text.Contains("连接下载源") || UpdateDownloadSpeedText.Text.Contains("Connecting") || UpdateDownloadSpeedText.Text.Contains("連線下載") || UpdateDownloadSpeedText.Text.Contains("接続中")))
+		{
+			UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedConnecting");
 		}
 		if (FocusShellToolTitleText != null && (FocusShellToolTitleText.Text == "未挑选功能 (点击右侧挑选)" || FocusShellToolTitleText.Text == I18n.T("FocusShellToolDefaultTitle") || string.IsNullOrEmpty(FocusShellToolTitleText.Text)))
 		{
@@ -14795,11 +14885,11 @@ public partial class SettingsWindow : Window
 			if (CheckUpdateNowBtn != null)
 			{
 				CheckUpdateNowBtn.IsEnabled = false;
-				CheckUpdateNowBtn.Content = "⏳ 正在检查...";
+				CheckUpdateNowBtn.Content = I18n.T("BtnCheckingUpdate");
 			}
 			if (UpdateStatusBadgeText != null)
 			{
-				UpdateStatusBadgeText.Text = "正在检查更新...";
+				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusChecking");
 				UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(59, 130, 246));
 			}
 			if (UpdateStatusBadge != null)
@@ -14955,10 +15045,10 @@ public partial class SettingsWindow : Window
 		if (UpdateReadyToInstallPanel != null) UpdateReadyToInstallPanel.Visibility = Visibility.Collapsed;
 		if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Visible;
 
-		if (UpdateDownloadingTitleText != null) UpdateDownloadingTitleText.Text = $"正在高速下载 {fileName}...";
+		if (UpdateDownloadingTitleText != null) UpdateDownloadingTitleText.Text = string.Format(I18n.T("UpdateDownloadingFmt"), fileName);
 		if (UpdateDownloadPercentText != null) UpdateDownloadPercentText.Text = "0%";
 		if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = 0;
-		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = "⚡ 连接下载源中...";
+		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedConnecting");
 
 		_downloadCts?.Dispose();
 		_downloadCts = new CancellationTokenSource();
@@ -14980,7 +15070,7 @@ public partial class SettingsWindow : Window
 
 			if (UpdateStatusBadgeText != null)
 			{
-				UpdateStatusBadgeText.Text = "下载完成 · 就绪安装";
+				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusDownloadComplete");
 				UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
 			}
 			if (UpdateStatusBadge != null)
@@ -15225,7 +15315,7 @@ public partial class SettingsWindow : Window
 		if (UpdateDownloadingTitleText != null) UpdateDownloadingTitleText.Text = string.Format(I18n.T("RollbackDownloadingFmt"), fileName);
 		if (UpdateDownloadPercentText != null) UpdateDownloadPercentText.Text = "0%";
 		if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = 0;
-		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = "⚡ 连接下载源中...";
+		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedConnecting");
 
 		_downloadCts?.Dispose();
 		_downloadCts = new CancellationTokenSource();
@@ -15247,7 +15337,7 @@ public partial class SettingsWindow : Window
 
 			if (UpdateStatusBadgeText != null)
 			{
-				UpdateStatusBadgeText.Text = "回退包下载完成 · 就绪安装";
+				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusRollbackComplete");
 				UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
 			}
 			if (UpdateStatusBadge != null)

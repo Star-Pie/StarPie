@@ -8107,6 +8107,48 @@ public static class I18n
 			[LanguageCode.En] = "Downloading historical version {0}...",
 			[LanguageCode.Ja] = "過去のバージョン {0} を高速ダウンロード中..."
 		};
+		dictionary["UpdateStatusCurrentVerDescFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前运行版本: StarPie v{0} (64位)。上次检查: {1}",
+			[LanguageCode.ZhTw] = "目前執行版本: StarPie v{0} (64位元)。上次檢查: {1}",
+			[LanguageCode.En] = "Current version: StarPie v{0} (64-bit). Last checked: {1}",
+			[LanguageCode.Ja] = "現在のバージョン: StarPie v{0} (64ビット)。最終確認: {1}"
+		};
+		dictionary["UpdateLastCheckNever"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未检查",
+			[LanguageCode.ZhTw] = "未檢查",
+			[LanguageCode.En] = "Never",
+			[LanguageCode.Ja] = "未確認"
+		};
+		dictionary["UpdateStatusDownloadComplete"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "下载完成 · 就绪安装",
+			[LanguageCode.ZhTw] = "下載完成 · 就緒安裝",
+			[LanguageCode.En] = "Download complete · Ready to install",
+			[LanguageCode.Ja] = "ダウンロード完了 · インストール準備完了"
+		};
+		dictionary["UpdateStatusRollbackComplete"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "回退包下载完成 · 就绪安装",
+			[LanguageCode.ZhTw] = "回退包下載完成 · 就緒安裝",
+			[LanguageCode.En] = "Rollback package ready · Ready to install",
+			[LanguageCode.Ja] = "ロールバックパッケージ完了 · インストール準備完了"
+		};
+		dictionary["UpdateDownloadingFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正在高速下载更新包 {0}...",
+			[LanguageCode.ZhTw] = "正在高速下載更新包 {0}...",
+			[LanguageCode.En] = "Downloading update package {0}...",
+			[LanguageCode.Ja] = "更新パッケージ {0} を高速ダウンロード中..."
+		};
+		dictionary["UpdateDownloadSpeedConnecting"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 连接下载源中...",
+			[LanguageCode.ZhTw] = "⚡ 連線下載來源中...",
+			[LanguageCode.En] = "⚡ Connecting to download source...",
+			[LanguageCode.Ja] = "⚡ ダウンロードソースに接続中..."
+		};
 		// --- Tab 4 (About & Milestones) ---
 		dictionary["BtnViewChangelog"] = new Dictionary<LanguageCode, string>
 		{
