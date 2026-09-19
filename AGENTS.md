@@ -134,9 +134,11 @@ g:\Users\2 Better\Desktop\design\
 │   ├── Everything-SDK/            # 本地搜索联调用的 SDK 头文件
 │   └── *.ps1 / *.png / test_v170.cs   # 临时验证脚本与对照截图
 ├── tests/                         # UI 回归套件（pywinauto + UIA；会弹 GUI，由用户手动运行）
-│   ├── conftest.py                # 隔离 AppData 沙箱 fixture
+│   ├── conftest.py                # 隔离 AppData 沙箱 fixture（另导出 find_exe / launch_app 供需要自控启动的用例复用）
 │   ├── test_settings.py           # 设置窗口回归
-│   └── test_plugins.py            # 插件页回归
+│   ├── test_plugins.py            # 插件页回归
+│   ├── test_i18n.py               # 「切英文后整页已翻译」棘轮回归（台账驱动）
+│   └── i18n_baseline.json         # 上述用例的台账基线 —— 只允许变少，新增即红
 ├── installer/                     # Inno Setup 打包
 │   ├── StarPie.iss                # 安装脚本（语言文件在 Languages/）
 │   └── build-installer.ps1        # 打包入口 —— 版本号 6 处同步点之一（$Version 兜底值）
@@ -340,6 +342,56 @@ powershell -Command "Compress-Archive -Path 'g:\Users\2 Better\Desktop\design\re
 4. `CHANGELOG.md`：在顶部添加规范的 `## [vX.Y.Z] - YYYY-MM-DD` 详细变更日志
 5. `installer/build-installer.ps1`：`$Version` 兜底值（正常情况下脚本从 csproj 读）
 6. `installer/StarPie.iss`：`MyAppVersion` 与 `MyAppNumericVersion` 两个兜底值（正常情况下由脚本以 `/D` 覆盖）
+
+### 5.4 UI 回归套件（pywinauto + UIA）
+
+```bash
+/c/Users/23836/.workbuddy/binaries/python/envs/default/Scripts/python.exe -m pytest tests/ -v
+```
+
+**由用户手动运行**（会弹 GUI）。改 UI 后必须重跑；AI 侧只跑 `--plugin-selftest` 与 `scratch/` 下的静态护栏脚本。
+
+| 文件 | 只管 |
+| --- | --- |
+| `test_settings.py` | 设置窗口交互（滑块、标签页、方案管理、快捷键录制…） |
+| `test_plugins.py` | 插件页渲染与扫描目录语义 |
+| `test_i18n.py` | **切英文后整页翻干净没有**（台账驱动） |
+| `conftest.py` | 沙箱与启动夹具。另导出 `find_exe()` / `launch_app()`，供需要自己控制启动现场的用例复用（**别再抄一份候选路径列表**） |
+
+#### `test_i18n.py` 是台账（棘轮）断言，不是「一条中文都不许有」
+
+判据是**集合包含**：本次观测集合 ⊆ `tests/i18n_baseline.json`。**只允许变少，新增即红。**
+
+之所以不写成「清零」，是因为漏接的真实量级是「一整批无名控件从没接过线」：`SettingsWindow.xaml` 里含中文的
+`Text`/`Content` 有 **441 处没有 `Name`**，其中 **376 处词表里压根没建键**。这批控件既进不了静态差集
+（`scratch/check_i18n.py` 只扫带 `Name="X"` 的），也进不了按 auto_id 查询的 UI 断言 —— 静态与动态双双漏掉。
+先落一张网挡住**新增**，比等全部还清再上护栏有用得多。
+
+**修完一批漏接后收紧台账**：
+
+```bash
+STARPIE_I18N_UPDATE_BASELINE=1 <venv>/python.exe -m pytest tests/test_i18n.py -v
+```
+
+它会用**同一条采集代码路径**重采（所以台账不会与用例逻辑漂移），该用例以 `skipped` 结束 ——
+标定不是验收，别当成跑过了。跑完 `git diff tests/i18n_baseline.json`：**少掉多少条**就是这一轮的真实战果。
+
+**已知盲区**（别把「这条绿了」当成「全站已翻译」）：
+1. 只覆盖**遍历到的页签**里、真的渲染出来且含中文的控件（折叠页签的内容不进自动化树）；
+2. `tab_4`（关于 / 更新日志）**不在范围内**：正文是发行说明散文，项目有意只发中文，
+   纳入台账会让「每次发版新增一条 release note」都变成一次失败，从而训练人去改台账；
+3. 数字已归一化为 `#`（版本号 / 时间戳 / 扇区号每次运行都会变）；CJK 判据**刻意不含 U+3000**
+   （表意空格在本项目里当作排版分隔符用，与语言无关）；
+4. 操作系统提供的窗口按钮（`关闭` / `最大化` / `最小化`）跟随系统语言而非应用语言，属假阳性，已排除。
+
+#### 夹具纪律（`test_plugins.py` 与 `test_i18n.py` 都踩过）
+
+- **要改「进程启动前的现场」，就自己用 `launch_app()` 启动**，别指望 `app` 夹具能替你改 ——
+  它启动的时机比用例早。`test_i18n.py` 即以此把 `Language` 写进 `config.json`，绕开
+  `combo.select("🌐 [EN] English")` 因 emoji 被剥掉而抛的 `IndexError`。
+- **别自己拼一份假配置**：`EnsureConfigHealth` 只校验、不补默认数据，写一个 `{"Language":"en"}`
+  得到的是**空轮盘**（动作名显示占位符、子动作数 0）。`test_i18n.py` 的做法是先让程序
+  自己生成默认配置、再改语言那一个字段，这样标定到的才是**真实首装现场**。
 
 ---
 

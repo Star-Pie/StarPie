@@ -24,11 +24,14 @@ def sandbox_env(tmp_path):
     
     return env, local_app_data
 
-@pytest.fixture(scope="function")
-def app(sandbox_env, request):
-    env, local_app_data = sandbox_env
-    
-    # Locate the executable
+def find_exe():
+    """
+    定位已构建的可执行文件，找不到直接 fail。
+
+    抽成模块级函数是为了让**需要自己控制启动参数 / 启动前改现场**的用例
+    （目前是 `test_i18n.py`）也能复用，而不必再抄一遍这份候选列表 ——
+    抄一份就会漂一份，而这里漂掉的表现是「用例找不到 exe」这种与被测功能无关的失败。
+    """
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     candidates = [
         os.path.join(project_root, "WinPieGestures", "bin", "Release", "net8.0-windows10.0.19041.0", "StarPie.exe"),
@@ -43,10 +46,18 @@ def app(sandbox_env, request):
     app_path = next((c for c in candidates if os.path.exists(c)), None)
     if not app_path:
         pytest.fail(f"Executable not found in {candidates}. Please build the project first.")
-        
-    # Start the process with sandboxed environment variables
-    proc = subprocess.Popen([app_path, "--allow-multiple"], env=env)
-    
+    return app_path
+
+
+def launch_app(env):
+    """
+    按给定环境变量启动被测程序，连上主窗口，返回 ``(proc, win)``。
+
+    与 `app` 夹具用的是同一段启动代码 —— 差别只在调用者可以**先动现场再启动**
+    （例如预置 `config.json` 里的语言）。调用方负责收尾（`proc.kill()`）。
+    """
+    proc = subprocess.Popen([find_exe(), "--allow-multiple"], env=env)
+
     # Connect pywinauto using PID
     time.sleep(1.5)
     try:
@@ -56,7 +67,16 @@ def app(sandbox_env, request):
     except Exception as ex:
         proc.terminate()
         pytest.fail(f"Failed to launch or connect to application window: {ex}")
-        
+
+    return proc, win
+
+
+@pytest.fixture(scope="function")
+def app(sandbox_env, request):
+    env, local_app_data = sandbox_env
+
+    proc, win = launch_app(env)
+
     yield win, local_app_data
     
     # Screenshot on failure
