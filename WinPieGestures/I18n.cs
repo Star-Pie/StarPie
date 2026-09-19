@@ -7303,6 +7303,638 @@ public static class I18n
 			[LanguageCode.En] = "Downloading historical version {0}...",
 			[LanguageCode.Ja] = "過去のバージョン {0} を高速ダウンロード中..."
 		};
+		// --- Tab 4 (About & Milestones) ---
+		dictionary["BtnViewChangelog"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "查看完整 CHANGELOG",
+			[LanguageCode.ZhTw] = "查看完整 CHANGELOG",
+			[LanguageCode.En] = "View Full CHANGELOG",
+			[LanguageCode.Ja] = "完全な CHANGELOG を表示"
+		};
+
+		dictionary["Tab4_AboutTitleText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关于软件",
+			[LanguageCode.ZhTw] = "關於軟體",
+			[LanguageCode.En] = "About StarPie",
+			[LanguageCode.Ja] = "StarPie について"
+		};
+		dictionary["Tab4_AboutDescText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie 现代鼠标轮盘笔势工具版本信息与完整演进历程。",
+			[LanguageCode.ZhTw] = "StarPie 現代滑鼠輪盤手勢工具版本資訊與完整演進歷程。",
+			[LanguageCode.En] = "StarPie modern mouse gesture wheel version info and evolution history.",
+			[LanguageCode.Ja] = "StarPie モダンマウスジェスチャーホイールのバージョン情報と開発履歴。"
+		};
+		dictionary["Tab4_AppSloganText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "高质感、极速现代 Windows 鼠标轮盘笔势工具",
+			[LanguageCode.ZhTw] = "高質感、極速現代 Windows 滑鼠輪盤手勢工具",
+			[LanguageCode.En] = "Premium, ultra-fast modern Windows mouse gesture wheel tool",
+			[LanguageCode.Ja] = "プレミアムで超高速なモダン Windows マウスジェスチャーホイール"
+		};
+		dictionary["Tab4_MilestonesHeaderTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "版本演进里程碑",
+			[LanguageCode.ZhTw] = "版本演進里程碑",
+			[LanguageCode.En] = "Version Milestones",
+			[LanguageCode.Ja] = "バージョン履歴"
+		};
+		dictionary["Tab4_Ms_174b3_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.4-beta.3 控制台 UI 与文本规范化精简 & 模式切换整合",
+			[LanguageCode.ZhTw] = "v1.7.4-beta.3 控制台 UI 與文字規範化精簡 & 模式切換整合",
+			[LanguageCode.En] = "v1.7.4-beta.3 Console UI & Text Simplification & Mode Switch Consolidation",
+			[LanguageCode.Ja] = "v1.7.4-beta.3 コンソール UI とテキストの簡素化・モード統合"
+		};
+		dictionary["Tab4_Ms_174b3_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎨 【消除重复繁琐文本】：全面精简导航栏与卡片标题中重复的“XX与XX”平行并列句式，去除界面控件中硬编码的英文后缀；",
+			[LanguageCode.ZhTw] = "• 🎨 【消除重複繁瑣文字】：全面精簡導航列與卡片標題中重複的「XX與XX」平行並列句式，去除介面控制項中硬編碼的英文後綴；",
+			[LanguageCode.En] = "• 🎨 [Text Simplification]: Streamlined parallel phrases in navigation tabs and card titles; removed hardcoded English suffixes in controls;",
+			[LanguageCode.Ja] = "• 🎨 【テキスト簡素化】：ナビゲーションとカードタイトルの冗長な重複文を整理し、UI コントロールの固定英語サフィックスを削除；"
+		};
+		dictionary["Tab4_Ms_174b3_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🧭 【导航图标与模式整合】：移除侧边栏多余双图标堆砌，整合重复的模式切换开关为右上角统一单选；",
+			[LanguageCode.ZhTw] = "• 🧭 【導航圖示與模式整合】：移除側邊欄多餘雙圖示堆疊，整合重複的模式切換開關為右上角統一單選；",
+			[LanguageCode.En] = "• 🧭 [Navigation & Mode Unification]: Removed redundant stacked icons in sidebar; consolidated mode switch into top-right segment toggle;",
+			[LanguageCode.Ja] = "• 🧭 【ナビゲーション・モード統合】：サイドバーの重複アイコンを削除し、右上の一元化されたセグメント切り替えに集約；"
+		};
+		dictionary["Tab4_Ms_174b3_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🌐 【占位符修复】：彻底解决高级系统设置未国际化占位符显示 raw key 文本的问题，多语言字典规范化对齐。",
+			[LanguageCode.ZhTw] = "• 🌐 【佔位符修復】：徹底解決進階系統設定未國際化佔位符顯示 raw key 文字的問題，多語言字典規範化對齊。",
+			[LanguageCode.En] = "• 🌐 [Placeholder Fix]: Resolved unlocalized raw key placeholders in system settings; standardized multilingual dictionary alignment.",
+			[LanguageCode.Ja] = "• 🌐 【プレースホルダー修正】：システム設定で未翻訳 raw key が表示される不具合を修正し、多言語辞書を正規化。"
+		};
+		dictionary["Tab4_Ms_174b2_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.4-beta.2 StarPie 原生全盘极速秒搜纯净版 & 毫秒级分层短路与时间预算保护",
+			[LanguageCode.ZhTw] = "v1.7.4-beta.2 StarPie 原生全盤極速秒搜純淨版 & 毫秒級分層短路與時間預算保護",
+			[LanguageCode.En] = "v1.7.4-beta.2 Native Quick Finder Pure Edition & Millisecond Tiered Short-Circuit & Time Budget",
+			[LanguageCode.Ja] = "v1.7.4-beta.2 ネイティブ高速検索ピュア版・ミリ秒階層短絡と時間予算保護"
+		};
+		dictionary["Tab4_Ms_174b2_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• ⚡ 【StarPie 纯原生极速引擎架构】：全面采用 100% 自包含零外部依赖的原生极速搜索引擎，秒出常用应用与高频工程；",
+			[LanguageCode.ZhTw] = "• ⚡ 【StarPie 純原生極速引擎架構】：全面採用 100% 自包含零外部依賴的原生極速搜尋引擎，秒出常用應用與高頻專案；",
+			[LanguageCode.En] = "• ⚡ [Native Fast Engine]: 100% self-contained zero-external-dependency search engine; instantly indexes apps and frequent projects;",
+			[LanguageCode.Ja] = "• ⚡ 【ネイティブ高速エンジン】：外部依存ゼロの完全自己完結型検索エンジンを採用し、常用アプリを瞬時に検索；"
+		};
+		dictionary["Tab4_Ms_174b2_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🚀 【毫秒级分类短路机制】：搜索应用程序或系统工具时直接从预索引内存库短路返回（0ms~3ms），完全消除磁盘 I/O 震荡；",
+			[LanguageCode.ZhTw] = "• 🚀 【毫秒級分類短路機制】：搜尋應用程式或系統工具時直接從預索引記憶體庫短路返回（0ms~3ms），完全消除磁碟 I/O 震盪；",
+			[LanguageCode.En] = "• 🚀 [Millisecond Short-Circuit]: Returns app and system utility queries from pre-indexed memory (0ms~3ms), eliminating disk I/O thrashing;",
+			[LanguageCode.Ja] = "• 🚀 【ミリ秒階層短絡】：アプリやシステムツールを事前インデックス済みメモリから短絡返却（0ms~3ms）、ディスク負荷をゼロに；"
+		};
+		dictionary["Tab4_Ms_174b2_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• ⏱️ 【50ms 时间预算硬控 (Time-Budget)】：深盘遍历增加 50ms 严格时间预算与收敛深度，彻底消除数万目录地毯式扫描导致的数秒失控卡顿；",
+			[LanguageCode.ZhTw] = "• ⏱️ 【50ms 時間預算硬控 (Time-Budget)】：深盤遍歷增加 50ms 嚴格時間預算與收斂深度，徹底消除數萬目錄地毯式掃描導致的數秒失控卡頓；",
+			[LanguageCode.En] = "• ⏱️ [50ms Time-Budget Guard]: Enforced 50ms strict time budget and depth limit on deep traversal, preventing multi-second freezes;",
+			[LanguageCode.Ja] = "• ⏱️ 【50ms 時間予算ガード】：ディープ走査に 50ms の厳格な時間予算を導入し、数万ディレクトリ走査によるフリーズを根絶；"
+		};
+		dictionary["Tab4_Ms_174b2_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 📂 【高频工作区与工程优先】：优先穿透扫描桌面、下载、文档等高频目录，常用文件即敲即出，丝滑流畅。",
+			[LanguageCode.ZhTw] = "• 📂 【高頻工作區與專案優先】：優先穿透掃描桌面、下載、文件等高頻目錄，常用檔案即敲即出，絲滑流暢。",
+			[LanguageCode.En] = "• 📂 [Frequent Workspace Priority]: Prioritizes Desktop, Downloads, and Documents directories for immediate file discovery.",
+			[LanguageCode.Ja] = "• 📂 【高頻度ワークスペース優先】：デスクトップ、ダウンロード、ドキュメントを優先スキャンし、即座に候補を表示。"
+		};
+		dictionary["Tab4_Ms_174b1_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.4-beta.1 播放图标朝向修正 & 自定义音效测试版 & 多层展开二级渲染修复",
+			[LanguageCode.ZhTw] = "v1.7.4-beta.1 播放圖示朝向修正 & 自訂音效測試版 & 多層展開二級渲染修復",
+			[LanguageCode.En] = "v1.7.4-beta.1 Play Icon Orientation Fix & Custom Sound Mixer Beta & Multi-Tier Sub-Ring Render Fix",
+			[LanguageCode.Ja] = "v1.7.4-beta.1 再生アイコン向き修正・カスタム音効ベータ版・多層サブリング描画修正"
+		};
+		dictionary["Tab4_Ms_174b1_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎛️ 【自定义交互音效调配 (高级模式·测试功能)】：在高级全景模式下开放方案配置入口，支持为 5 大核心手势事件（唤出、划过扇区、展开二级、动作触发、手势取消）独立调校程序合成微波形、本地音频采样与音高音量；支持方案新建、删除保护与导入导出，简单模式下保持清爽收起；",
+			[LanguageCode.ZhTw] = "• 🎛️ 【自訂互動音效調配 (進階模式·測試功能)】：在進階全景模式下開放方案設定入口，支援為 5 大核心手勢事件獨立調校合成微波形、音訊取樣與音高音量；支援方案新建、刪除保護與匯入匯出；",
+			[LanguageCode.En] = "• 🎛️ [Custom Sound Mixer]: Advanced mode provides audio customization for 5 gesture events (popup, hover, expand, trigger, cancel) with pitch, volume, waveform synthesis, and profile import/export;",
+			[LanguageCode.Ja] = "• 🎛️ 【カスタム音効ミキサー】：5 つの手勢イベント（表示、ホバー、展開、実行、キャンセル）の波形合成、音高、音量を独立調整可能；"
+		};
+		dictionary["Tab4_Ms_174b1_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🔄 【修复多层轮盘展开二级子环切换显示】：修复开启「唤出时直接同时展开二级轮盘」时，使用滚轮或快捷键切换图层导致二级子轮盘在视觉上丢失的问题；换层后外圈子环同步呈现并即时响应光标悬停；",
+			[LanguageCode.ZhTw] = "• 🔄 【修復多層輪盤展開二級子環切換顯示】：修復開啟「喚出時直接同時展開二級輪盤」時，使用滾輪或快捷鍵切換圖層導致二級子輪盤在視覺上遺失的問題；",
+			[LanguageCode.En] = "• 🔄 [Multi-Layer Sub-Ring Switch Fix]: Fixed visual disappearance of outer sub-rings when switching wheel layers via scroll wheel or hotkeys while auto-expand is enabled;",
+			[LanguageCode.Ja] = "• 🔄 【多層サブリング切り替え修正】：自動展開有効時にホイールスクロールでレイヤーを切り替えてもサブリングが正常に追随表示されるよう修正；"
+		};
+		dictionary["Tab4_Ms_174b1_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• ▶️ 【PlayPause 默认矢量图标纠正】：将默认 Play/Pause 图标中的播放三角形纠正为标准朝右（▶）并搭配双竖杆（❚❚），彻底规避原朝左三角形易与后退/上一首混淆的问题；",
+			[LanguageCode.ZhTw] = "• ▶️ 【PlayPause 預設向量圖示糾正】：將預設 Play/Pause 圖示中的播放三角形糾正為標準朝右（▶）並搭配雙豎桿（❚❚），徹底規避原朝左三角形易與後退/上一首混淆的問題；",
+			[LanguageCode.En] = "• ▶️ [Play/Pause Icon Correction]: Corrected the default Play/Pause icon to standard rightward triangle (▶) and dual bars (❚❚), avoiding confusion with backward navigation;",
+			[LanguageCode.Ja] = "• ▶️ 【Play/Pause アイコン修正】：再生アイコンの向きを標準の右向き（▶）に正しく修正；"
+		};
+		dictionary["Tab4_Ms_174b1_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 📝 【扇区长文本智能两行显示优化】：深度完善扇区长文本换行格式化算法，多词及中英混排自动规整为紧凑双行排版。",
+			[LanguageCode.ZhTw] = "• 📝 【扇區長文字智慧兩行顯示最佳化】：深度完善扇區長文字換行格式化演算法，多詞及中英混排自動規整為緊湊雙行排版。",
+			[LanguageCode.En] = "• 📝 [Two-Line Sector Text Formatting]: Improved line breaking algorithm to neatly balance multi-word and mixed-language titles into two compact lines.",
+			[LanguageCode.Ja] = "• 📝 【セクター長文 2 行表示最適化】：複数単語や日英混在テキストをスマートに 2 行へ折り返す自動レイアウトを強化。"
+		};
+		dictionary["Tab4_Ms_173_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.3 正式版 CAD 专属按键唤醒 & 全盘深度秒搜与自由拉伸",
+			[LanguageCode.ZhTw] = "v1.7.3 正式版 CAD 專屬按鍵喚醒 & 全盤深度秒搜與自由拉伸",
+			[LanguageCode.En] = "v1.7.3 Official: CAD Exclusive Trigger Key & Deep Quick Finder & Freely Resizable Window",
+			[LanguageCode.Ja] = "v1.7.3 正式版: CAD 専用トリガーキー・全盤高速検索・自由リサイズ"
+		};
+		dictionary["Tab4_Ms_173_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎯 【黑名单程序专属呼出按键】：针对 SolidWorks 等 3D CAD 软件原生笔势痛点，支持在黑名单中为特定程序配置单独专属唤醒按键（如中键/侧键/组合键）；原生鼠标右键 100% 绝对零时延放行给宿主软件，完美兼顾 CAD 笔势与 StarPie 全局手势；",
+			[LanguageCode.ZhTw] = "• 🎯 【黑名單程式專屬呼出按鍵】：針對 SolidWorks 等 3D CAD 軟體原生筆勢痛點，支援在黑名單中為特定程式設定單獨專屬喚醒按鍵；原生滑鼠右鍵 100% 零延遲放行給宿主軟體；",
+			[LanguageCode.En] = "• 🎯 [CAD App Dedicated Trigger Key]: Configure app-specific triggers (middle, side, combo) for blacklisted apps like SolidWorks, passing right-clicks through with 0ms latency;",
+			[LanguageCode.Ja] = "• 🎯 【CAD 専用トリガーキー】：SolidWorks 等の CAD 向けにアプリ専用トリガーを設定可能にし、右クリックを 0ms で透過；"
+		};
+		dictionary["Tab4_Ms_173_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🔴 【复刻物理录制卡片与实时反馈】：专属按键配置完全复刻 Tab 2 录制交互，支持鼠标所有按键与键盘单键/修饰组合键物理录制，配备硬件感知器与 ESC 快速取消；",
+			[LanguageCode.ZhTw] = "• 🔴 【複刻實體錄製卡片與即時回饋】：專屬按鍵設定完全複刻 Tab 2 錄製互動，支援滑鼠所有按鍵與鍵盤單鍵/組合鍵實體錄製；",
+			[LanguageCode.En] = "• 🔴 [Dedicated Hotkey Recorder]: Full physical key recording interface for custom app triggers supporting all mouse buttons and keyboard hotkeys;",
+			[LanguageCode.Ja] = "• 🔴 【専用キーレコーダー】：マウス各ボタンおよびキーボード修飾キーの物理入力をそのまま記録可能；"
+		};
+		dictionary["Tab4_Ms_173_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎬 【全盘秒搜增加视频分类过滤】：新增「🎬 视频」独立分类过滤按钮，内置主流视频格式（.mp4, .mkv, .avi, .mov, .flv, .wmv, .webm 等）精准匹配，并支持无输入时自动推荐近期视频；",
+			[LanguageCode.ZhTw] = "• 🎬 【全盤秒搜增加影片分類過濾】：新增「🎬 影片」獨立分類過濾按鈕，內建主流影片格式精準比對；",
+			[LanguageCode.En] = "• 🎬 [Quick Finder Video Filter]: Added dedicated Video category filter supporting common formats (.mp4, .mkv, .avi, .mov, etc.) with recent video recommendations;",
+			[LanguageCode.Ja] = "• 🎬 【動画カテゴリフィルター】：動画専用フィルターボタンを追加し、主要動画フォーマットを瞬時に絞り込み；"
+		};
+		dictionary["Tab4_Ms_173_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 📌 【秒搜窗口置顶图钉锁定】：右上角增加窗口置顶图钉按钮，开启后窗口始终置顶且点击外部失焦不关闭，方便对照文件与多任务协作；",
+			[LanguageCode.ZhTw] = "• 📌 【秒搜視窗置頂圖釘鎖定】：右上角增加視窗置頂圖釘按鈕，開啟後視窗始終置頂且點擊外部失焦不關閉；",
+			[LanguageCode.En] = "• 📌 [Quick Finder Pin-to-Top]: Added pin button to keep search window pinned on top even when losing focus, ideal for multitasking;",
+			[LanguageCode.Ja] = "• 📌 【ピン留め機能】：検索ウィンドウを最前面に固定するピンボタンを追加、フォーカス喪失時も非表示になりません；"
+		};
+		dictionary["Tab4_Ms_173_P5"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 📐 【秒搜窗口自由拖拽缩放与记忆】：支持右下角点阵手柄与边缘自由拖拽调整窗口宽度与高度，并自动持久化记忆用户自定义窗口尺寸。",
+			[LanguageCode.ZhTw] = "• 📐 【秒搜視窗自由拖曳縮放與記憶】：支援右下角控點與邊緣自由拖曳調整視窗寬度與高度，並自動持久化記憶使用者自訂尺寸。",
+			[LanguageCode.En] = "• 📐 [Quick Finder Resizable & Size Memory]: Drag window edges or bottom-right grip to resize; dimensions are automatically remembered.",
+			[LanguageCode.Ja] = "• 📐 【自由リサイズ＆サイズ記憶】：ウィンドウ端やグリップをドラッグしてサイズ変更可能、サイズを自動記憶。"
+		};
+		dictionary["Tab4_Ms_173b8_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.3-beta.8 全盘秒搜 (Quick Finder) & OCR 截屏识字专项优化",
+			[LanguageCode.ZhTw] = "v1.7.3-beta.8 全盤秒搜 (Quick Finder) & OCR 截圖識字專項最佳化",
+			[LanguageCode.En] = "v1.7.3-beta.8 Quick Finder & OCR Screenshot Recognition Dedicated Optimization",
+			[LanguageCode.Ja] = "v1.7.3-beta.8 高速検索 (Quick Finder) ＆ OCR スクリーンショット認識最適化"
+		};
+		dictionary["Tab4_Ms_173b8_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🔍 【光标跟随与自由拖拽秒搜 (Quick Finder)】：秒搜窗口唤出时自动定位在鼠标触发光标处，且支持按住窗口顶部及空白区域自由拖拽移动；",
+			[LanguageCode.ZhTw] = "• 🔍 【游標跟隨與自由拖曳秒搜 (Quick Finder)】：秒搜視窗喚出時自動定位在滑鼠觸發游標處，且支援按住視窗頂部自由拖曳移動；",
+			[LanguageCode.En] = "• 🔍 [Cursor-Following Quick Finder]: Search window appears right at your mouse cursor and supports free dragging anywhere on the header;",
+			[LanguageCode.Ja] = "• 🔍 【カーソル追従＆ドラッグ移動】：マウスカーソル位置に検索ウィンドウを瞬時にポップアップ、自由にドラッグ移動可能；"
+		};
+		dictionary["Tab4_Ms_173b8_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• ⚡ 【内置原生极速检索引擎】：完全内置自主研发的毫秒级文件与程序极速搜索引擎，开箱即用无需依赖任何第三方软件；",
+			[LanguageCode.ZhTw] = "• ⚡ 【內建原生極速檢索引擎】：完全內建自主研發的毫秒級檔案與程式極速搜尋引擎，開箱即用無需依賴任何第三方軟體；",
+			[LanguageCode.En] = "• ⚡ [Built-in Native Fast Indexer]: In-house millisecond file & program indexing engine, zero external tools required;",
+			[LanguageCode.Ja] = "• ⚡ 【内蔵ネイティブ高速検索】：自社開発のミリ秒インデックスエンジンを内蔵、サードパーティ製ツール不要；"
+		};
+		dictionary["Tab4_Ms_173b8_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎯 【OCR 选区与坐标 1:1 精确映射】：采用底层物理全景屏幕快照冻结与直接裁切机制，彻底解决高 DPI 与多显示器缩放下的选区坐标漂移问题；",
+			[LanguageCode.ZhTw] = "• 🎯 【OCR 選區與座標 1:1 精確對應】：採用底層實體全景螢幕快照凍結與直接裁切機制，徹底解決高 DPI 跨螢幕縮放下座標漂移問題；",
+			[LanguageCode.En] = "• 🎯 [Pixel-Perfect OCR Mapping]: Direct physical screen snapshot and crop mechanism, completely eliminating coordinate drift under multi-monitor mixed DPI;",
+			[LanguageCode.Ja] = "• 🎯 【OCR 1:1 ピクセル精度対応】：マルチモニター・混合 DPI 環境下でも選択座標のズレを完全に根絶；"
+		};
+		dictionary["Tab4_Ms_173b8_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🖼️ 【多分辨率自适应与防黑化修复】：大图自动下采样防止 2600px 引擎超限崩溃，小图高保真双三次插值放大提升识别率，修复 GDI+ 32bpp 格式导致的黑屏问题；",
+			[LanguageCode.ZhTw] = "• 🖼️ 【多解析度自動適應與防黑畫面修復】：大圖自動向下取樣防止引擎超限當機，小圖高傳真雙立方內插放大提升識別率；",
+			[LanguageCode.En] = "• 🖼️ [OCR Robustness & Anti-Blackout]: Auto downsamples images over 2600px, bicubic upscaling for small text, fixes GDI+ 32bpp black frame glitch;",
+			[LanguageCode.Ja] = "• 🖼️ 【解像度適応＆黒画面防止】：2600px 超過画像の安全ダウンサンプリングと低解像度画像の補間拡大で認識率向上；"
+		};
+		dictionary["Tab4_Ms_173b7_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.3-beta.7 轮盘触发交互音效系统 (方案C 极低延迟)",
+			[LanguageCode.ZhTw] = "v1.7.3-beta.7 輪盤觸發互動音效系統 (方案C 極低延遲)",
+			[LanguageCode.En] = "v1.7.3-beta.7 Gesture Interactive Sound FX System (Ultra-Low Latency Plan C)",
+			[LanguageCode.Ja] = "v1.7.3-beta.7 インタラクティブ音効システム (超低遅延プラン C)"
+		};
+		dictionary["Tab4_Ms_173b7_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🔊 【WinMM 原生底层零延迟驱动】：基于 Windows 多媒体 API DirectWave 播放引擎，常驻后台内存消耗 0MB，单次响应时延 < 1ms；",
+			[LanguageCode.ZhTw] = "• 🔊 【WinMM 原生底層零延遲驅動】：基於 Windows 多媒體 API DirectWave 播放引擎，常駐背景記憶體消耗 0MB，單次回應延遲 < 1ms；",
+			[LanguageCode.En] = "• 🔊 [Zero-Latency WinMM Audio]: Powered by WinMM DirectWave native audio engine, 0MB RAM footprint and <1ms response latency;",
+			[LanguageCode.Ja] = "• 🔊 【WinMM ネイティブ低遅延駆動】：Windows DirectWave API で常駐メモリ消費 0MB、応答遅延 1ms 未満を実現；"
+		};
+		dictionary["Tab4_Ms_173b7_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎮 【5 级完整交互闭环】：轮盘呼出、扇区划过高亮、级联展开、动作释放触发与外甩取消均配备灵动音效反馈；",
+			[LanguageCode.ZhTw] = "• 🎮 【5 級完整互動閉環】：輪盤呼出、扇區劃過醒目提示、二級展開、動作釋放觸發與外甩取消均配備靈動音效回饋；",
+			[LanguageCode.En] = "• 🎮 [5 Gesture Sound Stages]: Distinct acoustic feedback for popup, sector hover, submenu expand, action execution, and swipe cancel;",
+			[LanguageCode.Ja] = "• 🎮 【5 段階の音響フィードバック】：表示、ホバー、サブメニュー展開、アクション実行、キャンセルに心地よい音効を配置；"
+		};
+		dictionary["Tab4_Ms_173b7_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎛️ 【4 款主题预设与独立音量控制】：内置机械手感、现代清脆、柔和气泡、极简短音 4 款专属音效，支持硬件级数学无失真音量调节；",
+			[LanguageCode.ZhTw] = "• 🎛️ 【4 款主題預設與獨立音量控制】：內建機械手感、現代清脆、柔和氣泡、極簡短音 4 款專屬音效，支援硬體級無失真音量調節；",
+			[LanguageCode.En] = "• 🎛️ [4 Sound Themes & Volume Control]: Built-in Mechanical, Modern Crisp, Soft Bubble, and Minimalist themes with distortion-free volume scaling;",
+			[LanguageCode.Ja] = "• 🎛️ 【4 種のテーマ＆独立音量制御】：メカニカル、クリスプ、バブル、ミニマルの 4 プリセットと歪みのない音量制御を搭載；"
+		};
+		dictionary["Tab4_Ms_173b7_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🛡️ 【35ms 扇区防抖闸门】：鼠标在扇区分界线微颤时自动限频防抖，彻底消除刺耳杂音。",
+			[LanguageCode.ZhTw] = "• 🛡️ 【35ms 扇區防抖閘門】：滑鼠在扇區分界線微顫時自動限頻防抖，徹底消除刺耳雜音。",
+			[LanguageCode.En] = "• 🛡️ [35ms Debounce Gate]: Rate-limiting debounce gate prevents audio flutter when cursor jitters around sector boundaries.",
+			[LanguageCode.Ja] = "• 🛡️ 【35ms チャタリング防止】：セクター境界でのマウス微小振動による連続再生ノイズを防止。"
+		};
+		dictionary["Tab4_Ms_173b6_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.3-beta.6 交互画布自由拉伸比例 & 轮盘层切换方式状态回显修复",
+			[LanguageCode.ZhTw] = "v1.7.3-beta.6 互動畫布自由拉伸比例 & 輪盤層切換方式狀態回顯修復",
+			[LanguageCode.En] = "v1.7.3-beta.6 Free Aspect Ratio Preview Canvas & Layer Switch Echo Fix",
+			[LanguageCode.Ja] = "v1.7.3-beta.6 プレビューキャンバス自由伸縮＆レイヤー切り替え状態表示修正"
+		};
+		dictionary["Tab4_Ms_173b6_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 📐 【Tab 2 画布自适应与自由拉伸】：动作配置页（Tab 2）告别 380px 固定宽度限制，默认采用 1.15:1 优雅自适应比例，并在右下角增加自由拖拽调整手柄；",
+			[LanguageCode.ZhTw] = "• 📐 【Tab 2 畫布自適應與自由拉伸】：動作設定頁告別 380px 固定寬度限制，預設採用 1.15:1 自適應比例，右下角增加自由拖曳手柄；",
+			[LanguageCode.En] = "• 📐 [Adaptive Preview Canvas]: Tab 2 replaces fixed 380px width with an adaptive 1.15:1 layout and bottom-right drag handle for custom sizing;",
+			[LanguageCode.Ja] = "• 📐 【キャンバス自由伸縮】：固定幅を廃止し 1.15:1 適応比率とドラッグハンドルによる直感的なサイズ変更に対応；"
+		};
+		dictionary["Tab4_Ms_173b6_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🔄 【轮盘层切换方式双向回显修复】：多层轮盘工具栏切换模式升级为现代化交互下拉框，彻底修复保存为 Tab 键切换后 UI 依然错误回显为“滚轮切换”的属性映射与通知缺陷，实现配置加载与切换的双向状态完全同步。",
+			[LanguageCode.ZhTw] = "• 🔄 【輪盤層切換方式雙向回顯修復】：多層輪盤工具列切換模式升級為下拉選單，徹底修復儲存為 Tab 鍵切換後 UI 依然錯誤回顯為「滾輪切換」的缺陷；",
+			[LanguageCode.En] = "• 🔄 [Layer Switch State Synchronization]: Replaced toggle with a modern ComboBox, fixing two-way state binding where Tab switching previously displayed as scroll wheel.",
+			[LanguageCode.Ja] = "• 🔄 【レイヤー切り替え表示同期】：Tab キー切り替え保存後にスクロールと誤表示されるバインディング不具合を解消。"
+		};
+		dictionary["Tab4_Ms_173b5_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.3-beta.5 唤出一二级轮盘全展开 & 开箱高颜值默认配置友好优化",
+			[LanguageCode.ZhTw] = "v1.7.3-beta.5 喚出一二級輪盤全展開 & 開箱高顏值預設設定友好最佳化",
+			[LanguageCode.En] = "v1.7.3-beta.5 Simultaneous Sub-Ring Expansion & Out-of-the-Box Visual Defaults",
+			[LanguageCode.Ja] = "v1.7.3-beta.5 サブホイール同時展開＆高品位デフォルト設定"
+		};
+		dictionary["Tab4_Ms_173b5_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🌟 【一二级轮盘唤出直展】：在多级轮盘与外圈子环形态下新增「唤出时直接同时展开一二级轮盘」开关，轮盘唤出时全方位子环直接同步呈现，无需拖拽即刻清晰感知并直选子动作；",
+			[LanguageCode.ZhTw] = "• 🌟 【一二級輪盤喚出直展】：新增「喚出時直接同時展開一二級輪盤」開關，喚出時全方位子環直接同步呈現，無需拖曳即可直選子動作；",
+			[LanguageCode.En] = "• 🌟 [Auto-Expand Sub-Rings]: Added 'Auto-Expand Sub-Rings' toggle to present primary and sub-rings simultaneously upon activation;",
+			[LanguageCode.Ja] = "• 🌟 【サブホイール同時展開】：呼び出し時に全方位のサブリングを同時に展開し、即座にサブアクションを選択可能；"
+		};
+		dictionary["Tab4_Ms_173b5_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🎨 【开箱新手默认友好性】：全面重塑新用户首次进入的默认轮盘参数与配色：默认启用液态毛玻璃 + 浅色模式 + 纯图标居中高质感布局，四象限丰富常用子动作一览无余；",
+			[LanguageCode.ZhTw] = "• 🎨 【開箱新手預設友好性】：全面重塑新使用者首次進入的預設輪盤參數與配色：預設啟用液態毛玻璃 + 淺色模式 + 純圖示居中版面配置；",
+			[LanguageCode.En] = "• 🎨 [Visual Defaults]: Redesigned out-of-the-box defaults to Glassmorphism Light theme with clean icon layouts across all four quadrants;",
+			[LanguageCode.Ja] = "• 🎨 【高品位デフォルト設定】：初期状態をフロストガラス＋ライトモード＋中央アイコンの洗練されたレイアウトに刷新；"
+		};
+		dictionary["Tab4_Ms_173b5_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• ⚡ 【子环极速命中与响应】：深度优化多子环常开状态下的极坐标扇区命中与动态高亮，与父级扇区无缝联动，保持 60/120 FPS 丝滑微动效。;",
+			[LanguageCode.ZhTw] = "• ⚡ 【子環極速命中與回應】：深度最佳化多子環常開狀態下的極座標扇區命中與動態醒目提示，保持 60/120 FPS 絲滑微動效；",
+			[LanguageCode.En] = "• ⚡ [Fluid Sub-Ring Hit-Testing]: Optimized polar sector hit-testing when sub-rings are constantly open, maintaining solid 60/120 FPS animations;",
+			[LanguageCode.Ja] = "• ⚡ 【超高速サブリング判定】：サブリング常時展開時の極座標ヒットテストを最適化し、安定した 60/120 FPS を維持；"
+		};
+		dictionary["Tab4_Ms_173b5_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🏷️ 【完整预发布版本标识】：侧边栏、关于页、更新状态、托盘菜单与启动日志统一显示 v1.7.3-beta.5，并自动隐藏 SDK 附加的提交哈希。",
+			[LanguageCode.ZhTw] = "• 🏷️ 【完整預發布版本標識】：側邊欄、關於頁、更新狀態、系統匣功能表統一顯示完整版本號，自動隱藏提交雜湊。",
+			[LanguageCode.En] = "• 🏷️ [Clean Version Labels]: Unified version displays across sidebar, about page, and tray menu without raw commit hashes.",
+			[LanguageCode.Ja] = "• 🏷️ 【バージョン表記統一】：サイドバー、アバウト、トレイメニューで完全なバージョン番号を一貫して表示。"
+		};
+		dictionary["Tab4_Ms_173b4_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "v1.7.3-beta.4 内存按需轻量驻留深度优化 & 静默更新自愈守护",
+			[LanguageCode.ZhTw] = "v1.7.3-beta.4 記憶體按需輕量駐留深度最佳化 & 靜默更新自我修復守護",
+			[LanguageCode.En] = "v1.7.3-beta.4 On-Demand Lightweight Memory Optimization & Silent Update Healing",
+			[LanguageCode.Ja] = "v1.7.3-beta.4 オンデマンドメモリ最適化＆サイレント更新保護"
+		};
+		dictionary["Tab4_Ms_173b4_P1"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🚀 【任务栏预取按需调度】：轮盘仅在当前方案包含 SwitchWindow/Taskbar/Tile 窗口调度动作时才启动 UIAutomation 任务栏预取，杜绝常规手势下的句柄与线程泄漏；",
+			[LanguageCode.ZhTw] = "• 🚀 【工作列預先擷取按需排程】：輪盤僅在目前方案包含視窗排程動作時才啟動 UIAutomation 工作列預先擷取，杜絕常規手勢下的控制代碼與執行緒流失；",
+			[LanguageCode.En] = "• 🚀 [On-Demand Taskbar Prefetch]: UIAutomation taskbar polling is only initialized when window actions are assigned, preventing handle leaks;",
+			[LanguageCode.Ja] = "• 🚀 【タスクバーオンデマンド取得】：ウィンドウ切り替えアクションを含む場合のみ UIAutomation を初期化しハンドルリークを防止；"
+		};
+		dictionary["Tab4_Ms_173b4_P2"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🛡️ 【自动更新与提权静默自愈】：彻底修复自动更新和以管理员提权重启后未带 --silent 参数误弹设置窗口导致内存驻留 160MB+ 的问题，实现真正的后台零干扰静默秒启；",
+			[LanguageCode.ZhTw] = "• 🛡️ 【自動更新與提升權限靜默自我修復】：徹底修復自動更新和以管理員提升權限重啟後未帶 --silent 參數誤彈設定視窗導致記憶體駐留過大的問題，實現真正的後台零干擾靜默秒啟；",
+			[LanguageCode.En] = "• 🛡️ [Silent Auto-Relaunch]: Fixed update and elevation restarts to strictly respect the --silent parameter, staying at <20MB background RAM;",
+			[LanguageCode.Ja] = "• 🛡️ 【サイレント自動再起動】：アップデートおよび権限昇格時に --silent を維持し、バックグラウンド 20MB 未満での起動を保証；"
+		};
+		dictionary["Tab4_Ms_173b4_P3"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🧹 【旧版配置 Base64 自动洗涤】：配置加载阶段智能识别并清除旧版本遗留的 Base64 嵌入数据，规避大对象堆 (LOH) 碎片积压；",
+			[LanguageCode.ZhTw] = "• 🧹 【舊版設定 Base64 自動清洗】：設定載入階段智慧辨識並清除舊版本遺留的 Base64 嵌入資料，規避大物件堆疊 (LOH) 碎片積壓；",
+			[LanguageCode.En] = "• 🧹 [Base64 Purge on Load]: Automatically strips legacy Base64 image blobs during config load to prevent Large Object Heap (LOH) fragmentation;",
+			[LanguageCode.Ja] = "• 🧹 【Base64 クリーニング】：設定読み込み時に古い Base64 画像データを自動除去し、LOH 断片化を防止；"
+		};
+		dictionary["Tab4_Ms_173b4_P4"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 🍃 【设置窗口释放深度修剪】：控制台关闭 30 秒进入延迟回收阶段时，强制执行工作集归还与内存整理，彻底回落至 15MB~30MB 极致轻量后台基准。",
+			[LanguageCode.ZhTw] = "• 🍃 【設定視窗釋放深度修剪】：控制台關閉 30 秒進入延遲回收階段時，強制執行工作集歸還與記憶體整理，徹底回落至 15MB~30MB 極致輕量背景基準。",
+			[LanguageCode.En] = "• 🍃 [Deferred Console GC & Trim]: Releases console resources after 30 seconds idle, shrinking working set down to 15MB~30MB.",
+			[LanguageCode.Ja] = "• 🍃 【30秒遅延メモリ解放】：コンソールを閉じて 30 秒後にメモリを強制トリミングし、15MB〜30MB の軽量待機状態へ復元。"
+		};
+		dictionary["Tab4_Ms_173b3_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "历史版本一键回退 & LOH 碎片根除 & 图标并发冻结缓存",
+			[LanguageCode.ZhTw] = "历史版本一键回復 & LOH 碎片根除 & 圖示并发冻结缓存",
+			[LanguageCode.En] = "历史版本一键回退 & LOH 碎片根除 & 图标并发冻结缓存",
+			[LanguageCode.Ja] = "历史版本一键回退 & LOH 碎片根除 & 图标并发冻结缓存"
+		};
+		dictionary["Tab4_Ms_173b3_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Beta 通道 5 版本 / Stable 通道 2 版本回退池；彻底移除 Base64 图标数据模型；全局图标 Freezable.Freeze 缓存。",
+			[LanguageCode.ZhTw] = "Beta 通道 5 版本 / Stable 通道 2 版本回復池；彻底移除 Base64 圖示数据模型；全局圖示 Freezable.Freeze 缓存。",
+			[LanguageCode.En] = "Beta 通道 5 版本 / Stable 通道 2 版本回退池；彻底移除 Base64 图标数据模型；全局图标 Freezable.Freeze 缓存。",
+			[LanguageCode.Ja] = "Beta 通道 5 版本 / Stable 通道 2 版本回退池；彻底移除 Base64 图标数据模型；全局图标 Freezable.Freeze 缓存。"
+		};
+		dictionary["Tab4_Ms_173b2_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全按键长按原地呼出 & 黑名单快捷键穿透修复 & 物理修饰键守卫",
+			[LanguageCode.ZhTw] = "全按键长按原地呼出 & 黑名单快捷鍵穿透修復 & 物理修饰键守卫",
+			[LanguageCode.En] = "全按键长按原地呼出 & 黑名单快捷键穿透修复 & 物理修饰键守卫",
+			[LanguageCode.Ja] = "全按键长按原地呼出 & 黑名单快捷键穿透修复 & 物理修饰键守卫"
+		};
+		dictionary["Tab4_Ms_173b2_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "键盘单键/鼠标侧键/中键长按原地呼出轮盘；彻底根治 Maya 等黑名单中组合快捷键失效；GetAsyncKeyState 物理探测守卫。",
+			[LanguageCode.ZhTw] = "键盘单键/鼠标侧键/中键长按原地呼出轮盘；彻底根治 Maya 等黑名单中组合快捷鍵失效；GetAsyncKeyState 物理探测守卫。",
+			[LanguageCode.En] = "键盘单键/鼠标侧键/中键长按原地呼出轮盘；彻底根治 Maya 等黑名单中组合快捷键失效；GetAsyncKeyState 物理探测守卫。",
+			[LanguageCode.Ja] = "键盘单键/鼠标侧键/中键长按原地呼出轮盘；彻底根治 Maya 等黑名单中组合快捷键失效；GetAsyncKeyState 物理探测守卫。"
+		};
+		dictionary["Tab4_Ms_172b5_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "早期配置无损自愈导入 & 自定义贴图与程序图标内嵌记忆 & 极坐标扇区守护",
+			[LanguageCode.ZhTw] = "早期配置无损自愈导入 & 自定义贴图与程式圖示内嵌记忆 & 极坐标扇區守护",
+			[LanguageCode.En] = "早期配置无损自愈导入 & 自定义贴图与程序图标内嵌记忆 & 极坐标扇区守护",
+			[LanguageCode.Ja] = "早期配置无损自愈导入 & 自定义贴图与程序图标内嵌记忆 & 极坐标扇区守护"
+		};
+		dictionary["Tab4_Ms_172b5_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全面修复旧版配置导入扇区丢失与篡改；配置文件内嵌 Base64 图标记忆；极坐标几何对齐守护；全局继承自愈与 ESC 退出优化。",
+			[LanguageCode.ZhTw] = "全面修復旧版配置导入扇區丢失与篡改；配置文件内嵌 Base64 圖示记忆；极坐标几何对齐守护；全局继承自愈与 ESC 退出最佳化。",
+			[LanguageCode.En] = "全面修复旧版配置导入扇区丢失与篡改；配置文件内嵌 Base64 图标记忆；极坐标几何对齐守护；全局继承自愈与 ESC 退出优化。",
+			[LanguageCode.Ja] = "全面修复旧版配置导入扇区丢失与篡改；配置文件内嵌 Base64 图标记忆；极坐标几何对齐守护；全局继承自愈与 ESC 退出优化。"
+		};
+		dictionary["Tab4_Ms_172b2_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区全局方案级联继承 & 多屏跨缩放Bug根治 & 幽灵虚影消除 & 底层防丢键优化",
+			[LanguageCode.ZhTw] = "扇區全局方案级联继承 & 多屏跨缩放Bug根治 & 幽灵虚影消除 & 底层防丢键最佳化",
+			[LanguageCode.En] = "扇区全局方案级联继承 & 多屏跨缩放Bug根治 & 幽灵虚影消除 & 底层防丢键优化",
+			[LanguageCode.Ja] = "扇区全局方案级联继承 & 多屏跨缩放Bug根治 & 幽灵虚影消除 & 底层防丢键优化"
+		};
+		dictionary["Tab4_Ms_172b2_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未配置槽位自动级联继承全局方案；彻底根治多屏混合 DPI 轮盘巨大截断缺陷；解除外甩残影；HWND 缓存防护低级钩子防丢键。",
+			[LanguageCode.ZhTw] = "未配置槽位自动级联继承全局方案；彻底根治多屏混合 DPI 轮盘巨大截断缺陷；解除外甩残影；HWND 缓存防护低级钩子防丢键。",
+			[LanguageCode.En] = "未配置槽位自动级联继承全局方案；彻底根治多屏混合 DPI 轮盘巨大截断缺陷；解除外甩残影；HWND 缓存防护低级钩子防丢键。",
+			[LanguageCode.Ja] = "未配置槽位自动级联继承全局方案；彻底根治多屏混合 DPI 轮盘巨大截断缺陷；解除外甩残影；HWND 缓存防护低级钩子防丢键。"
+		};
+		dictionary["Tab4_Ms_171_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "连续步进快捷键支持 & 外圈子环全展开 & 触发防冲突提示",
+			[LanguageCode.ZhTw] = "连续步进快捷鍵支持 & 外圈子环全展开 & 触发防冲突提示",
+			[LanguageCode.En] = "连续步进快捷键支持 & 外圈子环全展开 & 触发防冲突提示",
+			[LanguageCode.Ja] = "连续步进快捷键支持 & 外圈子环全展开 & 触发防冲突提示"
+		};
+		dictionary["Tab4_Ms_171_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "快捷键引擎支持多键顺序步进派发（如 Alt+H+V+F）；外圈子环画布默认全展开并精简一二级按钮；触发按键增加防冲突提示。",
+			[LanguageCode.ZhTw] = "快捷鍵引擎支持多键顺序步进派发（如 Alt+H+V+F）；外圈子环画布預設全展开并精简一二级按钮；触发按键增加防冲突提示。",
+			[LanguageCode.En] = "快捷键引擎支持多键顺序步进派发（如 Alt+H+V+F）；外圈子环画布默认全展开并精简一二级按钮；触发按键增加防冲突提示。",
+			[LanguageCode.Ja] = "快捷键引擎支持多键顺序步进派发（如 Alt+H+V+F）；外圈子环画布默认全展开并精简一二级按钮；触发按键增加防冲突提示。"
+		};
+		dictionary["Tab4_Ms_170_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "简单模式层级精简 & 中心核圆动作图标呼出修复 & 体验提纯",
+			[LanguageCode.ZhTw] = "简单模式层级精简 & 中心核圆动作圖示呼出修復 & 体验提纯",
+			[LanguageCode.En] = "简单模式层级精简 & 中心核圆动作图标呼出修复 & 体验提纯",
+			[LanguageCode.Ja] = "简单模式层级精简 & 中心核圆动作图标呼出修复 & 体验提纯"
+		};
+		dictionary["Tab4_Ms_170_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "鼠标手势卡片、外甩取消动作、边缘防溢出与紧凑全览列表分段切换全面放入高级模式；彻底修复实际呼出轮盘中心核圆配置图标不显示缺陷；简单模式锁定画布精调。",
+			[LanguageCode.ZhTw] = "鼠标手势卡片、外甩取消动作、边缘防溢出与紧凑全览列表分段切换全面放入高级模式；彻底修復实际呼出轮盘中心核圆配置圖示不显示缺陷；简单模式锁定画布精调。",
+			[LanguageCode.En] = "鼠标手势卡片、外甩取消动作、边缘防溢出与紧凑全览列表分段切换全面放入高级模式；彻底修复实际呼出轮盘中心核圆配置图标不显示缺陷；简单模式锁定画布精调。",
+			[LanguageCode.Ja] = "鼠标手势卡片、外甩取消动作、边缘防溢出与紧凑全览列表分段切换全面放入高级模式；彻底修复实际呼出轮盘中心核圆配置图标不显示缺陷；简单模式锁定画布精调。"
+		};
+		dictionary["Tab4_Ms_169_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外部图标继承加固 & 防误触配置持久化保护 & 图标回显联动",
+			[LanguageCode.ZhTw] = "外部圖示继承加固 & 防误触配置持久化保护 & 圖示回显联动",
+			[LanguageCode.En] = "外部图标继承加固 & 防误触配置持久化保护 & 图标回显联动",
+			[LanguageCode.Ja] = "外部图标继承加固 & 防误触配置持久化保护 & 图标回显联动"
+		};
+		dictionary["Tab4_Ms_169_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "彻底解决重启后扇区图标变为 Win 图标问题；加固开机自启与关机保存门禁，杜绝全屏防误触与外甩取消设置被冲掉；列表与编辑区支持关联图标实时预览；平铺预设不再覆写已有图标。",
+			[LanguageCode.ZhTw] = "彻底解决重启后扇區圖示变为 Win 圖示问题；加固开机自启与关机保存门禁，杜绝全屏防误触与外甩取消設定被冲掉；列表与编辑区支持关联圖示实时预览；平铺预设不再覆写已有圖示。",
+			[LanguageCode.En] = "彻底解决重启后扇区图标变为 Win 图标问题；加固开机自启与关机保存门禁，杜绝全屏防误触与外甩取消设置被冲掉；列表与编辑区支持关联图标实时预览；平铺预设不再覆写已有图标。",
+			[LanguageCode.Ja] = "彻底解决重启后扇区图标变为 Win 图标问题；加固开机自启与关机保存门禁，杜绝全屏防误触与外甩取消设置被冲掉；列表与编辑区支持关联图标实时预览；平铺预设不再覆写已有图标。"
+		};
+		dictionary["Tab4_Ms_168_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全新星盘图标 & 二级轮盘方位对齐 & 一二级配置联动 & 弹性字号 & 快捷键增强 & 贡献者致谢",
+			[LanguageCode.ZhTw] = "全新星盘圖示 & 二级轮盘方位对齐 & 一二级配置联动 & 弹性字号 & 快捷鍵增强 & 贡献者致谢",
+			[LanguageCode.En] = "全新星盘图标 & 二级轮盘方位对齐 & 一二级配置联动 & 弹性字号 & 快捷键增强 & 贡献者致谢",
+			[LanguageCode.Ja] = "全新星盘图标 & 二级轮盘方位对齐 & 一二级配置联动 & 弹性字号 & 快捷键增强 & 贡献者致谢"
+		};
+		dictionary["Tab4_Ms_168_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全新同心发光星核品牌图标；修复二级轮盘上方功能与设置相反问题；优化一级/二级配置模式切换与画布联动；轮盘扇区全面接入 Auto Font-Fit 弹性字号；快捷键拼装增加 Pause 与过滤；修复实时画布缩放；优化蜂窝扇迟滞保持手感。",
+			[LanguageCode.ZhTw] = "全新同心发光星核品牌圖示；修復二级轮盘上方功能与設定相反问题；最佳化一级/二级配置模式切换与画布联动；轮盘扇區全面接入 Auto Font-Fit 弹性字号；快捷鍵拼装增加 Pause 与过滤；修復实时画布缩放；最佳化蜂窝扇迟滞保持手感。",
+			[LanguageCode.En] = "全新同心发光星核品牌图标；修复二级轮盘上方功能与设置相反问题；优化一级/二级配置模式切换与画布联动；轮盘扇区全面接入 Auto Font-Fit 弹性字号；快捷键拼装增加 Pause 与过滤；修复实时画布缩放；优化蜂窝扇迟滞保持手感。",
+			[LanguageCode.Ja] = "全新同心发光星核品牌图标；修复二级轮盘上方功能与设置相反问题；优化一级/二级配置模式切换与画布联动；轮盘扇区全面接入 Auto Font-Fit 弹性字号；快捷键拼装增加 Pause 与过滤；修复实时画布缩放；优化蜂窝扇迟滞保持手感。"
+		};
+		dictionary["Tab4_Ms_167_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "原生 OCR 修复 & 多屏多分辨率唤起对齐 & 核心圆死区滑块 & 二级单扇区聚焦预览",
+			[LanguageCode.ZhTw] = "原生 OCR 修復 & 多屏多分辨率唤起对齐 & 核心圆死区滑块 & 二级单扇區聚焦预览",
+			[LanguageCode.En] = "原生 OCR 修复 & 多屏多分辨率唤起对齐 & 核心圆死区滑块 & 二级单扇区聚焦预览",
+			[LanguageCode.Ja] = "原生 OCR 修复 & 多屏多分辨率唤起对齐 & 核心圆死区滑块 & 二级单扇区聚焦预览"
+		};
+		dictionary["Tab4_Ms_167_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "修复原生 OCR 异常与语言包感知；引入 ScreenHelper 彻底解决跨屏混合 DPI 轮盘唤起漂移；多级轮盘设置迁入 Tab 3 释放动作区空间并增加核心圆死区灵敏度滑块；二级轮盘外观预览改为单扇区展开消除遮挡。",
+			[LanguageCode.ZhTw] = "修復原生 OCR 异常与语言包感知；引入 ScreenHelper 彻底解决跨屏混合 DPI 轮盘唤起漂移；多级轮盘設定迁入 Tab 3 释放动作区空间并增加核心圆死区灵敏度滑块；二级轮盘外观预览改为单扇區展开消除遮挡。",
+			[LanguageCode.En] = "修复原生 OCR 异常与语言包感知；引入 ScreenHelper 彻底解决跨屏混合 DPI 轮盘唤起漂移；多级轮盘设置迁入 Tab 3 释放动作区空间并增加核心圆死区灵敏度滑块；二级轮盘外观预览改为单扇区展开消除遮挡。",
+			[LanguageCode.Ja] = "修复原生 OCR 异常与语言包感知；引入 ScreenHelper 彻底解决跨屏混合 DPI 轮盘唤起漂移；多级轮盘设置迁入 Tab 3 释放动作区空间并增加核心圆死区灵敏度滑块；二级轮盘外观预览改为单扇区展开消除遮挡。"
+		};
+		dictionary["Tab4_Ms_158_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Win10 计算器修复 & PrintScreen 截屏 & 启动 Explorer 修复 & 运行日志记录",
+			[LanguageCode.ZhTw] = "Win10 计算器修復 & PrintScreen 截屏 & 启动 Explorer 修復 & 运行日志记录",
+			[LanguageCode.En] = "Win10 计算器修复 & PrintScreen 截屏 & 启动 Explorer 修复 & 运行日志记录",
+			[LanguageCode.Ja] = "Win10 计算器修复 & PrintScreen 截屏 & 启动 Explorer 修复 & 运行日志记录"
+		};
+		dictionary["Tab4_Ms_158_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "修复 Win10 计算器呼出；支持单独 PrintScreen 截屏热键；修复启动 explorer.exe；新增系统异步运行日志与一键查看诊断。",
+			[LanguageCode.ZhTw] = "修復 Win10 计算器呼出；支持单独 PrintScreen 截屏热键；修復启动 explorer.exe；新增系统异步运行日志与一键查看诊断。",
+			[LanguageCode.En] = "修复 Win10 计算器呼出；支持单独 PrintScreen 截屏热键；修复启动 explorer.exe；新增系统异步运行日志与一键查看诊断。",
+			[LanguageCode.Ja] = "修复 Win10 计算器呼出；支持单独 PrintScreen 截屏热键；修复启动 explorer.exe；新增系统异步运行日志与一键查看诊断。"
+		};
+		dictionary["Tab4_Ms_157_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "轮盘动作排序 & 方位指示器 & 独立钩子线程 & 手势拖拽流畅度优化",
+			[LanguageCode.ZhTw] = "轮盘动作排序 & 方位指示器 & 独立钩子线程 & 手势拖拽流畅度最佳化",
+			[LanguageCode.En] = "轮盘动作排序 & 方位指示器 & 独立钩子线程 & 手势拖拽流畅度优化",
+			[LanguageCode.Ja] = "轮盘动作排序 & 方位指示器 & 独立钩子线程 & 手势拖拽流畅度优化"
+		};
+		dictionary["Tab4_Ms_157_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新增动作列表 ▲/▼ 排序；新增扇区方位微缩指示器；独立低级钩子后台线程与高频更新调度；二级外径与配置即时导入全面融合。",
+			[LanguageCode.ZhTw] = "新增动作列表 ▲/▼ 排序；新增扇區方位微缩指示器；独立低级钩子后台线程与高频更新调度；二级外径与配置即时导入全面融合。",
+			[LanguageCode.En] = "新增动作列表 ▲/▼ 排序；新增扇区方位微缩指示器；独立低级钩子后台线程与高频更新调度；二级外径与配置即时导入全面融合。",
+			[LanguageCode.Ja] = "新增动作列表 ▲/▼ 排序；新增扇区方位微缩指示器；独立低级钩子后台线程与高频更新调度；二级外径与配置即时导入全面融合。"
+		};
+		dictionary["Tab4_Ms_156_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "运行命令终端选择 & 蜂巢平滑圆角 & 快捷键拼装修复 & 配色无损备份",
+			[LanguageCode.ZhTw] = "运行命令终端选择 & 蜂巢平滑圆角 & 快捷鍵拼装修復 & 配色无损备份",
+			[LanguageCode.En] = "运行命令终端选择 & 蜂巢平滑圆角 & 快捷键拼装修复 & 配色无损备份",
+			[LanguageCode.Ja] = "运行命令终端选择 & 蜂巢平滑圆角 & 快捷键拼装修复 & 配色无损备份"
+		};
+		dictionary["Tab4_Ms_156_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新增运行命令动作支持CMD/PS/WSL及静默模式；蜂巢六边形平滑圆角调节；快捷键构建器预设芯片；全量配色导出备份。",
+			[LanguageCode.ZhTw] = "新增运行命令动作支持CMD/PS/WSL及静默模式；蜂巢六边形平滑圆角调节；快捷鍵构建器预设芯片；全量配色导出备份。",
+			[LanguageCode.En] = "新增运行命令动作支持CMD/PS/WSL及静默模式；蜂巢六边形平滑圆角调节；快捷键构建器预设芯片；全量配色导出备份。",
+			[LanguageCode.Ja] = "新增运行命令动作支持CMD/PS/WSL及静默模式；蜂巢六边形平滑圆角调节；快捷键构建器预设芯片；全量配色导出备份。"
+		};
+		dictionary["Tab4_Ms_145_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "多级轮盘与级联子菜单 & 智能呼出收起切换 & 扇区平滑圆角算法重构",
+			[LanguageCode.ZhTw] = "多级轮盘与级联子菜单 & 智能呼出收起切换 & 扇區平滑圆角算法重构",
+			[LanguageCode.En] = "多级轮盘与级联子菜单 & 智能呼出收起切换 & 扇区平滑圆角算法重构",
+			[LanguageCode.Ja] = "多级轮盘与级联子菜单 & 智能呼出收起切换 & 扇区平滑圆角算法重构"
+		};
+		dictionary["Tab4_Ms_145_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "支持二级子动作级联展开与多级轮盘开关；应用/文件夹/系统工具智能前台最小化切换；四角圆弧相切倒角算法重构。",
+			[LanguageCode.ZhTw] = "支持二级子动作级联展开与多级轮盘开关；应用/文件夹/系统工具智能前台最小化切换；四角圆弧相切倒角算法重构。",
+			[LanguageCode.En] = "支持二级子动作级联展开与多级轮盘开关；应用/文件夹/系统工具智能前台最小化切换；四角圆弧相切倒角算法重构。",
+			[LanguageCode.Ja] = "支持二级子动作级联展开与多级轮盘开关；应用/文件夹/系统工具智能前台最小化切换；四角圆弧相切倒角算法重构。"
+		};
+		dictionary["Tab4_Ms_144_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心图案缩放平移 & OBS等带参应用启动修复 & 三挡响应动画调速",
+			[LanguageCode.ZhTw] = "中心图案缩放平移 & OBS等带参应用启动修復 & 三挡响应动画调速",
+			[LanguageCode.En] = "中心图案缩放平移 & OBS等带参应用启动修复 & 三挡响应动画调速",
+			[LanguageCode.Ja] = "中心图案缩放平移 & OBS等带参应用启动修复 & 三挡响应动画调速"
+		};
+		dictionary["Tab4_Ms_144_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "中心图案支持视口内缩放与偏移调节；修复外部程序工作目录与启动失败；新增优雅/流畅/快速三挡响应速度。",
+			[LanguageCode.ZhTw] = "中心图案支持视口内缩放与偏移调节；修復外部程式工作目录与启动失败；新增优雅/流畅/快速三挡响应速度。",
+			[LanguageCode.En] = "中心图案支持视口内缩放与偏移调节；修复外部程序工作目录与启动失败；新增优雅/流畅/快速三挡响应速度。",
+			[LanguageCode.Ja] = "中心图案支持视口内缩放与偏移调节；修复外部程序工作目录与启动失败；新增优雅/流畅/快速三挡响应速度。"
+		};
+		dictionary["Tab4_Ms_139_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开文件夹动作类型 & 全局界面语言统一性强化",
+			[LanguageCode.ZhTw] = "打开文件夹动作类型 & 全局界面语言统一性强化",
+			[LanguageCode.En] = "打开文件夹动作类型 & 全局界面语言统一性强化",
+			[LanguageCode.Ja] = "打开文件夹动作类型 & 全局界面语言统一性强化"
+		};
+		dictionary["Tab4_Ms_139_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新增打开文件夹专属动作类型与目录选择器，消除 Raw 字典键与混排语言，全弹窗国际化深度适配。",
+			[LanguageCode.ZhTw] = "新增打开文件夹专属动作类型与目录选择器，消除 Raw 字典键与混排语言，全弹窗国际化深度适配。",
+			[LanguageCode.En] = "新增打开文件夹专属动作类型与目录选择器，消除 Raw 字典键与混排语言，全弹窗国际化深度适配。",
+			[LanguageCode.Ja] = "新增打开文件夹专属动作类型与目录选择器，消除 Raw 字典键与混排语言，全弹窗国际化深度适配。"
+		};
+		dictionary["Tab4_Ms_138_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie 品牌视觉升级 & 原生圆角星轨图标 & 托盘图标自愈修复",
+			[LanguageCode.ZhTw] = "StarPie 品牌视觉升级 & 原生圆角星轨圖示 & 托盘圖示自愈修復",
+			[LanguageCode.En] = "StarPie 品牌视觉升级 & 原生圆角星轨图标 & 托盘图标自愈修复",
+			[LanguageCode.Ja] = "StarPie 品牌视觉升级 & 原生圆角星轨图标 & 托盘图标自愈修复"
+		};
+		dictionary["Tab4_Ms_138_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "升级 StarPie 品牌，修复任务栏圆角与托盘图标缺失，重构控制台侧边栏 Logo 与排版。",
+			[LanguageCode.ZhTw] = "升级 StarPie 品牌，修復任务栏圆角与托盘圖示缺失，重构控制台侧边栏 Logo 与排版。",
+			[LanguageCode.En] = "升级 StarPie 品牌，修复任务栏圆角与托盘图标缺失，重构控制台侧边栏 Logo 与排版。",
+			[LanguageCode.Ja] = "升级 StarPie 品牌，修复任务栏圆角与托盘图标缺失，重构控制台侧边栏 Logo 与排版。"
+		};
+		dictionary["Tab4_Ms_134_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "纯白主题画布渲染优化 & 全局设置记忆 & 极简内存瘦身",
+			[LanguageCode.ZhTw] = "纯白主题画布渲染最佳化 & 全局設定记忆 & 极简記憶體瘦身",
+			[LanguageCode.En] = "纯白主题画布渲染优化 & 全局设置记忆 & 极简内存瘦身",
+			[LanguageCode.Ja] = "纯白主题画布渲染优化 & 全局设置记忆 & 极简内存瘦身"
+		};
+		dictionary["Tab4_Ms_134_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "优化纯白主题下实时画布背景色彩，增加关闭与退出自动记忆功能，大幅优化内存占用至15-25MB。",
+			[LanguageCode.ZhTw] = "最佳化纯白主题下实时画布背景色彩，增加关闭与退出自动记忆功能，大幅最佳化記憶體占用至15-25MB。",
+			[LanguageCode.En] = "优化纯白主题下实时画布背景色彩，增加关闭与退出自动记忆功能，大幅优化内存占用至15-25MB。",
+			[LanguageCode.Ja] = "优化纯白主题下实时画布背景色彩，增加关闭与退出自动记忆功能，大幅优化内存占用至15-25MB。"
+		};
+		dictionary["Tab4_Ms_133_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "4/12键方位全流程适配修复 & 扇区切削形态精简",
+			[LanguageCode.ZhTw] = "4/12键方位全流程适配修復 & 扇區切削形态精简",
+			[LanguageCode.En] = "4/12键方位全流程适配修复 & 扇区切削形态精简",
+			[LanguageCode.Ja] = "4/12键方位全流程适配修复 & 扇区切削形态精简"
+		};
+		dictionary["Tab4_Ms_133_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "修复4键/12键切换无响应问题，支持动态自适应缩放与钟表映射，精简保留四大核心高质感形态。",
+			[LanguageCode.ZhTw] = "修復4键/12键切换无响应问题，支持动态自适应缩放与钟表映射，精简保留四大核心高质感形态。",
+			[LanguageCode.En] = "修复4键/12键切换无响应问题，支持动态自适应缩放与钟表映射，精简保留四大核心高质感形态。",
+			[LanguageCode.Ja] = "修复4键/12键切换无响应问题，支持动态自适应缩放与钟表映射，精简保留四大核心高质感形态。"
+		};
+		dictionary["Tab4_Ms_132_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "轮盘图标大小调节 & 光弧极简重构",
+			[LanguageCode.ZhTw] = "轮盘圖示大小调节 & 光弧极简重构",
+			[LanguageCode.En] = "轮盘图标大小调节 & 光弧极简重构",
+			[LanguageCode.Ja] = "轮盘图标大小调节 & 光弧极简重构"
+		};
+		dictionary["Tab4_Ms_132_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新增图标大小滑动微调，重构光弧同心导轨与悬浮节点，优化比例。",
+			[LanguageCode.ZhTw] = "新增圖示大小滑动微调，重构光弧同心导轨与悬浮节点，最佳化比例。",
+			[LanguageCode.En] = "新增图标大小滑动微调，重构光弧同心导轨与悬浮节点，优化比例。",
+			[LanguageCode.Ja] = "新增图标大小滑动微调，重构光弧同心导轨与悬浮节点，优化比例。"
+		};
+		dictionary["Tab4_Ms_131_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新增液态水滴与光弧轨道形态 & 文字字号调节",
+			[LanguageCode.ZhTw] = "新增液态水滴与光弧轨道形态 & 文字字号调节",
+			[LanguageCode.En] = "新增液态水滴与光弧轨道形态 & 文字字号调节",
+			[LanguageCode.Ja] = "新增液态水滴与光弧轨道形态 & 文字字号调节"
+		};
+		dictionary["Tab4_Ms_131_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "精简合并圆角胶囊形态，新增液态水滴与光弧轨道形态，支持自定义文字大小。",
+			[LanguageCode.ZhTw] = "精简合并圆角胶囊形态，新增液态水滴与光弧轨道形态，支持自定义文字大小。",
+			[LanguageCode.En] = "精简合并圆角胶囊形态，新增液态水滴与光弧轨道形态，支持自定义文字大小。",
+			[LanguageCode.Ja] = "精简合并圆角胶囊形态，新增液态水滴与光弧轨道形态，支持自定义文字大小。"
+		};
+		dictionary["Tab4_Ms_130_Title"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "主题视觉深度重塑 & 自定义配色预设保存",
+			[LanguageCode.ZhTw] = "主题视觉深度重塑 & 自定义配色预设保存",
+			[LanguageCode.En] = "主题视觉深度重塑 & 自定义配色预设保存",
+			[LanguageCode.Ja] = "主题视觉深度重塑 & 自定义配色预设保存"
+		};
+		dictionary["Tab4_Ms_130_Desc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。",
+			[LanguageCode.ZhTw] = "重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。",
+			[LanguageCode.En] = "重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。",
+			[LanguageCode.Ja] = "重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。"
+		};
 		Translations = dictionary;
 	}
 }

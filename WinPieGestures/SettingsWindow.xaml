@@ -4213,8 +4213,8 @@
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
           <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="关于软件" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Text="StarPie 现代鼠标轮盘笔势工具版本信息与完整演进历程。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
+            <TextBlock Name="Tab4_AboutTitleText" Text="关于软件" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Name="Tab4_AboutDescText" Text="StarPie 现代鼠标轮盘笔势工具版本信息与完整演进历程。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
           </StackPanel>
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,10,32">
@@ -4241,7 +4241,7 @@
                         <TextBlock Name="AboutVersionBadgeText" Text="v1.7.4-beta.3" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                     </StackPanel>
-                    <TextBlock Text="高质感、极速现代 Windows 鼠标轮盘笔势工具" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                    <TextBlock Name="Tab4_AppSloganText" Text="高质感、极速现代 Windows 鼠标轮盘笔势工具" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
                   </StackPanel>
                   <WrapPanel Grid.Column="2" VerticalAlignment="Center">
                     <Button Name="AboutCheckUpdateBtn" Content="🔄 检查更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Margin="0,0,8,0" Click="AboutCheckUpdateBtn_Click" />
@@ -4254,10 +4254,10 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.4-beta.3 控制台 UI 与文本规范化精简 &amp; 模式切换整合" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🎨 【消除重复繁琐文本】：全面精简导航栏与卡片标题中重复的“XX与XX”平行并列句式，去除界面控件中硬编码的英文后缀；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🧭 【导航图标与模式整合】：移除侧边栏多余双图标堆砌，整合重复的模式切换开关为右上角统一单选；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🌐 【占位符修复】：彻底解决高级系统设置未国际化占位符显示 raw key 文本的问题，多语言字典规范化对齐。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_174b3_Title" Text="v1.7.4-beta.3 控制台 UI 与文本规范化精简 &amp; 模式切换整合" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_174b3_P1" Text="• 🎨 【消除重复繁琐文本】：全面精简导航栏与卡片标题中重复的“XX与XX”平行并列句式，去除界面控件中硬编码的英文后缀；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b3_P2" Text="• 🧭 【导航图标与模式整合】：移除侧边栏多余双图标堆砌，整合重复的模式切换开关为右上角统一单选；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b3_P3" Text="• 🌐 【占位符修复】：彻底解决高级系统设置未国际化占位符显示 raw key 文本的问题，多语言字典规范化对齐。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4265,11 +4265,11 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.4-beta.2 StarPie 原生全盘极速秒搜纯净版 &amp; 毫秒级分层短路与时间预算保护" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• ⚡ 【StarPie 纯原生极速引擎架构】：全面采用 100% 自包含零外部依赖的原生极速搜索引擎，秒出常用应用与高频工程；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🚀 【毫秒级分类短路机制】：搜索应用程序或系统工具时直接从预索引内存库短路返回（0ms~3ms），完全消除磁盘 I/O 震荡；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• ⏱️ 【50ms 时间预算硬控 (Time-Budget)】：深盘遍历增加 50ms 严格时间预算与收敛深度，彻底消除数万目录地毯式扫描导致的数秒失控卡顿；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 📂 【高频工作区与工程优先】：优先穿透扫描桌面、下载、文档等高频目录，常用文件即敲即出，丝滑流畅。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_174b2_Title" Text="v1.7.4-beta.2 StarPie 原生全盘极速秒搜纯净版 &amp; 毫秒级分层短路与时间预算保护" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_174b2_P1" Text="• ⚡ 【StarPie 纯原生极速引擎架构】：全面采用 100% 自包含零外部依赖的原生极速搜索引擎，秒出常用应用与高频工程；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b2_P2" Text="• 🚀 【毫秒级分类短路机制】：搜索应用程序或系统工具时直接从预索引内存库短路返回（0ms~3ms），完全消除磁盘 I/O 震荡；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b2_P3" Text="• ⏱️ 【50ms 时间预算硬控 (Time-Budget)】：深盘遍历增加 50ms 严格时间预算与收敛深度，彻底消除数万目录地毯式扫描导致的数秒失控卡顿；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b2_P4" Text="• 📂 【高频工作区与工程优先】：优先穿透扫描桌面、下载、文档等高频目录，常用文件即敲即出，丝滑流畅。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4277,11 +4277,11 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.4-beta.1 播放图标朝向修正 &amp; 自定义音效测试版 &amp; 多层展开二级渲染修复" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🎛️ 【自定义交互音效调配 (高级模式·测试功能)】：在高级全景模式下开放方案配置入口，支持为 5 大核心手势事件（唤出、划过扇区、展开二级、动作触发、手势取消）独立调校程序合成微波形、本地音频采样与音高音量；支持方案新建、删除保护与导入导出，简单模式下保持清爽收起；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🔄 【修复多层轮盘展开二级子环切换显示】：修复开启「唤出时直接同时展开二级轮盘」时，使用滚轮或快捷键切换图层导致二级子轮盘在视觉上丢失的问题；换层后外圈子环同步呈现并即时响应光标悬停；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• ▶️ 【PlayPause 默认矢量图标纠正】：将默认 Play/Pause 图标中的播放三角形纠正为标准朝右（▶）并搭配双竖杆（❚❚），彻底规避原朝左三角形易与后退/上一首混淆的问题；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 📝 【扇区长文本智能两行显示优化】：深度完善扇区长文本换行格式化算法，多词及中英混排自动规整为紧凑双行排版。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_174b1_Title" Text="v1.7.4-beta.1 播放图标朝向修正 &amp; 自定义音效测试版 &amp; 多层展开二级渲染修复" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_174b1_P1" Text="• 🎛️ 【自定义交互音效调配 (高级模式·测试功能)】：在高级全景模式下开放方案配置入口，支持为 5 大核心手势事件（唤出、划过扇区、展开二级、动作触发、手势取消）独立调校程序合成微波形、本地音频采样与音高音量；支持方案新建、删除保护与导入导出，简单模式下保持清爽收起；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b1_P2" Text="• 🔄 【修复多层轮盘展开二级子环切换显示】：修复开启「唤出时直接同时展开二级轮盘」时，使用滚轮或快捷键切换图层导致二级子轮盘在视觉上丢失的问题；换层后外圈子环同步呈现并即时响应光标悬停；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b1_P3" Text="• ▶️ 【PlayPause 默认矢量图标纠正】：将默认 Play/Pause 图标中的播放三角形纠正为标准朝右（▶）并搭配双竖杆（❚❚），彻底规避原朝左三角形易与后退/上一首混淆的问题；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_174b1_P4" Text="• 📝 【扇区长文本智能两行显示优化】：深度完善扇区长文本换行格式化算法，多词及中英混排自动规整为紧凑双行排版。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4289,12 +4289,12 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.3 正式版 CAD 专属按键唤醒 &amp; 全盘深度秒搜与自由拉伸" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🎯 【黑名单程序专属呼出按键】：针对 SolidWorks 等 3D CAD 软件原生笔势痛点，支持在黑名单中为特定程序配置单独专属唤醒按键（如中键/侧键/组合键）；原生鼠标右键 100% 绝对零时延放行给宿主软件，完美兼顾 CAD 笔势与 StarPie 全局手势；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🔴 【复刻物理录制卡片与实时反馈】：专属按键配置完全复刻 Tab 2 录制交互，支持鼠标所有按键与键盘单键/修饰组合键物理录制，配备硬件感知器与 ESC 快速取消；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🎬 【全盘秒搜增加视频分类过滤】：新增「🎬 视频」独立分类过滤按钮，内置主流视频格式（.mp4, .mkv, .avi, .mov, .flv, .wmv, .webm 等）精准匹配，并支持无输入时自动推荐近期视频；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 📌 【秒搜窗口置顶图钉锁定】：右上角增加窗口置顶图钉按钮，开启后窗口始终置顶且点击外部失焦不关闭，方便对照文件与多任务协作；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 📐 【秒搜窗口自由拖拽缩放与记忆】：支持右下角点阵手柄与边缘自由拖拽调整窗口宽度与高度，并自动持久化记忆用户自定义窗口尺寸。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_173_Title" Text="v1.7.3 正式版 CAD 专属按键唤醒 &amp; 全盘深度秒搜与自由拉伸" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_173_P1" Text="• 🎯 【黑名单程序专属呼出按键】：针对 SolidWorks 等 3D CAD 软件原生笔势痛点，支持在黑名单中为特定程序配置单独专属唤醒按键（如中键/侧键/组合键）；原生鼠标右键 100% 绝对零时延放行给宿主软件，完美兼顾 CAD 笔势与 StarPie 全局手势；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173_P2" Text="• 🔴 【复刻物理录制卡片与实时反馈】：专属按键配置完全复刻 Tab 2 录制交互，支持鼠标所有按键与键盘单键/修饰组合键物理录制，配备硬件感知器与 ESC 快速取消；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173_P3" Text="• 🎬 【全盘秒搜增加视频分类过滤】：新增「🎬 视频」独立分类过滤按钮，内置主流视频格式（.mp4, .mkv, .avi, .mov, .flv, .wmv, .webm 等）精准匹配，并支持无输入时自动推荐近期视频；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173_P4" Text="• 📌 【秒搜窗口置顶图钉锁定】：右上角增加窗口置顶图钉按钮，开启后窗口始终置顶且点击外部失焦不关闭，方便对照文件与多任务协作；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173_P5" Text="• 📐 【秒搜窗口自由拖拽缩放与记忆】：支持右下角点阵手柄与边缘自由拖拽调整窗口宽度与高度，并自动持久化记忆用户自定义窗口尺寸。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4302,11 +4302,11 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.3-beta.8 全盘秒搜 (Quick Finder) &amp; OCR 截屏识字专项优化" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🔍 【光标跟随与自由拖拽秒搜 (Quick Finder)】：秒搜窗口唤出时自动定位在鼠标触发光标处，且支持按住窗口顶部及空白区域自由拖拽移动；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• ⚡ 【内置原生极速检索引擎】：完全内置自主研发的毫秒级文件与程序极速搜索引擎，开箱即用无需依赖任何第三方软件；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🎯 【OCR 选区与坐标 1:1 精确映射】：采用底层物理全景屏幕快照冻结与直接裁切机制，彻底解决高 DPI 与多显示器缩放下的选区坐标漂移问题；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🖼️ 【多分辨率自适应与防黑化修复】：大图自动下采样防止 2600px 引擎超限崩溃，小图高保真双三次插值放大提升识别率，修复 GDI+ 32bpp 格式导致的黑屏问题；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b8_Title" Text="v1.7.3-beta.8 全盘秒搜 (Quick Finder) &amp; OCR 截屏识字专项优化" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_173b8_P1" Text="• 🔍 【光标跟随与自由拖拽秒搜 (Quick Finder)】：秒搜窗口唤出时自动定位在鼠标触发光标处，且支持按住窗口顶部及空白区域自由拖拽移动；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b8_P2" Text="• ⚡ 【内置原生极速检索引擎】：完全内置自主研发的毫秒级文件与程序极速搜索引擎，开箱即用无需依赖任何第三方软件；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b8_P3" Text="• 🎯 【OCR 选区与坐标 1:1 精确映射】：采用底层物理全景屏幕快照冻结与直接裁切机制，彻底解决高 DPI 与多显示器缩放下的选区坐标漂移问题；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b8_P4" Text="• 🖼️ 【多分辨率自适应与防黑化修复】：大图自动下采样防止 2600px 引擎超限崩溃，小图高保真双三次插值放大提升识别率，修复 GDI+ 32bpp 格式导致的黑屏问题；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                   <TextBlock Text="• 📄 【智能版面结构重建引擎】：基于词块空间几何信息，自动还原自然段落空行、同一长句智能平滑合并断行、保留表格分栏间隙，并消除汉字间误插空格。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
@@ -4315,11 +4315,11 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.3-beta.7 轮盘触发交互音效系统 (方案C 极低延迟)" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🔊 【原生 Win32 非托管音频管线 (方案C)】：采用 winmm.dll 内存驻留非托管 PCM 回放与程序化波形合成引擎，延迟 &lt; 2ms，常驻内存 &lt; 20KB，零 GC 抖动，零外部依赖；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🎵 【5 大交互节点全闭环反馈】：覆盖轮盘呼出、扇区划过切换、二级菜单展开、动作确认触发与顺势外甩取消，建立视听协同的极速盲操确定性；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🎛️ 【4 款主题预设与独立音量控制】：内置机械手感、现代清脆、柔和气泡、极简短音 4 款专属音效，支持硬件级数学无损音量缩放、一键全套试听与细项事件独立开关；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🛡️ 【35ms 扇区防抖闸门】：鼠标在扇区分界线微颤时自动限频防抖，彻底消除刺耳杂音。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_173b7_Title" Text="v1.7.3-beta.7 轮盘触发交互音效系统 (方案C 极低延迟)" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_173b7_P1" Text="• 🔊 【原生 Win32 非托管音频管线 (方案C)】：采用 winmm.dll 内存驻留非托管 PCM 回放与程序化波形合成引擎，延迟 &lt; 2ms，常驻内存 &lt; 20KB，零 GC 抖动，零外部依赖；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b7_P2" Text="• 🎵 【5 大交互节点全闭环反馈】：覆盖轮盘呼出、扇区划过切换、二级菜单展开、动作确认触发与顺势外甩取消，建立视听协同的极速盲操确定性；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b7_P3" Text="• 🎛️ 【4 款主题预设与独立音量控制】：内置机械手感、现代清脆、柔和气泡、极简短音 4 款专属音效，支持硬件级数学无损音量缩放、一键全套试听与细项事件独立开关；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b7_P4" Text="• 🛡️ 【35ms 扇区防抖闸门】：鼠标在扇区分界线微颤时自动限频防抖，彻底消除刺耳杂音。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4327,9 +4327,9 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.3-beta.6 交互画布自由拉伸比例 &amp; 轮盘层切换方式状态回显修复" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 📐 【Tab 2 画布自适应与自由拉伸】：动作配置页（Tab 2）告别 380px 固定宽度限制，默认采用 1.15*:1* 黄金自适应比例；新增分割线拖拽调整手柄 (GridSplitter)，支持自由拖拽调节画布与配置卡片宽度比例，双击即可一键复位为默认比例，自定义宽度自动持久化保存；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🔄 【轮盘层切换方式双向回显修复】：多层轮盘工具栏切换模式升级为现代化交互下拉框，彻底修复保存为 Tab 键切换后 UI 依然错误回显为“滚轮切换”的属性映射与通知缺陷，实现配置加载与切换的双向状态完全同步。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_173b6_Title" Text="v1.7.3-beta.6 交互画布自由拉伸比例 &amp; 轮盘层切换方式状态回显修复" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_173b6_P1" Text="• 📐 【Tab 2 画布自适应与自由拉伸】：动作配置页（Tab 2）告别 380px 固定宽度限制，默认采用 1.15*:1* 黄金自适应比例；新增分割线拖拽调整手柄 (GridSplitter)，支持自由拖拽调节画布与配置卡片宽度比例，双击即可一键复位为默认比例，自定义宽度自动持久化保存；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b6_P2" Text="• 🔄 【轮盘层切换方式双向回显修复】：多层轮盘工具栏切换模式升级为现代化交互下拉框，彻底修复保存为 Tab 键切换后 UI 依然错误回显为“滚轮切换”的属性映射与通知缺陷，实现配置加载与切换的双向状态完全同步。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4337,11 +4337,11 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.3-beta.5 唤出一二级轮盘全展开 &amp; 开箱高颜值默认配置友好优化" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🌟 【一二级轮盘唤出直展】：在多级轮盘与外圈子环形态下新增「唤出时直接同时展开一二级轮盘」开关，轮盘唤出时全方位子环直接同步呈现，无需拖拽即刻清晰感知并直选子动作；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🎨 【开箱新手默认友好性】：全面重塑新用户首次进入的默认轮盘参数与配色：默认启用液态毛玻璃 + 浅色模式 + 纯图标居中高质感布局，四象限丰富常用子动作一览无余；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• ⚡ 【子环极速命中与响应】：深度优化多子环常开状态下的极坐标扇区命中与动态高亮，与父级扇区无缝联动，保持 60/120 FPS 丝滑微动效。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🏷️ 【完整预发布版本标识】：侧边栏、关于页、更新状态、托盘菜单与启动日志统一显示 v1.7.3-beta.5，并自动隐藏 SDK 附加的提交哈希。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_173b5_Title" Text="v1.7.3-beta.5 唤出一二级轮盘全展开 &amp; 开箱高颜值默认配置友好优化" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_173b5_P1" Text="• 🌟 【一二级轮盘唤出直展】：在多级轮盘与外圈子环形态下新增「唤出时直接同时展开一二级轮盘」开关，轮盘唤出时全方位子环直接同步呈现，无需拖拽即刻清晰感知并直选子动作；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b5_P2" Text="• 🎨 【开箱新手默认友好性】：全面重塑新用户首次进入的默认轮盘参数与配色：默认启用液态毛玻璃 + 浅色模式 + 纯图标居中高质感布局，四象限丰富常用子动作一览无余；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b5_P3" Text="• ⚡ 【子环极速命中与响应】：深度优化多子环常开状态下的极坐标扇区命中与动态高亮，与父级扇区无缝联动，保持 60/120 FPS 丝滑微动效。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b5_P4" Text="• 🏷️ 【完整预发布版本标识】：侧边栏、关于页、更新状态、托盘菜单与启动日志统一显示 v1.7.3-beta.5，并自动隐藏 SDK 附加的提交哈希。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
@@ -4349,11 +4349,11 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="v1.7.3-beta.4 内存按需轻量驻留深度优化 &amp; 静默更新自愈守护" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
-                  <TextBlock Text="• 🚀 【任务栏预取按需调度】：轮盘仅在当前方案包含 SwitchWindow/Taskbar/Tile 窗口调度动作时才启动 UIAutomation 任务栏预取，杜绝常规手势下的句柄与线程泄漏；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🛡️ 【自动更新与提权静默自愈】：彻底修复自动更新和以管理员提权重启后未带 --silent 参数误弹设置窗口导致内存驻留 160MB+ 的问题，实现真正的后台零干扰静默秒启；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🧹 【旧版配置 Base64 自动洗涤】：配置加载阶段智能识别并清除旧版本遗留的 Base64 嵌入数据，规避大对象堆 (LOH) 碎片积压；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                  <TextBlock Text="• 🍃 【设置窗口释放深度修剪】：控制台关闭 30 秒进入延迟回收阶段时，强制执行工作集归还与内存整理，彻底回落至 15MB~30MB 极致轻量后台基准。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Name="Tab4_Ms_173b4_Title" Text="v1.7.3-beta.4 内存按需轻量驻留深度优化 &amp; 静默更新自愈守护" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Name="Tab4_Ms_173b4_P1" Text="• 🚀 【任务栏预取按需调度】：轮盘仅在当前方案包含 SwitchWindow/Taskbar/Tile 窗口调度动作时才启动 UIAutomation 任务栏预取，杜绝常规手势下的句柄与线程泄漏；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b4_P2" Text="• 🛡️ 【自动更新与提权静默自愈】：彻底修复自动更新和以管理员提权重启后未带 --silent 参数误弹设置窗口导致内存驻留 160MB+ 的问题，实现真正的后台零干扰静默秒启；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b4_P3" Text="• 🧹 【旧版配置 Base64 自动洗涤】：配置加载阶段智能识别并清除旧版本遗留的 Base64 嵌入数据，规避大对象堆 (LOH) 碎片积压；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Name="Tab4_Ms_173b4_P4" Text="• 🍃 【设置窗口释放深度修剪】：控制台关闭 30 秒进入延迟回收阶段时，强制执行工作集归还与内存整理，彻底回落至 15MB~30MB 极致轻量后台基准。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14">
@@ -4361,7 +4361,7 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="版本演进里程碑" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14" />
+                  <TextBlock Name="Tab4_MilestonesHeaderTitle" Text="版本演进里程碑" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14" />
                   <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,10" Margin="0,0,0,10">
                     <Grid>
                       <Grid.ColumnDefinitions>
@@ -4373,8 +4373,8 @@
                         <TextBlock Text="v1.7.3-b3" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="历史版本一键回退 &amp; LOH 碎片根除 &amp; 图标并发冻结缓存" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="Beta 通道 5 版本 / Stable 通道 2 版本回退池；彻底移除 Base64 图标数据模型；全局图标 Freezable.Freeze 缓存。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_173b3_Title" Text="历史版本一键回退 &amp; LOH 碎片根除 &amp; 图标并发冻结缓存" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_173b3_Desc" Text="Beta 通道 5 版本 / Stable 通道 2 版本回退池；彻底移除 Base64 图标数据模型；全局图标 Freezable.Freeze 缓存。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-09" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4390,8 +4390,8 @@
                         <TextBlock Text="v1.7.3-b2" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="全按键长按原地呼出 &amp; 黑名单快捷键穿透修复 &amp; 物理修饰键守卫" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="键盘单键/鼠标侧键/中键长按原地呼出轮盘；彻底根治 Maya 等黑名单中组合快捷键失效；GetAsyncKeyState 物理探测守卫。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_173b2_Title" Text="全按键长按原地呼出 &amp; 黑名单快捷键穿透修复 &amp; 物理修饰键守卫" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_173b2_Desc" Text="键盘单键/鼠标侧键/中键长按原地呼出轮盘；彻底根治 Maya 等黑名单中组合快捷键失效；GetAsyncKeyState 物理探测守卫。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-08" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4407,8 +4407,8 @@
                         <TextBlock Text="v1.7.2-b5" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="早期配置无损自愈导入 &amp; 自定义贴图与程序图标内嵌记忆 &amp; 极坐标扇区守护" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="全面修复旧版配置导入扇区丢失与篡改；配置文件内嵌 Base64 图标记忆；极坐标几何对齐守护；全局继承自愈与 ESC 退出优化。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_172b5_Title" Text="早期配置无损自愈导入 &amp; 自定义贴图与程序图标内嵌记忆 &amp; 极坐标扇区守护" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_172b5_Desc" Text="全面修复旧版配置导入扇区丢失与篡改；配置文件内嵌 Base64 图标记忆；极坐标几何对齐守护；全局继承自愈与 ESC 退出优化。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-08" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4424,8 +4424,8 @@
                         <TextBlock Text="v1.7.2-b2" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="扇区全局方案级联继承 &amp; 多屏跨缩放Bug根治 &amp; 幽灵虚影消除 &amp; 底层防丢键优化" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="未配置槽位自动级联继承全局方案；彻底根治多屏混合 DPI 轮盘巨大截断缺陷；解除外甩残影；HWND 缓存防护低级钩子防丢键。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_172b2_Title" Text="扇区全局方案级联继承 &amp; 多屏跨缩放Bug根治 &amp; 幽灵虚影消除 &amp; 底层防丢键优化" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_172b2_Desc" Text="未配置槽位自动级联继承全局方案；彻底根治多屏混合 DPI 轮盘巨大截断缺陷；解除外甩残影；HWND 缓存防护低级钩子防丢键。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-08" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4441,8 +4441,8 @@
                         <TextBlock Text="v1.7.1" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="连续步进快捷键支持 &amp; 外圈子环全展开 &amp; 触发防冲突提示" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="快捷键引擎支持多键顺序步进派发（如 Alt+H+V+F）；外圈子环画布默认全展开并精简一二级按钮；触发按键增加防冲突提示。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_171_Title" Text="连续步进快捷键支持 &amp; 外圈子环全展开 &amp; 触发防冲突提示" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_171_Desc" Text="快捷键引擎支持多键顺序步进派发（如 Alt+H+V+F）；外圈子环画布默认全展开并精简一二级按钮；触发按键增加防冲突提示。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-07" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4458,8 +4458,8 @@
                         <TextBlock Text="v1.7.0" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="简单模式层级精简 &amp; 中心核圆动作图标呼出修复 &amp; 体验提纯" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="鼠标手势卡片、外甩取消动作、边缘防溢出与紧凑全览列表分段切换全面放入高级模式；彻底修复实际呼出轮盘中心核圆配置图标不显示缺陷；简单模式锁定画布精调。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_170_Title" Text="简单模式层级精简 &amp; 中心核圆动作图标呼出修复 &amp; 体验提纯" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_170_Desc" Text="鼠标手势卡片、外甩取消动作、边缘防溢出与紧凑全览列表分段切换全面放入高级模式；彻底修复实际呼出轮盘中心核圆配置图标不显示缺陷；简单模式锁定画布精调。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-06" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4475,8 +4475,8 @@
                         <TextBlock Text="v1.6.9" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="外部图标继承加固 &amp; 防误触配置持久化保护 &amp; 图标回显联动" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="彻底解决重启后扇区图标变为 Win 图标问题；加固开机自启与关机保存门禁，杜绝全屏防误触与外甩取消设置被冲掉；列表与编辑区支持关联图标实时预览；平铺预设不再覆写已有图标。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_169_Title" Text="外部图标继承加固 &amp; 防误触配置持久化保护 &amp; 图标回显联动" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_169_Desc" Text="彻底解决重启后扇区图标变为 Win 图标问题；加固开机自启与关机保存门禁，杜绝全屏防误触与外甩取消设置被冲掉；列表与编辑区支持关联图标实时预览；平铺预设不再覆写已有图标。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-06" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4492,8 +4492,8 @@
                         <TextBlock Text="v1.6.8" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="全新星盘图标 &amp; 二级轮盘方位对齐 &amp; 一二级配置联动 &amp; 弹性字号 &amp; 快捷键增强 &amp; 贡献者致谢" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="全新同心发光星核品牌图标；修复二级轮盘上方功能与设置相反问题；优化一级/二级配置模式切换与画布联动；轮盘扇区全面接入 Auto Font-Fit 弹性字号；快捷键拼装增加 Pause 与过滤；修复实时画布缩放；优化蜂窝扇迟滞保持手感。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_168_Title" Text="全新星盘图标 &amp; 二级轮盘方位对齐 &amp; 一二级配置联动 &amp; 弹性字号 &amp; 快捷键增强 &amp; 贡献者致谢" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_168_Desc" Text="全新同心发光星核品牌图标；修复二级轮盘上方功能与设置相反问题；优化一级/二级配置模式切换与画布联动；轮盘扇区全面接入 Auto Font-Fit 弹性字号；快捷键拼装增加 Pause 与过滤；修复实时画布缩放；优化蜂窝扇迟滞保持手感。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-04" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4509,8 +4509,8 @@
                         <TextBlock Text="v1.6.7" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="原生 OCR 修复 &amp; 多屏多分辨率唤起对齐 &amp; 核心圆死区滑块 &amp; 二级单扇区聚焦预览" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="修复原生 OCR 异常与语言包感知；引入 ScreenHelper 彻底解决跨屏混合 DPI 轮盘唤起漂移；多级轮盘设置迁入 Tab 3 释放动作区空间并增加核心圆死区灵敏度滑块；二级轮盘外观预览改为单扇区展开消除遮挡。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_167_Title" Text="原生 OCR 修复 &amp; 多屏多分辨率唤起对齐 &amp; 核心圆死区滑块 &amp; 二级单扇区聚焦预览" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_167_Desc" Text="修复原生 OCR 异常与语言包感知；引入 ScreenHelper 彻底解决跨屏混合 DPI 轮盘唤起漂移；多级轮盘设置迁入 Tab 3 释放动作区空间并增加核心圆死区灵敏度滑块；二级轮盘外观预览改为单扇区展开消除遮挡。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-03" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4526,8 +4526,8 @@
                         <TextBlock Text="v1.5.8" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="Win10 计算器修复 &amp; PrintScreen 截屏 &amp; 启动 Explorer 修复 &amp; 运行日志记录" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="修复 Win10 计算器呼出；支持单独 PrintScreen 截屏热键；修复启动 explorer.exe；新增系统异步运行日志与一键查看诊断。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_158_Title" Text="Win10 计算器修复 &amp; PrintScreen 截屏 &amp; 启动 Explorer 修复 &amp; 运行日志记录" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_158_Desc" Text="修复 Win10 计算器呼出；支持单独 PrintScreen 截屏热键；修复启动 explorer.exe；新增系统异步运行日志与一键查看诊断。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-01" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4543,8 +4543,8 @@
                         <TextBlock Text="v1.5.7" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="轮盘动作排序 &amp; 方位指示器 &amp; 独立钩子线程 &amp; 手势拖拽流畅度优化" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="新增动作列表 ▲/▼ 排序；新增扇区方位微缩指示器；独立低级钩子后台线程与高频更新调度；二级外径与配置即时导入全面融合。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_157_Title" Text="轮盘动作排序 &amp; 方位指示器 &amp; 独立钩子线程 &amp; 手势拖拽流畅度优化" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_157_Desc" Text="新增动作列表 ▲/▼ 排序；新增扇区方位微缩指示器；独立低级钩子后台线程与高频更新调度；二级外径与配置即时导入全面融合。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-09-01" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4560,8 +4560,8 @@
                         <TextBlock Text="v1.5.6" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="运行命令终端选择 &amp; 蜂巢平滑圆角 &amp; 快捷键拼装修复 &amp; 配色无损备份" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="新增运行命令动作支持CMD/PS/WSL及静默模式；蜂巢六边形平滑圆角调节；快捷键构建器预设芯片；全量配色导出备份。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_156_Title" Text="运行命令终端选择 &amp; 蜂巢平滑圆角 &amp; 快捷键拼装修复 &amp; 配色无损备份" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_156_Desc" Text="新增运行命令动作支持CMD/PS/WSL及静默模式；蜂巢六边形平滑圆角调节；快捷键构建器预设芯片；全量配色导出备份。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-08-31" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4577,8 +4577,8 @@
                         <TextBlock Text="v1.4.5" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="多级轮盘与级联子菜单 &amp; 智能呼出收起切换 &amp; 扇区平滑圆角算法重构" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="支持二级子动作级联展开与多级轮盘开关；应用/文件夹/系统工具智能前台最小化切换；四角圆弧相切倒角算法重构。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_145_Title" Text="多级轮盘与级联子菜单 &amp; 智能呼出收起切换 &amp; 扇区平滑圆角算法重构" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_145_Desc" Text="支持二级子动作级联展开与多级轮盘开关；应用/文件夹/系统工具智能前台最小化切换；四角圆弧相切倒角算法重构。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-08-29" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4594,8 +4594,8 @@
                         <TextBlock Text="v1.4.4" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="中心图案缩放平移 &amp; OBS等带参应用启动修复 &amp; 三挡响应动画调速" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="中心图案支持视口内缩放与偏移调节；修复外部程序工作目录与启动失败；新增优雅/流畅/快速三挡响应速度。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_144_Title" Text="中心图案缩放平移 &amp; OBS等带参应用启动修复 &amp; 三挡响应动画调速" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_144_Desc" Text="中心图案支持视口内缩放与偏移调节；修复外部程序工作目录与启动失败；新增优雅/流畅/快速三挡响应速度。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-08-29" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4611,8 +4611,8 @@
                         <TextBlock Text="v1.3.9" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="打开文件夹动作类型 &amp; 全局界面语言统一性强化" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="新增打开文件夹专属动作类型与目录选择器，消除 Raw 字典键与混排语言，全弹窗国际化深度适配。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_139_Title" Text="打开文件夹动作类型 &amp; 全局界面语言统一性强化" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_139_Desc" Text="新增打开文件夹专属动作类型与目录选择器，消除 Raw 字典键与混排语言，全弹窗国际化深度适配。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-08-24" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4628,8 +4628,8 @@
                         <TextBlock Text="v1.3.8" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                       <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                        <TextBlock Text="StarPie 品牌视觉升级 &amp; 原生圆角星轨图标 &amp; 托盘图标自愈修复" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                        <TextBlock Text="升级 StarPie 品牌，修复任务栏圆角与托盘图标缺失，重构控制台侧边栏 Logo 与排版。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab4_Ms_138_Title" Text="StarPie 品牌视觉升级 &amp; 原生圆角星轨图标 &amp; 托盘图标自愈修复" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                        <TextBlock Name="Tab4_Ms_138_Desc" Text="升级 StarPie 品牌，修复任务栏圆角与托盘图标缺失，重构控制台侧边栏 Logo 与排版。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                       </StackPanel>
                       <TextBlock Grid.Column="2" Text="2026-08-23" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                     </Grid>
@@ -4647,8 +4647,8 @@
                             <TextBlock Text="v1.3.4" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                           </Border>
                           <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <TextBlock Text="纯白主题画布渲染优化 &amp; 全局设置记忆 &amp; 极简内存瘦身" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                            <TextBlock Text="优化纯白主题下实时画布背景色彩，增加关闭与退出自动记忆功能，大幅优化内存占用至15-25MB。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                            <TextBlock Name="Tab4_Ms_134_Title" Text="纯白主题画布渲染优化 &amp; 全局设置记忆 &amp; 极简内存瘦身" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <TextBlock Name="Tab4_Ms_134_Desc" Text="优化纯白主题下实时画布背景色彩，增加关闭与退出自动记忆功能，大幅优化内存占用至15-25MB。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                           </StackPanel>
                           <TextBlock Grid.Column="2" Text="2026-08-23" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                         </Grid>
@@ -4664,8 +4664,8 @@
                             <TextBlock Text="v1.3.3" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                           </Border>
                           <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <TextBlock Text="4/12键方位全流程适配修复 &amp; 扇区切削形态精简" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                            <TextBlock Text="修复4键/12键切换无响应问题，支持动态自适应缩放与钟表映射，精简保留四大核心高质感形态。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                            <TextBlock Name="Tab4_Ms_133_Title" Text="4/12键方位全流程适配修复 &amp; 扇区切削形态精简" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <TextBlock Name="Tab4_Ms_133_Desc" Text="修复4键/12键切换无响应问题，支持动态自适应缩放与钟表映射，精简保留四大核心高质感形态。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                           </StackPanel>
                           <TextBlock Grid.Column="2" Text="2026-08-22" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                         </Grid>
@@ -4681,8 +4681,8 @@
                             <TextBlock Text="v1.3.2" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                           </Border>
                           <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <TextBlock Text="轮盘图标大小调节 &amp; 光弧极简重构" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                            <TextBlock Text="新增图标大小滑动微调，重构光弧同心导轨与悬浮节点，优化比例。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                            <TextBlock Name="Tab4_Ms_132_Title" Text="轮盘图标大小调节 &amp; 光弧极简重构" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <TextBlock Name="Tab4_Ms_132_Desc" Text="新增图标大小滑动微调，重构光弧同心导轨与悬浮节点，优化比例。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                           </StackPanel>
                           <TextBlock Grid.Column="2" Text="2026-08-22" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                         </Grid>
@@ -4698,8 +4698,8 @@
                             <TextBlock Text="v1.3.1" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                           </Border>
                           <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <TextBlock Text="新增液态水滴与光弧轨道形态 &amp; 文字字号调节" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                            <TextBlock Text="精简合并圆角胶囊形态，新增液态水滴与光弧轨道形态，支持自定义文字大小。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                            <TextBlock Name="Tab4_Ms_131_Title" Text="新增液态水滴与光弧轨道形态 &amp; 文字字号调节" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <TextBlock Name="Tab4_Ms_131_Desc" Text="精简合并圆角胶囊形态，新增液态水滴与光弧轨道形态，支持自定义文字大小。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                           </StackPanel>
                           <TextBlock Grid.Column="2" Text="2026-08-22" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                         </Grid>
@@ -4715,8 +4715,8 @@
                             <TextBlock Text="v1.3.0" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" />
                           </Border>
                           <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <TextBlock Text="主题视觉深度重塑 &amp; 自定义配色预设保存" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-                            <TextBlock Text="重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
+                            <TextBlock Name="Tab4_Ms_130_Title" Text="主题视觉深度重塑 &amp; 自定义配色预设保存" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
+                            <TextBlock Name="Tab4_Ms_130_Desc" Text="重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" />
                           </StackPanel>
                           <TextBlock Grid.Column="2" Text="2026-08-22" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Right" VerticalAlignment="Top" />
                         </Grid>
