@@ -23,12 +23,29 @@
 - **版本号**：`AGENTS.md` §3.7 写「当前契约版本 1.2」，实际已是 **1.4**（1.3 增 `ScreenCapture`、1.4 增 `InputSimulation`），已按 `PluginApi` 注释补齐演进清单；§3.7 能力门禁段还停在「只有 `Process` / `WindowControl` 两个强制点」，实际是**五个服务面、四个能力位**，已改正并补上 `InputSimulation` 为何不与 `Process` 合并。§5.3 的版本同步清单列的是 `App.xaml.cs` / `TrayController.cs` 的「回退文本」，而这两处早已改为统一从 `AppVersionInfo` 取 —— 清单已重写为真实落点（`csproj` / `AppVersionInfo.FallbackVersion` / `SettingsWindow.xaml` 4 处 / `CHANGELOG` / `build-installer.ps1` / `StarPie.iss` 两个 `/D` 兜底）。
 - **消掉一个隐藏同步点**：`UpdateManager` 的 User-Agent 里写着 `?? "1.8.0-beta.1"` 字面量，且取的是 `AssemblyVersion`（会把预发布标识丢成 `1.8.0`），与设置页另一个 UA 写法不一致。改为统一取 `AppVersionInfo.DisplayVersion`。
 
+### 🔧 修复「官方模块自检整段 FAIL」
+
+迁移到在线目录时，**保留前缀只能走官方在线目录**成了硬契约（`PluginHost.InstallCandidateAsync` 与 `PluginInstance.LoadCore` 各拦一次），但自检仍按随包时代的路径把官方 dll 当**社区候选**去装 —— 于是拿任何一枚官方模块 dll 跑自检都会：
+
+- `[3] 启用` FAIL：「插件 ID 使用了保留前缀」；
+- `[5] 活动调用租约` 连带 FAIL（插件没加载起来）；
+- `[5b] 重启后首次惰性调用` 被**静默跳过**（理由写成「插件未加载」）—— 等于丢了一段覆盖却看不出来；
+- `[3d] 候选安装` FAIL：按新契约它本来就该被拒绝。
+
+**已用干净 HEAD（`59d06c2`）复核：同样 FAIL**，确认是迁移引入、与其他改动无关。不改的话，官方模块这条路此后没有任何端到端验收手段。
+
+- `[2]` 安装登记补上 `Official = PluginPaths.IsReservedPluginId(manifest.Id)`。这不是给自检开后门 —— `OfficialPluginClient` 走的就是这套（`Official = true` + 回填 `ClaimedTypes`），加载路径也正是按 `Entry.Official` 决定是否放行保留前缀。
+- `[3d]` 改为按目标身份分支：保留前缀（官方模块）**断言候选安装应被拒绝**并打印拒绝理由；非保留前缀的社区 dll 仍走原来的完整正向流程（含「装完即运行态」「裸 DLL 回填清单」「单枚复制」「ID 重复」等回归断言）。
+- 验收：自检结论 **PASS —— 全链路可用**，且 `[5b]` 从「跳过」变为**真实执行**；`%TEMP%/StarPie-PluginSelfTest-*` 零残留。
+
 ### 🧪 自检
 
 - `dotnet build WinPieGestures/WinPieGestures.csproj -c Release` → **0 警告 0 错误**。
-- 词条完整性（`scratch/check_i18n.py`）：**571 个唯一键、0 组重复、0 个键缺语言分支、简中无空值**；代码里 `I18n.T` / `I18n.TF` 的字面量引用与字典定义求差，「引用但未定义」= **0**；本次新增 19 键**全部有引用**。
+- 词条完整性（`scratch/check_i18n.py`，新增脚本）：**571 个唯一键、0 组重复、0 个键缺语言分支、简中无空值**；代码里 `I18n.T` / `I18n.TF` 的字面量引用与字典定义求差，「引用但未定义」= **0**；本次新增 19 键**全部有引用**。
 - 漏接复查：插件页「有 `Name` + 硬编码中文却从未被重设」的具名控件数 = **0**。
 - 不变量「简中界面一字不变」：三个 XAML 设计期占位的字面量与对应词条的简中值逐字比对**完全一致**；其余改动均为「字面量 → 词典同值」，简中输出零变化。
+- 自检工具本身：改前后各跑一次官方模块 dll（`--skip-invoke`）。改前 FAIL、改后 PASS，且**用干净 HEAD 复核过改前那次 FAIL**，排除「本次改动引入失败」的可能。
+- 发布产物：`dotnet publish -c Release -r win-x64 --no-self-contained` 输出 **12 个文件、无 `plugin\`、无官方插件 dll**，AGENTS.md §5.2 的发布前校验成立。
 
 ## [未发布] - 2026-09-17（同步上游 dev-plugin：合并 13 个提交、缝合 4 处冲突、恢复两份插件规范）
 

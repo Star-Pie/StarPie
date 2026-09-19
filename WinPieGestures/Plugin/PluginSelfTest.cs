@@ -183,6 +183,12 @@ internal static class PluginSelfTest
                 OverwriteExisting = true,
                 EnableAfterInstall = false,
                 AcknowledgedCapabilities = manifest.Capabilities,
+                // 保留前缀（starpie.* 等）说明这是官方模块：必须按官方安装登记。
+                // 这不给自检开后门 —— OfficialPluginClient 走的就是这一套（Official = true +
+                // 回填 ClaimedTypes），加载路径也会按 Entry.Official 决定是否放行保留前缀。
+                // 少了它，自检会在 [3] 启用那一步撞「插件 ID 使用了保留前缀」而整段 FAIL，
+                // 于是官方模块这条路反而没人能验。
+                Official = PluginPaths.IsReservedPluginId(manifest.Id),
             };
             PluginInstallResult install = PluginHost.CommitInstall(scan, options);
             if (!install.Success)
@@ -301,7 +307,24 @@ internal static class PluginSelfTest
                 PluginInstallResult candidateInstall = PluginHost.InstallCandidateAsync(real).GetAwaiter().GetResult();
                 bool installedByCandidate = candidateInstall.Success;
                 string candidateError = candidateInstall.Error;
-                if (!installedByCandidate)
+
+                // 保留前缀的模块只能走官方在线目录，社区候选安装必须拒绝它。
+                // 所以拿官方 dll 跑自检时，这里要断言的正是「被拒绝」——
+                // 改成在线目录分发之前，官方 dll 恰好是从这个扫描目录装进来的，
+                // 那时这里断言的是「装成功了」，迁移后若照旧断言，自检会假红。
+                if (PluginPaths.IsReservedPluginId(real.PluginId))
+                {
+                    Line("  本次目标是官方模块（保留前缀）⇒ 候选安装按契约应被拒绝");
+                    if (installedByCandidate)
+                    {
+                        Fail("候选安装", "保留前缀的官方模块不允许从扫描目录安装，但候选安装竟然成功了");
+                    }
+                    else
+                    {
+                        Line($"  拒绝理由：{candidateError}");
+                    }
+                }
+                else if (!installedByCandidate)
                 {
                     Fail("候选安装", candidateError);
                 }
