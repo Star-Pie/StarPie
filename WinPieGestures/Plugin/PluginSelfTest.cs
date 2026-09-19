@@ -281,6 +281,25 @@ internal static class PluginSelfTest
             {
                 Fail("候选扫描", $"扫描目录里没有扫出 {candidateFileName}");
             }
+            else if (PluginPaths.IsReservedPluginId(real.PluginId))
+            {
+                // 保留前缀＝官方模块：它不该被判成「可安装」—— 宿主在 InstallCandidateAsync 里
+                // 按契约会拒绝，界面上再留一个能点的按钮，就是让用户点一次必然失败的操作。
+                // 期望形态：状态「官方模块」+ 不给安装按钮 + 说明行指出正确的安装入口。
+                Line($"  官方模块在扫描目录里的判定：{real.StateText}（可安装={real.CanInstall}）");
+                if (real.State != PluginCandidateState.Reserved)
+                {
+                    Fail("候选扫描", $"保留前缀的官方模块应判为「官方模块」，实际是 {real.State}");
+                }
+                if (real.CanInstall)
+                {
+                    Fail("候选扫描", "官方模块不允许从扫描目录安装，就不该给「安装」按钮 —— 点了必然失败");
+                }
+                if (!real.HasNote)
+                {
+                    Fail("候选扫描", "官方模块必须有一句说明，告诉用户该去官方插件列表里安装");
+                }
+            }
             else if (real.State != PluginCandidateState.Installable)
             {
                 Fail("候选扫描", $"未安装过的插件应判为「可安装」，实际是 {real.State}");

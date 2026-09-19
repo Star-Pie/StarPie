@@ -1492,6 +1492,13 @@ public static class I18n
 			[LanguageCode.En] = "Externally registered",
 			[LanguageCode.Ja] = "外部参照済み"
 		};
+		dictionary["PluginCandidateStateReserved"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方模块",
+			[LanguageCode.ZhTw] = "官方模組",
+			[LanguageCode.En] = "Official module",
+			[LanguageCode.Ja] = "公式モジュール"
+		};
 		dictionary["PluginCandidateStateDuplicate"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "ID 重复",
@@ -1505,6 +1512,90 @@ public static class I18n
 			[LanguageCode.ZhTw] = "無法識別",
 			[LanguageCode.En] = "Unrecognized",
 			[LanguageCode.Ja] = "認識できません"
+		};
+		dictionary["PluginCandidateNoteRejected"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "无法安装：{0}",
+			[LanguageCode.ZhTw] = "無法安裝：{0}",
+			[LanguageCode.En] = "Cannot install: {0}",
+			[LanguageCode.Ja] = "インストールできません：{0}"
+		};
+		dictionary["PluginCandidateNoteDuplicate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扫描目录里有 {0} 枚 .dll 声明了同一个 ID（{1}），无法判断该装哪一枚。请只保留需要的那一个文件。",
+			[LanguageCode.ZhTw] = "掃描目錄裡有 {0} 枚 .dll 宣告了同一個 ID（{1}），無法判斷該裝哪一枚。請只保留需要的那一個檔案。",
+			[LanguageCode.En] = "{0} .dll files in the scan folder declare the same ID ({1}), so there is no way to tell which one to install. Keep only the file you need.",
+			[LanguageCode.Ja] = "スキャンフォルダー内の {0} 個の .dll が同じ ID（{1}）を宣言しているため、どれをインストールすべきか判断できません。必要なファイルだけを残してください。"
+		};
+		dictionary["PluginCandidateNoteReserved"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这是官方模块（{0}）。扫描目录只用于手动安装社区插件 —— 官方模块请到上方「官方插件」列表里下载和更新，宿主不会从这里安装它。",
+			[LanguageCode.ZhTw] = "這是官方模組（{0}）。掃描目錄只用於手動安裝社群外掛 —— 官方模組請到上方「官方外掛」清單裡下載和更新，宿主不會從這裡安裝它。",
+			[LanguageCode.En] = "This is an official module ({0}). The scan folder is only for installing community plugins by hand — download and update official modules from the \"Official plugins\" list above; StarPie will not install it from here.",
+			[LanguageCode.Ja] = "これは公式モジュール（{0}）です。スキャンフォルダーはコミュニティプラグインを手動でインストールするためのもので、公式モジュールは上の「公式プラグイン」一覧からダウンロード・更新してください。ここからはインストールされません。"
+		};
+		dictionary["PluginCandidateNoteInstallable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "尚未安装，可直接安装。",
+			[LanguageCode.ZhTw] = "尚未安裝，可直接安裝。",
+			[LanguageCode.En] = "Not installed yet — you can install it directly.",
+			[LanguageCode.Ja] = "まだインストールされていません。そのままインストールできます。"
+		};
+		dictionary["PluginCandidateNoteExternalRegistered"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "同一个 ID 已被开发者模式的外部路径登记占用：{0}。如需改为安装副本，请先在列表里卸载那条登记。",
+			[LanguageCode.ZhTw] = "同一個 ID 已被開發者模式的外部路徑登記占用：{0}。如需改為安裝副本，請先在清單裡解除那條登記。",
+			[LanguageCode.En] = "The same ID is already claimed by a developer-mode external path registration: {0}. To switch to an installed copy, unregister it in the list first.",
+			[LanguageCode.Ja] = "同じ ID は既に開発者モードの外部パス登録（{0}）が使用しています。インストール済みのコピーに切り替える場合は、先に一覧からその登録を解除してください。"
+		};
+		dictionary["PluginCandidateNoteInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装同一个版本（v{0}），无需重复安装。",
+			[LanguageCode.ZhTw] = "已裝同一個版本（v{0}），無需重複安裝。",
+			[LanguageCode.En] = "Version v{0} is already installed — no need to install it again.",
+			[LanguageCode.Ja] = "同じバージョン（v{0}）が既にインストールされています。再インストールは不要です。"
+		};
+		dictionary["PluginCandidateNoteReplaced"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装的 v{0} 与这枚文件版本号相同但内容不同（哈希不一致）。覆盖安装会用它替换现有文件。",
+			[LanguageCode.ZhTw] = "已裝的 v{0} 與這枚檔案版本號相同但內容不同（雜湊不一致）。覆蓋安裝會用它取代現有檔案。",
+			[LanguageCode.En] = "The installed v{0} and this file share the same version number but differ in content (hash mismatch). Overwriting will replace the existing file with this one.",
+			[LanguageCode.Ja] = "インストール済みの v{0} とこのファイルはバージョンが同じで内容が異なります（ハッシュ不一致）。上書きインストールするとこのファイルに置き換わります。"
+		};
+		dictionary["PluginCandidateNoteUpdate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装 v{0}，这枚是更新的 v{1}。",
+			[LanguageCode.ZhTw] = "已裝 v{0}，這枚是更新的 v{1}。",
+			[LanguageCode.En] = "v{0} is installed; this file is the newer v{1}.",
+			[LanguageCode.Ja] = "v{0} がインストール済みで、これは新しい v{1} です。"
+		};
+		dictionary["PluginCandidateNoteDowngrade"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装 v{0}，这枚是更旧的 v{1}。一般不建议降级。",
+			[LanguageCode.ZhTw] = "已裝 v{0}，這枚是更舊的 v{1}。一般不建議降級。",
+			[LanguageCode.En] = "v{0} is installed; this file is the older v{1}. Downgrading is usually not recommended.",
+			[LanguageCode.Ja] = "v{0} がインストール済みで、これは古い v{1} です。通常、ダウングレードは推奨しません。"
+		};
+		dictionary["PluginCandidateNoteVersionUnknown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装版本「{0}」与候选版本「{1}」至少有一侧解析不了，无法比较新旧。",
+			[LanguageCode.ZhTw] = "已裝版本「{0}」與候選版本「{1}」至少有一側無法解析，無法比較新舊。",
+			[LanguageCode.En] = "At least one of the installed version \"{0}\" or the candidate version \"{1}\" cannot be parsed, so the two cannot be compared.",
+			[LanguageCode.Ja] = "インストール済みバージョン「{0}」と候補バージョン「{1}」の少なくとも一方を解析できないため、新旧を比較できません。"
+		};
+		dictionary["PluginCandidateNoteSameContent"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "内容与已装的一致。",
+			[LanguageCode.ZhTw] = "內容與已裝的一致。",
+			[LanguageCode.En] = "The content matches the installed version.",
+			[LanguageCode.Ja] = "内容はインストール済みのものと一致します。"
+		};
+		dictionary["PluginCandidateNoteDifferentContent"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "内容与已装的不同。",
+			[LanguageCode.ZhTw] = "內容與已裝的不同。",
+			[LanguageCode.En] = "The content differs from the installed version.",
+			[LanguageCode.Ja] = "内容はインストール済みのものと異なります。"
 		};
 		dictionary["PluginCandidateInstall"] = new Dictionary<LanguageCode, string>
 		{

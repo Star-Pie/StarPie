@@ -1156,9 +1156,22 @@ internal static class PluginHost
     /// 判定一枚候选与「已装的那份」是什么关系。
     /// <para>
     /// 顺序不能换：① 先看识别过没过（没过的连 ID 都没有，谈不上比较）；
-    /// ② 再看扫描目录内部有没有撞 ID（自身有歧义就不该继续比）；
-    /// ③ 再看已装的那份是不是外部路径登记（那种情况下根本不该复制文件进来）；
-    /// ④ 最后才比版本与哈希。
+    /// ② 再看 ID 是不是保留前缀（官方模块，无论如何都装不上，比出来的结论只会误导）；
+    /// ③ 再看扫描目录内部有没有撞 ID（自身有歧义就不该继续比）；
+    /// ④ 再看已装的那份是不是外部路径登记（那种情况下根本不该复制文件进来）；
+    /// ⑤ 最后才比版本与哈希。
+    /// </para>
+    /// <para>
+    /// 备注文案一律走 <see cref="I18n"/>：它会直接渲染在候选卡片的说明行上，
+    /// 写死中文的话，切到英文 / 日文时这一行会与同卡片的状态徽标、按钮文案语言不一致。
+    /// </para>
+    /// <para>
+    /// <b>已知欠账</b>：<c>PluginCandidateNoteRejected</c> 的占位符来自
+    /// <see cref="PluginScanResult.DescribeFailure"/>，那一串
+    /// （<see cref="PluginScanFailureText.Title"/> / <see cref="PluginScanFailureText.Hint"/> 与扫描器里
+    /// 拼进去的 <c>ErrorDetail</c>）目前<b>全是硬编码中文</b>。所以非中文语言下，这一行是
+    /// 「英文外壳 + 中文原因」的混排 —— 比修改前（整句中文）进了一步，但没到位。
+    /// 彻底修要连识别器一起改（约 60 条短文案），属独立一轮，勿只改其中一段。
     /// </para>
     /// </summary>
     private static (PluginCandidateState State, string Note) ClassifyCandidate(
@@ -1168,27 +1181,34 @@ internal static class PluginHost
     {
         if (!scan.Accepted || scan.Manifest == null)
         {
-            return (PluginCandidateState.Rejected, $"无法安装：{scan.DescribeFailure()}");
+            return (PluginCandidateState.Rejected, I18n.TF("PluginCandidateNoteRejected", scan.DescribeFailure()));
         }
 
         string id = scan.Manifest.Id;
 
+        // 保留前缀（starpie.* 等）＝ 官方模块。宿主在 InstallCandidateAsync 里按契约会拒绝它，
+        // 所以这里必须判在「撞 ID」「版本比较」之前：那两者是为「可能装得上的候选」准备的，
+        // 而这一枚无论比出什么结论都装不上 —— 报「两枚撞 ID」会把用户引去删文件，
+        // 而真正该做的是别把官方模块放进扫描目录。
+        if (PluginPaths.IsReservedPluginId(id))
+        {
+            return (PluginCandidateState.Reserved, I18n.TF("PluginCandidateNoteReserved", id));
+        }
+
         if (idCounts.TryGetValue(id, out int sameId) && sameId > 1)
         {
-            return (PluginCandidateState.Duplicate,
-                $"扫描目录里有 {sameId} 枚 .dll 声明了同一个 ID（{id}），无法判断该装哪一枚。请只保留需要的那一个文件。");
+            return (PluginCandidateState.Duplicate, I18n.TF("PluginCandidateNoteDuplicate", sameId, id));
         }
 
         if (!installed.TryGetValue(id, out PluginRegistryEntry? entry))
         {
-            return (PluginCandidateState.Installable, "尚未安装，可直接安装。");
+            return (PluginCandidateState.Installable, I18n.T("PluginCandidateNoteInstallable"));
         }
 
         if (!string.IsNullOrWhiteSpace(entry.ExternalPath))
         {
             return (PluginCandidateState.ExternalRegistered,
-                $"同一个 ID 已被开发者模式的外部路径登记占用：{entry.ExternalPath}。" +
-                "如需改为安装副本，请先在列表里卸载那条登记。");
+                I18n.TF("PluginCandidateNoteExternalRegistered", entry.ExternalPath!));
         }
 
         string installedVersion = entry.Version ?? "";
@@ -1205,24 +1225,21 @@ internal static class PluginHost
             if (compare == 0)
             {
                 return sameHash
-                    ? (PluginCandidateState.Installed, $"已装同一个版本（v{installedVersion}），无需重复安装。")
-                    : (PluginCandidateState.Replaced,
-                        $"已装的 v{installedVersion} 与这枚文件版本号相同但内容不同（哈希不一致）。" +
-                        "覆盖安装会用它替换现有文件。");
+                    ? (PluginCandidateState.Installed, I18n.TF("PluginCandidateNoteInstalled", installedVersion))
+                    : (PluginCandidateState.Replaced, I18n.TF("PluginCandidateNoteReplaced", installedVersion));
             }
 
             if (compare > 0)
             {
-                return (PluginCandidateState.Update, $"已装 v{installedVersion}，这枚是更新的 v{candidateVersion}。");
+                return (PluginCandidateState.Update, I18n.TF("PluginCandidateNoteUpdate", installedVersion, candidateVersion));
             }
 
-            return (PluginCandidateState.Downgrade,
-                $"已装 v{installedVersion}，这枚是更旧的 v{candidateVersion}。一般不建议降级。");
+            return (PluginCandidateState.Downgrade, I18n.TF("PluginCandidateNoteDowngrade", installedVersion, candidateVersion));
         }
 
         return (PluginCandidateState.VersionUnknown,
-            $"已装版本「{installedVersion}」与候选版本「{candidateVersion}」至少有一侧解析不了，无法比较新旧。" +
-            (sameHash ? "内容与已装的一致。" : "内容与已装的不同。"));
+            I18n.TF("PluginCandidateNoteVersionUnknown", installedVersion, candidateVersion)
+            + I18n.T(sameHash ? "PluginCandidateNoteSameContent" : "PluginCandidateNoteDifferentContent"));
     }
 
     /// <summary>

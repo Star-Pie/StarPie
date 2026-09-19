@@ -32,6 +32,20 @@ internal enum PluginCandidateState
     /// <summary>扫描目录里有两枚 <c>.dll</c> 声明了同一个 ID。</summary>
     Duplicate,
 
+    /// <summary>
+    /// ID 用了保留前缀（<c>starpie.*</c> 等）—— 这是官方模块，只能从官方在线目录安装。
+    /// <para>
+    /// 单独一档而不是并进 <see cref="Rejected"/>：文件本身没有任何问题，识别也通过了，
+    /// 只是**放错了地方**。用户该看到的是「请到官方插件列表里装」，而不是「这文件不合法」——
+    /// 并进 <see cref="Rejected"/> 会让人反复检查一枚完全正常的 dll。
+    /// </para>
+    /// <para>
+    /// 这一档也刻意排在「撞 ID」「版本比较」之前：那两者都是给「可能装得上的候选」看的，
+    /// 而这一枚无论比出什么结论都装不上，比出来的东西只会把用户引到错误的方向。
+    /// </para>
+    /// </summary>
+    Reserved,
+
     /// <summary>识别未通过（不是 StarPie 插件 / 架构不符 / 缺少元数据……）。</summary>
     Rejected,
 }
@@ -116,6 +130,7 @@ internal sealed class PluginCandidate
         PluginCandidateState.Downgrade => I18n.T("PluginCandidateStateDowngrade"),
         PluginCandidateState.VersionUnknown => I18n.T("PluginCandidateStateVersionUnknown"),
         PluginCandidateState.ExternalRegistered => I18n.T("PluginCandidateStateExternalRegistered"),
+        PluginCandidateState.Reserved => I18n.T("PluginCandidateStateReserved"),
         PluginCandidateState.Duplicate => I18n.T("PluginCandidateStateDuplicate"),
         PluginCandidateState.Rejected => I18n.T("PluginCandidateStateRejected"),
         _ => State.ToString(),
@@ -131,6 +146,7 @@ internal sealed class PluginCandidate
         PluginCandidateState.Downgrade => "⬇️",
         PluginCandidateState.VersionUnknown => "❓",
         PluginCandidateState.ExternalRegistered => "🔗",
+        PluginCandidateState.Reserved => "🔌",
         PluginCandidateState.Duplicate => "⚠️",
         PluginCandidateState.Rejected => "⛔",
         _ => "📦",
@@ -144,6 +160,13 @@ internal sealed class PluginCandidate
     /// 前者是扫描目录自身有歧义（装哪一枚都说不清），后者根本没识别出插件 ID。
     /// 已装同版本的 <see cref="PluginCandidateState.Installed"/> 也不给按钮，
     /// 装了也是白复制一遍。
+    /// </para>
+    /// <para>
+    /// <see cref="PluginCandidateState.Reserved"/> 同样不给按钮：宿主在
+    /// <c>InstallCandidateAsync</c> 里按契约会拒绝保留前缀，界面上还留着按钮，
+    /// 等于让用户点一次**必然失败**的操作 —— 而且失败原因（「官方模块只能通过官方在线目录下载」）
+    /// 与用户刚才做的那件事（把文件放进扫描目录）之间的因果关系，得靠卡片上的说明去补，
+    /// 不能让按钮自己出错来告诉用户。
     /// </para>
     /// </summary>
     public bool CanInstall => State is
