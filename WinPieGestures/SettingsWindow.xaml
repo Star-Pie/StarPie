@@ -546,7 +546,7 @@
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <TextBlock Name="PART_DisplayText" Grid.Column="0" VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
-                  <Button Name="PART_ClearButton" Grid.Column="1" Content="✕" Width="16" Height="16" Margin="4,0,0,0" Padding="0" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" ToolTip="清空快捷键" />
+                  <Button Name="PART_ClearButton" Grid.Column="1" Content="✕" Width="16" Height="16" Margin="4,0,0,0" Padding="0" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" />
                 </Grid>
               </Border>
             </ControlTemplate>
@@ -638,25 +638,25 @@
               <RadioButton Name="ThemeBtnSystem" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="System" ToolTip="跟随系统" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="🌓" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="系统" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="SidebarThemeSystemText" Text="系统" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
               <RadioButton Name="ThemeBtnLight" Grid.Column="1" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="Light" ToolTip="极简纯白" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="☀️" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="浅色" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="SidebarThemeLightText" Text="浅色" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
               <RadioButton Name="ThemeBtnDark" Grid.Column="2" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="Dark" ToolTip="极夜曜黑" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="🌙" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="曜黑" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="SidebarThemeDarkText" Text="曜黑" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
               <RadioButton Name="ThemeBtnGray" Grid.Column="3" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="TitaniumGray" ToolTip="钛金深灰" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="⚙️" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="钛灰" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="SidebarThemeGrayText" Text="钛灰" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
             </Grid>
@@ -788,21 +788,21 @@
                   
                   <!-- 1. 一级轮盘拖动触发距离 -->
                   <Grid Margin="0,0,0,4">
-                    <TextBlock Text="一级轮盘呼出触发位移:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Name="Tab0_TriggerThresholdTitleText" Text="一级轮盘呼出触发位移:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Name="ThresholdValueLabel" Text="25 px" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
                   </Grid>
                   <Slider Name="ThresholdSlider" Minimum="5" Maximum="120" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="ThresholdSlider_ValueChanged" />
-                  <TextBlock Text="按住触发键移动超过此距离后呼出手势轮盘。距离越小越灵敏，过小可能造成按键微抖误触。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,14" />
+                  <TextBlock Name="Tab0_TriggerThresholdDescText" Text="按住触发键移动超过此距离后呼出手势轮盘。距离越小越灵敏，过小可能造成按键微抖误触。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,14" />
 
                   <!-- 2. 核心圆死区唤醒灵敏度 -->
                   <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
                     <StackPanel>
                       <Grid Margin="0,0,0,4">
-                        <TextBlock Text="🎯 核心圆唤醒与死区灵敏度:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Name="Tab0_CoreDeadzoneTitleText" Text="🎯 核心圆唤醒与死区灵敏度:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Name="CoreDeadzoneValueLabel" Text="35 px" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Center" />
                       </Grid>
                       <Slider Name="CoreDeadzoneSlider" Minimum="10" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="CoreDeadzoneSlider_ValueChanged" />
-                      <TextBlock Text="调节呼出轮盘后光标停留在中心核心圆触发核心动作或静默取消的有效半径。数值较小时轻划即可命中扇区，数值较大时中心判定区更宽容，更易触发中心核圆动作或防手抖取消。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                      <TextBlock Name="Tab0_CoreDeadzoneDescText" Text="调节呼出轮盘后光标停留在中心核心圆触发核心动作或静默取消的有效半径。数值较小时轻划即可命中扇区，数值较大时中心判定区更宽容，更易触发中心核圆动作或防手抖取消。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
                   </Border>
 
@@ -835,9 +835,9 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Text="多级轮盘与级联子菜单" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
+                  <TextBlock Name="Tab0_MultiTierSectionTitleText" Text="多级轮盘与级联子菜单" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
                   <CheckBox Name="EnableMultiTierCheckBox" Content="启用多级轮盘与级联子菜单" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,6" Checked="EnableMultiTierCheckBox_Changed" Unchecked="EnableMultiTierCheckBox_Changed" />
-                  <TextBlock Text="开启后，若扇区配置了二级子动作，光标悬停时外圈将平滑展开扇形级联子菜单，向外划动即可精准触发子功能。在动作配置中点击各扇区右侧【⚙️ 级联】按钮可自由添加或编辑二级动作。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,0" />
+                  <TextBlock Name="Tab0_MultiTierDescText" Text="开启后，若扇区配置了二级子动作，光标悬停时外圈将平滑展开扇形级联子菜单，向外划动即可精准触发子功能。在动作配置中点击各扇区右侧【⚙️ 级联】按钮可自由添加或编辑二级动作。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,0" />
 
                   <StackPanel Name="SubmenuStylePanel" Margin="0,12,0,0">
                     <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0">
@@ -847,7 +847,7 @@
                           <ColumnDefinition Width="220" />
                         </Grid.ColumnDefinitions>
                         <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
-                          <TextBlock Text="二级菜单样式" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                          <TextBlock Name="Tab0_SubmenuStyleTitleText" Text="二级菜单样式" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
                           <TextBlock Name="SubmenuStyleDescTextBlock" Text="外圈子环：子动作沿选中扇区外侧环形展开（最多4个）；蜂窝扇：子动作以选中项为中心呈扇形排列（最多3个）。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                         <ComboBox Name="SubmenuStyleComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="34" VerticalAlignment="Center" SelectionChanged="SubmenuStyleComboBox_SelectionChanged">
@@ -924,10 +924,10 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Name="GestureTriggerLabelText" Text="手势触发键：" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <ComboBox Name="GestureTriggerButtonComboBox" Grid.Column="1" Width="180" HorizontalAlignment="Left" Style="{StaticResource FlatComboBoxStyle}" Height="32" SelectionChanged="GestureTriggerButtonComboBox_SelectionChanged">
-                      <ComboBoxItem Tag="RightButton" Content="🖱️ 鼠标右键" />
-                      <ComboBoxItem Tag="MiddleButton" Content="🖱️ 鼠标中键" />
-                      <ComboBoxItem Tag="XButton1" Content="🖱️ 鼠标侧键1 (后退)" />
-                      <ComboBoxItem Tag="XButton2" Content="🖱️ 鼠标侧键2 (前进)" />
+                      <ComboBoxItem Name="GestureTriggerBtnRightItem" Tag="RightButton" Content="🖱️ 鼠标右键" />
+                      <ComboBoxItem Name="GestureTriggerBtnMiddleItem" Tag="MiddleButton" Content="🖱️ 鼠标中键" />
+                      <ComboBoxItem Name="GestureTriggerBtnX1Item" Tag="XButton1" Content="🖱️ 鼠标侧键1 (后退)" />
+                      <ComboBoxItem Name="GestureTriggerBtnX2Item" Tag="XButton2" Content="🖱️ 鼠标侧键2 (前进)" />
                     </ComboBox>
                   </Grid>
                   <Grid Margin="0,2,0,10">
@@ -937,15 +937,15 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Name="GestureHintPlaceText" Text="松手提示位置：" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                     <ComboBox Name="GestureHintPlacementComboBox" Grid.Column="1" Width="180" HorizontalAlignment="Left" Style="{StaticResource FlatComboBoxStyle}" Height="32" SelectionChanged="GestureHintPlacementComboBox_SelectionChanged">
-                      <ComboBoxItem Tag="Auto" Content="✨ 自动（运动反方向）" />
-                      <ComboBoxItem Tag="U" Content="⬆ 上方" />
-                      <ComboBoxItem Tag="D" Content="⬇ 下方" />
-                      <ComboBoxItem Tag="L" Content="⬅ 左方" />
-                      <ComboBoxItem Tag="R" Content="➡ 右方" />
-                      <ComboBoxItem Tag="UL" Content="↖ 左上" />
-                      <ComboBoxItem Tag="UR" Content="↗ 右上" />
-                      <ComboBoxItem Tag="DL" Content="↙ 左下" />
-                      <ComboBoxItem Tag="DR" Content="↘ 右下" />
+                      <ComboBoxItem Name="GestureDirAutoItem" Tag="Auto" Content="✨ 自动（运动反方向）" />
+                      <ComboBoxItem Name="GestureDirUpItem" Tag="U" Content="⬆ 上方" />
+                      <ComboBoxItem Name="GestureDirDownItem" Tag="D" Content="⬇ 下方" />
+                      <ComboBoxItem Name="GestureDirLeftItem" Tag="L" Content="⬅ 左方" />
+                      <ComboBoxItem Name="GestureDirRightItem" Tag="R" Content="➡ 右方" />
+                      <ComboBoxItem Name="GestureDirUpLeftItem" Tag="UL" Content="↖ 左上" />
+                      <ComboBoxItem Name="GestureDirUpRightItem" Tag="UR" Content="↗ 右上" />
+                      <ComboBoxItem Name="GestureDirDownLeftItem" Tag="DL" Content="↙ 左下" />
+                      <ComboBoxItem Name="GestureDirDownRightItem" Tag="DR" Content="↘ 右下" />
                     </ComboBox>
                   </Grid>
                   <Grid Margin="0,2,0,10">
@@ -982,16 +982,16 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="36" />
                                   </Grid.ColumnDefinitions>
-                                  <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" IsReadOnly="True" ToolTip="选择的应用程序路径" />
-                                  <Button Grid.Column="1" Content="📁" Height="30" Width="34" Margin="4,0,0,0" Padding="0" FontSize="12" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowse_Click" ToolTip="选择应用程序或快捷方式..." />
+                                  <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" IsReadOnly="True" ToolTip="{Binding AppPathTip}" />
+                                  <Button Grid.Column="1" Content="📁" Height="30" Width="34" Margin="4,0,0,0" Padding="0" FontSize="12" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowse_Click" ToolTip="{Binding BrowseAppTip}" />
                                 </Grid>
                                 <Grid Visibility="{Binding IsFolderType, Converter={StaticResource BoolToVis}}">
                                   <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="36" />
                                   </Grid.ColumnDefinitions>
-                                  <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" ToolTip="选择的本地文件夹路径" />
-                                  <Button Grid.Column="1" Content="📂" Height="30" Width="34" Margin="4,0,0,0" Padding="0" FontSize="12" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowseFolder_Click" ToolTip="选择本地文件夹..." />
+                                  <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding FolderPathTip}" />
+                                  <Button Grid.Column="1" Content="📂" Height="30" Width="34" Margin="4,0,0,0" Padding="0" FontSize="12" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowseFolder_Click" ToolTip="{Binding BrowseFolderTip}" />
                                 </Grid>
                                 <ComboBox SelectedValuePath="Key" DisplayMemberPath="Value" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" SelectedValue="{Binding SelectedSystemPreset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ItemsSource="{Binding Source={x:Static local:SlotViewModel.SystemPresets}}" Visibility="{Binding IsSystemType, Converter={StaticResource BoolToVis}}" />
                                 <Grid Visibility="{Binding IsCommandType, Converter={StaticResource BoolToVis}}">
@@ -999,15 +999,15 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="112" />
                                   </Grid.ColumnDefinitions>
-                                  <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" ToolTip="要运行的命令，如 ping -n 3 127.0.0.1" />
+                                  <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" ToolTip="{Binding CmdTip}" />
                                   <ComboBox Grid.Column="1" Width="108" Margin="4,0,0,0" ItemsSource="{Binding Terminals}" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" SelectedValue="{Binding CommandTerminal, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="10" />
                                 </Grid>
-                                <TextBox Text="{Binding NthWindowIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" Visibility="{Binding IsSwitchWindowType, Converter={StaticResource BoolToVis}}" ToolTip="任务栏第 N 个应用（同 Win+N 槽位语义）" />
-                                <ComboBox SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" Visibility="{Binding IsTileType, Converter={StaticResource BoolToVis}}" ToolTip="平铺布局预设" />
+                                <TextBox Text="{Binding NthWindowIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="30" FontSize="11" VerticalContentAlignment="Center" Visibility="{Binding IsSwitchWindowType, Converter={StaticResource BoolToVis}}" ToolTip="{Binding TaskbarSlotTip}" />
+                                <ComboBox SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" Visibility="{Binding IsTileType, Converter={StaticResource BoolToVis}}" ToolTip="{Binding TilePresetTip}" />
                               </Grid>
-                              <TextBox Grid.Column="3" Height="30" FontSize="11" Margin="4,0,0,0" VerticalContentAlignment="Center" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="名称（显示自定义，可留空）" />
-                              <Button Grid.Column="4" Content="测试" Height="30" Margin="4,0,0,0" Padding="4,0" FontSize="11" Style="{StaticResource ModernButtonStyle}" Click="TestGesture_Click" />
-                              <Button Grid.Column="5" Content="✕" Height="30" Width="30" Padding="0" Margin="4,0,0,0" FontSize="11" Style="{StaticResource DangerButtonStyle}" Click="DeleteGestureMapping_Click" ToolTip="删除此手势映射" />
+                              <TextBox Grid.Column="3" Height="30" FontSize="11" Margin="4,0,0,0" VerticalContentAlignment="Center" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="{Binding CustomNameTip}" />
+                              <Button Grid.Column="4" Content="{Binding TestButtonText}" Height="30" Margin="4,0,0,0" Padding="4,0" FontSize="11" Style="{StaticResource ModernButtonStyle}" Click="TestGesture_Click" />
+                              <Button Grid.Column="5" Content="✕" Height="30" Width="30" Padding="0" Margin="4,0,0,0" FontSize="11" Style="{StaticResource DangerButtonStyle}" Click="DeleteGestureMapping_Click" ToolTip="{Binding DeleteButtonTip}" />
                             </Grid>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -1071,11 +1071,11 @@
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                           <ComboBox Name="SoundThemeComboBox" Width="220" Style="{StaticResource FlatComboBoxStyle}" Height="34" VerticalAlignment="Center" SelectionChanged="SoundThemeComboBox_SelectionChanged">
-                            <ComboBoxItem Tag="Mechanical" Content="⚙️ 机械手感" IsSelected="True" />
-                            <ComboBoxItem Tag="Crisp" Content="✨ 现代清脆" />
-                            <ComboBoxItem Tag="Bubble" Content="🫧 柔和气泡" />
-                            <ComboBoxItem Tag="Minimalist" Content="⚡ 极简短音" />
-                            <ComboBoxItem Tag="Custom" Content="🎛️ 自定义方案" />
+                            <ComboBoxItem Name="SoundPresetMechanicalItem" Tag="Mechanical" Content="⚙️ 机械手感" IsSelected="True" />
+                            <ComboBoxItem Name="SoundPresetCrispItem" Tag="Crisp" Content="✨ 现代清脆" />
+                            <ComboBoxItem Name="SoundPresetBubbleItem" Tag="Bubble" Content="🫧 柔和气泡" />
+                            <ComboBoxItem Name="SoundPresetShortItem" Tag="Minimalist" Content="⚡ 极简短音" />
+                            <ComboBoxItem Name="SoundPresetCustomItem" Tag="Custom" Content="🎛️ 自定义方案" />
                           </ComboBox>
                           <Button Name="OpenCustomSoundConfigButton" Margin="8,0,0,0" Content="🎛️ 方案配置" Height="34" Padding="10,0" Style="{StaticResource ModernButtonStyle}" Cursor="Hand" Click="OpenCustomSoundConfigButton_Click" ToolTip="展开或关闭自定义交互音效调音台" Visibility="Collapsed" />
                         </StackPanel>
@@ -1093,12 +1093,12 @@
                           </Grid.ColumnDefinitions>
                           <StackPanel VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                              <TextBlock Text="🎛️ 自定义交互音效调音台" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                              <TextBlock Name="Tab0_SoundMixerTitleText" Text="🎛️ 自定义交互音效调音台" FontSize="13.5" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                               <Border Background="#10B981" CornerRadius="4" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="原生支持" FontSize="10.5" FontWeight="Bold" Foreground="#FFFFFF" />
+                                <TextBlock Name="Tab0_SoundMixerBadgeText" Text="原生支持" FontSize="10.5" FontWeight="Bold" Foreground="#FFFFFF" />
                               </Border>
                             </StackPanel>
-                            <TextBlock Text="为 5 个核心交互手势事件单独调校程序化极微波形、本地音频采样与音高音量。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                            <TextBlock Name="Tab0_SoundMixerDescText" Text="为 5 个核心交互手势事件单独调校程序化极微波形、本地音频采样与音高音量。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
                           </StackPanel>
 
                           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
@@ -1119,7 +1119,7 @@
                               <ColumnDefinition Width="230" />
                               <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="选择配置方案:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <TextBlock Name="Tab0_SoundSelectProfileLabel" Text="选择配置方案:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <ComboBox Name="CustomSoundProfileComboBox" Grid.Column="1" Height="28" Style="{StaticResource FlatComboBoxStyle}" VerticalAlignment="Center" SelectionChanged="CustomSoundProfileComboBox_SelectionChanged" />
                             <TextBlock Name="CustomSoundProfileDescLabel" Grid.Column="2" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0,0,0" TextTrimming="CharacterEllipsis" />
                           </Grid>
@@ -1140,7 +1140,7 @@
                             </Grid.ColumnDefinitions>
                             <Button Name="CustomSoundPlayFlowButton" Content="🔊 连续模拟完整手势交互体验" Height="30" Padding="14,0" Style="{StaticResource ModernButtonStyle}" Cursor="Hand" Click="CustomSoundPlayFlowButton_Click" ToolTip="依次回放：唤出 ➔ 划过 ➔ 展开 ➔ 执行 ➔ 脱离" />
                             <TextBlock Name="CustomSoundFlowStatusText" Grid.Column="1" Text="准备就绪" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="12,0,0,0" />
-                            <TextBlock Grid.Column="2" Text="⚡ 纯内存波形合成，零延迟 &lt; 2ms，不占额外资源" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Name="Tab0_SoundSynthNoticeText" Grid.Column="2" Text="⚡ 纯内存波形合成，零延迟 &lt; 2ms，不占额外资源" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                           </Grid>
                         </Border>
                       </StackPanel>
@@ -1228,7 +1228,7 @@
                       <CheckBox Name="EnableCancelActionCheckBox" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,8" Checked="EnableCancelActionCheckBox_Changed" Unchecked="EnableCancelActionCheckBox_Changed">
                         <StackPanel Margin="6,0,0,0">
                           <TextBlock Name="CancelActionEnableText" Text="外甩取消时执行自定义动作" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
-                          <TextBlock Text="关闭则外甩取消仍为静默关闭。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                          <TextBlock Name="Tab0_OuterEscapeSilentNoteText" Text="关闭则外甩取消仍为静默关闭。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
                         </StackPanel>
                       </CheckBox>
                       <ContentControl Name="CancelActionEditorHost" Visibility="Collapsed">
@@ -1236,14 +1236,14 @@
                           <StackPanel>
                             <!-- 1. 外甩高频极速预设芯片 -->
                             <StackPanel Margin="0,0,0,12">
-                              <TextBlock Text="⚡ 外甩常用预设:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,6" />
+                              <TextBlock Name="Tab0_OuterEscapePresetsLabel" Text="⚡ 外甩常用预设:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,0,6" />
                               <WrapPanel>
-                                <Button Content="🖥️ 显示桌面 (Win+D)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetDesktop_Click" ToolTip="外甩快速显示桌面，查阅文件或切换任务" />
-                                <Button Content="📑 任务视图 (Win+Tab)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetTaskView_Click" ToolTip="外甩浏览多虚拟桌面与所有活动任务窗口" />
-                                <Button Content="↩️ 取消/返回 (Esc)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetEsc_Click" ToolTip="外甩退出当前弹窗或中断当前操作" />
-                                <Button Content="✂️ 系统截屏 (Win+Shift+S)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetSnipping_Click" ToolTip="外甩快速唤起 Windows 区域截屏工具" />
-                                <Button Content="🪟 左右对半平铺" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetTile_Click" ToolTip="外甩将当前窗口以左右对半形式快速分屏" />
-                                <Button Content="⚙️ StarPie 控制台" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetSettings_Click" ToolTip="外甩呼出 StarPie 配置控制台界面" />
+                                <Button Name="CancelPresetShowDesktopBtn" Content="🖥️ 显示桌面 (Win+D)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetDesktop_Click" ToolTip="外甩快速显示桌面，查阅文件或切换任务" />
+                                <Button Name="CancelPresetTaskViewBtn" Content="📑 任务视图 (Win+Tab)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetTaskView_Click" ToolTip="外甩浏览多虚拟桌面与所有活动任务窗口" />
+                                <Button Name="CancelPresetCancelEscBtn" Content="↩️ 取消/返回 (Esc)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetEsc_Click" ToolTip="外甩退出当前弹窗或中断当前操作" />
+                                <Button Name="CancelPresetScreenSnippingBtn" Content="✂️ 系统截屏 (Win+Shift+S)" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetSnipping_Click" ToolTip="外甩快速唤起 Windows 区域截屏工具" />
+                                <Button Name="CancelPresetTileHalfSplitBtn" Content="🪟 左右对半平铺" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetTile_Click" ToolTip="外甩将当前窗口以左右对半形式快速分屏" />
+                                <Button Name="CancelPresetStarPieSettingsBtn" Content="⚙️ StarPie 控制台" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,6,6" FontSize="11" Click="CancelPresetSettings_Click" ToolTip="外甩呼出 StarPie 配置控制台界面" />
                               </WrapPanel>
                             </StackPanel>
 
@@ -1254,12 +1254,12 @@
                                 <ColumnDefinition Width="*" />
                               </Grid.ColumnDefinitions>
                               <StackPanel Margin="0,0,8,0">
-                                <TextBlock Text="动作类型:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                <TextBlock Name="Tab0_CancelActionTypeLabel" Text="动作类型:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                 <ComboBox Height="32" FontSize="11.5" ItemsSource="{Binding AggregatedActionTypes}" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" SelectedValue="{Binding AggregatedType, Mode=TwoWay}" Style="{StaticResource FlatComboBoxStyle}" />
                               </StackPanel>
                               <StackPanel Grid.Column="1">
-                                <TextBlock Text="动作显示名称:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
-                                <TextBox Height="32" FontSize="12" VerticalContentAlignment="Center" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="自定义此动作的显示名称" />
+                                <TextBlock Name="Tab0_CancelActionNameLabel" Text="动作显示名称:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                <TextBox Name="Tab0_CancelActionNameTextBox" Height="32" FontSize="12" VerticalContentAlignment="Center" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ToolTip="自定义此动作的显示名称" />
                               </StackPanel>
                             </Grid>
 
@@ -1268,20 +1268,20 @@
                               <StackPanel>
                                 <!-- A. 快捷热键 -->
                                 <StackPanel Visibility="{Binding IsHotkeyType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="快捷按键组合:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionHotkeysLabel" Text="快捷按键组合:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <Grid>
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="*" />
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <local:HotkeyRecorderBox Height="32" FontSize="11.5" HotkeyText="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <Button Grid.Column="1" Content="⚙️ 拼装..." Height="32" Padding="10,0" Margin="6,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="CancelBuildHotkey_Click" ToolTip="打开快捷键组合拼装器" />
+                                    <Button Name="Tab0_CancelActionBuildHotkeysBtn" Grid.Column="1" Content="⚙️ 拼装..." Height="32" Padding="10,0" Margin="6,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="CancelBuildHotkey_Click" ToolTip="打开快捷键组合拼装器" />
                                   </Grid>
                                 </StackPanel>
 
                                 <!-- B. 启动程序 -->
                                 <StackPanel Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="目标应用程序路径:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionAppPathLabel" Text="目标应用程序路径:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <Grid>
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="*" />
@@ -1290,41 +1290,41 @@
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11" VerticalContentAlignment="Center" />
-                                    <Button Grid.Column="1" Content="📦 软件库选择..." Height="32" Padding="8,0" Margin="4,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="CancelPickProgramFromLibrary_Click" ToolTip="从已安装软件与开始菜单中选择" />
-                                    <Button Grid.Column="2" Content="🎯 捕捉运行窗口..." Height="32" Padding="8,0" Margin="4,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="CancelCaptureRunningWindow_Click" ToolTip="从桌面正在运行的程序中选择或拖拽准星瞄准抓取" />
-                                    <Button Grid.Column="3" Content="📂 浏览..." Height="32" Padding="8,0" Margin="4,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowse_Click" ToolTip="打开文件浏览窗口选择可执行文件" />
+                                    <Button Name="Tab0_CancelActionPickProgramBtn" Grid.Column="1" Content="📦 软件库选择..." Height="32" Padding="8,0" Margin="4,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="CancelPickProgramFromLibrary_Click" ToolTip="从已安装软件与开始菜单中选择" />
+                                    <Button Name="Tab0_CancelActionCaptureWindowBtn" Grid.Column="2" Content="🎯 捕捉运行窗口..." Height="32" Padding="8,0" Margin="4,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="CancelCaptureRunningWindow_Click" ToolTip="从桌面正在运行的程序中选择或拖拽准星瞄准抓取" />
+                                    <Button Name="Tab0_CancelActionBrowseFileBtn" Grid.Column="3" Content="📂 浏览..." Height="32" Padding="8,0" Margin="4,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowse_Click" ToolTip="打开文件浏览窗口选择可执行文件" />
                                   </Grid>
                                 </StackPanel>
 
                                 <!-- C. 打开网址 -->
                                 <StackPanel Visibility="{Binding IsWebUrlType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="目标网址 URL:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionWebUrlLabel" Text="目标网址 URL:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11.5" VerticalContentAlignment="Center" Margin="0,0,0,6" />
                                   <WrapPanel>
-                                    <TextBlock Text="常用网址:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                    <TextBlock Name="Tab0_CancelActionCommonUrlsLabel" Text="常用网址:" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,6,0" />
                                     <Button Content="GitHub" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,0" FontSize="10" Click="CancelWebUrlPreset_GitHub" />
                                     <Button Content="Bilibili" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,0" FontSize="10" Click="CancelWebUrlPreset_Bilibili" />
-                                    <Button Content="Bing 搜索" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,0" FontSize="10" Click="CancelWebUrlPreset_Bing" />
+                                    <Button Name="Tab0_CancelActionBingPresetBtn" Content="Bing 搜索" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,0" FontSize="10" Click="CancelWebUrlPreset_Bing" />
                                     <Button Content="Google" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" Margin="0,0,4,0" FontSize="10" Click="CancelWebUrlPreset_Google" />
                                   </WrapPanel>
                                 </StackPanel>
 
                                 <!-- D. 打开文件夹 -->
                                 <StackPanel Visibility="{Binding IsFolderType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="目标本地文件夹路径:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionFolderPathLabel" Text="目标本地文件夹路径:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <Grid>
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="*" />
                                       <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBox Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11.5" VerticalContentAlignment="Center" />
-                                    <Button Grid.Column="1" Content="📂 浏览文件夹..." Height="32" Width="110" Margin="6,0,0,0" Padding="0" FontSize="11" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowseFolder_Click" ToolTip="选择本地文件夹路径..." />
+                                    <Button Name="Tab0_CancelActionBrowseFolderBtn" Grid.Column="1" Content="📂 浏览文件夹..." Height="32" Width="110" Margin="6,0,0,0" Padding="0" FontSize="11" Style="{StaticResource ModernButtonStyle}" Click="GestureBrowseFolder_Click" ToolTip="选择本地文件夹路径..." />
                                   </Grid>
                                 </StackPanel>
 
                                 <!-- E. 运行命令 -->
                                 <StackPanel Visibility="{Binding IsCommandType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="命令行指令与终端类型:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionCmdLabel" Text="命令行指令与终端类型:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <Grid>
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="*" />
@@ -1337,7 +1337,7 @@
 
                                 <!-- F. 窗口管理 -->
                                 <StackPanel Visibility="{Binding IsWindowManagerType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="🪟 窗口控制子模式:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionWindowCtrlLabel" Text="🪟 窗口控制子模式:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                       <ColumnDefinition Width="200" />
@@ -1346,19 +1346,19 @@
                                     <ComboBox ItemsSource="{Binding WindowManagerSubModes}" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" SelectedValue="{Binding WindowManagerSubMode, Mode=TwoWay}" Style="{StaticResource FlatComboBoxStyle}" Height="32" FontSize="11" />
                                     
                                     <!-- 平铺预设选择 -->
-                                    <ComboBox Grid.Column="1" Margin="6,0,0,0" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="32" FontSize="11" Visibility="{Binding IsTileSubMode, Converter={StaticResource BoolToVis}}" ToolTip="平铺布局预设" />
+                                    <ComboBox Name="Tab0_CancelActionTilePresetCombo" Grid.Column="1" Margin="6,0,0,0" SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="32" FontSize="11" Visibility="{Binding IsTileSubMode, Converter={StaticResource BoolToVis}}" ToolTip="平铺布局预设" />
                                     
                                     <!-- 切换任务栏序号 -->
-                                    <TextBox Grid.Column="1" Margin="6,0,0,0" Text="{Binding NthWindowIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11.5" VerticalContentAlignment="Center" Visibility="{Binding IsSwitchWindowSubMode, Converter={StaticResource BoolToVis}}" ToolTip="输入任务栏序号 1~20 (等同 Win + 序号)" />
+                                    <TextBox Name="Tab0_CancelActionTaskbarSlotTextBox" Grid.Column="1" Margin="6,0,0,0" Text="{Binding NthWindowIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11.5" VerticalContentAlignment="Center" Visibility="{Binding IsSwitchWindowSubMode, Converter={StaticResource BoolToVis}}" ToolTip="输入任务栏序号 1~20 (等同 Win + 序号)" />
 
                                     <!-- 窗口透明度 -->
-                                    <TextBox Grid.Column="1" Margin="6,0,0,0" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11.5" VerticalContentAlignment="Center" Visibility="{Binding IsOpacitySubMode, Converter={StaticResource BoolToVis}}" ToolTip="输入不透明度百分比 (30~100)" />
+                                    <TextBox Name="Tab0_CancelActionOpacityTextBox" Grid.Column="1" Margin="6,0,0,0" Text="{Binding Parameter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Height="32" FontSize="11.5" VerticalContentAlignment="Center" Visibility="{Binding IsOpacitySubMode, Converter={StaticResource BoolToVis}}" ToolTip="输入不透明度百分比 (30~100)" />
                                   </Grid>
                                 </StackPanel>
 
                                 <!-- G. 系统控制 -->
                                 <StackPanel Visibility="{Binding IsSystemType, Converter={StaticResource BoolToVis}}">
-                                  <TextBlock Text="系统全局指令预设:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                                  <TextBlock Name="Tab0_CancelActionSysCmdsLabel" Text="系统全局指令预设:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <ComboBox SelectedValuePath="Key" DisplayMemberPath="Value" Style="{StaticResource FlatComboBoxStyle}" Height="32" FontSize="11.5" SelectedValue="{Binding SelectedSystemPreset, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" ItemsSource="{Binding Source={x:Static local:SlotViewModel.SystemPresets}}" />
                                 </StackPanel>
                               </StackPanel>
@@ -1410,13 +1410,13 @@
                             <ColumnDefinition Width="220" />
                           </Grid.ColumnDefinitions>
                           <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
-                            <TextBlock Text="防溢出处理策略:" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="智能贴边：自动推入屏幕并对齐光标；屏幕中心：直接在当前显示器正中展现。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                            <TextBlock Name="Tab0_EdgeOverflowStrategyLabel" Text="防溢出处理策略:" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Name="Tab0_EdgeOverflowStrategyDesc" Text="智能贴边：自动推入屏幕并对齐光标；屏幕中心：直接在当前显示器正中展现。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                           </StackPanel>
                           <ComboBox Name="EdgeOverflowPolicyComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="34" VerticalAlignment="Center" SelectionChanged="EdgeOverflowPolicyComboBox_SelectionChanged">
-                            <ComboBoxItem Tag="ClampShift" Content="🛡️ 智能贴边防溢出 (推荐)" />
-                            <ComboBoxItem Tag="ScreenCenter" Content="🎯 屏幕物理正中心呼出" />
-                            <ComboBoxItem Tag="None" Content="🚫 原生跟随光标 (允许溢出)" />
+                            <ComboBoxItem Name="EdgeOverflowAutoItem" Tag="ClampShift" Content="🛡️ 智能贴边防溢出 (推荐)" />
+                            <ComboBoxItem Name="EdgeOverflowCenterItem" Tag="ScreenCenter" Content="🎯 屏幕物理正中心呼出" />
+                            <ComboBoxItem Name="EdgeOverflowNoneItem" Tag="None" Content="🚫 原生跟随光标 (允许溢出)" />
                           </ComboBox>
                         </Grid>
 
@@ -1426,11 +1426,11 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                           </Grid.ColumnDefinitions>
-                          <TextBlock Text="X 轴边缘安全边距:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                          <TextBlock Name="Tab0_EdgeOverflowMarginXLabel" Text="X 轴边缘安全边距:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
                           <TextBlock Name="EdgeSafeMarginXValueText" Grid.Column="1" Text="16 px" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         </Grid>
                         <Slider Name="EdgeSafeMarginXSlider" Minimum="0" Maximum="80" SmallChange="2" LargeChange="5" Value="16" TickFrequency="4" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="EdgeSafeMarginXSlider_ValueChanged" />
-                        <TextBlock Text="调节轮盘左右边缘距离屏幕物理视口边界的保留间距。增大数值可让轮盘更早贴入屏幕内侧并自动对齐光标。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,12" />
+                        <TextBlock Name="Tab0_EdgeOverflowMarginXDesc" Text="调节轮盘左右边缘距离屏幕物理视口边界的保留间距。增大数值可让轮盘更早贴入屏幕内侧并自动对齐光标。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,12" />
 
                         <!-- Y轴区域调节滑块 (垂直安全边距) -->
                         <Grid Margin="0,0,0,4">
@@ -1438,11 +1438,11 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                           </Grid.ColumnDefinitions>
-                          <TextBlock Text="Y 轴边缘安全边距:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                          <TextBlock Name="Tab0_EdgeOverflowMarginYLabel" Text="Y 轴边缘安全边距:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
                           <TextBlock Name="EdgeSafeMarginYValueText" Grid.Column="1" Text="16 px" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         </Grid>
                         <Slider Name="EdgeSafeMarginYSlider" Minimum="0" Maximum="80" SmallChange="2" LargeChange="5" Value="16" TickFrequency="4" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="EdgeSafeMarginYSlider_ValueChanged" />
-                        <TextBlock Text="调节轮盘上下边缘距离屏幕物理视口边界（避让任务栏与顶部标题栏）的保留间距。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                        <TextBlock Name="Tab0_EdgeOverflowMarginYDesc" Text="调节轮盘上下边缘距离屏幕物理视口边界（避让任务栏与顶部标题栏）的保留间距。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
@@ -1490,8 +1490,8 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                           <TextBlock Text="🚫" FontSize="20" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" VerticalAlignment="Center" />
                           <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="排除黑名单模式" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="全局生效，仅在名单内程序放行右键" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Name="Tab0_BlacklistModeLabel" Text="排除黑名单模式" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Name="Tab0_BlacklistModeSub" Text="全局生效，仅在名单内程序放行右键" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                           </StackPanel>
                         </StackPanel>
                       </RadioButton>
@@ -1499,8 +1499,8 @@
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                           <TextBlock Text="🛡️" FontSize="20" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" VerticalAlignment="Center" />
                           <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="启用白名单模式" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="仅在名单内程序生效，其余完全放行" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Name="Tab0_WhitelistModeLabel" Text="启用白名单模式" FontWeight="SemiBold" FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Name="Tab0_WhitelistModeSub" Text="仅在名单内程序生效，其余完全放行" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                           </StackPanel>
                         </StackPanel>
                       </RadioButton>
@@ -1547,9 +1547,9 @@
 
                           <!-- 行内操作按钮 -->
                           <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,2,0">
-                            <Button Content="⚙️ 配置触发键" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="10.5" Click="ConfigProcessTriggerBtn_Click" Tag="{Binding}" ToolTip="为此进程录制专属的呼出按键或组合键" Margin="0,0,6,0" />
-                            <Button Content="🔄 恢复放行" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" FontSize="10.5" Click="ResetProcessTriggerBtn_Click" Tag="{Binding}" ToolTip="清除专属按键，恢复完全放行" Visibility="{Binding ResetVisibility}" Margin="0,0,6,0" />
-                            <Button Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="26" Width="26" Padding="0" FontSize="11" Click="DeleteSingleProcessBtn_Click" Tag="{Binding}" ToolTip="从名单中移除此进程" />
+                            <Button Content="{Binding ConfigButtonText}" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="10.5" Click="ConfigProcessTriggerBtn_Click" Tag="{Binding}" ToolTip="{Binding ConfigButtonTip}" Margin="0,0,6,0" />
+                            <Button Content="{Binding RestoreButtonText}" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" FontSize="10.5" Click="ResetProcessTriggerBtn_Click" Tag="{Binding}" ToolTip="{Binding RestoreButtonTip}" Visibility="{Binding ResetVisibility}" Margin="0,0,6,0" />
+                            <Button Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="26" Width="26" Padding="0" FontSize="11" Click="DeleteSingleProcessBtn_Click" Tag="{Binding}" ToolTip="{Binding DeleteButtonTip}" />
                           </StackPanel>
                         </Grid>
                       </DataTemplate>
@@ -1565,7 +1565,7 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                          <TextBlock Text="🎯 进程专属唤醒按键配置：" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                          <TextBlock Name="Tab0_ProcessCustomTriggerCardTitle" Text="🎯 进程专属唤醒按键配置：" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                           <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,2" Margin="6,0,0,0" VerticalAlignment="Center">
                             <TextBlock Name="SelectedProcessNameLabel" Text="sldworks.exe" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource AccentPrimaryBrush}" />
                           </Border>
@@ -1573,7 +1573,7 @@
                         <Button Name="CloseProcessTriggerCardBtn" Grid.Column="1" Content="✕" Style="{StaticResource ModernButtonStyle}" Width="24" Height="24" Padding="0" FontSize="10" Click="CloseProcessTriggerCardBtn_Click" ToolTip="收起此配置卡片" />
                       </Grid>
 
-                      <TextBlock Text="为选中的程序配置单独的轮盘呼出按键（如在 SolidWorks 中配置中键/侧键，避免与右键笔势冲突；普通右键将 100% 放行给该软件）。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" TextWrapping="Wrap" />
+                      <TextBlock Name="Tab0_ProcessCustomTriggerCardDesc" Text="为选中的程序配置单独的轮盘呼出按键（如在 SolidWorks 中配置中键/侧键，避免与右键笔势冲突；普通右键将 100% 放行给该软件）。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10" TextWrapping="Wrap" />
 
                       <!-- 触发键状态与录制按钮 (复刻 Tab 2) -->
                       <Grid Margin="0,0,0,10">
@@ -1583,7 +1583,7 @@
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                          <TextBlock Text="当前专属触发键：" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                          <TextBlock Name="Tab0_ProcessCurrentTriggerLabel" Text="当前专属触发键：" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                           <Border Name="ProcessCurrentTriggerBadgeBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1.5" CornerRadius="8" Padding="12,5" VerticalAlignment="Center">
                             <TextBlock Name="ProcessCurrentTriggerBadgeText" Text="🚫 未配置" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
                           </Border>

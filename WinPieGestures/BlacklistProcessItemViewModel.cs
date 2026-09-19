@@ -15,6 +15,12 @@ public class BlacklistProcessItemViewModel
 	public Visibility ResetVisibility { get; set; } = Visibility.Collapsed;
 	public TriggerConfig? OverrideTrigger { get; set; }
 
+	public string ConfigButtonText => I18n.T("BtnConfigProcessTrigger");
+	public string ConfigButtonTip => I18n.T("TipConfigProcessTrigger");
+	public string RestoreButtonText => I18n.T("BtnRestoreProcessPass");
+	public string RestoreButtonTip => I18n.T("TipRestoreProcessPass");
+	public string DeleteButtonTip => I18n.T("TipRemoveProcessItem");
+
 	private static readonly SolidColorBrush s_defaultBg;
 	private static readonly SolidColorBrush s_defaultBorder;
 	private static readonly SolidColorBrush s_defaultFg;
@@ -51,7 +57,7 @@ public class BlacklistProcessItemViewModel
 		{
 			vm.BadgeIcon = "🎯";
 			vm.TriggerDisplayText = string.IsNullOrWhiteSpace(overrideTrigger.DisplayText)
-				? "专属按键"
+				? I18n.T("ProcessTriggerDedicated")
 				: overrideTrigger.DisplayText;
 			vm.BadgeBgBrush = s_activeBg;
 			vm.BadgeBorderBrush = s_activeBorder;
@@ -61,7 +67,7 @@ public class BlacklistProcessItemViewModel
 		else
 		{
 			vm.BadgeIcon = "🚫";
-			vm.TriggerDisplayText = "未配置专属键 (完全放行右键)";
+			vm.TriggerDisplayText = I18n.T("ProcessTriggerDefaultPass");
 			vm.BadgeBgBrush = s_defaultBg;
 			vm.BadgeBorderBrush = s_defaultBorder;
 			vm.BadgeFgBrush = s_defaultFg;

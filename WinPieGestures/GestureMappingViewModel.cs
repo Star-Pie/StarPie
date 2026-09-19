@@ -349,6 +349,17 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 		}
 	}
 
+		public string AppPathTip => I18n.T("TipGestureAppPath");
+	public string BrowseAppTip => I18n.T("TipGestureBrowseApp");
+	public string FolderPathTip => I18n.T("TipGestureFolderPath");
+	public string BrowseFolderTip => I18n.T("TipGestureBrowseFolder");
+	public string CmdTip => I18n.T("TipGestureCmd");
+	public string TaskbarSlotTip => I18n.T("TipGestureTaskbarSlot");
+	public string TilePresetTip => I18n.T("TipGestureTilePreset");
+	public string CustomNameTip => I18n.T("TipGestureCustomName");
+	public string TestButtonText => I18n.T("BtnTestGesture");
+	public string DeleteButtonTip => I18n.T("TipDeleteGesture");
+
 	public string Name
 	{
 		get => Mapping.Action.Name ?? "";

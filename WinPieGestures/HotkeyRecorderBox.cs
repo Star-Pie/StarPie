@@ -70,6 +70,7 @@ public class HotkeyRecorderBox : Control
 
 		if (_clearButton != null)
 		{
+			_clearButton.ToolTip = I18n.T("ClearHotkey") ?? "Clear Hotkey";
 			_clearButton.Click += delegate(object s, RoutedEventArgs e)
 			{
 				HotkeyText = string.Empty;
@@ -253,7 +254,7 @@ public class HotkeyRecorderBox : Control
 			}
 			else
 			{
-				_displayTextBlock.Text = "🔴 请按下快捷键组合...";
+				_displayTextBlock.Text = I18n.T("HotkeyPressCombination") ?? "🔴 Please press key combination...";
 				_displayTextBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E11D48"));
 			}
 		}
@@ -387,7 +388,7 @@ public class HotkeyRecorderBox : Control
 
 		if (IsRecording)
 		{
-			_displayTextBlock.Text = !string.IsNullOrEmpty(_customRecordingHint) ? _customRecordingHint : "🔴 录制中... 点击或按Esc完成";
+			_displayTextBlock.Text = !string.IsNullOrEmpty(_customRecordingHint) ? _customRecordingHint : (I18n.T("HotkeyRecordingHint") ?? "🔴 Recording... Click or press Esc to finish");
 			_displayTextBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E11D48"));
 			if (_mainBorder != null)
 			{
@@ -400,7 +401,7 @@ public class HotkeyRecorderBox : Control
 			_customRecordingHint = null;
 			if (string.IsNullOrEmpty(HotkeyText))
 			{
-				_displayTextBlock.Text = Placeholder;
+				_displayTextBlock.Text = !string.IsNullOrEmpty(Placeholder) && Placeholder != "点击录制/按Esc取消..." ? Placeholder : (I18n.T("HotkeyPlaceholder") ?? "Click to record / Esc to cancel...");
 				_displayTextBlock.Foreground = (Brush)TryFindResource("TextMutedBrush") ?? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#94A3B8"));
 			}
 			else

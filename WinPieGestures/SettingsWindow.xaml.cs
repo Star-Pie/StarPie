@@ -2490,6 +2490,135 @@ public partial class SettingsWindow : Window
 			PreviewPanHintText.Text = I18n.T("PreviewPanHint");
 		}
 
+		// --- Phase 1: Sidebar Theme & Buttons ---
+		if (SidebarThemeSystemText != null) SidebarThemeSystemText.Text = I18n.T("SidebarThemeSystem");
+		if (SidebarThemeLightText != null) SidebarThemeLightText.Text = I18n.T("SidebarThemeLight");
+		if (SidebarThemeDarkText != null) SidebarThemeDarkText.Text = I18n.T("SidebarThemeDark");
+		if (SidebarThemeGrayText != null) SidebarThemeGrayText.Text = I18n.T("SidebarThemeGray");
+		if (SidebarThemeCollapsedButton != null) SidebarThemeCollapsedButton.ToolTip = I18n.T("SidebarThemeToggleTip");
+		if (ThemeBtnSystem != null) ThemeBtnSystem.ToolTip = I18n.T("ThemeSystem");
+		if (ThemeBtnLight != null) ThemeBtnLight.ToolTip = I18n.T("ThemeLight");
+		if (ThemeBtnDark != null) ThemeBtnDark.ToolTip = I18n.T("ThemeDark");
+		if (ThemeBtnGray != null) ThemeBtnGray.ToolTip = I18n.T("ThemeGray");
+
+		// --- Phase 1: Trigger Sensitivity & Deadzone ---
+		if (LiveSensorStatusText != null) LiveSensorStatusText.Text = I18n.T("LiveSensorReadyTip");
+		if (Tab0_TriggerThresholdTitleText != null) Tab0_TriggerThresholdTitleText.Text = I18n.T("TriggerThresholdTitle");
+		if (Tab0_TriggerThresholdDescText != null) Tab0_TriggerThresholdDescText.Text = I18n.T("TriggerThresholdDesc");
+		if (Tab0_CoreDeadzoneTitleText != null) Tab0_CoreDeadzoneTitleText.Text = I18n.T("CoreDeadzoneTitle");
+		if (Tab0_CoreDeadzoneDescText != null) Tab0_CoreDeadzoneDescText.Text = I18n.T("CoreDeadzoneDesc");
+
+		// --- Phase 1: Multi-Tier Sub-Wheels ---
+		if (Tab0_MultiTierSectionTitleText != null) Tab0_MultiTierSectionTitleText.Text = I18n.T("MultiTierSectionTitle");
+		if (Tab0_MultiTierDescText != null) Tab0_MultiTierDescText.Text = I18n.T("EnableMultiTierDesc");
+		if (Tab0_SubmenuStyleTitleText != null) Tab0_SubmenuStyleTitleText.Text = I18n.T("SubmenuStyleTitle");
+		if (SubWheelTriggerDistLabel != null) SubWheelTriggerDistLabel.Text = I18n.T("SubWheelTriggerDistLabel");
+		if (SubWheelTriggerDistDesc != null) SubWheelTriggerDistDesc.Text = I18n.T("SubWheelTriggerDistDesc");
+
+		// --- Phase 1: Gesture Direction Items ---
+		if (GestureDirAutoItem != null) GestureDirAutoItem.Content = I18n.T("DirAuto");
+		if (GestureDirUpItem != null) GestureDirUpItem.Content = I18n.T("DirUp");
+		if (GestureDirDownItem != null) GestureDirDownItem.Content = I18n.T("DirDown");
+		if (GestureDirLeftItem != null) GestureDirLeftItem.Content = I18n.T("DirLeft");
+		if (GestureDirRightItem != null) GestureDirRightItem.Content = I18n.T("DirRight");
+		if (GestureDirUpLeftItem != null) GestureDirUpLeftItem.Content = I18n.T("DirUpLeft");
+		if (GestureDirUpRightItem != null) GestureDirUpRightItem.Content = I18n.T("DirUpRight");
+		if (GestureDirDownLeftItem != null) GestureDirDownLeftItem.Content = I18n.T("DirDownLeft");
+		if (GestureDirDownRightItem != null) GestureDirDownRightItem.Content = I18n.T("DirDownRight");
+		if (GestureSensitivitySlider != null) GestureSensitivitySlider.ToolTip = I18n.T("GestureMinSegmentTip");
+		if (AddGestureMappingButton != null) AddGestureMappingButton.Content = I18n.T("BtnAddGestureMapping");
+
+		// --- Phase 1: Animation & Sound Mixer ---
+		if (AnimSpeedCustomRadio != null) AnimSpeedCustomRadio.Content = I18n.T("AnimSpeedCustom");
+		if (SoundPresetMechanicalItem != null) SoundPresetMechanicalItem.Content = I18n.T("SoundPresetMechanical");
+		if (SoundPresetCrispItem != null) SoundPresetCrispItem.Content = I18n.T("SoundPresetCrisp");
+		if (SoundPresetBubbleItem != null) SoundPresetBubbleItem.Content = I18n.T("SoundPresetBubble");
+		if (SoundPresetShortItem != null) SoundPresetShortItem.Content = I18n.T("SoundPresetShort");
+		if (SoundPresetCustomItem != null) SoundPresetCustomItem.Content = I18n.T("SoundPresetCustom");
+		if (Tab0_SoundMixerTitleText != null) Tab0_SoundMixerTitleText.Text = I18n.T("SoundMixerTitle");
+		if (Tab0_SoundMixerBadgeText != null) Tab0_SoundMixerBadgeText.Text = I18n.T("SoundMixerBadge");
+		if (Tab0_SoundMixerDescText != null) Tab0_SoundMixerDescText.Text = I18n.T("SoundMixerDesc");
+		if (CustomSoundNewProfileBtn != null) { CustomSoundNewProfileBtn.Content = I18n.T("BtnNewSoundProfile"); CustomSoundNewProfileBtn.ToolTip = I18n.T("TipNewSoundProfile"); }
+		if (CustomSoundDeleteProfileBtn != null) { CustomSoundDeleteProfileBtn.Content = I18n.T("BtnDeleteSoundProfile"); CustomSoundDeleteProfileBtn.ToolTip = I18n.T("TipDeleteSoundProfile"); }
+		if (CustomSoundImportProfileBtn != null) { CustomSoundImportProfileBtn.Content = I18n.T("BtnImportSoundProfile"); CustomSoundImportProfileBtn.ToolTip = I18n.T("TipImportSoundProfile"); }
+		if (CustomSoundExportProfileBtn != null) { CustomSoundExportProfileBtn.Content = I18n.T("BtnExportSoundProfile"); CustomSoundExportProfileBtn.ToolTip = I18n.T("TipExportSoundProfile"); }
+		if (CustomSoundResetProfileBtn != null) { CustomSoundResetProfileBtn.Content = I18n.T("BtnResetSoundProfile"); CustomSoundResetProfileBtn.ToolTip = I18n.T("TipResetSoundProfile"); }
+		if (CustomSoundOpenEditorWindowBtn != null) { CustomSoundOpenEditorWindowBtn.Content = I18n.T("BtnOpenSoundEditorWindow"); CustomSoundOpenEditorWindowBtn.ToolTip = I18n.T("TipOpenSoundEditorWindow"); }
+		if (Tab0_SoundSelectProfileLabel != null) Tab0_SoundSelectProfileLabel.Text = I18n.T("SoundSelectProfileLabel");
+		if (CustomSoundPlayFlowButton != null) { CustomSoundPlayFlowButton.Content = I18n.T("SoundPlayFlowBtn"); CustomSoundPlayFlowButton.ToolTip = I18n.T("SoundPlayFlowTip"); }
+		if (CustomSoundFlowStatusText != null) CustomSoundFlowStatusText.Text = I18n.T("SoundFlowReadyStatus");
+		if (Tab0_SoundSynthNoticeText != null) Tab0_SoundSynthNoticeText.Text = I18n.T("SoundSynthNotice");
+		if (SystemAudioWarningText != null) SystemAudioWarningText.Text = I18n.T("SystemAudioWarning");
+		if (RestoreSystemAudioButton != null) RestoreSystemAudioButton.Content = I18n.T("BtnRestoreSystemAudio");
+
+		// --- Phase 1: Outer Escape Cancel Presets & Custom Action ---
+		if (OuterEscapeCheckboxDescText != null) OuterEscapeCheckboxDescText.Text = I18n.T("OuterEscapeCheckboxDesc");
+		if (Tab0_OuterEscapeSilentNoteText != null) Tab0_OuterEscapeSilentNoteText.Text = I18n.T("OuterEscapeSilentNote");
+		if (Tab0_OuterEscapePresetsLabel != null) Tab0_OuterEscapePresetsLabel.Text = I18n.T("OuterEscapePresetsLabel");
+		if (CancelPresetShowDesktopBtn != null) { CancelPresetShowDesktopBtn.Content = I18n.T("PresetShowDesktop"); CancelPresetShowDesktopBtn.ToolTip = I18n.T("PresetShowDesktopTip"); }
+		if (CancelPresetTaskViewBtn != null) { CancelPresetTaskViewBtn.Content = I18n.T("PresetTaskView"); CancelPresetTaskViewBtn.ToolTip = I18n.T("PresetTaskViewTip"); }
+		if (CancelPresetCancelEscBtn != null) { CancelPresetCancelEscBtn.Content = I18n.T("PresetCancelEsc"); CancelPresetCancelEscBtn.ToolTip = I18n.T("PresetCancelEscTip"); }
+		if (CancelPresetScreenSnippingBtn != null) { CancelPresetScreenSnippingBtn.Content = I18n.T("PresetScreenSnipping"); CancelPresetScreenSnippingBtn.ToolTip = I18n.T("PresetScreenSnippingTip"); }
+		if (CancelPresetTileHalfSplitBtn != null) { CancelPresetTileHalfSplitBtn.Content = I18n.T("PresetTileHalfSplit"); CancelPresetTileHalfSplitBtn.ToolTip = I18n.T("PresetTileHalfSplitTip"); }
+		if (CancelPresetStarPieSettingsBtn != null) { CancelPresetStarPieSettingsBtn.Content = I18n.T("PresetStarPieSettings"); CancelPresetStarPieSettingsBtn.ToolTip = I18n.T("PresetStarPieSettingsTip"); }
+		if (Tab0_CancelActionTypeLabel != null) Tab0_CancelActionTypeLabel.Text = I18n.T("ActionFormTypeLabel");
+		if (Tab0_CancelActionNameLabel != null) Tab0_CancelActionNameLabel.Text = I18n.T("ActionFormNameLabel");
+		if (Tab0_CancelActionHotkeysLabel != null) Tab0_CancelActionHotkeysLabel.Text = I18n.T("ActionFormHotkeysLabel");
+		if (Tab0_CancelActionBuildHotkeysBtn != null) { Tab0_CancelActionBuildHotkeysBtn.Content = I18n.T("BtnActionBuildHotkeys"); Tab0_CancelActionBuildHotkeysBtn.ToolTip = I18n.T("TipActionBuildHotkeys"); }
+		if (Tab0_CancelActionAppPathLabel != null) Tab0_CancelActionAppPathLabel.Text = I18n.T("ActionFormAppPathLabel");
+		if (Tab0_CancelActionPickProgramBtn != null) { Tab0_CancelActionPickProgramBtn.Content = I18n.T("BtnActionPickProgram"); Tab0_CancelActionPickProgramBtn.ToolTip = I18n.T("TipActionPickProgram"); }
+		if (Tab0_CancelActionCaptureWindowBtn != null) { Tab0_CancelActionCaptureWindowBtn.Content = I18n.T("BtnActionCaptureWindow"); Tab0_CancelActionCaptureWindowBtn.ToolTip = I18n.T("TipActionCaptureWindow"); }
+		if (Tab0_CancelActionBrowseFileBtn != null) { Tab0_CancelActionBrowseFileBtn.Content = I18n.T("BtnActionBrowseFile"); Tab0_CancelActionBrowseFileBtn.ToolTip = I18n.T("TipActionBrowseFile"); }
+		if (Tab0_CancelActionWebUrlLabel != null) Tab0_CancelActionWebUrlLabel.Text = I18n.T("ActionFormWebUrlLabel");
+		if (Tab0_CancelActionCommonUrlsLabel != null) Tab0_CancelActionCommonUrlsLabel.Text = I18n.T("ActionFormCommonUrlsLabel");
+		if (Tab0_CancelActionFolderPathLabel != null) Tab0_CancelActionFolderPathLabel.Text = I18n.T("ActionFormFolderPathLabel");
+		if (Tab0_CancelActionBrowseFolderBtn != null) { Tab0_CancelActionBrowseFolderBtn.Content = I18n.T("BtnActionBrowseFolder"); Tab0_CancelActionBrowseFolderBtn.ToolTip = I18n.T("TipActionBrowseFolder"); }
+		if (Tab0_CancelActionCmdLabel != null) Tab0_CancelActionCmdLabel.Text = I18n.T("ActionFormCmdLabel");
+		if (Tab0_CancelActionWindowCtrlLabel != null) Tab0_CancelActionWindowCtrlLabel.Text = I18n.T("ActionFormWindowCtrlLabel");
+		if (Tab0_CancelActionSysCmdsLabel != null) Tab0_CancelActionSysCmdsLabel.Text = I18n.T("ActionFormSysCmdsLabel");
+		if (TestCancelActionButton != null) TestCancelActionButton.Content = I18n.T("BtnTestCancelAction");
+		if (CancelActionStatusHint != null) CancelActionStatusHint.Text = I18n.T("CancelActionStatusHint");
+
+		// --- Phase 1: Edge Overflow Protection ---
+		if (Tab0_EdgeOverflowStrategyLabel != null) Tab0_EdgeOverflowStrategyLabel.Text = I18n.T("EdgeOverflowStrategyLabel");
+		if (Tab0_EdgeOverflowStrategyDesc != null) Tab0_EdgeOverflowStrategyDesc.Text = I18n.T("EdgeOverflowStrategyDesc");
+		if (EdgeOverflowAutoItem != null) EdgeOverflowAutoItem.Content = I18n.T("EdgeOverflowStrategyAuto");
+		if (EdgeOverflowCenterItem != null) EdgeOverflowCenterItem.Content = I18n.T("EdgeOverflowStrategyCenter");
+		if (EdgeOverflowNoneItem != null) EdgeOverflowNoneItem.Content = I18n.T("EdgeOverflowStrategyNone");
+		if (Tab0_EdgeOverflowMarginXLabel != null) Tab0_EdgeOverflowMarginXLabel.Text = I18n.T("EdgeOverflowMarginXLabel");
+		if (Tab0_EdgeOverflowMarginXDesc != null) Tab0_EdgeOverflowMarginXDesc.Text = I18n.T("EdgeOverflowMarginXDesc");
+		if (Tab0_EdgeOverflowMarginYLabel != null) Tab0_EdgeOverflowMarginYLabel.Text = I18n.T("EdgeOverflowMarginYLabel");
+		if (Tab0_EdgeOverflowMarginYDesc != null) Tab0_EdgeOverflowMarginYDesc.Text = I18n.T("EdgeOverflowMarginYDesc");
+
+		// --- Phase 1: Process Isolation & Custom Trigger ---
+		if (Tab0_BlacklistModeLabel != null) Tab0_BlacklistModeLabel.Text = I18n.T("BlacklistModeLabel");
+		if (Tab0_BlacklistModeSub != null) Tab0_BlacklistModeSub.Text = I18n.T("BlacklistModeSub");
+		if (Tab0_WhitelistModeLabel != null) Tab0_WhitelistModeLabel.Text = I18n.T("WhitelistModeLabel");
+		if (Tab0_WhitelistModeSub != null) Tab0_WhitelistModeSub.Text = I18n.T("WhitelistModeSub");
+		if (Tab0_ProcessCustomTriggerCardTitle != null) Tab0_ProcessCustomTriggerCardTitle.Text = I18n.T("ProcessCustomTriggerCardTitle");
+		if (CloseProcessTriggerCardBtn != null) CloseProcessTriggerCardBtn.ToolTip = I18n.T("BtnCloseCardTip");
+		if (Tab0_ProcessCustomTriggerCardDesc != null) Tab0_ProcessCustomTriggerCardDesc.Text = I18n.T("ProcessCustomTriggerCardDesc");
+		if (Tab0_ProcessCurrentTriggerLabel != null) Tab0_ProcessCurrentTriggerLabel.Text = I18n.T("ProcessCurrentTriggerLabel");
+		if (RecordProcessTriggerButton != null) RecordProcessTriggerButton.Content = I18n.T("BtnRecordProcessTrigger");
+		if (ResetProcessTriggerButton != null) ResetProcessTriggerButton.Content = I18n.T("BtnResetProcessTrigger");
+		if (ProcessLiveSensorStatusText != null) ProcessLiveSensorStatusText.Text = I18n.T("ProcessSensorReadyTip");
+
+		if (GestureTriggerBtnRightItem != null) GestureTriggerBtnRightItem.Content = I18n.T("TriggerBtnRight");
+		if (GestureTriggerBtnMiddleItem != null) GestureTriggerBtnMiddleItem.Content = I18n.T("TriggerBtnMiddle");
+		if (GestureTriggerBtnX1Item != null) GestureTriggerBtnX1Item.Content = I18n.T("TriggerBtnX1");
+		if (GestureTriggerBtnX2Item != null) GestureTriggerBtnX2Item.Content = I18n.T("TriggerBtnX2");
+		if (Tab0_CancelActionNameTextBox != null) Tab0_CancelActionNameTextBox.ToolTip = I18n.T("ActionFormNameTip");
+		if (Tab0_CancelActionBingPresetBtn != null) Tab0_CancelActionBingPresetBtn.Content = I18n.T("ActionBingSearch");
+		if (Tab0_CancelActionTilePresetCombo != null) Tab0_CancelActionTilePresetCombo.ToolTip = I18n.T("TipGestureTilePreset");
+		if (Tab0_CancelActionTaskbarSlotTextBox != null) Tab0_CancelActionTaskbarSlotTextBox.ToolTip = I18n.T("TipGestureTaskbarSlot");
+		if (Tab0_CancelActionOpacityTextBox != null) Tab0_CancelActionOpacityTextBox.ToolTip = I18n.T("TipGestureOpacity");
+		if (EdgeOverflowTitleText != null) EdgeOverflowTitleText.Text = I18n.T("EdgeOverflowTitle");
+		if (EdgeOverflowDescText != null) EdgeOverflowDescText.Text = I18n.T("EdgeOverflowDesc");
+		if (ProcessCurrentTriggerBadgeText != null && string.IsNullOrEmpty(_recordingProcessName)) ProcessCurrentTriggerBadgeText.Text = I18n.T("ProcessTriggerUnconfigured");
+
+		RefreshGestureMappings();
+		RefreshProcessListUI();
+
 		UpdateFocusActionTypeItemsSource();
 		App.RefreshTrayMenu();
 	}

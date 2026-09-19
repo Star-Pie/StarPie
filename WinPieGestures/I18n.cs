@@ -3125,6 +3125,977 @@ public static class I18n
 			[LanguageCode.En] = "🎛️ Custom Sound Studio",
 			[LanguageCode.Ja] = "🎛️ カスタムサウンドスタジオ"
 		};
+
+		dictionary["SidebarThemeSystem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统",
+			[LanguageCode.ZhTw] = "系統",
+			[LanguageCode.En] = "System",
+			[LanguageCode.Ja] = "システム"
+		};
+		dictionary["SidebarThemeLight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "浅色",
+			[LanguageCode.ZhTw] = "淺色",
+			[LanguageCode.En] = "Light",
+			[LanguageCode.Ja] = "ライト"
+		};
+		dictionary["SidebarThemeDark"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "曜黑",
+			[LanguageCode.ZhTw] = "曜黑",
+			[LanguageCode.En] = "Dark",
+			[LanguageCode.Ja] = "ダーク"
+		};
+		dictionary["SidebarThemeGray"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "钛灰",
+			[LanguageCode.ZhTw] = "鈦灰",
+			[LanguageCode.En] = "Gray",
+			[LanguageCode.Ja] = "グレー"
+		};
+		dictionary["SidebarThemeToggleTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "切换控制台界面主题 (点击循环切换)",
+			[LanguageCode.ZhTw] = "切換控制台介面主題 (點擊循環切換)",
+			[LanguageCode.En] = "Toggle Console Theme (Click to cycle)",
+			[LanguageCode.Ja] = "コンソールテーマを切り替え（クリックで循環）"
+		};
+		dictionary["PARTClearShortcutTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清空快捷键",
+			[LanguageCode.ZhTw] = "清空快捷鍵",
+			[LanguageCode.En] = "Clear shortcut",
+			[LanguageCode.Ja] = "ショートカットをクリア"
+		};
+		dictionary["LiveSensorReadyTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 硬件感知器已就绪：随时按下鼠标任意侧键、中键或键盘按键，此处将实时高亮反馈对应按键与键码。",
+			[LanguageCode.ZhTw] = "💡 硬體感知器已就緒：隨時按下滑鼠任意側鍵、中鍵或鍵盤按鍵，此處將即時高亮反饋對應按鍵與鍵碼。",
+			[LanguageCode.En] = "💡 Hardware sensor ready: Press any mouse button or key to instantly see live feedback and key codes.",
+			[LanguageCode.Ja] = "💡 ハードウェアセンサー準備完了: マウスボタンやキーを押すと、リアルタイムでキーコードがハイライト表示されます。"
+		};
+		dictionary["TriggerThresholdTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "一级轮盘呼出触发位移:",
+			[LanguageCode.ZhTw] = "一級輪盤呼出觸發位移:",
+			[LanguageCode.En] = "Primary Wheel Popup Trigger Distance:",
+			[LanguageCode.Ja] = "メインホイール起動トリガー移動量:"
+		};
+		dictionary["TriggerThresholdDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "按住触发键移动超过此距离后呼出手势轮盘。距离越小越灵敏，过小可能造成按键微抖误触。",
+			[LanguageCode.ZhTw] = "按住觸發鍵移動超過此距離後呼出手勢輪盤。距離越小越靈敏，過小可能造成按鍵微抖誤觸。",
+			[LanguageCode.En] = "Hold the trigger key and drag beyond this distance to open the wheel. Smaller values are more sensitive, but may cause jitter misclicks.",
+			[LanguageCode.Ja] = "トリガーキーを押しながらこの距離以上ドラッグするとホイールを表示します。値が小さいほど高感度ですが、手のブレで誤作動しやすくなります。"
+		};
+		dictionary["CoreDeadzoneTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 核心圆唤醒与死区灵敏度:",
+			[LanguageCode.ZhTw] = "🎯 核心圓喚醒與死區靈敏度:",
+			[LanguageCode.En] = "🎯 Center Deadzone & Activation Sensitivity:",
+			[LanguageCode.Ja] = "🎯 センターデッドゾーンと起動感度:"
+		};
+		dictionary["CoreDeadzoneDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "调节呼出轮盘后光标停留在中心核心圆触发核心动作或静默取消的有效半径。数值较小时轻划即可命中扇区，数值较大时中心判定区更宽容，更易触发中心核圆动作或防手抖取消。",
+			[LanguageCode.ZhTw] = "調節呼出輪盤後游標停留在中心核心圓觸發核心動作或靜默取消的有效半徑。數值較小時輕劃即可命中扇區，數值較大時中心判定區更寬容，更易觸發中心核圓動作或防手抖取消。",
+			[LanguageCode.En] = "Effective radius to trigger the center core action or silently cancel. Smaller values select outer sectors easily; larger values provide a wider center safe zone to prevent jitter.",
+			[LanguageCode.Ja] = "センター円で中央アクションまたはサイレントキャンセルをトリガーする有効半径。値が小さいと少しのスワイプでセクターを選択でき、値が大きいと中央の許容範囲が広がり手ブレを防止します。"
+		};
+		dictionary["MultiTierSectionTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "多级轮盘与级联子菜单",
+			[LanguageCode.ZhTw] = "多級輪盤與級聯子選單",
+			[LanguageCode.En] = "Multi-Tier Cascading Sub-Wheels",
+			[LanguageCode.Ja] = "マルチ階層カスケードサブホイール"
+		};
+		dictionary["SubWheelTriggerDistLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "二级轮盘展开触发距离:",
+			[LanguageCode.ZhTw] = "二級輪盤展開觸發距離:",
+			[LanguageCode.En] = "Sub-Wheel Expansion Trigger Distance:",
+			[LanguageCode.Ja] = "サブホイール展開トリガー距離:"
+		};
+		dictionary["SubWheelTriggerDistDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "调节光标划出距离中心多远时展开二级级联菜单。数值较小时轻划即可展开，数值较大时需向外划出更远距离才展开二级，防止快速触发一级动作时产生视觉干扰。",
+			[LanguageCode.ZhTw] = "調節游標劃出距離中心多遠時展開二級級聯選單。數值較小時輕劃即可展開，數值較大時需向外劃出更遠距離才展開二級，防止快速觸發一級動作時產生視覺干擾。",
+			[LanguageCode.En] = "Drag distance required from the center to expand sub-actions. Smaller values expand quickly; larger values avoid visual clutter during fast primary gestures.",
+			[LanguageCode.Ja] = "中心からどれだけドラッグした時にサブメニューを展開するか設定します。小さい値では素早く展開し、大きい値ではメインアクション実行時の視覚的邪魔を防ぎます。"
+		};
+		dictionary["DirAuto"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✨ 自动（运动反方向）",
+			[LanguageCode.ZhTw] = "✨ 自動（運動反方向）",
+			[LanguageCode.En] = "✨ Auto (Opposite Motion)",
+			[LanguageCode.Ja] = "✨ 自動（移動の逆方向）"
+		};
+		dictionary["DirUp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬆ 上方",
+			[LanguageCode.ZhTw] = "⬆ 上方",
+			[LanguageCode.En] = "⬆ Up",
+			[LanguageCode.Ja] = "⬆ 上"
+		};
+		dictionary["DirDown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬇ 下方",
+			[LanguageCode.ZhTw] = "⬇ 下方",
+			[LanguageCode.En] = "⬇ Down",
+			[LanguageCode.Ja] = "⬇ 下"
+		};
+		dictionary["DirLeft"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬅ 左方",
+			[LanguageCode.ZhTw] = "⬅ 左方",
+			[LanguageCode.En] = "⬅ Left",
+			[LanguageCode.Ja] = "⬅ 左"
+		};
+		dictionary["DirRight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➡ 右方",
+			[LanguageCode.ZhTw] = "➡ 右方",
+			[LanguageCode.En] = "➡ Right",
+			[LanguageCode.Ja] = "➡ 右"
+		};
+		dictionary["DirUpLeft"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "↖ 左上",
+			[LanguageCode.ZhTw] = "↖ 左上",
+			[LanguageCode.En] = "↖ Up-Left",
+			[LanguageCode.Ja] = "↖ 左上"
+		};
+		dictionary["DirUpRight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "↗ 右上",
+			[LanguageCode.ZhTw] = "↗ 右上",
+			[LanguageCode.En] = "↗ Up-Right",
+			[LanguageCode.Ja] = "↗ 右上"
+		};
+		dictionary["DirDownLeft"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "↙ 左下",
+			[LanguageCode.ZhTw] = "↙ 左下",
+			[LanguageCode.En] = "↙ Down-Left",
+			[LanguageCode.Ja] = "↙ 左下"
+		};
+		dictionary["DirDownRight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "↘ 右下",
+			[LanguageCode.ZhTw] = "↘ 右下",
+			[LanguageCode.En] = "↘ Down-Right",
+			[LanguageCode.Ja] = "↘ 右下"
+		};
+		dictionary["GestureMinSegmentTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "最小段长（像素）：越大越难把中途小拐弯误识别为方向段",
+			[LanguageCode.ZhTw] = "最小段長（像素）：越大越難把中途小拐彎誤識別為方向段",
+			[LanguageCode.En] = "Minimum segment length (px): Higher values prevent jitter turns from registering as direction strokes.",
+			[LanguageCode.Ja] = "最小セグメント長（px）: 値が大きいほど、軌跡の微小な曲がりを誤検出にくくなります。"
+		};
+		dictionary["TipGestureAppPath"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择的应用程序路径",
+			[LanguageCode.ZhTw] = "選擇的應用程式路徑",
+			[LanguageCode.En] = "Selected application path",
+			[LanguageCode.Ja] = "選択されたアプリのパス"
+		};
+		dictionary["TipGestureBrowseApp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择应用程序或快捷方式...",
+			[LanguageCode.ZhTw] = "選擇應用程式或捷徑...",
+			[LanguageCode.En] = "Select application or shortcut...",
+			[LanguageCode.Ja] = "アプリやショートカットを選択..."
+		};
+		dictionary["TipGestureFolderPath"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择的本地文件夹路径",
+			[LanguageCode.ZhTw] = "選擇的本機資料夾路徑",
+			[LanguageCode.En] = "Selected local folder path",
+			[LanguageCode.Ja] = "選択されたフォルダパス"
+		};
+		dictionary["TipGestureBrowseFolder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择本地文件夹...",
+			[LanguageCode.ZhTw] = "選擇本機資料夾...",
+			[LanguageCode.En] = "Select local folder...",
+			[LanguageCode.Ja] = "ローカルフォルダを選択..."
+		};
+		dictionary["TipGestureCmd"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "要运行的命令，如 ping -n 3 127.0.0.1",
+			[LanguageCode.ZhTw] = "要運行的命令，如 ping -n 3 127.0.0.1",
+			[LanguageCode.En] = "Command to run, e.g. ping -n 3 127.0.0.1",
+			[LanguageCode.Ja] = "実行するコマンド（例: ping -n 3 127.0.0.1）"
+		};
+		dictionary["TipGestureTaskbarSlot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "任务栏第 N 个应用（同 Win+N 槽位语义）",
+			[LanguageCode.ZhTw] = "工作列第 N 個應用（同 Win+N 槽位語義）",
+			[LanguageCode.En] = "N-th taskbar app (equivalent to Win+N slot)",
+			[LanguageCode.Ja] = "タスクバーの N 番目のアプリ (Win+N 相当)"
+		};
+		dictionary["TipGestureTilePreset"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "平铺布局预设",
+			[LanguageCode.ZhTw] = "平鋪佈局預設",
+			[LanguageCode.En] = "Tile layout preset",
+			[LanguageCode.Ja] = "タイルレイアウトプリセット"
+		};
+		dictionary["TipGestureCustomName"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "名称（显示自定义，可留空）",
+			[LanguageCode.ZhTw] = "名稱（顯示自訂，可留空）",
+			[LanguageCode.En] = "Display name (optional)",
+			[LanguageCode.Ja] = "表示名（任意、空欄可）"
+		};
+		dictionary["BtnTestGesture"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "测试",
+			[LanguageCode.ZhTw] = "測試",
+			[LanguageCode.En] = "Test",
+			[LanguageCode.Ja] = "テスト"
+		};
+		dictionary["TipDeleteGesture"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "删除此手势映射",
+			[LanguageCode.ZhTw] = "刪除此手勢映射",
+			[LanguageCode.En] = "Delete this gesture mapping",
+			[LanguageCode.Ja] = "このジェスチャー割り当てを削除"
+		};
+		dictionary["BtnAddGestureMapping"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 添加手势映射",
+			[LanguageCode.ZhTw] = "➕ 新增手勢映射",
+			[LanguageCode.En] = "➕ Add Gesture Mapping",
+			[LanguageCode.Ja] = "➕ ジェスチャー割り当てを追加"
+		};
+		dictionary["AnimSpeedCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎛️ 自定义速度",
+			[LanguageCode.ZhTw] = "🎛️ 自訂速度",
+			[LanguageCode.En] = "🎛️ Custom Speed",
+			[LanguageCode.Ja] = "🎛️ カスタム速度"
+		};
+		dictionary["SoundPresetMechanical"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 机械手感",
+			[LanguageCode.ZhTw] = "⚙️ 機械手感",
+			[LanguageCode.En] = "⚙️ Mechanical",
+			[LanguageCode.Ja] = "⚙️ メカニカル"
+		};
+		dictionary["SoundPresetCrisp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✨ 现代清脆",
+			[LanguageCode.ZhTw] = "✨ 現代清脆",
+			[LanguageCode.En] = "✨ Modern Crisp",
+			[LanguageCode.Ja] = "✨ クリスプモダン"
+		};
+		dictionary["SoundPresetBubble"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🫧 柔和气泡",
+			[LanguageCode.ZhTw] = "🫧 柔和氣泡",
+			[LanguageCode.En] = "🫧 Soft Bubble",
+			[LanguageCode.Ja] = "🫧 ソフトバブル"
+		};
+		dictionary["SoundPresetShort"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 极简短音",
+			[LanguageCode.ZhTw] = "⚡ 極簡短音",
+			[LanguageCode.En] = "⚡ Minimal Click",
+			[LanguageCode.Ja] = "⚡ ミニマルショート"
+		};
+		dictionary["SoundPresetCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎛️ 自定义方案",
+			[LanguageCode.ZhTw] = "🎛️ 自訂方案",
+			[LanguageCode.En] = "🎛️ Custom Studio",
+			[LanguageCode.Ja] = "🎛️ カスタムスタジオ"
+		};
+		dictionary["SoundMixerTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎛️ 自定义交互音效调音台",
+			[LanguageCode.ZhTw] = "🎛️ 自訂互動音效調音台",
+			[LanguageCode.En] = "🎛️ Custom Interaction Sound Studio",
+			[LanguageCode.Ja] = "🎛️ カスタム効果音ミキサー"
+		};
+		dictionary["SoundMixerBadge"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "原生支持",
+			[LanguageCode.ZhTw] = "原生支援",
+			[LanguageCode.En] = "Native",
+			[LanguageCode.Ja] = "ネイティブ"
+		};
+		dictionary["SoundMixerDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "为 5 个核心交互手势事件单独调校程序化极微波形、本地音频采样与音高音量。",
+			[LanguageCode.ZhTw] = "為 5 個核心互動手勢事件單獨調校程式化極微波形、本地音訊取樣與音高音量。",
+			[LanguageCode.En] = "Fine-tune procedural micro-waveforms, local samples, pitch and volume across 5 core interaction events.",
+			[LanguageCode.Ja] = "5つのコアジェスチャーイベントごとに微小波形、ローカル音声サンプル、ピッチ、音量を個別に調整できます。"
+		};
+		dictionary["BtnNewSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "➕ 新建",
+			[LanguageCode.ZhTw] = "➕ 新建",
+			[LanguageCode.En] = "➕ New",
+			[LanguageCode.Ja] = "➕ 新規"
+		};
+		dictionary["TipNewSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新建自定义方案",
+			[LanguageCode.ZhTw] = "新建自訂方案",
+			[LanguageCode.En] = "Create new custom sound profile",
+			[LanguageCode.Ja] = "カスタム音効プロファイルを新規作成"
+		};
+		dictionary["BtnDeleteSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🗑️ 删除",
+			[LanguageCode.ZhTw] = "🗑️ 刪除",
+			[LanguageCode.En] = "🗑️ Delete",
+			[LanguageCode.Ja] = "🗑️ 削除"
+		};
+		dictionary["TipDeleteSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "删除当前选中的自定义方案",
+			[LanguageCode.ZhTw] = "刪除當前選中的自訂方案",
+			[LanguageCode.En] = "Delete selected custom sound profile",
+			[LanguageCode.Ja] = "選択したプロファイルを削除"
+		};
+		dictionary["BtnImportSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 导入",
+			[LanguageCode.ZhTw] = "📂 匯入",
+			[LanguageCode.En] = "📂 Import",
+			[LanguageCode.Ja] = "📂 インポート"
+		};
+		dictionary["TipImportSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "导入音效方案",
+			[LanguageCode.ZhTw] = "匯入音效方案",
+			[LanguageCode.En] = "Import sound profile",
+			[LanguageCode.Ja] = "音効プロファイルをインポート"
+		};
+		dictionary["BtnExportSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💾 导出",
+			[LanguageCode.ZhTw] = "💾 匯出",
+			[LanguageCode.En] = "💾 Export",
+			[LanguageCode.Ja] = "💾 エクスポート"
+		};
+		dictionary["TipExportSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "导出当前方案",
+			[LanguageCode.ZhTw] = "匯出當前方案",
+			[LanguageCode.En] = "Export current sound profile",
+			[LanguageCode.Ja] = "現在のプロファイルをエクスポート"
+		};
+		dictionary["BtnResetSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 重置",
+			[LanguageCode.ZhTw] = "🔄 重設",
+			[LanguageCode.En] = "🔄 Reset",
+			[LanguageCode.Ja] = "🔄 初期化"
+		};
+		dictionary["TipResetSoundProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重置当前方案为预置默认值",
+			[LanguageCode.ZhTw] = "重設當前方案為預設預設值",
+			[LanguageCode.En] = "Reset profile to preset defaults",
+			[LanguageCode.Ja] = "プロファイルを初期プリセットに戻す"
+		};
+		dictionary["BtnOpenSoundEditorWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎛️ 独立大窗",
+			[LanguageCode.ZhTw] = "🎛️ 獨立大窗",
+			[LanguageCode.En] = "🎛️ Studio Window",
+			[LanguageCode.Ja] = "🎛️ 専用ウィンドウ"
+		};
+		dictionary["TipOpenSoundEditorWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开独立大窗口精细调音台",
+			[LanguageCode.ZhTw] = "開啟獨立大視窗精細調音台",
+			[LanguageCode.En] = "Open standalone fine-tuning sound studio",
+			[LanguageCode.Ja] = "独立した大画面サウンドスタジオを開く"
+		};
+		dictionary["SoundSelectProfileLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择配置方案:",
+			[LanguageCode.ZhTw] = "選擇配置方案:",
+			[LanguageCode.En] = "Select Sound Profile:",
+			[LanguageCode.Ja] = "音効プロファイルを選択:"
+		};
+		dictionary["SoundPlayFlowBtn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔊 连续模拟完整手势交互体验",
+			[LanguageCode.ZhTw] = "🔊 連續模擬完整手勢互動體驗",
+			[LanguageCode.En] = "🔊 Simulate Full Gesture Interaction Flow",
+			[LanguageCode.Ja] = "🔊 ジェスチャー操作フロー全体を連続シミュレート"
+		};
+		dictionary["SoundPlayFlowTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "依次回放：唤出 ➔ 划过 ➔ 展开 ➔ 执行 ➔ 脱离",
+			[LanguageCode.ZhTw] = "依次回放：喚出 ➔ 劃過 ➔ 展開 ➔ 執行 ➔ 脫離",
+			[LanguageCode.En] = "Playback sequence: Popup ➔ Hover ➔ Expand ➔ Execute ➔ Escape",
+			[LanguageCode.Ja] = "再生順: ポップアップ ➔ ホバー ➔ 展開 ➔ 実行 ➔ 脱出"
+		};
+		dictionary["SoundFlowReadyStatus"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "准备就绪",
+			[LanguageCode.ZhTw] = "準備就緒",
+			[LanguageCode.En] = "Ready",
+			[LanguageCode.Ja] = "準備完了"
+		};
+		dictionary["SoundSynthNotice"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 纯内存波形合成，零延迟 < 2ms，不占额外资源",
+			[LanguageCode.ZhTw] = "⚡ 純記憶體波形合成，零延遲 < 2ms，不佔額外資源",
+			[LanguageCode.En] = "⚡ In-memory procedural synthesis, zero latency < 2ms, zero bloat",
+			[LanguageCode.Ja] = "⚡ メモリ内プロシージャル波形合成、超低遅延 < 2ms、リソース消費ゼロ"
+		};
+		dictionary["SystemAudioWarning"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 检测到 Windows 系统主音量当前为 0% 或已静音，会导致所有交互音效无声。",
+			[LanguageCode.ZhTw] = "⚠️ 檢測到 Windows 系統主音量當前為 0% 或已靜音，會導致所有互動音效無聲。",
+			[LanguageCode.En] = "⚠️ System master volume is muted or at 0%, causing interaction sound effects to be silent.",
+			[LanguageCode.Ja] = "⚠️ システムのマスター音量がミュートまたは0%のため、効果音が聞こえません。"
+		};
+		dictionary["BtnRestoreSystemAudio"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔊 一键解除静音并恢复音量 (50%)",
+			[LanguageCode.ZhTw] = "🔊 一鍵解除靜音並恢復音量 (50%)",
+			[LanguageCode.En] = "🔊 Unmute & Restore Volume (50%)",
+			[LanguageCode.Ja] = "🔊 ミュート解除して音量を復元 (50%)"
+		};
+		dictionary["OuterEscapeCheckboxDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "超过轮盘外圈范围后立即解除高亮，松开右键 0 误触安全放弃。",
+			[LanguageCode.ZhTw] = "超過輪盤外圈範圍後立即解除高亮，放開右鍵 0 誤觸安全放棄。",
+			[LanguageCode.En] = "De-highlights sectors when dragging outside the wheel; release safely without accidental triggers.",
+			[LanguageCode.Ja] = "ホイール外枠を超えると選択を即座に解除し、右クリックを離しても誤作動なく安全に中止します。"
+		};
+		dictionary["OuterEscapeSilentNote"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭则外甩取消仍为静默关闭。",
+			[LanguageCode.ZhTw] = "關閉則外甩取消仍為靜默關閉。",
+			[LanguageCode.En] = "When disabled, flick-out cancel silently closes the wheel.",
+			[LanguageCode.Ja] = "無効の場合、外側スワイプによるキャンセルは静かにホイールを閉じます。"
+		};
+		dictionary["OuterEscapePresetsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 外甩常用预设:",
+			[LanguageCode.ZhTw] = "⚡ 外甩常用預設:",
+			[LanguageCode.En] = "⚡ Common Flick-Out Presets:",
+			[LanguageCode.Ja] = "⚡ 外側スワイプの常用プリセット:"
+		};
+		dictionary["PresetShowDesktop"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 显示桌面 (Win+D)",
+			[LanguageCode.ZhTw] = "🖥️ 顯示桌面 (Win+D)",
+			[LanguageCode.En] = "🖥️ Show Desktop (Win+D)",
+			[LanguageCode.Ja] = "🖥️ デスクトップ表示 (Win+D)"
+		};
+		dictionary["PresetShowDesktopTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外甩快速显示桌面，查阅文件或切换任务",
+			[LanguageCode.ZhTw] = "外甩快速顯示桌面，查閱檔案或切換任務",
+			[LanguageCode.En] = "Quickly minimize all to view desktop or switch tasks",
+			[LanguageCode.Ja] = "素早くデスクトップを表示し、ファイル確認やタスク切替を行います"
+		};
+		dictionary["PresetTaskView"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📑 任务视图 (Win+Tab)",
+			[LanguageCode.ZhTw] = "📑 任務檢視 (Win+Tab)",
+			[LanguageCode.En] = "📑 Task View (Win+Tab)",
+			[LanguageCode.Ja] = "📑 タスクビュー (Win+Tab)"
+		};
+		dictionary["PresetTaskViewTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外甩浏览多虚拟桌面与所有活动任务窗口",
+			[LanguageCode.ZhTw] = "外甩瀏覽多虛擬桌面與所有活動任務視窗",
+			[LanguageCode.En] = "View virtual desktops and active task windows",
+			[LanguageCode.Ja] = "仮想デスクトップとすべてのアクティブウィンドウを表示"
+		};
+		dictionary["PresetCancelEsc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "↩️ 取消/返回 (Esc)",
+			[LanguageCode.ZhTw] = "↩️ 取消/返回 (Esc)",
+			[LanguageCode.En] = "↩️ Cancel / Back (Esc)",
+			[LanguageCode.Ja] = "↩️ キャンセル/戻る (Esc)"
+		};
+		dictionary["PresetCancelEscTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外甩退出当前弹窗或中断当前操作",
+			[LanguageCode.ZhTw] = "外甩退出當前彈窗或中斷當前操作",
+			[LanguageCode.En] = "Dismiss popups or abort current operation",
+			[LanguageCode.Ja] = "現在のポップアップや操作を中断して終了"
+		};
+		dictionary["PresetScreenSnipping"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✂️ 系统截屏 (Win+Shift+S)",
+			[LanguageCode.ZhTw] = "✂️ 系統截圖 (Win+Shift+S)",
+			[LanguageCode.En] = "✂️ Snipping Tool (Win+Shift+S)",
+			[LanguageCode.Ja] = "✂️ 画面キャプチャ (Win+Shift+S)"
+		};
+		dictionary["PresetScreenSnippingTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外甩快速唤起 Windows 区域截屏工具",
+			[LanguageCode.ZhTw] = "外甩快速喚起 Windows 區域截圖工具",
+			[LanguageCode.En] = "Launch Windows Snipping Tool region capture",
+			[LanguageCode.Ja] = "Windows 領域キャプチャツールを素早く起動"
+		};
+		dictionary["PresetTileHalfSplit"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🪟 左右对半平铺",
+			[LanguageCode.ZhTw] = "🪟 左右對半平鋪",
+			[LanguageCode.En] = "🪟 Snap Left/Right Half",
+			[LanguageCode.Ja] = "🪟 左右分割スナップ"
+		};
+		dictionary["PresetTileHalfSplitTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外甩将当前窗口以左右对半形式快速分屏",
+			[LanguageCode.ZhTw] = "外甩將當前視窗以左右對半形式快速分屏",
+			[LanguageCode.En] = "Snap active window into half-screen split",
+			[LanguageCode.Ja] = "アクティブウィンドウを左右半分に分割配置"
+		};
+		dictionary["PresetStarPieSettings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ StarPie 控制台",
+			[LanguageCode.ZhTw] = "⚙️ StarPie 控制台",
+			[LanguageCode.En] = "⚙️ StarPie Settings",
+			[LanguageCode.Ja] = "⚙️ StarPie 設定"
+		};
+		dictionary["PresetStarPieSettingsTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外甩呼出 StarPie 配置控制台界面",
+			[LanguageCode.ZhTw] = "外甩呼出 StarPie 配置控制台介面",
+			[LanguageCode.En] = "Open StarPie settings console",
+			[LanguageCode.Ja] = "StarPie 設定コンソール画面を開く"
+		};
+		dictionary["ActionFormTypeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "动作类型:",
+			[LanguageCode.ZhTw] = "動作類型:",
+			[LanguageCode.En] = "Action Type:",
+			[LanguageCode.Ja] = "アクションの種類:"
+		};
+		dictionary["ActionFormNameLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "动作显示名称:",
+			[LanguageCode.ZhTw] = "動作顯示名稱:",
+			[LanguageCode.En] = "Display Name:",
+			[LanguageCode.Ja] = "表示名:"
+		};
+		dictionary["ActionFormNameTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义此动作的显示名称",
+			[LanguageCode.ZhTw] = "自訂此動作的顯示名稱",
+			[LanguageCode.En] = "Custom display label for this action",
+			[LanguageCode.Ja] = "このアクションの表示名をカスタマイズ"
+		};
+		dictionary["ActionFormHotkeysLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "快捷按键组合:",
+			[LanguageCode.ZhTw] = "快捷按鍵組合:",
+			[LanguageCode.En] = "Shortcut Combo:",
+			[LanguageCode.Ja] = "ショートカットの組み合わせ:"
+		};
+		dictionary["BtnActionBuildHotkeys"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 拼装...",
+			[LanguageCode.ZhTw] = "⚙️ 拼裝...",
+			[LanguageCode.En] = "⚙️ Builder...",
+			[LanguageCode.Ja] = "⚙️ 構成..."
+		};
+		dictionary["TipActionBuildHotkeys"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开快捷键组合拼装器",
+			[LanguageCode.ZhTw] = "開啟快捷鍵組合拼裝器",
+			[LanguageCode.En] = "Open hotkey combination builder",
+			[LanguageCode.Ja] = "ショートカットキービルダーを開く"
+		};
+		dictionary["ActionFormAppPathLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标应用程序路径:",
+			[LanguageCode.ZhTw] = "目標應用程式路徑:",
+			[LanguageCode.En] = "Application Path:",
+			[LanguageCode.Ja] = "アプリのパス:"
+		};
+		dictionary["BtnActionPickProgram"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📦 软件库选择...",
+			[LanguageCode.ZhTw] = "📦 軟體庫選擇...",
+			[LanguageCode.En] = "📦 App Library...",
+			[LanguageCode.Ja] = "📦 アプリ一覧から選択..."
+		};
+		dictionary["TipActionPickProgram"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从已安装软件与开始菜单中选择",
+			[LanguageCode.ZhTw] = "從已安裝軟體與開始功能表中選擇",
+			[LanguageCode.En] = "Select from installed apps and Start Menu",
+			[LanguageCode.Ja] = "インストール済みアプリやスタートメニューから選択"
+		};
+		dictionary["BtnActionCaptureWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 捕捉运行窗口...",
+			[LanguageCode.ZhTw] = "🎯 捕捉運行視窗...",
+			[LanguageCode.En] = "🎯 Window Sniper...",
+			[LanguageCode.Ja] = "🎯 ウィンドウ捕捉..."
+		};
+		dictionary["TipActionCaptureWindow"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从桌面正在运行的程序中选择或拖拽准星瞄准抓取",
+			[LanguageCode.ZhTw] = "從桌面正在運行的程式中選擇或拖拽準星瞄準抓取",
+			[LanguageCode.En] = "Select from running windows or drag crosshair to target",
+			[LanguageCode.Ja] = "実行中のウィンドウから選択するか照準をドラッグして捕捉"
+		};
+		dictionary["BtnActionBrowseFile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 浏览...",
+			[LanguageCode.ZhTw] = "📂 瀏覽...",
+			[LanguageCode.En] = "📂 Browse...",
+			[LanguageCode.Ja] = "📂 参照..."
+		};
+		dictionary["TipActionBrowseFile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开文件浏览窗口选择可执行文件",
+			[LanguageCode.ZhTw] = "開啟檔案瀏覽視窗選擇可執行檔",
+			[LanguageCode.En] = "Browse for an executable file",
+			[LanguageCode.Ja] = "実行可能ファイルを参照して選択"
+		};
+		dictionary["ActionFormWebUrlLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标网址 URL:",
+			[LanguageCode.ZhTw] = "目標網址 URL:",
+			[LanguageCode.En] = "Website URL:",
+			[LanguageCode.Ja] = "ウェブサイト URL:"
+		};
+		dictionary["ActionFormCommonUrlsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "常用网址:",
+			[LanguageCode.ZhTw] = "常用網址:",
+			[LanguageCode.En] = "Quick Links:",
+			[LanguageCode.Ja] = "クイックリンク:"
+		};
+		dictionary["ActionFormFolderPathLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标本地文件夹路径:",
+			[LanguageCode.ZhTw] = "目標本機資料夾路徑:",
+			[LanguageCode.En] = "Folder Path:",
+			[LanguageCode.Ja] = "フォルダパス:"
+		};
+		dictionary["BtnActionBrowseFolder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 浏览文件夹...",
+			[LanguageCode.ZhTw] = "📂 瀏覽資料夾...",
+			[LanguageCode.En] = "📂 Browse Folder...",
+			[LanguageCode.Ja] = "📂 フォルダを参照..."
+		};
+		dictionary["TipActionBrowseFolder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "选择本地文件夹路径...",
+			[LanguageCode.ZhTw] = "選擇本機資料夾路徑...",
+			[LanguageCode.En] = "Select a local directory path...",
+			[LanguageCode.Ja] = "ローカルフォルダのパスを選択..."
+		};
+		dictionary["ActionFormCmdLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "命令行指令与终端类型:",
+			[LanguageCode.ZhTw] = "命令列指令與終端機類型:",
+			[LanguageCode.En] = "Command Line & Shell:",
+			[LanguageCode.Ja] = "コマンドラインとシェル:"
+		};
+		dictionary["ActionFormWindowCtrlLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🪟 窗口控制子模式:",
+			[LanguageCode.ZhTw] = "🪟 視窗控制子模式:",
+			[LanguageCode.En] = "🪟 Window Control Sub-Mode:",
+			[LanguageCode.Ja] = "🪟 ウィンドウ制御モード:"
+		};
+		dictionary["ActionFormSysCmdsLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统全局指令预设:",
+			[LanguageCode.ZhTw] = "系統全域指令預設:",
+			[LanguageCode.En] = "System Command Presets:",
+			[LanguageCode.Ja] = "システムコマンドプリセット:"
+		};
+		dictionary["BtnTestCancelAction"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🧪 模拟测试触发",
+			[LanguageCode.ZhTw] = "🧪 模擬測試觸發",
+			[LanguageCode.En] = "🧪 Simulate Trigger",
+			[LanguageCode.Ja] = "🧪 テスト実行"
+		};
+		dictionary["CancelActionStatusHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "💡 外甩脱离轮盘时，立即执行此自定义动作；回到轮盘中心仍为静默关闭。",
+			[LanguageCode.ZhTw] = "💡 外甩脫離輪盤時，立即執行此自訂動作；回到輪盤中心仍為靜默關閉。",
+			[LanguageCode.En] = "💡 Executes this custom action when flicked outward. Moving back to center still closes silently.",
+			[LanguageCode.Ja] = "💡 ホイール外側にスワイプするとこのアクションを実行します。中心に戻すと静かに閉じます。"
+		};
+		dictionary["EdgeOverflowTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "屏幕边缘呼出智能防溢出与光标自动对齐",
+			[LanguageCode.ZhTw] = "螢幕邊緣呼出智慧防溢出與游標自動對齊",
+			[LanguageCode.En] = "Edge Overflow Protection & Smart Cursor Alignment",
+			[LanguageCode.Ja] = "画面端オーバーフロー防止とカーソル自動整列"
+		};
+		dictionary["EdgeOverflowDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当在屏幕四周边缘（顶部、底部或两侧）呼出轮盘时，智能检测显示器安全边界，防止轮盘扇区被截断并自动对齐光标至轮盘物理中心。",
+			[LanguageCode.ZhTw] = "當在螢幕四周邊緣（頂部、底部或兩側）呼出輪盤時，智慧檢測顯示器安全邊界，防止輪盤扇區被截斷並自動對齊游標至輪盤物理中心。",
+			[LanguageCode.En] = "Detects screen boundaries when opening near screen edges, preventing sector clipping and aligning cursor to the wheel center.",
+			[LanguageCode.Ja] = "画面端付近でホイールを表示する際に境界を検知し、セクターの画面外はみ出しを防ぎカーソルを物理中心に整列させます。"
+		};
+		dictionary["EdgeOverflowStrategyLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "防溢出处理策略:",
+			[LanguageCode.ZhTw] = "防溢出處理策略:",
+			[LanguageCode.En] = "Overflow Prevention Strategy:",
+			[LanguageCode.Ja] = "はみ出し防止ポリシー:"
+		};
+		dictionary["EdgeOverflowStrategyDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "智能贴边：自动推入屏幕并对齐光标；屏幕中心：直接在当前显示器正中展现。",
+			[LanguageCode.ZhTw] = "智慧貼邊：自動推入螢幕並對齊游標；螢幕中心：直接在當前顯示器正中展現。",
+			[LanguageCode.En] = "Smart Snap: Push wheel into bounds and align cursor; Screen Center: Always pop up at monitor center.",
+			[LanguageCode.Ja] = "スマートスナップ: 画面内に収めカーソルを整列; 画面中央: モニターの中央に直接表示。"
+		};
+		dictionary["EdgeOverflowStrategyAuto"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🛡️ 智能贴边防溢出 (推荐)",
+			[LanguageCode.ZhTw] = "🛡️ 智慧貼邊防溢出 (推薦)",
+			[LanguageCode.En] = "🛡️ Smart Edge Push (Recommended)",
+			[LanguageCode.Ja] = "🛡️ スマートスナップ (推奨)"
+		};
+		dictionary["EdgeOverflowStrategyCenter"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 屏幕物理正中心呼出",
+			[LanguageCode.ZhTw] = "🎯 螢幕物理正中心呼出",
+			[LanguageCode.En] = "🎯 Monitor Center Popup",
+			[LanguageCode.Ja] = "🎯 モニター中央にポップアップ"
+		};
+		dictionary["EdgeOverflowStrategyNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🚫 原生跟随光标 (允许溢出)",
+			[LanguageCode.ZhTw] = "🚫 原生跟隨游標 (允許溢出)",
+			[LanguageCode.En] = "🚫 Strict Cursor Follow (Allow Overflow)",
+			[LanguageCode.Ja] = "🚫 カーソル追従 (はみ出し許可)"
+		};
+		dictionary["EdgeOverflowMarginXLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "X 轴边缘安全边距:",
+			[LanguageCode.ZhTw] = "X 軸邊緣安全邊距:",
+			[LanguageCode.En] = "Horizontal (X) Safe Margin:",
+			[LanguageCode.Ja] = "水平 (X) 安全マージン:"
+		};
+		dictionary["EdgeOverflowMarginXDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "调节轮盘左右边缘距离屏幕物理视口边界的保留间距。增大数值可让轮盘更早贴入屏幕内侧并自动对齐光标。",
+			[LanguageCode.ZhTw] = "調節輪盤左右邊緣距離螢幕物理視口邊界的保留間距。增大數值可讓輪盤更早貼入螢幕內側並自動對齊游標。",
+			[LanguageCode.En] = "Safety padding between wheel sides and monitor viewport edges. Higher values push wheel inward sooner.",
+			[LanguageCode.Ja] = "左右エッジと画面端の安全マージン。値を大きくするとより内側にスナップします。"
+		};
+		dictionary["EdgeOverflowMarginYLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Y 轴边缘安全边距:",
+			[LanguageCode.ZhTw] = "Y 軸邊緣安全邊距:",
+			[LanguageCode.En] = "Vertical (Y) Safe Margin:",
+			[LanguageCode.Ja] = "垂直 (Y) 安全マージン:"
+		};
+		dictionary["EdgeOverflowMarginYDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "调节轮盘上下边缘距离屏幕物理视口边界（避让任务栏与顶部标题栏）的保留间距。",
+			[LanguageCode.ZhTw] = "調節輪盤上下邊緣距離螢幕物理視口邊界（避讓任務欄與頂部標題欄）的保留間距。",
+			[LanguageCode.En] = "Safety padding between wheel top/bottom and viewport edges (clears taskbars and title bars).",
+			[LanguageCode.Ja] = "上下エッジと画面端（タスクバーやタイトルバーを回避）の安全マージン。"
+		};
+		dictionary["BlacklistModeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "排除黑名单模式",
+			[LanguageCode.ZhTw] = "排除黑名單模式",
+			[LanguageCode.En] = "Blacklist Mode",
+			[LanguageCode.Ja] = "ブラックリストモード"
+		};
+		dictionary["BlacklistModeSub"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全局生效，仅在名单内程序放行右键",
+			[LanguageCode.ZhTw] = "全域生效，僅在名單內程式放行右鍵",
+			[LanguageCode.En] = "Global activation; releases trigger key in listed apps",
+			[LanguageCode.Ja] = "全体で有効。リスト内のアプリでのみキーを通過"
+		};
+		dictionary["WhitelistModeLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启用白名单模式",
+			[LanguageCode.ZhTw] = "啟用白名單模式",
+			[LanguageCode.En] = "Whitelist Mode",
+			[LanguageCode.Ja] = "ホワイトリストモード"
+		};
+		dictionary["WhitelistModeSub"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "仅在名单内程序生效，其余完全放行",
+			[LanguageCode.ZhTw] = "僅在名單內程式生效，其餘完全放行",
+			[LanguageCode.En] = "Active only in listed apps; releases trigger key elsewhere",
+			[LanguageCode.Ja] = "リスト内のアプリでのみ有効。他は完全にキーを通過"
+		};
+		dictionary["BtnConfigProcessTrigger"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 配置触发键",
+			[LanguageCode.ZhTw] = "⚙️ 配置觸發鍵",
+			[LanguageCode.En] = "⚙️ Custom Trigger",
+			[LanguageCode.Ja] = "⚙️ トリガー設定"
+		};
+		dictionary["TipConfigProcessTrigger"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "为此进程录制专属的呼出按键或组合键",
+			[LanguageCode.ZhTw] = "為此處理程序錄製專屬的呼出按鍵或組合鍵",
+			[LanguageCode.En] = "Record dedicated popup trigger or combo for this process",
+			[LanguageCode.Ja] = "このアプリ専用の起動キーやコンボを登録"
+		};
+		dictionary["BtnRestoreProcessPass"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 恢复放行",
+			[LanguageCode.ZhTw] = "🔄 恢復放行",
+			[LanguageCode.En] = "🔄 Passthrough",
+			[LanguageCode.Ja] = "🔄 通過に戻す"
+		};
+		dictionary["TipRestoreProcessPass"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清除专属按键，恢复完全放行",
+			[LanguageCode.ZhTw] = "清除專屬按鍵，恢復完全放行",
+			[LanguageCode.En] = "Clear dedicated trigger and restore full key passthrough",
+			[LanguageCode.Ja] = "専用キーをクリアし完全通過に戻す"
+		};
+		dictionary["TipRemoveProcessItem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从名单中移除此进程",
+			[LanguageCode.ZhTw] = "從名單中移除此處理程序",
+			[LanguageCode.En] = "Remove process from list",
+			[LanguageCode.Ja] = "リストからこのプロセスを削除"
+		};
+		dictionary["ProcessCustomTriggerCardTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎯 进程专属唤醒按键配置：",
+			[LanguageCode.ZhTw] = "🎯 處理程序專屬喚醒按鍵配置：",
+			[LanguageCode.En] = "🎯 Dedicated Process Trigger Configuration:",
+			[LanguageCode.Ja] = "🎯 アプリ専用トリガーキー設定:"
+		};
+		dictionary["BtnCloseCardTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "收起此配置卡片",
+			[LanguageCode.ZhTw] = "收起此配置卡片",
+			[LanguageCode.En] = "Collapse card",
+			[LanguageCode.Ja] = "カードを閉じる"
+		};
+		dictionary["ProcessCustomTriggerCardDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "为选中的程序配置单独的轮盘呼出按键（如在 SolidWorks 中配置中键/侧键，避免与右键笔势冲突；普通右键将 100% 放行给该软件）。",
+			[LanguageCode.ZhTw] = "為選中的程式配置單獨的輪盤呼出按鍵（如在 SolidWorks 中配置中鍵/側鍵，避免與右鍵筆勢衝突；普通右鍵將 100% 放行給該軟體）。",
+			[LanguageCode.En] = "Configure dedicated triggers for specific apps (e.g. Middle/Side click in SolidWorks to avoid right-click gesture conflicts; standard right-click is fully passed through).",
+			[LanguageCode.Ja] = "指定アプリ専用のトリガーキーを設定（例: SolidWorks で中クリックやサイドボタンを割り当て、右クリックジェスチャーとの競合を防止。通常右クリックはアプリに通過）。"
+		};
+		dictionary["ProcessCurrentTriggerLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前专属触发键：",
+			[LanguageCode.ZhTw] = "當前專屬觸發鍵：",
+			[LanguageCode.En] = "Current Dedicated Trigger:",
+			[LanguageCode.Ja] = "現在の専用トリガー:"
+		};
+		dictionary["ProcessTriggerUnconfigured"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🚫 未配置",
+			[LanguageCode.ZhTw] = "🚫 未配置",
+			[LanguageCode.En] = "🚫 Unconfigured",
+			[LanguageCode.Ja] = "🚫 未設定"
+		};
+		dictionary["BtnRecordProcessTrigger"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔴 点击录制专属按键 / 组合键",
+			[LanguageCode.ZhTw] = "🔴 點擊錄製專屬按鍵 / 組合鍵",
+			[LanguageCode.En] = "🔴 Click to Record Dedicated Key / Combo",
+			[LanguageCode.Ja] = "🔴 クリックして専用キー/コンボを録画"
+		};
+		dictionary["BtnResetProcessTrigger"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔄 恢复默认",
+			[LanguageCode.ZhTw] = "🔄 恢復預設",
+			[LanguageCode.En] = "🔄 Reset Default",
+			[LanguageCode.Ja] = "🔄 デフォルトに戻す"
+		};
+		dictionary["ProcessSensorReadyTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "硬件感知器已就绪：点击上方录制按钮后，按下你想作为该程序呼出键的鼠标按键（如中键/侧键）或键盘按键，即可自动捕获。",
+			[LanguageCode.ZhTw] = "硬體感知器已就緒：點擊上方錄製按鈕後，按下你想作為該程式呼出鍵的滑鼠按鍵（如中鍵/側鍵）或鍵盤按鍵，即可自動捕獲。",
+			[LanguageCode.En] = "Hardware sensor ready: Click record above, then press the desired mouse button (Middle/Side) or key to capture automatically.",
+			[LanguageCode.Ja] = "ハードウェアセンサー準備完了: 上の録画ボタンをクリック後、割り当てたいマウスボタンやキーを押すと自動登録されます。"
+		};
+		dictionary["ProcessTriggerDedicated"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "专属按键",
+			[LanguageCode.ZhTw] = "專屬按鍵",
+			[LanguageCode.En] = "Dedicated",
+			[LanguageCode.Ja] = "専用キー"
+		};
+		dictionary["ProcessTriggerDefaultPass"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未配置专属键 (完全放行右键)",
+			[LanguageCode.ZhTw] = "未配置專屬鍵 (完全放行右鍵)",
+			[LanguageCode.En] = "Not configured (right click passed through)",
+			[LanguageCode.Ja] = "未設定（右クリックを完全通過）"
+		};
+
+
+
+
+		dictionary["ActionBingSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Bing 搜索",
+			[LanguageCode.ZhTw] = "Bing 搜尋",
+			[LanguageCode.En] = "Bing Search",
+			[LanguageCode.Ja] = "Bing 検索"
+		};
+		dictionary["TipGestureOpacity"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "输入不透明度百分比 (30~100)",
+			[LanguageCode.ZhTw] = "輸入不透明度百分比 (30~100)",
+			[LanguageCode.En] = "Enter opacity percentage (30~100)",
+			[LanguageCode.Ja] = "不透明度のパーセンテージを入力 (30~100)"
+		};
+		dictionary["SettingsWindowTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie 设置控制台",
+			[LanguageCode.ZhTw] = "StarPie 設定主控台",
+			[LanguageCode.En] = "StarPie Settings Console",
+			[LanguageCode.Ja] = "StarPie 設定コンソール"
+		};
+		dictionary["ClearHotkey"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清空快捷键",
+			[LanguageCode.ZhTw] = "清空快捷鍵",
+			[LanguageCode.En] = "Clear Hotkey",
+			[LanguageCode.Ja] = "ショートカットをクリア"
+		};
+		dictionary["HotkeyPlaceholder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击录制/按Esc取消...",
+			[LanguageCode.ZhTw] = "點擊錄製/按Esc取消...",
+			[LanguageCode.En] = "Click to record / Esc to cancel...",
+			[LanguageCode.Ja] = "クリックして録音 / Escでキャンセル..."
+		};
+		dictionary["HotkeyRecordingHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔴 录制中... 点击或按Esc完成",
+			[LanguageCode.ZhTw] = "🔴 錄製中... 點擊或按Esc完成",
+			[LanguageCode.En] = "🔴 Recording... Click or press Esc to finish",
+			[LanguageCode.Ja] = "🔴 録音中... クリックまたはEscで完了"
+		};
+		dictionary["HotkeyPressCombination"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔴 请按下快捷键组合...",
+			[LanguageCode.ZhTw] = "🔴 請按下快捷鍵組合...",
+			[LanguageCode.En] = "🔴 Please press key combination...",
+			[LanguageCode.Ja] = "🔴 ショートカットキーの組み合わせを押してください..."
+		};
 		Translations = dictionary;
 	}
 }
