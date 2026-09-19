@@ -150,10 +150,10 @@
         "# 位"
       ],
       "UpdateStatusBadgeText": [
-        "当前已是最新版本"
+        "正在检查更新..."
       ],
       "UpdateStatusDescText": [
-        "当前运行版本: StarPie v#.#.#-beta.# (#位)。线上最新版本: v#.#.#-beta.#。上次检查: #-#-# #:#"
+        "当前运行版本: StarPie v#.#.#-beta.# (#位)。上次检查: 未检查"
       ]
     },
     "tab_5": {
