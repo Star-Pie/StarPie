@@ -3056,6 +3056,46 @@ public partial class SettingsWindow : Window
 		if (TileSelectAllLayoutsBtn != null) { TileSelectAllLayoutsBtn.Content = I18n.T("TileSelectAllLayoutsBtnText"); TileSelectAllLayoutsBtn.ToolTip = I18n.T("TileSelectAllLayoutsBtnToolTip"); }
 		if (TileClearAllLayoutsBtn != null) { TileClearAllLayoutsBtn.Content = I18n.T("TileClearAllLayoutsBtnText"); TileClearAllLayoutsBtn.ToolTip = I18n.T("TileClearAllLayoutsBtnToolTip"); }
 
+		// --- Phase 4: Tab 3 (System & Advanced / 高级系统) ---
+		if (UpdateChannelStableItem != null) UpdateChannelStableItem.Content = I18n.T("UpdateChannelStable");
+		if (UpdateChannelBetaItem != null) UpdateChannelBetaItem.Content = I18n.T("UpdateChannelBeta");
+		if (UpdateProxyGhfastItem != null) UpdateProxyGhfastItem.Content = I18n.T("UpdateProxyGhproxy");
+		if (UpdateProxyGhproxyItem != null) UpdateProxyGhproxyItem.Content = I18n.T("UpdateProxyMoeyy");
+		if (UpdateProxyMirrorItem != null) UpdateProxyMirrorItem.Content = I18n.T("UpdateProxyAkams");
+		if (UpdateProxyDirectItem != null) UpdateProxyDirectItem.Content = I18n.T("UpdateProxyDirect");
+
+		if (ContributorsRefreshText != null) ContributorsRefreshText.ToolTip = I18n.T("ContributorsRefreshTip");
+		if (ViewReleasesWebBtn != null) { ViewReleasesWebBtn.Content = I18n.T("ViewReleasesWebBtnText"); ViewReleasesWebBtn.ToolTip = I18n.T("ViewReleasesWebBtnToolTip"); }
+		if (StartDownloadUpdateBtn != null) StartDownloadUpdateBtn.Content = I18n.T("StartDownloadUpdateBtnText");
+		if (OpenWebReleaseBtn != null) OpenWebReleaseBtn.Content = I18n.T("OpenWebReleaseBtnText");
+		if (UpdateDownloadPkgLabel != null) UpdateDownloadPkgLabel.Text = I18n.T("UpdateDownloadPkgLabel");
+		if (UpdatePkgStandaloneRadio != null) UpdatePkgStandaloneRadio.Content = I18n.T("UpdatePkgStandaloneRadioText");
+		if (UpdatePkgLightweightRadio != null) UpdatePkgLightweightRadio.Content = I18n.T("UpdatePkgLightweightRadioText");
+		if (UpdateChangelogLabel != null) UpdateChangelogLabel.Text = I18n.T("UpdateChangelogLabel");
+		if (CancelDownloadBtn != null) CancelDownloadBtn.Content = I18n.T("CancelDownloadBtnText");
+		if (UpdateReadyTitleText != null) UpdateReadyTitleText.Text = I18n.T("UpdateReadyTitleText");
+		if (UpdateReadyDescText != null) UpdateReadyDescText.Text = I18n.T("UpdateReadyDescText");
+		if (ApplyRestartUpdateBtn != null) ApplyRestartUpdateBtn.Content = I18n.T("ApplyRestartUpdateBtnText");
+		if (OpenUpdateFolderBtn != null) OpenUpdateFolderBtn.Content = I18n.T("OpenUpdateFolderBtnText");
+		if (UpdateAdvancedOptionsBadge != null) UpdateAdvancedOptionsBadge.Text = I18n.T("UpdateAdvancedOptionsBadge");
+		if (ChinaFastDownloadBadge != null) ChinaFastDownloadBadge.Text = I18n.T("ChinaFastDownloadBadge");
+		if (RollbackPackageArchLabel != null) RollbackPackageArchLabel.Text = I18n.T("RollbackPackageArchLabel");
+		if (RollbackChangelogHeaderLabel != null) RollbackChangelogHeaderLabel.Text = I18n.T("RollbackChangelogHeaderLabel");
+		if (LanguageAutoItem != null) LanguageAutoItem.Content = I18n.T("LanguageFollowSystem");
+
+		// Tab 3 ToolTips
+		if (Tab4TestOcrBtn != null) Tab4TestOcrBtn.ToolTip = I18n.T("TipTestOcr");
+		if (Tab4ConfigOcrBtn != null) Tab4ConfigOcrBtn.ToolTip = I18n.T("TipConfigOcr");
+		if (TrimMemoryButton != null) TrimMemoryButton.ToolTip = I18n.T("TipTrimMemory");
+		if (SaveNewProfileBtn != null) SaveNewProfileBtn.ToolTip = I18n.T("TipSaveNewProfile");
+		if (RenameProfileBtn != null) RenameProfileBtn.ToolTip = I18n.T("TipRenameProfile");
+		if (DeleteProfileBtn != null) DeleteProfileBtn.ToolTip = I18n.T("TipDeleteProfile");
+		if (ImportConfigButton != null) ImportConfigButton.ToolTip = I18n.T("TipImportConfig");
+		if (ExportConfigButton != null) ExportConfigButton.ToolTip = I18n.T("TipExportConfig");
+		if (ResetDefaultConfigBtn != null) ResetDefaultConfigBtn.ToolTip = I18n.T("TipResetConfig");
+		if (OpenLogFolderButton != null) OpenLogFolderButton.ToolTip = I18n.T("TipOpenLogFolder");
+		if (ViewTodayLogButton != null) ViewTodayLogButton.ToolTip = I18n.T("TipViewTodayLog");
+
 		SetTileSettingsExpanded(TileSettingsContentPanel?.Visibility == Visibility.Visible);
 		UpdateLinkSubActionsButtonUi();
 		RefreshSlots();
@@ -14654,7 +14694,7 @@ public partial class SettingsWindow : Window
 
 				if (UpdateStatusBadgeText != null)
 				{
-					UpdateStatusBadgeText.Text = $"发现新版本 {rel.TagName}";
+					UpdateStatusBadgeText.Text = string.Format(I18n.T("UpdateStatusFoundNew"), rel.TagName);
 					UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 158, 11));
 				}
 				if (UpdateStatusBadge != null)
@@ -14663,24 +14703,24 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateStatusDescText != null)
 				{
-					UpdateStatusDescText.Text = $"检测到更高版本 {rel.TagName} 可供升级！发布于 {rel.PublishedAt:yyyy-MM-dd HH:mm}。";
+					UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusFoundNewDesc"), rel.TagName, $"{rel.PublishedAt:yyyy-MM-dd HH:mm}");
 				}
 
 				if (UpdateNewVersionTagText != null)
 				{
-					UpdateNewVersionTagText.Text = $"🎉 发现新版本 {rel.TagName}";
+					UpdateNewVersionTagText.Text = string.Format(I18n.T("UpdateNewVersionTag"), rel.TagName);
 				}
 				if (UpdateReleaseChannelTag != null)
 				{
-					UpdateReleaseChannelTag.Text = rel.IsPrerelease ? "尝鲜测试版 (Pre-release)" : "正式稳定版 (Stable)";
+					UpdateReleaseChannelTag.Text = rel.IsPrerelease ? I18n.T("ReleaseChannelBeta") : I18n.T("ReleaseChannelStable");
 				}
 				if (UpdateReleaseDateText != null)
 				{
-					UpdateReleaseDateText.Text = $"发布于 {rel.PublishedAt:yyyy-MM-dd HH:mm} · GitHub Releases";
+					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{rel.PublishedAt:yyyy-MM-dd HH:mm}");
 				}
 				if (UpdateChangelogTextBlock != null)
 				{
-					UpdateChangelogTextBlock.Text = string.IsNullOrWhiteSpace(rel.Body) ? "作者暂未提供更新日志说明。" : rel.Body;
+					UpdateChangelogTextBlock.Text = string.IsNullOrWhiteSpace(rel.Body) ? I18n.T("NoChangelogAvailable") : rel.Body;
 				}
 
 				if (UpdateNewVersionPanel != null)
@@ -14701,7 +14741,7 @@ public partial class SettingsWindow : Window
 				_latestReleaseInfo = rel;
 				if (UpdateStatusBadgeText != null)
 				{
-					UpdateStatusBadgeText.Text = "当前已是最新版本";
+					UpdateStatusBadgeText.Text = I18n.T("UpdateStatusUpToDate");
 					UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
 				}
 				if (UpdateStatusBadge != null)
@@ -14710,7 +14750,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateStatusDescText != null)
 				{
-					UpdateStatusDescText.Text = $"当前运行版本: StarPie v{AppVersionInfo.DisplayVersion} (64位)。线上最新版本: {rel.TagName}。上次检查: {ConfigManager.CurrentConfig?.LastCheckUpdateTime}";
+					UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusUpToDateDesc"), AppVersionInfo.DisplayVersion, rel.TagName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
 				}
 				if (UpdateNewVersionPanel != null)
 				{
@@ -14723,7 +14763,7 @@ public partial class SettingsWindow : Window
 				{
 					if (UpdateStatusBadgeText != null)
 					{
-						UpdateStatusBadgeText.Text = "检查更新受阻";
+						UpdateStatusBadgeText.Text = I18n.T("UpdateStatusError");
 						UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(239, 68, 68));
 					}
 					if (UpdateStatusBadge != null)
@@ -14732,7 +14772,7 @@ public partial class SettingsWindow : Window
 					}
 					if (UpdateStatusDescText != null)
 					{
-						UpdateStatusDescText.Text = "未能从 GitHub 自动获取到 Release 数据，可点击右侧「🌐 网页发布页」手动前往查看。";
+						UpdateStatusDescText.Text = I18n.T("UpdateStatusErrorDesc");
 					}
 				}
 			}
@@ -14746,7 +14786,7 @@ public partial class SettingsWindow : Window
 			if (CheckUpdateNowBtn != null)
 			{
 				CheckUpdateNowBtn.IsEnabled = true;
-				CheckUpdateNowBtn.Content = "🔄 立即检查更新";
+				CheckUpdateNowBtn.Content = I18n.T("BtnCheckUpdate");
 			}
 		}
 	}
@@ -14987,7 +15027,7 @@ public partial class SettingsWindow : Window
 		if (RollbackDetailTagText != null) RollbackDetailTagText.Text = rel.TagName;
 		if (RollbackDetailChannelText != null)
 		{
-			RollbackDetailChannelText.Text = rel.IsPrerelease ? "尝鲜测试版 (Pre-release)" : "正式稳定版 (Stable)";
+			RollbackDetailChannelText.Text = rel.IsPrerelease ? I18n.T("ReleaseChannelBeta") : I18n.T("ReleaseChannelStable");
 		}
 		if (RollbackDetailChannelBorder != null)
 		{
@@ -14997,17 +15037,17 @@ public partial class SettingsWindow : Window
 		}
 		if (RollbackDetailDateText != null)
 		{
-			RollbackDetailDateText.Text = $"· 发布于 {rel.PublishedAt:yyyy-MM-dd HH:mm}";
+			RollbackDetailDateText.Text = string.Format(I18n.T("RollbackDetailDateFmt"), $"{rel.PublishedAt:yyyy-MM-dd HH:mm}");
 		}
 		if (RollbackInstallTypeText != null)
 		{
 			RollbackInstallTypeText.Text = UpdateManager.Instance.IsCurrentInstallationStandalone()
-				? "独立免安装单文件版 (Standalone)"
-				: "依赖 .NET 运行时轻量版 (Lightweight)";
+				? I18n.T("RollbackArchStandalone")
+				: I18n.T("RollbackArchLightweight");
 		}
 		if (RollbackChangelogText != null)
 		{
-			RollbackChangelogText.Text = string.IsNullOrWhiteSpace(rel.Body) ? "作者暂未提供此历史版本更新日志说明。" : rel.Body;
+			RollbackChangelogText.Text = string.IsNullOrWhiteSpace(rel.Body) ? I18n.T("NoChangelogAvailable") : rel.Body;
 		}
 	}
 
@@ -15046,7 +15086,7 @@ public partial class SettingsWindow : Window
 		if (UpdateReadyToInstallPanel != null) UpdateReadyToInstallPanel.Visibility = Visibility.Collapsed;
 		if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Visible;
 
-		if (UpdateDownloadingTitleText != null) UpdateDownloadingTitleText.Text = $"正在高速下载历史版本 {fileName}...";
+		if (UpdateDownloadingTitleText != null) UpdateDownloadingTitleText.Text = string.Format(I18n.T("RollbackDownloadingFmt"), fileName);
 		if (UpdateDownloadPercentText != null) UpdateDownloadPercentText.Text = "0%";
 		if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = 0;
 		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = "⚡ 连接下载源中...";

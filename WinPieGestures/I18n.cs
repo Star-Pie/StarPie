@@ -6980,6 +6980,329 @@ public static class I18n
 			[LanguageCode.En] = " (linked sub-wheel)",
 			[LanguageCode.Ja] = "（サブホイール連動）"
 		};
+		// --- Tab 3 (System & Advanced) ---
+		dictionary["ContributorsRefreshTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "向 GitHub API 请求最新贡献者数据",
+			[LanguageCode.ZhTw] = "向 GitHub API 請求最新貢獻者資料",
+			[LanguageCode.En] = "Fetch latest contributors from GitHub API",
+			[LanguageCode.Ja] = "GitHub API から最新の貢献者データを取得"
+		};
+		dictionary["ViewReleasesWebBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 网页发布页",
+			[LanguageCode.ZhTw] = "🌐 網頁發布頁",
+			[LanguageCode.En] = "🌐 Releases Page",
+			[LanguageCode.Ja] = "🌐 リリースページ"
+		};
+		dictionary["ViewReleasesWebBtnToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接在默认浏览器中打开 GitHub Releases 发布页",
+			[LanguageCode.ZhTw] = "直接在預設瀏覽器中打開 GitHub Releases 發布頁",
+			[LanguageCode.En] = "Open GitHub Releases page in your default browser",
+			[LanguageCode.Ja] = "デフォルトブラウザで GitHub Releases ページを開く"
+		};
+		dictionary["StartDownloadUpdateBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬇️ 立即下载更新",
+			[LanguageCode.ZhTw] = "⬇️ 立即下載更新",
+			[LanguageCode.En] = "⬇️ Download Update",
+			[LanguageCode.Ja] = "⬇️ 今すぐダウンロード"
+		};
+		dictionary["OpenWebReleaseBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 前往网页",
+			[LanguageCode.ZhTw] = "🌐 前往網頁",
+			[LanguageCode.En] = "🌐 Open Webpage",
+			[LanguageCode.Ja] = "🌐 Web ページへ"
+		};
+		dictionary["UpdateDownloadPkgLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📦 下载版本:",
+			[LanguageCode.ZhTw] = "📦 下載版本:",
+			[LanguageCode.En] = "📦 Package:",
+			[LanguageCode.Ja] = "📦 パッケージ:"
+		};
+		dictionary["UpdatePkgStandaloneRadioText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "独立免安装单文件版 (~68 MB, 推荐)",
+			[LanguageCode.ZhTw] = "獨立免安裝單檔案版 (~68 MB, 推薦)",
+			[LanguageCode.En] = "Standalone Single-File (~68 MB, Recommended)",
+			[LanguageCode.Ja] = "スタンドアロン単一ファイル版 (~68 MB, 推奨)"
+		};
+		dictionary["UpdatePkgLightweightRadioText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "依赖 .NET 8 运行时轻量版 (~2.7 MB)",
+			[LanguageCode.ZhTw] = "依賴 .NET 8 執行階段輕量版 (~2.7 MB)",
+			[LanguageCode.En] = "Lightweight (.NET 8 Runtime, ~2.7 MB)",
+			[LanguageCode.Ja] = ".NET 8 ランタイム依存軽量版 (~2.7 MB)"
+		};
+		dictionary["UpdateChangelogLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📋 详细更新日志:",
+			[LanguageCode.ZhTw] = "📋 詳細更新日誌:",
+			[LanguageCode.En] = "📋 Detailed Changelog:",
+			[LanguageCode.Ja] = "📋 詳細更新履歴:"
+		};
+		dictionary["CancelDownloadBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✖ 取消下载",
+			[LanguageCode.ZhTw] = "✖ 取消下載",
+			[LanguageCode.En] = "✖ Cancel Download",
+			[LanguageCode.Ja] = "✖ ダウンロードをキャンセル"
+		};
+		dictionary["UpdateReadyTitleText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "新版本已完整下载就绪",
+			[LanguageCode.ZhTw] = "新版本已完整下載就緒",
+			[LanguageCode.En] = "New Version Downloaded and Ready",
+			[LanguageCode.Ja] = "新しいバージョンのダウンロードが完了しました"
+		};
+		dictionary["UpdateReadyDescText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "点击立即重启，将优雅保存当前配置并静默更新覆盖程序，完成后自动唤起新版本。",
+			[LanguageCode.ZhTw] = "點擊立即重啟，將優雅儲存目前設定並靜默更新覆蓋程式，完成後自動喚起新版本。",
+			[LanguageCode.En] = "Click to restart now. Settings will be safely saved, the update installed quietly, and the new version relaunched.",
+			[LanguageCode.Ja] = "今すぐ再起動をクリックすると、現在の設定を安全に保存してサイレント更新を行い、完了後に自動起動します。"
+		};
+		dictionary["ApplyRestartUpdateBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🚀 立即退出并重启更新",
+			[LanguageCode.ZhTw] = "🚀 立即結束並重啟更新",
+			[LanguageCode.En] = "🚀 Restart to Update",
+			[LanguageCode.Ja] = "🚀 終了して更新を再起動"
+		};
+		dictionary["OpenUpdateFolderBtnText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📂 打开文件位置",
+			[LanguageCode.ZhTw] = "📂 開啟檔案位置",
+			[LanguageCode.En] = "📂 Open File Location",
+			[LanguageCode.Ja] = "📂 ファイルの場所を開く"
+		};
+		dictionary["UpdateAdvancedOptionsBadge"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "高级选项",
+			[LanguageCode.ZhTw] = "進階選項",
+			[LanguageCode.En] = "Advanced",
+			[LanguageCode.Ja] = "詳細設定"
+		};
+		dictionary["ChinaFastDownloadBadge"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "国内极速下载",
+			[LanguageCode.ZhTw] = "國內極速下載",
+			[LanguageCode.En] = "Fast Mirror",
+			[LanguageCode.Ja] = "高速ミラー"
+		};
+		dictionary["RollbackPackageArchLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "安装包架构:",
+			[LanguageCode.ZhTw] = "安裝套件架構:",
+			[LanguageCode.En] = "Package Architecture:",
+			[LanguageCode.Ja] = "パッケージアーキテクチャ:"
+		};
+		dictionary["RollbackChangelogHeaderLabel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📋 历史更新日志摘要:",
+			[LanguageCode.ZhTw] = "📋 歷史更新日誌摘要:",
+			[LanguageCode.En] = "📋 Historical Changelog Summary:",
+			[LanguageCode.Ja] = "📋 過去の更新履歴概要:"
+		};
+		dictionary["LanguageFollowSystem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ [SYS] 跟随系统",
+			[LanguageCode.ZhTw] = "🖥️ [SYS] 跟隨系統",
+			[LanguageCode.En] = "🖥️ [SYS] Follow System",
+			[LanguageCode.Ja] = "🖥️ [SYS] システムに従う"
+		};
+		dictionary["TipTestOcr"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "立即启动全屏框选测试当前 OCR 识别配置",
+			[LanguageCode.ZhTw] = "立即啟動全螢幕框選測試目前 OCR 識別設定",
+			[LanguageCode.En] = "Launch full-screen area selection to test current OCR configuration",
+			[LanguageCode.Ja] = "全画面範囲選択を起動して現在の OCR 設定をテスト"
+		};
+		dictionary["TipConfigOcr"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开 OCR 识别引擎与 API 参数设置弹窗",
+			[LanguageCode.ZhTw] = "開啟 OCR 識別引擎與 API 參數設定彈窗",
+			[LanguageCode.En] = "Open OCR recognition engine and API parameter settings dialog",
+			[LanguageCode.Ja] = "OCR 認識エンジンと API パラメータ設定ダイアログを開く"
+		};
+		dictionary["TipTrimMemory"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "立即清理未引用的工作集物理内存",
+			[LanguageCode.ZhTw] = "立即清理未參照的工作集實體記憶體",
+			[LanguageCode.En] = "Immediately purge unreferenced working set physical memory",
+			[LanguageCode.Ja] = "参照されていないワーキングセット物理メモリを直ちに解放"
+		};
+		dictionary["TipSaveNewProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将当前全部轮盘动作与设置另存为一套全新的配置方案",
+			[LanguageCode.ZhTw] = "將目前全部輪盤動作與設定另存為一套全新的設定方案",
+			[LanguageCode.En] = "Save current radial actions and settings as a new profile",
+			[LanguageCode.Ja] = "現在の全ホイールアクションと設定を新しいプロファイルとして保存"
+		};
+		dictionary["TipRenameProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重命名当前选中的配置方案",
+			[LanguageCode.ZhTw] = "重新命名目前選取的設定方案",
+			[LanguageCode.En] = "Rename the currently selected profile",
+			[LanguageCode.Ja] = "現在選択されているプロファイルを名前変更"
+		};
+		dictionary["TipDeleteProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "删除当前选中的配置方案（需保留至少一套）",
+			[LanguageCode.ZhTw] = "刪除目前選取的設定方案（需保留至少一套）",
+			[LanguageCode.En] = "Delete the currently selected profile (at least one must remain)",
+			[LanguageCode.Ja] = "現在選択されているプロファイルを削除（最低1つ保持が必要）"
+		};
+		dictionary["TipImportConfig"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "导入外部 StarPie JSON 配置文件并自动收纳入配置方案列表",
+			[LanguageCode.ZhTw] = "匯入外部 StarPie JSON 設定檔並自動納入設定方案清單",
+			[LanguageCode.En] = "Import external StarPie JSON config and add it to profiles list",
+			[LanguageCode.Ja] = "外部の StarPie JSON 設定ファイルをインポートしてプロファイル一覧に追加"
+		};
+		dictionary["TipExportConfig"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将选中的配置方案导出为单独的 JSON 备份文件",
+			[LanguageCode.ZhTw] = "將選取的設定方案匯出為獨立的 JSON 備份檔案",
+			[LanguageCode.En] = "Export selected profile as an individual JSON backup file",
+			[LanguageCode.Ja] = "選択したプロファイルを個別の JSON バックアップファイルとしてエクスポート"
+		};
+		dictionary["TipResetConfig"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "恢复初始默认轮盘手势与设置（不会影响其它已保存方案）",
+			[LanguageCode.ZhTw] = "還原初始預設輪盤手勢與設定（不會影響其他已儲存方案）",
+			[LanguageCode.En] = "Reset default gestures and settings (other saved profiles are unaffected)",
+			[LanguageCode.Ja] = "初期デフォルトのジェスチャーと設定をリセット（保存済み他プロファイルには影響しません）"
+		};
+		dictionary["TipOpenLogFolder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "在资源管理器中打开日志文件夹",
+			[LanguageCode.ZhTw] = "在檔案總管中開啟記錄檔資料夾",
+			[LanguageCode.En] = "Open log directory in File Explorer",
+			[LanguageCode.Ja] = "エクスプローラーでログフォルダーを開く"
+		};
+		dictionary["TipViewTodayLog"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "在系统默认编辑器中打开当天的日志文件",
+			[LanguageCode.ZhTw] = "在系統預設編輯器中開啟當天的記錄檔案",
+			[LanguageCode.En] = "Open today's log file in default text editor",
+			[LanguageCode.Ja] = "システムの既定エディタで今日のログファイルを開く"
+		};
+		dictionary["UpdateStatusChecking"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正在检查更新...",
+			[LanguageCode.ZhTw] = "正在檢查更新...",
+			[LanguageCode.En] = "Checking for updates...",
+			[LanguageCode.Ja] = "更新を確認中..."
+		};
+		dictionary["UpdateStatusFoundNew"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "发现新版本 {0}",
+			[LanguageCode.ZhTw] = "發現新版本 {0}",
+			[LanguageCode.En] = "Update Available: {0}",
+			[LanguageCode.Ja] = "新しいバージョンが見つかりました: {0}"
+		};
+		dictionary["UpdateStatusFoundNewDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "检测到更高版本 {0} 可供升级！发布于 {1}。",
+			[LanguageCode.ZhTw] = "檢測到更高版本 {0} 可供升級！發布於 {1}。",
+			[LanguageCode.En] = "New version {0} is available! Released on {1}.",
+			[LanguageCode.Ja] = "新しいバージョン {0} が利用可能です！公開日: {1}。"
+		};
+		dictionary["UpdateNewVersionTag"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🎉 发现新版本 {0}",
+			[LanguageCode.ZhTw] = "🎉 發現新版本 {0}",
+			[LanguageCode.En] = "🎉 New Version {0} Available",
+			[LanguageCode.Ja] = "🎉 新バージョン {0} が見つかりました"
+		};
+		dictionary["ReleaseChannelBeta"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "尝鲜测试版 (Pre-release)",
+			[LanguageCode.ZhTw] = "嘗鮮測試版 (Pre-release)",
+			[LanguageCode.En] = "Pre-release (Beta)",
+			[LanguageCode.Ja] = "プレビューテスト版 (Pre-release)"
+		};
+		dictionary["ReleaseChannelStable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正式稳定版 (Stable)",
+			[LanguageCode.ZhTw] = "正式穩定版 (Stable)",
+			[LanguageCode.En] = "Official Stable",
+			[LanguageCode.Ja] = "正式安定版 (Stable)"
+		};
+		dictionary["UpdateReleaseDateFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "发布于 {0} · GitHub Releases",
+			[LanguageCode.ZhTw] = "發布於 {0} · GitHub Releases",
+			[LanguageCode.En] = "Released on {0} · GitHub Releases",
+			[LanguageCode.Ja] = "公開日: {0} · GitHub Releases"
+		};
+		dictionary["NoChangelogAvailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "作者暂未提供更新日志说明。",
+			[LanguageCode.ZhTw] = "作者暫未提供更新日誌說明。",
+			[LanguageCode.En] = "No changelog notes provided for this release.",
+			[LanguageCode.Ja] = "このリリースの更新履歴は提供されていません。"
+		};
+		dictionary["UpdateStatusUpToDate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前已是最新版本",
+			[LanguageCode.ZhTw] = "目前已是最新版本",
+			[LanguageCode.En] = "StarPie is up to date",
+			[LanguageCode.Ja] = "現在は最新バージョンです"
+		};
+		dictionary["UpdateStatusUpToDateDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前运行版本: StarPie v{0} (64位)。线上最新版本: {1}。上次检查: {2}",
+			[LanguageCode.ZhTw] = "目前執行版本: StarPie v{0} (64位元)。線上最新版本: {1}。上次檢查: {2}",
+			[LanguageCode.En] = "Current version: StarPie v{0} (64-bit). Latest online: {1}. Last checked: {2}",
+			[LanguageCode.Ja] = "現在のバージョン: StarPie v{0} (64ビット)。オンライン最新: {1}。最終確認: {2}"
+		};
+		dictionary["UpdateStatusError"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "检查更新受阻",
+			[LanguageCode.ZhTw] = "檢查更新受阻",
+			[LanguageCode.En] = "Update Check Failed",
+			[LanguageCode.Ja] = "更新の確認に失敗しました"
+		};
+		dictionary["UpdateStatusErrorDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未能从 GitHub 自动获取到 Release 数据，可点击右侧「🌐 网页发布页」手动前往查看。",
+			[LanguageCode.ZhTw] = "未能從 GitHub 自動取得 Release 資料，可點擊右側「🌐 網頁發布頁」手動前往查看。",
+			[LanguageCode.En] = "Failed to fetch release data from GitHub. Click '🌐 Releases Page' to view manually.",
+			[LanguageCode.Ja] = "GitHub からリリースデータを取得できませんでした。「🌐 リリースページ」をクリックして手動で確認してください。"
+		};
+		dictionary["RollbackDetailDateFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "· 发布于 {0}",
+			[LanguageCode.ZhTw] = "· 發布於 {0}",
+			[LanguageCode.En] = "· Released on {0}",
+			[LanguageCode.Ja] = "· 公開日: {0}"
+		};
+		dictionary["RollbackArchStandalone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "独立免安装单文件版 (Standalone)",
+			[LanguageCode.ZhTw] = "獨立免安裝單檔案版 (Standalone)",
+			[LanguageCode.En] = "Standalone Single-File (Standalone)",
+			[LanguageCode.Ja] = "スタンドアロン単一ファイル版 (Standalone)"
+		};
+		dictionary["RollbackArchLightweight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "依赖 .NET 运行时轻量版 (Lightweight)",
+			[LanguageCode.ZhTw] = "依賴 .NET 執行階段輕量版 (Lightweight)",
+			[LanguageCode.En] = "Lightweight (.NET Dependent)",
+			[LanguageCode.Ja] = ".NET ランタイム依存軽量版 (Lightweight)"
+		};
+		dictionary["RollbackDownloadingFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正在高速下载历史版本 {0}...",
+			[LanguageCode.ZhTw] = "正在高速下載歷史版本 {0}...",
+			[LanguageCode.En] = "Downloading historical version {0}...",
+			[LanguageCode.Ja] = "過去のバージョン {0} を高速ダウンロード中..."
+		};
 		Translations = dictionary;
 	}
 }

@@ -3797,14 +3797,14 @@
                       <!-- 发行包选择 -->
                       <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,4,0,8">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                          <TextBlock Text="📦 下载版本:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                          <TextBlock Name="UpdateDownloadPkgLabel" Text="📦 下载版本:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0" VerticalAlignment="Center" />
                           <RadioButton Name="UpdatePkgStandaloneRadio" Content="独立免安装单文件版 (~68 MB, 推荐)" IsChecked="True" GroupName="UpdatePkgGroup" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" />
                           <RadioButton Name="UpdatePkgLightweightRadio" Content="依赖 .NET 8 运行时轻量版 (~2.7 MB)" GroupName="UpdatePkgGroup" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                       </Border>
 
                       <!-- 更新日志预览 -->
-                      <TextBlock Text="📋 详细更新日志:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,4" />
+                      <TextBlock Name="UpdateChangelogLabel" Text="📋 详细更新日志:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,4" />
                       <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
                         <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                           <TextBlock Name="UpdateChangelogTextBlock" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18" />
@@ -3849,9 +3849,9 @@
                       <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                         <StackPanel Orientation="Horizontal">
                           <TextBlock Text="✅" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" />
-                          <TextBlock Text="新版本已完整下载就绪" FontSize="13" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center" />
+                          <TextBlock Name="UpdateReadyTitleText" Text="新版本已完整下载就绪" FontSize="13" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBlock Text="点击立即重启，将优雅保存当前配置并静默更新覆盖程序，完成后自动唤起新版本。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        <TextBlock Name="UpdateReadyDescText" Text="点击立即重启，将优雅保存当前配置并静默更新覆盖程序，完成后自动唤起新版本。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
                       </StackPanel>
                       <WrapPanel Grid.Column="1" VerticalAlignment="Center">
                         <Button Name="ApplyRestartUpdateBtn" Content="🚀 立即退出并重启更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="14,0" Margin="0,0,8,0" Click="ApplyRestartUpdateBtn_Click" />
@@ -3868,7 +3868,7 @@
                           <TextBlock Text="⚙️" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
                           <TextBlock Name="UpdateAdvancedSettingsExpanderTitle" Text="更新偏好、下载加速与历史版本回退" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                           <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="高级选项" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Name="UpdateAdvancedOptionsBadge" Text="高级选项" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
                           </Border>
                         </StackPanel>
                       </HeaderedContentControl.Header>
@@ -3909,8 +3909,8 @@
                                 <TextBlock Name="UpdateChannelDescText" Text="选择稳定版或尝鲜版" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                               </StackPanel>
                               <ComboBox Name="UpdateChannelComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateChannelComboBox_SelectionChanged">
-                                <ComboBoxItem Tag="Stable" Content="🌟 正式稳定版" />
-                                <ComboBoxItem Tag="Beta" Content="🚀 尝鲜测试版" />
+                                <ComboBoxItem x:Name="UpdateChannelStableItem" Tag="Stable" Content="🌟 正式稳定版" />
+                                <ComboBoxItem x:Name="UpdateChannelBetaItem" Tag="Beta" Content="🚀 尝鲜测试版" />
                               </ComboBox>
                             </Grid>
 
@@ -3925,16 +3925,16 @@
                                   <TextBlock Text="⚡" FontSize="13" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center" />
                                   <TextBlock Name="UpdateProxyTitleText" Text="GitHub 下载加速镜像源" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                                   <Border Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Text="国内极速下载" FontSize="10" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                    <TextBlock Name="ChinaFastDownloadBadge" Text="国内极速下载" FontSize="10" Foreground="{DynamicResource AccentPrimaryBrush}" />
                                   </Border>
                                 </StackPanel>
                                 <TextBlock Name="UpdateProxyDescText" Text="解决国内访问 GitHub Releases 丢包或限速问题，自动加速代理下载" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                               </StackPanel>
                               <ComboBox Name="UpdateProxyComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateProxyComboBox_SelectionChanged">
-                                <ComboBoxItem Tag="ghfast" Content="⚡ 镜像源 1 (ghfast.top 推荐)" />
-                                <ComboBoxItem Tag="gh-proxy" Content="⚡ 镜像源 2 (gh-proxy.com 备用)" />
-                                <ComboBoxItem Tag="mirror" Content="⚡ 镜像源 3 (mirror.ghproxy.com)" />
-                                <ComboBoxItem Tag="direct" Content="🌐 官方直连" />
+                                <ComboBoxItem x:Name="UpdateProxyGhfastItem" Tag="ghfast" Content="⚡ 镜像源 1 (ghfast.top 推荐)" />
+                                <ComboBoxItem x:Name="UpdateProxyGhproxyItem" Tag="gh-proxy" Content="⚡ 镜像源 2 (gh-proxy.com 备用)" />
+                                <ComboBoxItem x:Name="UpdateProxyMirrorItem" Tag="mirror" Content="⚡ 镜像源 3 (mirror.ghproxy.com)" />
+                                <ComboBoxItem x:Name="UpdateProxyDirectItem" Tag="direct" Content="🌐 官方直连" />
                               </ComboBox>
                             </Grid>
                           </Grid>
@@ -3982,11 +3982,11 @@
                                     <TextBlock Name="RollbackDetailDateText" Text="· 发布于 2026-09-08" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
                                   </StackPanel>
                                   <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="安装包架构:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Name="RollbackPackageArchLabel" Text="安装包架构:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
                                     <TextBlock Name="RollbackInstallTypeText" Text="独立免安装版" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                                   </StackPanel>
                                 </Grid>
-                                <TextBlock Text="📋 历史更新日志摘要:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,4" />
+                                <TextBlock Name="RollbackChangelogHeaderLabel" Text="📋 历史更新日志摘要:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,4" />
                                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8">
                                   <ScrollViewer MaxHeight="90" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                     <TextBlock Name="RollbackChangelogText" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="16" />
@@ -4023,7 +4023,7 @@
                     <ComboBoxItem Tag="zh-TW" Content="🌐 [TW] 繁體中文" />
                     <ComboBoxItem Tag="en" Content="🌐 [EN] English" />
                     <ComboBoxItem Tag="ja" Content="🌐 [JA] 日本語" />
-                    <ComboBoxItem Tag="Auto" Content="🖥️ [SYS] 跟随系统" />
+                    <ComboBoxItem Name="LanguageAutoItem" Tag="Auto" Content="🖥️ [SYS] 跟随系统" />
                   </ComboBox>
                 </Grid>
               </Border>
