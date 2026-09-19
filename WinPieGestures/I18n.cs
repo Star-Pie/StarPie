@@ -2183,9 +2183,9 @@ public static class I18n
 		dictionary["LanguageTitle"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "界面语言",
-			[LanguageCode.ZhTw] = "介面語言 (Display Language)",
+			[LanguageCode.ZhTw] = "介面語言",
 			[LanguageCode.En] = "Display Language",
-			[LanguageCode.Ja] = "表示言語 (Display Language)"
+			[LanguageCode.Ja] = "表示言語"
 		};
 		dictionary["LanguageDesc"] = new Dictionary<LanguageCode, string>
 		{
@@ -7109,10 +7109,10 @@ public static class I18n
 		};
 		dictionary["LanguageFollowSystem"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "🖥️ [SYS] 跟随系统",
-			[LanguageCode.ZhTw] = "🖥️ [SYS] 跟隨系統",
-			[LanguageCode.En] = "🖥️ [SYS] Follow System",
-			[LanguageCode.Ja] = "🖥️ [SYS] システムに従う"
+			[LanguageCode.ZhCn] = "🖥️ 跟随系统",
+			[LanguageCode.ZhTw] = "🖥️ 跟隨系統",
+			[LanguageCode.En] = "🖥️ Follow System",
+			[LanguageCode.Ja] = "🖥️ システムに従う"
 		};
 		dictionary["TipTestOcr"] = new Dictionary<LanguageCode, string>
 		{

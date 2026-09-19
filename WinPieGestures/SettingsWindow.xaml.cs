@@ -14352,12 +14352,12 @@ public partial class SettingsWindow : Window
 			{
 				string name = tag.ToLowerInvariant() switch
 				{
-					"light" => "极简纯白",
-					"dark" => "极夜曜黑",
-					"titaniumgray" => "钛金深灰",
-					_ => "跟随系统"
+					"light" => I18n.T("SidebarThemeLight"),
+					"dark" => I18n.T("SidebarThemeDark"),
+					"titaniumgray" => I18n.T("SidebarThemeGray"),
+					_ => I18n.T("SidebarThemeSystem")
 				};
-				SidebarThemeCollapsedButton.ToolTip = $"当前界面主题: {name} (点击快速循环切换)";
+				SidebarThemeCollapsedButton.ToolTip = I18n.T("SidebarThemeToggleTip") + ": " + name;
 			}
 		}
 		finally

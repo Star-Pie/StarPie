@@ -90,9 +90,9 @@
                         <TextBlock Text="优先识别语言:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,10,0" />
                         <ComboBox Name="LocalLangComboBox" Grid.Column="1" Height="28" FontSize="11">
                             <ComboBoxItem Tag="zh-Hans" Content="简体中文 (zh-Hans)" IsSelected="True" />
-                            <ComboBoxItem Tag="zh-Hant" Content="繁体中文 (zh-Hant)" />
-                            <ComboBoxItem Tag="en-US" Content="英语 (en-US)" />
-                            <ComboBoxItem Tag="ja-JP" Content="日语 (ja-JP)" />
+                            <ComboBoxItem Tag="zh-Hant" Content="繁體中文 (zh-Hant)" />
+                            <ComboBoxItem Tag="en-US" Content="English (en-US)" />
+                            <ComboBoxItem Tag="ja-JP" Content="日本語 (ja-JP)" />
                         </ComboBox>
                     </Grid>
                     <Border Name="LocalLangStatusAlertBorder" Background="#25F59E0B" BorderBrush="#80F59E0B" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,8,0,0" Visibility="Collapsed">
