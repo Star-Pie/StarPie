@@ -3190,6 +3190,14 @@ public partial class SettingsWindow : Window
 		if (Tab4_Ms_130_Title != null) Tab4_Ms_130_Title.Text = I18n.T("Tab4_Ms_130_Title");
 		if (Tab4_Ms_130_Desc != null) Tab4_Ms_130_Desc.Text = I18n.T("Tab4_Ms_130_Desc");
 
+		if (OpenCustomSoundConfigButton != null) OpenCustomSoundConfigButton.ToolTip = I18n.T("TipToggleCustomSoundConfig");
+		if (SoundPreviewButton != null) SoundPreviewButton.ToolTip = I18n.T("TipSoundPreview");
+		if (BrowseBlacklistButton != null) BrowseBlacklistButton.ToolTip = I18n.T("TipBrowseBlacklist");
+		if (AddBlacklistButton != null) AddBlacklistButton.ToolTip = I18n.T("TipAddBlacklist");
+		if (DuplicateProfileBtn != null) DuplicateProfileBtn.ToolTip = I18n.T("TipDuplicateProfile");
+		if (AddProfileButton != null) AddProfileButton.ToolTip = I18n.T("TipAddProfile");
+		if (AddCustomProfileButton != null) AddCustomProfileButton.ToolTip = I18n.T("TipAddCustomProfile");
+
 		SetTileSettingsExpanded(TileSettingsContentPanel?.Visibility == Visibility.Visible);
 		UpdateLinkSubActionsButtonUi();
 		RefreshSlots();

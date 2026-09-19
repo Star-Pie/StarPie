@@ -7935,6 +7935,55 @@ public static class I18n
 			[LanguageCode.En] = "重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。",
 			[LanguageCode.Ja] = "重塑经典、极简与毛玻璃主题，支持保存多套自定义十六进制颜色预设。"
 		};
+		dictionary["TipToggleCustomSoundConfig"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "展开或关闭自定义交互音效调音台",
+			[LanguageCode.ZhTw] = "展開或關閉自訂互動音效調音台",
+			[LanguageCode.En] = "Expand or collapse custom interactive sound mixer",
+			[LanguageCode.Ja] = "カスタムインタラクティブ音効ミキサーを展開または折りたたむ"
+		};
+		dictionary["TipSoundPreview"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "依次播放当前主题的唤出、划过、展开、确认与取消音效",
+			[LanguageCode.ZhTw] = "依序播放目前主題的喚出、劃過、展開、確認與取消音效",
+			[LanguageCode.En] = "Sequentially preview popup, hover, expand, trigger, and cancel sounds",
+			[LanguageCode.Ja] = "現在のテーマの表示、ホバー、展開、確認、キャンセル音をプレビュー"
+		};
+		dictionary["TipBrowseBlacklist"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从已安装软件列表中快速选择要添加的程序",
+			[LanguageCode.ZhTw] = "從已安裝軟體清單中快速選取要新增的程式",
+			[LanguageCode.En] = "Quickly select an app from installed programs",
+			[LanguageCode.Ja] = "インストール済みアプリ一覧から追加するプログラムを選択"
+		};
+		dictionary["TipAddBlacklist"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将输入框中的进程名称加入名单",
+			[LanguageCode.ZhTw] = "將輸入框中的處理程序名稱加入名單",
+			[LanguageCode.En] = "Add process name from input box to list",
+			[LanguageCode.Ja] = "入力ボックスのプロセス名をリストに追加"
+		};
+		dictionary["TipDuplicateProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "将当前方案的所有动作与多层配置复制为新程序方案",
+			[LanguageCode.ZhTw] = "將目前方案的所有動作與多層設定複製為新程式方案",
+			[LanguageCode.En] = "Duplicate all actions and multi-layer settings to a new profile",
+			[LanguageCode.Ja] = "現在の全アクションと多層設定を新しいプロファイルとして複製"
+		};
+		dictionary["TipAddProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从已安装软件或开始菜单中选择程序创建专属配置",
+			[LanguageCode.ZhTw] = "從已安裝軟體或開始功能表中選取程式建立專屬設定",
+			[LanguageCode.En] = "Select a program from installed software or Start Menu to create dedicated profile",
+			[LanguageCode.Ja] = "インストール済みアプリまたはスタートメニューから専用プロファイルを作成"
+		};
+		dictionary["TipAddCustomProfile"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自定义命名创建新的轮盘配置方案",
+			[LanguageCode.ZhTw] = "自訂命名建立新的輪盤設定方案",
+			[LanguageCode.En] = "Create a new radial profile with custom name",
+			[LanguageCode.Ja] = "任意の名前で新しいホイールプロファイルを作成"
+		};
 		Translations = dictionary;
 	}
 }
