@@ -15,11 +15,71 @@ public partial class OcrSettingsDialog : Window
 	public OcrSettingsDialog()
 	{
 		InitializeComponent();
+		AppThemeManager.ApplyTheme(this, AppThemeManager.CurrentEffectiveTheme);
+		ApplyLocalization();
 	}
 
 	private void Window_Loaded(object sender, RoutedEventArgs e)
 	{
 		LoadConfig();
+	}
+
+	public void ApplyLocalization()
+	{
+		base.Title = I18n.T("OcrDialogTitle");
+		if (OcrHeaderTitleText != null) OcrHeaderTitleText.Text = I18n.T("OcrDialogHeader");
+		if (OcrHeaderSubtitleText != null) OcrHeaderSubtitleText.Text = I18n.T("OcrDialogSubtitle");
+		if (ProviderSectionText != null) ProviderSectionText.Text = I18n.T("OcrProviderSection");
+		if (ProviderLocalRadio != null) ProviderLocalRadio.Content = I18n.T("OcrProviderLocal");
+		if (ProviderAiRadio != null) ProviderAiRadio.Content = I18n.T("OcrProviderAi");
+		if (ProviderCustomRadio != null) ProviderCustomRadio.Content = I18n.T("OcrProviderCustom");
+
+		if (LocalEngineTitleText != null) LocalEngineTitleText.Text = I18n.T("OcrLocalTitle");
+		if (LocalEngineDescText != null) LocalEngineDescText.Text = I18n.T("OcrLocalDesc");
+		if (PriorityLangLabelText != null) PriorityLangLabelText.Text = I18n.T("OcrPriorityLang");
+		if (LocalLangStatusAlertText != null) LocalLangStatusAlertText.Text = I18n.T("OcrLocalAlertNoLang");
+		if (OpenOptionalFeaturesButton != null) OpenOptionalFeaturesButton.Content = I18n.T("OcrBtnOpenFeatures");
+
+		if (AiEngineTitleText != null) AiEngineTitleText.Text = I18n.T("OcrAiTitle");
+		if (AiEngineDescText != null) AiEngineDescText.Text = I18n.T("OcrAiDesc");
+		if (AiEndpointLabelText != null) AiEndpointLabelText.Text = I18n.T("OcrAiEndpoint");
+		if (AiApiKeyLabelText != null) AiApiKeyLabelText.Text = I18n.T("OcrAiApiKey");
+		if (AiModelLabelText != null) AiModelLabelText.Text = I18n.T("OcrAiModel");
+		if (AiPromptModeLabelText != null) AiPromptModeLabelText.Text = I18n.T("OcrAiPromptMode");
+
+		if (AiModelPresetItemDefault != null) AiModelPresetItemDefault.Content = I18n.T("OcrAiModelPresetDefault");
+		if (AiModelPresetItemGpt != null) AiModelPresetItemGpt.Content = I18n.T("OcrAiModelPresetGpt");
+		if (AiModelPresetItemQwen != null) AiModelPresetItemQwen.Content = I18n.T("OcrAiModelPresetQwen");
+		if (AiModelPresetItemOllama != null) AiModelPresetItemOllama.Content = I18n.T("OcrAiModelPresetOllama");
+		if (AiModelPresetItemZhipu != null) AiModelPresetItemZhipu.Content = I18n.T("OcrAiModelPresetZhipu");
+
+		if (AiPromptModeItemText != null) AiPromptModeItemText.Content = I18n.T("OcrAiPromptText");
+		if (AiPromptModeItemLatex != null) AiPromptModeItemLatex.Content = I18n.T("OcrAiPromptLatex");
+		if (AiPromptModeItemMarkdown != null) AiPromptModeItemMarkdown.Content = I18n.T("OcrAiPromptMarkdown");
+		if (AiPromptModeItemTranslate != null) AiPromptModeItemTranslate.Content = I18n.T("OcrAiPromptTranslate");
+
+		if (CustomEngineTitleText != null) CustomEngineTitleText.Text = I18n.T("OcrCustomTitle");
+		if (CustomEngineDescText != null) CustomEngineDescText.Text = I18n.T("OcrCustomDesc");
+		if (CustomHttpUrlLabelText != null) CustomHttpUrlLabelText.Text = I18n.T("OcrCustomUrl");
+
+		if (BehaviorsSectionText != null) BehaviorsSectionText.Text = I18n.T("OcrBehaviorsSection");
+		if (AutoCopyCheckBox != null) AutoCopyCheckBox.Content = I18n.T("OcrBehaviorCopy");
+		if (ShowResultWinCheckBox != null) ShowResultWinCheckBox.Content = I18n.T("OcrBehaviorShowWin");
+		if (RemoveCjkSpacesCheckBox != null) RemoveCjkSpacesCheckBox.Content = I18n.T("OcrBehaviorRemoveSpaces");
+		if (MergeLinesCheckBox != null) MergeLinesCheckBox.Content = I18n.T("OcrBehaviorMergeLines");
+
+		if (TestSnippetBtn != null)
+		{
+			TestSnippetBtn.Content = I18n.T("OcrBtnTestSnippet");
+			TestSnippetBtn.ToolTip = I18n.T("OcrTipTestSnippet");
+		}
+		if (TestConnBtn != null)
+		{
+			TestConnBtn.Content = I18n.T("OcrBtnTestConn");
+			TestConnBtn.ToolTip = I18n.T("OcrTipTestConn");
+		}
+		if (CancelBtn != null) CancelBtn.Content = I18n.T("OcrBtnCancel");
+		if (SaveBtn != null) SaveBtn.Content = I18n.T("OcrBtnSave");
 	}
 
 	private void LoadConfig()
@@ -56,7 +116,7 @@ public partial class OcrSettingsDialog : Window
 			if (OcrEngine.AvailableRecognizerLanguages.Count == 0)
 			{
 				LocalLangStatusAlertBorder.Visibility = Visibility.Visible;
-				LocalLangStatusAlertText.Text = "⚠️ 系统未检测到本地 OCR 语言包。建议安装「光学字符识别」可选功能，或切换至上方「AI 视觉模型」。";
+				LocalLangStatusAlertText.Text = I18n.T("OcrAlertNoAvailableLanguages");
 			}
 			else
 			{
@@ -108,7 +168,7 @@ public partial class OcrSettingsDialog : Window
 
 	private async void TestConnectionButton_Click(object sender, RoutedEventArgs e)
 	{
-		TestResultLabel.Text = "⏳ 测试中...";
+		TestResultLabel.Text = I18n.T("OcrMsgTesting");
 		TestResultLabel.Foreground = System.Windows.Media.Brushes.Yellow;
 
 		try
@@ -119,13 +179,13 @@ public partial class OcrSettingsDialog : Window
 				bool supported = OcrEngine.IsLanguageSupported(new Language(langTag));
 				if (supported)
 				{
-					TestResultLabel.Text = "✓ 本地语言包已就绪，支持原生极速识别";
+					TestResultLabel.Text = I18n.T("OcrMsgLocalReady");
 					TestResultLabel.Foreground = System.Windows.Media.Brushes.LightGreen;
 				}
 				else
 				{
 					int count = OcrEngine.AvailableRecognizerLanguages.Count;
-					TestResultLabel.Text = $"⚠️ 当前语言 [{langTag}] 未安装，可用语言包数: {count}";
+					TestResultLabel.Text = string.Format(I18n.T("OcrMsgLocalNotInstalled"), langTag, count);
 					TestResultLabel.Foreground = System.Windows.Media.Brushes.Orange;
 				}
 			}
@@ -140,12 +200,12 @@ public partial class OcrSettingsDialog : Window
 				using HttpResponseMessage resp = await client.GetAsync(ep.TrimEnd('/') + "/models");
 				if (resp.IsSuccessStatusCode || (int)resp.StatusCode == 401 || (int)resp.StatusCode == 400)
 				{
-					TestResultLabel.Text = $"✓ 接口端点连通正常 (HTTP {(int)resp.StatusCode})";
+					TestResultLabel.Text = string.Format(I18n.T("OcrMsgEndpointOk"), (int)resp.StatusCode);
 					TestResultLabel.Foreground = System.Windows.Media.Brushes.LightGreen;
 				}
 				else
 				{
-					TestResultLabel.Text = $"⚠️ 端点响应异常 (HTTP {(int)resp.StatusCode})";
+					TestResultLabel.Text = string.Format(I18n.T("OcrMsgEndpointErr"), (int)resp.StatusCode);
 					TestResultLabel.Foreground = System.Windows.Media.Brushes.Orange;
 				}
 			}
@@ -154,13 +214,13 @@ public partial class OcrSettingsDialog : Window
 				string url = CustomHttpUrlTextBox.Text.Trim();
 				using HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
 				using HttpResponseMessage resp = await client.GetAsync(url);
-				TestResultLabel.Text = $"✓ 微服务已连通 (HTTP {(int)resp.StatusCode})";
+				TestResultLabel.Text = string.Format(I18n.T("OcrMsgCustomOk"), (int)resp.StatusCode);
 				TestResultLabel.Foreground = System.Windows.Media.Brushes.LightGreen;
 			}
 		}
 		catch (Exception ex)
 		{
-			TestResultLabel.Text = $"✕ 连通失败: {ex.Message}";
+			TestResultLabel.Text = string.Format(I18n.T("OcrMsgTestFailed"), ex.Message);
 			TestResultLabel.Foreground = System.Windows.Media.Brushes.Salmon;
 		}
 	}

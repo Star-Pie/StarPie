@@ -8,25 +8,27 @@
         Background="Transparent"
         Width="580"
         SizeToContent="Height"
-        MaxHeight="680"
+        MaxHeight="700"
         Loaded="Window_Loaded"
         KeyDown="Window_KeyDown"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
     <Window.Resources>
         <Style x:Key="DialogButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#20FFFFFF" />
-            <Setter Property="Foreground" Value="#F8FAFC" />
-            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource SubtleCardBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Name="bd" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#35FFFFFF" />
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemHoverBrush}" />
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -35,13 +37,13 @@
         </Style>
     </Window.Resources>
 
-    <Border Background="#F20F172A"
-            BorderBrush="#408B5CF6"
+    <Border Background="{DynamicResource CardBackgroundBrush}"
+            BorderBrush="{DynamicResource CardBorderBrush}"
             BorderThickness="1"
             CornerRadius="16"
             Padding="22">
         <Border.Effect>
-            <DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="4" Opacity="0.65" />
+            <DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="4" Opacity="0.5" />
         </Border.Effect>
         <StackPanel>
             <!-- 标题栏 -->
@@ -53,42 +55,42 @@
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="📝" FontSize="20" VerticalAlignment="Center" Margin="0,0,10,0" />
                     <StackPanel>
-                        <TextBlock Text="OCR 截屏文字识别与接口配置" FontSize="14" FontWeight="Bold" Foreground="#FFFFFF" />
-                        <TextBlock Text="支持 Windows 本地原生引擎、AI 视觉多模态大模型与私有化 HTTP 接口" FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0" />
+                        <TextBlock Name="OcrHeaderTitleText" Text="OCR 截屏文字识别与接口配置" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Name="OcrHeaderSubtitleText" Text="支持 Windows 本地原生引擎、AI 视觉多模态大模型与私有化 HTTP 接口" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
                     </StackPanel>
                 </StackPanel>
-                <Button Grid.Column="1" Content="✕" Width="26" Height="26" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" FontSize="13" Cursor="Hand" Click="CancelButton_Click" />
+                <Button Name="OcrCloseButton" Grid.Column="1" Content="✕" Width="26" Height="26" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" BorderThickness="0" FontSize="13" Cursor="Hand" Click="CancelButton_Click" />
             </Grid>
 
             <!-- 1. OCR 引擎服务商选择 -->
-            <Border Background="#15FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12">
+            <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="识别引擎服务商 (Provider):" FontSize="11.5" FontWeight="SemiBold" Foreground="#E2E8F0" Margin="0,0,0,8" />
+                    <TextBlock Name="ProviderSectionText" Text="识别引擎服务商 (Provider):" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <RadioButton Name="ProviderLocalRadio" Grid.Column="0" Content="🖥️ 本地离线引擎" IsChecked="True" GroupName="OcrProviderGroup" Foreground="#F8FAFC" FontSize="11.5" Checked="ProviderRadio_Checked" />
-                        <RadioButton Name="ProviderAiRadio" Grid.Column="1" Content="🤖 AI 视觉大模型" GroupName="OcrProviderGroup" Foreground="#F8FAFC" FontSize="11.5" Checked="ProviderRadio_Checked" />
-                        <RadioButton Name="ProviderCustomRadio" Grid.Column="2" Content="🌐 自定义 HTTP" GroupName="OcrProviderGroup" Foreground="#F8FAFC" FontSize="11.5" Checked="ProviderRadio_Checked" />
+                        <RadioButton Name="ProviderLocalRadio" Grid.Column="0" Content="🖥️ 本地离线引擎" IsChecked="True" GroupName="OcrProviderGroup" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Checked="ProviderRadio_Checked" />
+                        <RadioButton Name="ProviderAiRadio" Grid.Column="1" Content="🤖 AI 视觉大模型" GroupName="OcrProviderGroup" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Checked="ProviderRadio_Checked" />
+                        <RadioButton Name="ProviderCustomRadio" Grid.Column="2" Content="🌐 自定义 HTTP" GroupName="OcrProviderGroup" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11.5" Checked="ProviderRadio_Checked" />
                     </Grid>
                 </StackPanel>
             </Border>
 
             <!-- 2. 本地引擎专属设置 -->
-            <Border Name="LocalEngineSettingsPanel" Background="#15FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="Visible">
+            <Border Name="LocalEngineSettingsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="Visible">
                 <StackPanel>
-                    <TextBlock Text="🖥️ Windows 10/11 本地原生 OCR (Windows.Media.Ocr)" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" Margin="0,0,0,4" />
-                    <TextBlock Text="• 原生离线硬件加速，零延迟 (~15ms)，完全不上云，极致保护本地隐私安全。" FontSize="11" Foreground="#94A3B8" Margin="0,0,0,8" TextWrapping="Wrap" />
+                    <TextBlock Name="LocalEngineTitleText" Text="🖥️ Windows 10/11 本地原生 OCR (Windows.Media.Ocr)" FontSize="12" FontWeight="SemiBold" Foreground="#38BDF8" Margin="0,0,0,4" />
+                    <TextBlock Name="LocalEngineDescText" Text="• 原生离线硬件加速，零延迟 (~15ms)，完全不上云，极致保护本地隐私安全。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="优先识别语言:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <ComboBox Name="LocalLangComboBox" Grid.Column="1" Height="28" FontSize="11">
+                        <TextBlock Name="PriorityLangLabelText" Text="优先识别语言:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <ComboBox Name="LocalLangComboBox" Grid.Column="1" Height="28" FontSize="11" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}">
                             <ComboBoxItem Tag="zh-Hans" Content="简体中文 (zh-Hans)" IsSelected="True" />
                             <ComboBoxItem Tag="zh-Hant" Content="繁體中文 (zh-Hant)" />
                             <ComboBoxItem Tag="en-US" Content="English (en-US)" />
@@ -102,32 +104,32 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Name="LocalLangStatusAlertText" Text="⚠️ 当前系统未安装本地 OCR 语言包" FontSize="11" Foreground="#FDE68A" VerticalAlignment="Center" TextWrapping="Wrap" />
-                            <Button Name="OpenOptionalFeaturesButton" Grid.Column="1" Content="打开系统功能" FontSize="10.5" Height="24" Padding="8,0" Margin="8,0,0,0" Style="{StaticResource ModernButtonStyle}" Click="OpenOptionalFeaturesButton_Click" />
+                            <Button Name="OpenOptionalFeaturesButton" Grid.Column="1" Content="打开系统功能" FontSize="10.5" Height="24" Padding="8,0" Margin="8,0,0,0" Style="{StaticResource DialogButtonStyle}" Click="OpenOptionalFeaturesButton_Click" />
                         </Grid>
                     </Border>
                 </StackPanel>
             </Border>
 
             <!-- 3. AI 多模态大模型专属设置 -->
-            <Border Name="AiEngineSettingsPanel" Background="#15FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
+            <Border Name="AiEngineSettingsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="🤖 OpenAI 兼容多模态视觉模型 (Vision LLM)" FontSize="12" FontWeight="SemiBold" Foreground="#A855F7" Margin="0,0,0,4" />
-                    <TextBlock Text="• 支持 OpenAI、硅基流动、Ollama、智谱 GLM、DeepSeek-VL 等多模态视觉端点。" FontSize="11" Foreground="#94A3B8" Margin="0,0,0,8" TextWrapping="Wrap" />
+                    <TextBlock Name="AiEngineTitleText" Text="🤖 OpenAI 兼容多模态视觉模型 (Vision LLM)" FontSize="12" FontWeight="SemiBold" Foreground="#A855F7" Margin="0,0,0,4" />
+                    <TextBlock Name="AiEngineDescText" Text="• 支持 OpenAI、硅基流动、Ollama、智谱 GLM、DeepSeek-VL 等多模态视觉端点。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="API 端点:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" />
-                        <TextBox Name="AiEndpointTextBox" Grid.Column="1" Height="28" FontSize="11" Text="https://api.openai.com/v1" />
+                        <TextBlock Name="AiEndpointLabelText" Text="API 端点:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Name="AiEndpointTextBox" Grid.Column="1" Height="28" FontSize="11" Text="https://api.openai.com/v1" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}" VerticalContentAlignment="Center" Padding="4,0" />
                     </Grid>
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="API Key:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" />
-                        <PasswordBox Name="AiApiKeyBox" Grid.Column="1" Height="28" FontSize="11" />
+                        <TextBlock Name="AiApiKeyLabelText" Text="API Key:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <PasswordBox Name="AiApiKeyBox" Grid.Column="1" Height="28" FontSize="11" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}" VerticalContentAlignment="Center" Padding="4,0" />
                     </Grid>
                     <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>
@@ -135,14 +137,14 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="模型名称:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" />
-                        <TextBox Name="AiModelTextBox" Grid.Column="1" Height="28" FontSize="11" Text="gpt-4o-mini" />
-                        <ComboBox Name="AiModelPresetComboBox" Grid.Column="2" Height="28" Margin="6,0,0,0" FontSize="11" SelectionChanged="AiModelPresetComboBox_SelectionChanged">
-                            <ComboBoxItem Content="预设模型..." IsSelected="True" />
-                            <ComboBoxItem Tag="gpt-4o-mini" Content="GPT-4o Mini (推荐)" />
-                            <ComboBoxItem Tag="Qwen/Qwen2.5-VL-72B-Instruct" Content="通义千问 Qwen2.5-VL" />
-                            <ComboBoxItem Tag="llama3.2-vision" Content="Ollama Llama 3.2 Vision" />
-                            <ComboBoxItem Tag="glm-4v-plus" Content="智谱 GLM-4V" />
+                        <TextBlock Name="AiModelLabelText" Text="模型名称:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Name="AiModelTextBox" Grid.Column="1" Height="28" FontSize="11" Text="gpt-4o-mini" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}" VerticalContentAlignment="Center" Padding="4,0" />
+                        <ComboBox Name="AiModelPresetComboBox" Grid.Column="2" Height="28" Margin="6,0,0,0" FontSize="11" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}" SelectionChanged="AiModelPresetComboBox_SelectionChanged">
+                            <ComboBoxItem Name="AiModelPresetItemDefault" Content="预设模型..." IsSelected="True" />
+                            <ComboBoxItem Name="AiModelPresetItemGpt" Tag="gpt-4o-mini" Content="GPT-4o Mini (推荐)" />
+                            <ComboBoxItem Name="AiModelPresetItemQwen" Tag="Qwen/Qwen2.5-VL-72B-Instruct" Content="通义千问 Qwen2.5-VL" />
+                            <ComboBoxItem Name="AiModelPresetItemOllama" Tag="llama3.2-vision" Content="Ollama Llama 3.2 Vision" />
+                            <ComboBoxItem Name="AiModelPresetItemZhipu" Tag="glm-4v-plus" Content="智谱 GLM-4V" />
                         </ComboBox>
                     </Grid>
                     <Grid>
@@ -150,42 +152,42 @@
                             <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="输出解析模式:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" />
-                        <ComboBox Name="AiPromptModeComboBox" Grid.Column="1" Height="28" FontSize="11">
-                            <ComboBoxItem Tag="text" Content="纯文本提取 (保持原排版)" IsSelected="True" />
-                            <ComboBoxItem Tag="latex" Content="LaTeX 数学公式还原 ($$...$$)" />
-                            <ComboBoxItem Tag="markdown" Content="Markdown 表格与结构还原" />
-                            <ComboBoxItem Tag="translate" Content="自动翻译为流畅简体中文" />
+                        <TextBlock Name="AiPromptModeLabelText" Text="输出解析模式:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <ComboBox Name="AiPromptModeComboBox" Grid.Column="1" Height="28" FontSize="11" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}">
+                            <ComboBoxItem Name="AiPromptModeItemText" Tag="text" Content="纯文本提取 (保持原排版)" IsSelected="True" />
+                            <ComboBoxItem Name="AiPromptModeItemLatex" Tag="latex" Content="LaTeX 数学公式还原 ($$...$$)" />
+                            <ComboBoxItem Name="AiPromptModeItemMarkdown" Tag="markdown" Content="Markdown 表格与结构还原" />
+                            <ComboBoxItem Name="AiPromptModeItemTranslate" Tag="translate" Content="自动多语言智能互译 (Smart Translation)" />
                         </ComboBox>
                     </Grid>
                 </StackPanel>
             </Border>
 
             <!-- 4. 自定义 HTTP 专属设置 -->
-            <Border Name="CustomEngineSettingsPanel" Background="#15FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
+            <Border Name="CustomEngineSettingsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12" Visibility="Collapsed">
                 <StackPanel>
-                    <TextBlock Text="🌐 自定义本地/内网 HTTP OCR 微服务" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" Margin="0,0,0,4" />
-                    <TextBlock Text="• 支持 Umi-OCR、PaddleOCR-json 等本地 HTTP 离线服务接口。" FontSize="11" Foreground="#94A3B8" Margin="0,0,0,8" TextWrapping="Wrap" />
+                    <TextBlock Name="CustomEngineTitleText" Text="🌐 自定义本地/内网 HTTP OCR 微服务" FontSize="12" FontWeight="SemiBold" Foreground="#10B981" Margin="0,0,0,4" />
+                    <TextBlock Name="CustomEngineDescText" Text="• 支持 Umi-OCR、PaddleOCR-json 等本地 HTTP 离线服务接口。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="90" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="服务 URL:" FontSize="11" Foreground="#CBD5E1" VerticalAlignment="Center" />
-                        <TextBox Name="CustomHttpUrlTextBox" Grid.Column="1" Height="28" FontSize="11" Text="http://127.0.0.1:1224/api/ocr" />
+                        <TextBlock Name="CustomHttpUrlLabelText" Text="服务 URL:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBox Name="CustomHttpUrlTextBox" Grid.Column="1" Height="28" FontSize="11" Text="http://127.0.0.1:1224/api/ocr" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}" VerticalContentAlignment="Center" Padding="4,0" />
                     </Grid>
                 </StackPanel>
             </Border>
 
             <!-- 5. 识别后通用行为选项 -->
-            <Border Background="#15FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,14">
+            <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,14">
                 <StackPanel>
-                    <TextBlock Text="识别完成后的处理行为:" FontSize="11.5" FontWeight="SemiBold" Foreground="#E2E8F0" Margin="0,0,0,6" />
+                    <TextBlock Name="BehaviorsSectionText" Text="识别完成后的处理行为:" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6" />
                     <WrapPanel>
-                        <CheckBox Name="AutoCopyCheckBox" Content="📋 自动复制文本到剪贴板" IsChecked="True" Foreground="#F8FAFC" FontSize="11" Margin="0,0,16,4" />
-                        <CheckBox Name="ShowResultWinCheckBox" Content="🪟 弹出识别结果悬浮窗" IsChecked="True" Foreground="#F8FAFC" FontSize="11" Margin="0,0,16,4" />
-                        <CheckBox Name="RemoveCjkSpacesCheckBox" Content="✨ 自动去除中文词间多余空格" IsChecked="True" Foreground="#F8FAFC" FontSize="11" Margin="0,0,16,4" />
-                        <CheckBox Name="MergeLinesCheckBox" Content="📄 智能合并断行段落" IsChecked="True" Foreground="#F8FAFC" FontSize="11" Margin="0,0,16,4" />
+                        <CheckBox Name="AutoCopyCheckBox" Content="📋 自动复制文本到剪贴板" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" Margin="0,0,16,4" />
+                        <CheckBox Name="ShowResultWinCheckBox" Content="🪟 弹出识别结果悬浮窗" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" Margin="0,0,16,4" />
+                        <CheckBox Name="RemoveCjkSpacesCheckBox" Content="✨ 自动去除中文词间多余空格" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" Margin="0,0,16,4" />
+                        <CheckBox Name="MergeLinesCheckBox" Content="📄 智能合并断行段落" IsChecked="True" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" Margin="0,0,16,4" />
                     </WrapPanel>
                 </StackPanel>
             </Border>
@@ -198,8 +200,8 @@
                     <TextBlock Name="TestResultLabel" Text="" FontSize="11" Foreground="#10B981" VerticalAlignment="Center" Margin="10,0,0,0" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="取消" Style="{StaticResource DialogButtonStyle}" Height="32" Padding="14,0" Margin="0,0,8,0" FontSize="11.5" Click="CancelButton_Click" />
-                    <Button Content="保存并生效" Style="{StaticResource DialogButtonStyle}" Height="32" Padding="16,0" Background="#8B5CF6" FontWeight="SemiBold" FontSize="11.5" Click="SaveButton_Click" />
+                    <Button Name="CancelBtn" Content="取消" Style="{StaticResource DialogButtonStyle}" Height="32" Padding="14,0" Margin="0,0,8,0" FontSize="11.5" Click="CancelButton_Click" />
+                    <Button Name="SaveBtn" Content="保存并生效" Style="{StaticResource DialogButtonStyle}" Height="32" Padding="16,0" Background="{DynamicResource AccentPrimaryBrush}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11.5" Click="SaveButton_Click" />
                 </StackPanel>
             </Grid>
         </StackPanel>

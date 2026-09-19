@@ -9,16 +9,16 @@
         Topmost="True"
         Width="540"
         SizeToContent="Height"
-        MaxHeight="500"
+        MaxHeight="520"
         KeyDown="Window_KeyDown"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
-    <Border Background="#F20F172A"
-            BorderBrush="#408B5CF6"
+    <Border Background="{DynamicResource CardBackgroundBrush}"
+            BorderBrush="{DynamicResource CardBorderBrush}"
             BorderThickness="1"
             CornerRadius="16"
             Padding="18">
         <Border.Effect>
-            <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="4" Opacity="0.6" />
+            <DropShadowEffect Color="#000000" BlurRadius="24" ShadowDepth="4" Opacity="0.5" />
         </Border.Effect>
         <StackPanel>
             <!-- 标题栏 -->
@@ -29,26 +29,26 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="📝" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBlock Text="StarPie OCR 文字识别结果" FontSize="13" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,10,0" />
-                    <Border Name="EngineBadge" Background="#268B5CF6" BorderBrush="#408B5CF6" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
-                        <TextBlock Name="EngineText" Text="本地离线引擎" FontSize="10" FontWeight="SemiBold" Foreground="#C084FC" />
+                    <TextBlock Name="ResultHeaderTitleText" Text="StarPie OCR 文字识别结果" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <Border Name="EngineBadge" Background="{DynamicResource NavTabActiveBgBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Name="EngineText" Text="本地离线引擎" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
                     </Border>
                 </StackPanel>
-                <Button Grid.Column="1" Content="✕" Width="24" Height="24" Background="Transparent" Foreground="#94A3B8" BorderThickness="0" FontSize="12" Cursor="Hand" Click="CloseButton_Click" />
+                <Button Grid.Column="1" Content="✕" Width="24" Height="24" Background="Transparent" Foreground="{DynamicResource TextMutedBrush}" BorderThickness="0" FontSize="12" Cursor="Hand" Click="CloseButton_Click" />
             </Grid>
 
             <!-- 统计标签 -->
             <Grid Margin="0,0,0,6">
-                <TextBlock Name="CharCountText" Text="提取文本 (共 0 字符):" FontSize="11" Foreground="#94A3B8" />
+                <TextBlock Name="CharCountText" Text="提取文本 (共 0 字符):" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Name="ClipboardStatusText" Text="已自动存入系统剪贴板" FontSize="11" Foreground="#10B981" HorizontalAlignment="Right" />
             </Grid>
 
             <!-- 文本展示与编辑区 -->
-            <Border Background="#80000000" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="8">
+            <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="8">
                 <TextBox Name="ResultTextBox"
                          Background="Transparent"
                          BorderThickness="0"
-                         Foreground="#F8FAFC"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
                          FontSize="12"
                          FontFamily="Segoe UI, Microsoft YaHei"
                          TextWrapping="Wrap"
@@ -61,21 +61,21 @@
             <!-- 操作按钮底栏 -->
             <Grid Margin="0,14,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button Name="CopyButton" Content="📋 复制文本" Height="30" Padding="14,0" Background="#8B5CF6" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" BorderThickness="0" Cursor="Hand" Click="CopyButton_Click">
+                    <Button Name="CopyButton" Content="📋 复制文本" Height="30" Padding="14,0" Background="{DynamicResource AccentPrimaryBrush}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="11" BorderThickness="0" Cursor="Hand" Click="CopyButton_Click">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="8" />
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button Name="SearchButton" Content="🔍 网页搜索" Height="30" Padding="12,0" Margin="8,0,0,0" Background="#20FFFFFF" Foreground="#E2E8F0" FontSize="11" BorderThickness="0" Cursor="Hand" Click="SearchButton_Click">
+                    <Button Name="SearchButton" Content="🔍 网页搜索" Height="30" Padding="12,0" Margin="8,0,0,0" Background="{DynamicResource SubtleCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" FontSize="11" Cursor="Hand" Click="SearchButton_Click">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="8" />
                             </Style>
                         </Button.Resources>
                     </Button>
-                    <Button Name="SettingsButton" Content="⚙️ 接口设置" Height="30" Padding="12,0" Margin="8,0,0,0" Background="#20FFFFFF" Foreground="#E2E8F0" FontSize="11" BorderThickness="0" Cursor="Hand" Click="SettingsButton_Click">
+                    <Button Name="SettingsButton" Content="⚙️ 接口设置" Height="30" Padding="12,0" Margin="8,0,0,0" Background="{DynamicResource SubtleCardBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" FontSize="11" Cursor="Hand" Click="SettingsButton_Click">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="8" />
@@ -83,7 +83,7 @@
                         </Button.Resources>
                     </Button>
                 </StackPanel>
-                <Button Content="完成 [ESC]" Height="30" Padding="14,0" Background="#15FFFFFF" Foreground="#CBD5E1" FontSize="11" BorderThickness="0" HorizontalAlignment="Right" Cursor="Hand" Click="CloseButton_Click">
+                <Button Name="CloseDoneButton" Content="完成 [ESC]" Height="30" Padding="14,0" Background="{DynamicResource SubtleCardBrush}" Foreground="{DynamicResource TextSecondaryBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" FontSize="11" HorizontalAlignment="Right" Cursor="Hand" Click="CloseButton_Click">
                     <Button.Resources>
                         <Style TargetType="Border">
                             <Setter Property="CornerRadius" Value="8" />

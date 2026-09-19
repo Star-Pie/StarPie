@@ -10,13 +10,35 @@ public partial class OcrResultWindow : Window
 	public OcrResultWindow(string text, string engineName, string latency)
 	{
 		InitializeComponent();
+		AppThemeManager.ApplyTheme(this, AppThemeManager.CurrentEffectiveTheme);
 
 		ResultTextBox.Text = text ?? string.Empty;
-		CharCountText.Text = $"提取文本 (共 {ResultTextBox.Text.Length} 字符):";
 		EngineText.Text = $"{engineName} · {latency}";
+
+		ApplyLocalization();
+
+		ResultTextBox.TextChanged += (s, e) =>
+		{
+			if (CharCountText != null)
+			{
+				CharCountText.Text = string.Format(I18n.T("OcrResultCharCountFmt"), ResultTextBox.Text.Length);
+			}
+		};
 
 		ResultTextBox.SelectAll();
 		ResultTextBox.Focus();
+	}
+
+	public void ApplyLocalization()
+	{
+		base.Title = I18n.T("OcrResultTitle");
+		if (ResultHeaderTitleText != null) ResultHeaderTitleText.Text = I18n.T("OcrResultHeader");
+		if (CharCountText != null) CharCountText.Text = string.Format(I18n.T("OcrResultCharCountFmt"), ResultTextBox.Text.Length);
+		if (ClipboardStatusText != null) ClipboardStatusText.Text = I18n.T("OcrResultCopiedAuto");
+		if (CopyButton != null) CopyButton.Content = I18n.T("OcrResultBtnCopy");
+		if (SearchButton != null) SearchButton.Content = I18n.T("OcrResultBtnSearch");
+		if (SettingsButton != null) SettingsButton.Content = I18n.T("OcrResultBtnSettings");
+		if (CloseDoneButton != null) CloseDoneButton.Content = I18n.T("OcrResultBtnDone");
 	}
 
 	private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -45,7 +67,7 @@ public partial class OcrResultWindow : Window
 		try
 		{
 			System.Windows.Clipboard.SetText(ResultTextBox.Text);
-			ClipboardStatusText.Text = "✓ 已重新复制到剪贴板";
+			ClipboardStatusText.Text = I18n.T("OcrResultCopiedManual");
 			ClipboardStatusText.Foreground = System.Windows.Media.Brushes.LightGreen;
 		}
 		catch

@@ -94,28 +94,29 @@ public static class OcrManager
 			switch (provider)
 			{
 			case "Ai":
-				engineName = $"AI 视觉大模型 ({config.AiModel})";
+				engineName = $"{I18n.T("OcrProviderAi")} ({config.AiModel})";
 				recognizedText = await RecognizeWithAiVisionAsync(bmp, config);
 				break;
 
 			case "Custom":
-				engineName = "自定义 HTTP OCR";
+				engineName = I18n.T("OcrProviderCustom");
 				recognizedText = await RecognizeWithCustomHttpAsync(bmp, config);
 				break;
 
 			case "Cloud":
-				engineName = $"{config.CloudProvider} 云端 OCR";
+				engineName = $"{config.CloudProvider} Cloud OCR";
 				recognizedText = await RecognizeWithCloudAsync(bmp, config);
 				break;
 
 			case "Local":
 			default:
+				string localTitle = I18n.T("OcrBadgeLocalEngine");
 				string langSuffix = !string.IsNullOrEmpty(s_lastEngineLanguage) ? $" [{s_lastEngineLanguage}]" : "";
-				engineName = $"Windows 本地离线引擎{langSuffix}";
+				engineName = $"{localTitle}{langSuffix}";
 				recognizedText = await RecognizeWithLocalWinRtAsync(bmp, config);
 				if (!string.IsNullOrEmpty(s_lastEngineLanguage))
 				{
-					engineName = $"Windows 本地离线引擎 [{s_lastEngineLanguage}]";
+					engineName = $"{localTitle} [{s_lastEngineLanguage}]";
 				}
 				break;
 			}

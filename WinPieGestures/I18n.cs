@@ -2824,6 +2824,412 @@ public static class I18n
 			[LanguageCode.En] = "⚙️ Setup Engine & API...",
 			[LanguageCode.Ja] = "⚙️ エンジンとAPI設定..."
 		};
+		dictionary["OcrDialogTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie - OCR 截屏文字识别与智能接口设置",
+			[LanguageCode.ZhTw] = "StarPie - OCR 螢幕截圖文字識別與智慧介面設定",
+			[LanguageCode.En] = "StarPie - OCR Text Recognition & Engine Settings",
+			[LanguageCode.Ja] = "StarPie - OCR 画面文字認識＆エンジン設定"
+		};
+		dictionary["OcrDialogHeader"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "OCR 截屏文字识别与接口配置",
+			[LanguageCode.ZhTw] = "OCR 螢幕截圖文字識別與介面設定",
+			[LanguageCode.En] = "OCR Text Recognition & API Setup",
+			[LanguageCode.Ja] = "OCR 画面文字認識とAPI設定"
+		};
+		dictionary["OcrDialogSubtitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "支持 Windows 本地原生引擎、AI 视觉多模态大模型与私有化 HTTP 接口",
+			[LanguageCode.ZhTw] = "支援 Windows 本機原生引擎、AI 視覺多模態大模型與私有化 HTTP 介面",
+			[LanguageCode.En] = "Supports Windows Native OCR, Vision LLMs, and Private HTTP APIs",
+			[LanguageCode.Ja] = "Windows ネイティブ、AI ビジョン LLM、プライベート HTTP をサポート"
+		};
+		dictionary["OcrProviderSection"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "识别引擎服务商 (Provider):",
+			[LanguageCode.ZhTw] = "識別引擎服務商 (Provider):",
+			[LanguageCode.En] = "Recognition Engine Provider:",
+			[LanguageCode.Ja] = "認識エンジンプロバイダー:"
+		};
+		dictionary["OcrProviderLocal"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ 本地离线引擎",
+			[LanguageCode.ZhTw] = "🖥️ 本機離線引擎",
+			[LanguageCode.En] = "🖥️ Local Offline Engine",
+			[LanguageCode.Ja] = "🖥️ ローカルオフライン"
+		};
+		dictionary["OcrProviderAi"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🤖 AI 视觉大模型",
+			[LanguageCode.ZhTw] = "🤖 AI 視覺大模型",
+			[LanguageCode.En] = "🤖 AI Vision LLM",
+			[LanguageCode.Ja] = "🤖 AI ビジョンモデル"
+		};
+		dictionary["OcrProviderCustom"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 自定义 HTTP",
+			[LanguageCode.ZhTw] = "🌐 自訂 HTTP",
+			[LanguageCode.En] = "🌐 Custom HTTP",
+			[LanguageCode.Ja] = "🌐 カスタム HTTP"
+		};
+		dictionary["OcrLocalTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖥️ Windows 10/11 本地原生 OCR (Windows.Media.Ocr)",
+			[LanguageCode.ZhTw] = "🖥️ Windows 10/11 本機原生 OCR (Windows.Media.Ocr)",
+			[LanguageCode.En] = "🖥️ Windows 10/11 Native OCR (Windows.Media.Ocr)",
+			[LanguageCode.Ja] = "🖥️ Windows 10/11 ネイティブ OCR (Windows.Media.Ocr)"
+		};
+		dictionary["OcrLocalDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 原生离线硬件加速，零延迟 (~15ms)，完全不上云，极致保护本地隐私安全。",
+			[LanguageCode.ZhTw] = "• 原生離線硬體加速，零延遲 (~15ms)，完全不上雲，極致保護本機隱私安全。",
+			[LanguageCode.En] = "• Native hardware acceleration, ~15ms latency, 100% offline, maximum privacy protection.",
+			[LanguageCode.Ja] = "• ネイティブHW加速、低遅延 (~15ms)、クラウド非送信でローカルプライバシーを完全保護。"
+		};
+		dictionary["OcrPriorityLang"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "优先识别语言:",
+			[LanguageCode.ZhTw] = "優先識別語言:",
+			[LanguageCode.En] = "Priority Language:",
+			[LanguageCode.Ja] = "優先認識言語:"
+		};
+		dictionary["OcrLocalAlertNoLang"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 当前系统未安装本地 OCR 语言包",
+			[LanguageCode.ZhTw] = "⚠️ 目前系統未安裝本機 OCR 語言套件",
+			[LanguageCode.En] = "⚠️ Local OCR language pack is not installed on this system",
+			[LanguageCode.Ja] = "⚠️ システムにローカル OCR 言語パックがインストールされていません"
+		};
+		dictionary["OcrBtnOpenFeatures"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开系统功能",
+			[LanguageCode.ZhTw] = "開啟系統功能",
+			[LanguageCode.En] = "Open System Features",
+			[LanguageCode.Ja] = "システム機能を開く"
+		};
+		dictionary["OcrAiTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🤖 OpenAI 兼容多模态视觉模型 (Vision LLM)",
+			[LanguageCode.ZhTw] = "🤖 OpenAI 相容多模態視覺模型 (Vision LLM)",
+			[LanguageCode.En] = "🤖 OpenAI-Compatible Vision LLM",
+			[LanguageCode.Ja] = "🤖 OpenAI 互換マルチモーダルビジョン (Vision LLM)"
+		};
+		dictionary["OcrAiDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 支持 OpenAI、硅基流动、Ollama、智谱 GLM、DeepSeek-VL 等多模态视觉端点。",
+			[LanguageCode.ZhTw] = "• 支援 OpenAI、矽基流動、Ollama、智譜 GLM、DeepSeek-VL 等多模態視覺端點。",
+			[LanguageCode.En] = "• Supports OpenAI, SiliconFlow, Ollama, Zhipu GLM, DeepSeek-VL, and other vision endpoints.",
+			[LanguageCode.Ja] = "• OpenAI、SiliconFlow、Ollama、Zhipu GLM、DeepSeek-VL などのビジョンエンドポイントに対応。"
+		};
+		dictionary["OcrAiEndpoint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "API 端点:",
+			[LanguageCode.ZhTw] = "API 端點:",
+			[LanguageCode.En] = "API Endpoint:",
+			[LanguageCode.Ja] = "API エンドポイント:"
+		};
+		dictionary["OcrAiApiKey"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "API Key:",
+			[LanguageCode.ZhTw] = "API Key:",
+			[LanguageCode.En] = "API Key:",
+			[LanguageCode.Ja] = "API キー:"
+		};
+		dictionary["OcrAiModel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "模型名称:",
+			[LanguageCode.ZhTw] = "模型名稱:",
+			[LanguageCode.En] = "Model Name:",
+			[LanguageCode.Ja] = "モデル名:"
+		};
+		dictionary["OcrAiModelPresetDefault"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "预设模型...",
+			[LanguageCode.ZhTw] = "預設模型...",
+			[LanguageCode.En] = "Preset Models...",
+			[LanguageCode.Ja] = "プリセットモデル..."
+		};
+		dictionary["OcrAiModelPresetGpt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "GPT-4o Mini (推荐)",
+			[LanguageCode.ZhTw] = "GPT-4o Mini (推薦)",
+			[LanguageCode.En] = "GPT-4o Mini (Recommended)",
+			[LanguageCode.Ja] = "GPT-4o Mini (推奨)"
+		};
+		dictionary["OcrAiModelPresetQwen"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "通义千问 Qwen2.5-VL",
+			[LanguageCode.ZhTw] = "通義千問 Qwen2.5-VL",
+			[LanguageCode.En] = "Qwen2.5-VL",
+			[LanguageCode.Ja] = "Qwen2.5-VL"
+		};
+		dictionary["OcrAiModelPresetOllama"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Ollama Llama 3.2 Vision",
+			[LanguageCode.ZhTw] = "Ollama Llama 3.2 Vision",
+			[LanguageCode.En] = "Ollama Llama 3.2 Vision",
+			[LanguageCode.Ja] = "Ollama Llama 3.2 Vision"
+		};
+		dictionary["OcrAiModelPresetZhipu"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "智谱 GLM-4V",
+			[LanguageCode.ZhTw] = "智譜 GLM-4V",
+			[LanguageCode.En] = "Zhipu GLM-4V",
+			[LanguageCode.Ja] = "Zhipu GLM-4V"
+		};
+		dictionary["OcrAiPromptMode"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "输出解析模式:",
+			[LanguageCode.ZhTw] = "輸出解析模式:",
+			[LanguageCode.En] = "Output Mode:",
+			[LanguageCode.Ja] = "出力解析モード:"
+		};
+		dictionary["OcrAiPromptText"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "纯文本提取 (保持原排版)",
+			[LanguageCode.ZhTw] = "純文字擷取 (保持原排版)",
+			[LanguageCode.En] = "Plain Text (Preserve Layout)",
+			[LanguageCode.Ja] = "プレーンテキスト抽出 (レイアウト保持)"
+		};
+		dictionary["OcrAiPromptLatex"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "LaTeX 数学公式还原 ($$...$$)",
+			[LanguageCode.ZhTw] = "LaTeX 數學公式還原 ($$...$$)",
+			[LanguageCode.En] = "LaTeX Math Formulas ($$...$$)",
+			[LanguageCode.Ja] = "LaTeX 数式復元 ($$...$$)"
+		};
+		dictionary["OcrAiPromptMarkdown"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Markdown 表格与结构还原",
+			[LanguageCode.ZhTw] = "Markdown 表格與結構還原",
+			[LanguageCode.En] = "Markdown Tables & Formatting",
+			[LanguageCode.Ja] = "Markdown テーブル・構造復元"
+		};
+		dictionary["OcrAiPromptTranslate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "自动多语言智能互译 (Smart Translation)",
+			[LanguageCode.ZhTw] = "自動多語言智能互譯 (Smart Translation)",
+			[LanguageCode.En] = "Smart Multi-Language Translation",
+			[LanguageCode.Ja] = "スマート多言語自動翻訳"
+		};
+		dictionary["OcrCustomTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 自定义本地/内网 HTTP OCR 微服务",
+			[LanguageCode.ZhTw] = "🌐 自訂本機/內部網路 HTTP OCR 微服務",
+			[LanguageCode.En] = "🌐 Custom Local/LAN HTTP OCR Microservice",
+			[LanguageCode.Ja] = "🌐 カスタムローカル/LAN HTTP OCR サービス"
+		};
+		dictionary["OcrCustomDesc"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "• 支持 Umi-OCR、PaddleOCR-json 等本地 HTTP 离线服务接口。",
+			[LanguageCode.ZhTw] = "• 支援 Umi-OCR、PaddleOCR-json 等本機 HTTP 離線服務介面。",
+			[LanguageCode.En] = "• Supports local offline HTTP services like Umi-OCR and PaddleOCR-json.",
+			[LanguageCode.Ja] = "• Umi-OCR や PaddleOCR-json などのローカル HTTP サービスに対応。"
+		};
+		dictionary["OcrCustomUrl"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "服务 URL:",
+			[LanguageCode.ZhTw] = "服務 URL:",
+			[LanguageCode.En] = "Service URL:",
+			[LanguageCode.Ja] = "サービス URL:"
+		};
+		dictionary["OcrBehaviorsSection"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "识别完成后的处理行为:",
+			[LanguageCode.ZhTw] = "識別完成後的處理行為:",
+			[LanguageCode.En] = "Actions After Recognition:",
+			[LanguageCode.Ja] = "認識後の自動アクション:"
+		};
+		dictionary["OcrBehaviorCopy"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📋 自动复制文本到剪贴板",
+			[LanguageCode.ZhTw] = "📋 自動複製文字到剪貼簿",
+			[LanguageCode.En] = "📋 Copy text to clipboard automatically",
+			[LanguageCode.Ja] = "📋 認識テキストを自動的にクリップボードにコピー"
+		};
+		dictionary["OcrBehaviorShowWin"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🪟 弹出识别结果悬浮窗",
+			[LanguageCode.ZhTw] = "🪟 彈出識別結果懸浮窗",
+			[LanguageCode.En] = "🪟 Show recognition result popup window",
+			[LanguageCode.Ja] = "🪟 認識結果ポップアップウィンドウを表示"
+		};
+		dictionary["OcrBehaviorRemoveSpaces"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✨ 自动去除中文词间多余空格",
+			[LanguageCode.ZhTw] = "✨ 自動去除中文詞間多餘空格",
+			[LanguageCode.En] = "✨ Remove redundant spaces between CJK words",
+			[LanguageCode.Ja] = "✨ CJK 文字間の余分な空白を自動削除"
+		};
+		dictionary["OcrBehaviorMergeLines"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📄 智能合并断行段落",
+			[LanguageCode.ZhTw] = "📄 智慧合併斷行段落",
+			[LanguageCode.En] = "📄 Merge line breaks into paragraphs smartly",
+			[LanguageCode.Ja] = "📄 改行をインテリジェントに結合"
+		};
+		dictionary["OcrBtnTestSnippet"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✂️ 截屏测试",
+			[LanguageCode.ZhTw] = "✂️ 截圖測試",
+			[LanguageCode.En] = "✂️ Snippet Test",
+			[LanguageCode.Ja] = "✂️ キャプチャテスト"
+		};
+		dictionary["OcrTipTestSnippet"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "直接启动全屏选区测试识别",
+			[LanguageCode.ZhTw] = "直接啟動全螢幕選區測試識別",
+			[LanguageCode.En] = "Launch area selection to test recognition directly",
+			[LanguageCode.Ja] = "範囲選択を起動して認識をテスト"
+		};
+		dictionary["OcrBtnTestConn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 测试接口",
+			[LanguageCode.ZhTw] = "⚡ 測試介面",
+			[LanguageCode.En] = "⚡ Test Connection",
+			[LanguageCode.Ja] = "⚡ 接続テスト"
+		};
+		dictionary["OcrTipTestConn"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "测试当前所选引擎的连通性",
+			[LanguageCode.ZhTw] = "測試目前所選引擎的連通性",
+			[LanguageCode.En] = "Test connection of the currently selected engine",
+			[LanguageCode.Ja] = "選択中エンジンの接続性をテスト"
+		};
+		dictionary["OcrBtnCancel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "取消",
+			[LanguageCode.ZhTw] = "取消",
+			[LanguageCode.En] = "Cancel",
+			[LanguageCode.Ja] = "キャンセル"
+		};
+		dictionary["OcrBtnSave"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "保存并生效",
+			[LanguageCode.ZhTw] = "儲存並生效",
+			[LanguageCode.En] = "Save & Apply",
+			[LanguageCode.Ja] = "保存して適用"
+		};
+		dictionary["OcrMsgTesting"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⏳ 测试中...",
+			[LanguageCode.ZhTw] = "⏳ 測試中...",
+			[LanguageCode.En] = "⏳ Testing...",
+			[LanguageCode.Ja] = "⏳ テスト中..."
+		};
+		dictionary["OcrMsgLocalReady"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✓ 本地语言包已就绪，支持原生极速识别",
+			[LanguageCode.ZhTw] = "✓ 本機語言套件已就緒，支援原生極速識別",
+			[LanguageCode.En] = "✓ Local language pack is ready for instant native recognition",
+			[LanguageCode.Ja] = "✓ ローカル言語パック準備完了、高速認識に対応"
+		};
+		dictionary["OcrMsgLocalNotInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 当前语言 [{0}] 未安装，可用语言包数: {1}",
+			[LanguageCode.ZhTw] = "⚠️ 目前語言 [{0}] 未安裝，可用語言套件數: {1}",
+			[LanguageCode.En] = "⚠️ Language [{0}] not installed, available packs: {1}",
+			[LanguageCode.Ja] = "⚠️ 言語 [{0}] は未インストールです、利用可能な言語数: {1}"
+		};
+		dictionary["OcrMsgEndpointOk"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✓ 接口端点连通正常 (HTTP {0})",
+			[LanguageCode.ZhTw] = "✓ 介面端點連通正常 (HTTP {0})",
+			[LanguageCode.En] = "✓ Endpoint connected successfully (HTTP {0})",
+			[LanguageCode.Ja] = "✓ エンドポイント接続成功 (HTTP {0})"
+		};
+		dictionary["OcrMsgEndpointErr"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 端点响应异常 (HTTP {0})",
+			[LanguageCode.ZhTw] = "⚠️ 端點回應異常 (HTTP {0})",
+			[LanguageCode.En] = "⚠️ Endpoint response abnormal (HTTP {0})",
+			[LanguageCode.Ja] = "⚠️ エンドポイント応答異常 (HTTP {0})"
+		};
+		dictionary["OcrMsgCustomOk"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✓ 微服务已连通 (HTTP {0})",
+			[LanguageCode.ZhTw] = "✓ 微服務已連通 (HTTP {0})",
+			[LanguageCode.En] = "✓ Microservice connected successfully (HTTP {0})",
+			[LanguageCode.Ja] = "✓ サービス接続成功 (HTTP {0})"
+		};
+		dictionary["OcrMsgTestFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✕ 连通失败: {0}",
+			[LanguageCode.ZhTw] = "✕ 連通失敗: {0}",
+			[LanguageCode.En] = "✕ Connection failed: {0}",
+			[LanguageCode.Ja] = "✕ 接続失敗: {0}"
+		};
+		dictionary["OcrAlertNoAvailableLanguages"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 系统未检测到本地 OCR 语言包。建议安装「光学字符识别」可选功能，或切换至上方「AI 视觉模型」。",
+			[LanguageCode.ZhTw] = "⚠️ 系統未偵測到本機 OCR 語言套件。建議安裝「光學字元辨識」選用功能，或切換至上方「AI 視覺模型」。",
+			[LanguageCode.En] = "⚠️ No local OCR language packs found. Please install the Windows OCR optional feature, or switch to AI Vision LLM above.",
+			[LanguageCode.Ja] = "⚠️ ローカル OCR 言語パックが見つかりません。Windows の OCR 機能をインストールするか、AI ビジョンモデルに切り替えてください。"
+		};
+		dictionary["OcrResultTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie OCR 识别结果",
+			[LanguageCode.ZhTw] = "StarPie OCR 識別結果",
+			[LanguageCode.En] = "StarPie OCR Result",
+			[LanguageCode.Ja] = "StarPie OCR 認識結果"
+		};
+		dictionary["OcrResultHeader"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie OCR 文字识别结果",
+			[LanguageCode.ZhTw] = "StarPie OCR 文字識別結果",
+			[LanguageCode.En] = "StarPie OCR Text Result",
+			[LanguageCode.Ja] = "StarPie OCR テキスト認識結果"
+		};
+		dictionary["OcrResultCharCountFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "提取文本 (共 {0} 字符):",
+			[LanguageCode.ZhTw] = "擷取文字 (共 {0} 字元):",
+			[LanguageCode.En] = "Extracted Text ({0} characters):",
+			[LanguageCode.Ja] = "抽出テキスト (計 {0} 文字):"
+		};
+		dictionary["OcrResultCopiedAuto"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已自动存入系统剪贴板",
+			[LanguageCode.ZhTw] = "已自動存入系統剪貼簿",
+			[LanguageCode.En] = "Copied to clipboard automatically",
+			[LanguageCode.Ja] = "自動的にクリップボードにコピーされました"
+		};
+		dictionary["OcrResultCopiedManual"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "✓ 已重新复制到剪贴板",
+			[LanguageCode.ZhTw] = "✓ 已重新複製到剪貼簿",
+			[LanguageCode.En] = "✓ Copied to clipboard again",
+			[LanguageCode.Ja] = "✓ クリップボードに再コピーしました"
+		};
+		dictionary["OcrResultBtnCopy"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "📋 复制文本",
+			[LanguageCode.ZhTw] = "📋 複製文字",
+			[LanguageCode.En] = "📋 Copy Text",
+			[LanguageCode.Ja] = "📋 テキストをコピー"
+		};
+		dictionary["OcrResultBtnSearch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔍 网页搜索",
+			[LanguageCode.ZhTw] = "🔍 網頁搜尋",
+			[LanguageCode.En] = "🔍 Web Search",
+			[LanguageCode.Ja] = "🔍 ウェブ検索"
+		};
+		dictionary["OcrResultBtnSettings"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚙️ 接口设置",
+			[LanguageCode.ZhTw] = "⚙️ 介面設定",
+			[LanguageCode.En] = "⚙️ OCR Settings",
+			[LanguageCode.Ja] = "⚙️ OCR 設定"
+		};
+		dictionary["OcrResultBtnDone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "完成 [ESC]",
+			[LanguageCode.ZhTw] = "完成 [ESC]",
+			[LanguageCode.En] = "Done [ESC]",
+			[LanguageCode.Ja] = "完了 [ESC]"
+		};
 		dictionary["AutoStartAsAdminTitle"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "以管理员身份开机自启 (推荐)",
