@@ -2502,7 +2502,7 @@ public partial class SettingsWindow : Window
 		if (ThemeBtnGray != null) ThemeBtnGray.ToolTip = I18n.T("ThemeGray");
 
 		// --- Phase 1: Trigger Sensitivity & Deadzone ---
-		if (LiveSensorStatusText != null) LiveSensorStatusText.Text = I18n.T("LiveSensorReadyTip");
+		if (LiveSensorStatusText != null && !_isRecordingTrigger) LiveSensorStatusText.Text = I18n.T("LiveSensorReadyTip");
 		if (Tab0_TriggerThresholdTitleText != null) Tab0_TriggerThresholdTitleText.Text = I18n.T("TriggerThresholdTitle");
 		if (Tab0_TriggerThresholdDescText != null) Tab0_TriggerThresholdDescText.Text = I18n.T("TriggerThresholdDesc");
 		if (Tab0_CoreDeadzoneTitleText != null) Tab0_CoreDeadzoneTitleText.Text = I18n.T("CoreDeadzoneTitle");
@@ -2601,7 +2601,7 @@ public partial class SettingsWindow : Window
 		if (Tab0_ProcessCurrentTriggerLabel != null) Tab0_ProcessCurrentTriggerLabel.Text = I18n.T("ProcessCurrentTriggerLabel");
 		if (RecordProcessTriggerButton != null) RecordProcessTriggerButton.Content = I18n.T("BtnRecordProcessTrigger");
 		if (ResetProcessTriggerButton != null) ResetProcessTriggerButton.Content = I18n.T("BtnResetProcessTrigger");
-		if (ProcessLiveSensorStatusText != null) ProcessLiveSensorStatusText.Text = I18n.T("ProcessSensorReadyTip");
+		if (ProcessLiveSensorStatusText != null && !_isRecordingProcessTrigger) ProcessLiveSensorStatusText.Text = I18n.T("ProcessSensorReadyTip");
 
 		if (GestureTriggerBtnRightItem != null) GestureTriggerBtnRightItem.Content = I18n.T("TriggerBtnRight");
 		if (GestureTriggerBtnMiddleItem != null) GestureTriggerBtnMiddleItem.Content = I18n.T("TriggerBtnMiddle");
@@ -9316,8 +9316,12 @@ public partial class SettingsWindow : Window
 		}
 	}
 
-	private string FormatTriggerDisplay(TriggerConfig trigger)
+	public static string FormatTriggerDisplay(TriggerConfig? trigger)
 	{
+		if (trigger == null)
+		{
+			return I18n.T("TriggerBtnRight");
+		}
 		string text = "";
 		if (trigger.RequireCtrl)
 		{
@@ -9337,46 +9341,30 @@ public partial class SettingsWindow : Window
 		}
 		if (trigger.TriggerType == "Keyboard")
 		{
-			string text2 = trigger.Key;
-			if (trigger.VkCode == 20 || text2 == "Capital")
-			{
-				text2 = "CapsLock (大写锁定)";
-			}
-			else if (trigger.VkCode == 192 || text2 == "Oem3" || text2 == "OemTilde")
-			{
-				text2 = "~ (波浪键)";
-			}
-			else if (trigger.VkCode == 32 || text2 == "Space")
-			{
-				text2 = "Space (空格)";
-			}
-			else if (trigger.VkCode == 9 || text2 == "Tab")
-			{
-				text2 = "Tab (制表键)";
-			}
-			else if (text2 == "None" || string.IsNullOrEmpty(text2))
+			string keyName = I18n.FormatKeyName(trigger.Key, trigger.VkCode);
+			if (string.IsNullOrEmpty(keyName) || trigger.Key == "None")
 			{
 				if (!string.IsNullOrEmpty(text))
 				{
-					return "⌨️ " + text.TrimEnd(' ', '+') + " (长按 / 拖动)";
+					return "⌨️ " + text.TrimEnd(' ', '+') + " " + I18n.T("TriggerHoldOrDrag");
 				}
-				return "🖱️ 鼠标右键 (Right Button)";
+				return I18n.T("TriggerBtnRight");
 			}
-			return text + "⌨️ " + text2 + " (长按 / 拖动)";
+			return text + "⌨️ " + keyName + " " + I18n.T("TriggerHoldOrDrag");
 		}
-		string text3 = trigger.MouseButton switch
+		string mouseText = trigger.MouseButton switch
 		{
-			"MiddleButton" => "\ud83d\uddb1\ufe0f 鼠标中键 / 滚轮按压 (Middle Button)", 
-			"XButton1" => "\ud83d\uddb1\ufe0f 鼠标侧键 1 / 后退键 (XButton 1 / Back)", 
-			"XButton2" => "\ud83d\uddb1\ufe0f 鼠标侧键 2 / 前进键 (XButton 2 / Forward)", 
-			"LeftButton" => "\ud83d\uddb1\ufe0f 鼠标左键 (Left Button)", 
-			_ => "\ud83d\uddb1\ufe0f 鼠标右键 (Right Button) [推荐 / 默认]", 
+			"MiddleButton" => I18n.T("TriggerBtnMiddle"), 
+			"XButton1" => I18n.T("TriggerBtnX1"), 
+			"XButton2" => I18n.T("TriggerBtnX2"), 
+			"LeftButton" => I18n.T("TriggerBtnLeftOnly"), 
+			_ => I18n.T("TriggerBtnRight"), 
 		};
 		if (!string.IsNullOrEmpty(text))
 		{
-			return text + text3;
+			return text + mouseText;
 		}
-		return text3;
+		return mouseText;
 	}
 
 	private void RecordTriggerButton_Click(object sender, RoutedEventArgs e)
@@ -9396,12 +9384,12 @@ public partial class SettingsWindow : Window
 		_isRecordingTrigger = true;
 		if (RecordTriggerButton != null)
 		{
-			RecordTriggerButton.Content = "⚡ 正在监听... 请按下任意按键 / 组合键 (ESC取消)";
+			RecordTriggerButton.Content = I18n.T("BtnRecordTriggerListening");
 			RecordTriggerButton.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EF4444"));
 		}
 		if (LiveSensorStatusText != null)
 		{
-			LiveSensorStatusText.Text = "\ud83d\udd34 录制模式中：请直接按下你想作为轮盘唤醒键的鼠标按键、键盘按键或组合键（按 ESC 键取消录制）...";
+			LiveSensorStatusText.Text = I18n.T("LiveSensorRecordingModeTip");
 		}
 		if (LiveSensorDot != null)
 		{
@@ -9414,7 +9402,7 @@ public partial class SettingsWindow : Window
 		_isRecordingTrigger = false;
 		if (RecordTriggerButton != null)
 		{
-			RecordTriggerButton.Content = "\ud83d\udd34 点击录制触发键 / 组合键";
+			RecordTriggerButton.Content = I18n.T("BtnRecordTrigger");
 			((DependencyObject)RecordTriggerButton).ClearValue(System.Windows.Controls.Control.BackgroundProperty);
 		}
 		if (LiveSensorStatusText != null)
@@ -9428,11 +9416,11 @@ public partial class SettingsWindow : Window
 				                  ConfigManager.CurrentConfig?.Trigger?.RequireWin != true;
 				LiveSensorStatusText.Text = isPureLeft
 					? I18n.T("TriggerLeftButtonRecordedTip")
-					: "\ud83d\udfe2 触发按键录制成功并已保存！";
+					: I18n.T("LiveSensorSavedTip");
 			}
 			else
 			{
-				LiveSensorStatusText.Text = "\ud83d\udca1 硬件感知器已就绪：随时按下鼠标任意侧键、中键或键盘按键，此处将实时高亮反馈对应按键与键码。";
+				LiveSensorStatusText.Text = I18n.T("LiveSensorReadyTip");
 			}
 		}
 		if (LiveSensorDot != null)
@@ -9446,18 +9434,19 @@ public partial class SettingsWindow : Window
 	{
 		if (ConfigManager.CurrentConfig != null)
 		{
-			ConfigManager.CurrentConfig.Trigger = new TriggerConfig
+			var defaultTrigger = new TriggerConfig
 			{
 				TriggerType = "Mouse",
-				MouseButton = "RightButton",
-				DisplayText = "\ud83d\uddb1\ufe0f 鼠标右键 (Right Button)"
+				MouseButton = "RightButton"
 			};
+			defaultTrigger.DisplayText = FormatTriggerDisplay(defaultTrigger);
+			ConfigManager.CurrentConfig.Trigger = defaultTrigger;
 			ConfigManager.CurrentConfig.TriggerButton = "RightButton";
 			StopTriggerRecording(saved: true);
 			ScheduleAutoSave();
 			if (LiveSensorStatusText != null)
 			{
-				LiveSensorStatusText.Text = "\ud83d\udfe2 已恢复默认触发按键：\ud83d\uddb1\ufe0f 鼠标右键 (Right Button)";
+				LiveSensorStatusText.Text = string.Format(I18n.T("LiveSensorResetDefaultFmt"), I18n.T("TriggerBtnRight"));
 			}
 		}
 	}
@@ -9488,13 +9477,13 @@ public partial class SettingsWindow : Window
 		//IL_0162: Invalid comparison between Unknown and I4
 		if ((base.IsVisible || _isRecordingTrigger || _isRecordingProcessTrigger) && ConfigManager.CurrentConfig != null)
 		{
-			string text = mouseButton switch
+			string mouseDisplayName = mouseButton switch
 			{
-				"MiddleButton" => "\ud83d\uddb1\ufe0f 鼠标中键 / 滚轮按压 (Middle Button)", 
-				"XButton1" => "\ud83d\uddb1\ufe0f 鼠标侧键 1 / 后退键 (XButton 1 / Back)", 
-				"XButton2" => "\ud83d\uddb1\ufe0f 鼠标侧键 2 / 前进键 (XButton 2 / Forward)", 
-				"LeftButton" => "\ud83d\uddb1\ufe0f 鼠标左键 (Left Button)", 
-				_ => "\ud83d\uddb1\ufe0f 鼠标右键 (Right Button)", 
+				"MiddleButton" => I18n.T("TriggerBtnMiddle"), 
+				"XButton1" => I18n.T("TriggerBtnX1"), 
+				"XButton2" => I18n.T("TriggerBtnX2"), 
+				"LeftButton" => I18n.T("TriggerBtnLeftOnly"), 
+				_ => I18n.T("TriggerBtnRight"), 
 			};
 			ModifierKeys currentModifiers = KeyboardHook.GetCurrentModifiers();
 			string text2 = "";
@@ -9514,9 +9503,10 @@ public partial class SettingsWindow : Window
 			{
 				text2 += "Win + ";
 			}
+			string fullInputDesc = text2 + mouseDisplayName;
 			if (LiveSensorStatusText != null && !_isRecordingProcessTrigger)
 			{
-				LiveSensorStatusText.Text = "\ud83d\udfe2 实时捕获输入: " + text2 + text + " | 状态: 硬件信号正常响应";
+				LiveSensorStatusText.Text = string.Format(I18n.T("LiveSensorMouseFmt"), fullInputDesc);
 			}
 			if (LiveSensorDot != null && !_isRecordingProcessTrigger)
 			{
@@ -9524,7 +9514,7 @@ public partial class SettingsWindow : Window
 			}
 			if (ProcessLiveSensorStatusText != null && _isRecordingProcessTrigger)
 			{
-				ProcessLiveSensorStatusText.Text = "实时捕获输入: " + text2 + text + " | 状态: 硬件信号正常响应";
+				ProcessLiveSensorStatusText.Text = string.Format(I18n.T("ProcessSensorMouseFmt"), fullInputDesc);
 			}
 			if (ProcessLiveSensorDot != null && _isRecordingProcessTrigger)
 			{
@@ -9657,23 +9647,7 @@ public partial class SettingsWindow : Window
 			StopTriggerRecording(saved: false);
 			return;
 		}
-		string value = ((object)e.Key/*cast due to constrained. prefix*/).ToString();
-		if (e.VkCode == 20)
-		{
-			value = "CapsLock (大写锁定)";
-		}
-		else if (e.VkCode == 192)
-		{
-			value = "~ (波浪键)";
-		}
-		else if (e.VkCode == 32)
-		{
-			value = "Space (空格)";
-		}
-		else if (e.VkCode == 9)
-		{
-			value = "Tab (制表键)";
-		}
+		string value = I18n.FormatKeyName(((object)e.Key/*cast due to constrained. prefix*/).ToString(), e.VkCode);
 		ModifierKeys modifiers = e.Modifiers;
 		string text = "";
 		if (((((int)modifiers & 2))) != 0 && (int)e.Key != 118 && (int)e.Key != 119)
@@ -9692,9 +9666,10 @@ public partial class SettingsWindow : Window
 		{
 			text += "Win + ";
 		}
+		string keyInputDesc = $"{text}⌨️ {value}";
 		if (LiveSensorStatusText != null && !_isRecordingProcessTrigger)
 		{
-			LiveSensorStatusText.Text = $"\ud83d\udfe2 实时捕获键盘输入: {text}⌨\ufe0f {value} | 虚拟键码 VkCode: 0x{e.VkCode:X2}";
+			LiveSensorStatusText.Text = string.Format(I18n.T("LiveSensorKeyboardFmt"), keyInputDesc, e.VkCode);
 		}
 		if (LiveSensorDot != null && !_isRecordingProcessTrigger)
 		{
@@ -9702,7 +9677,7 @@ public partial class SettingsWindow : Window
 		}
 		if (ProcessLiveSensorStatusText != null && _isRecordingProcessTrigger)
 		{
-			ProcessLiveSensorStatusText.Text = $"实时捕获键盘输入: {text}⌨\ufe0f {value} | 虚拟键码 VkCode: 0x{e.VkCode:X2}";
+			ProcessLiveSensorStatusText.Text = string.Format(I18n.T("ProcessSensorKeyboardFmt"), keyInputDesc, e.VkCode);
 		}
 		if (ProcessLiveSensorDot != null && _isRecordingProcessTrigger)
 		{
@@ -14589,7 +14564,7 @@ public partial class SettingsWindow : Window
 		{
 			if (ProcessCurrentTriggerBadgeText != null)
 			{
-				ProcessCurrentTriggerBadgeText.Text = "🎯 " + (string.IsNullOrWhiteSpace(trigger.DisplayText) ? FormatTriggerDisplay(trigger) : trigger.DisplayText);
+				ProcessCurrentTriggerBadgeText.Text = "🎯 " + FormatTriggerDisplay(trigger);
 				ProcessCurrentTriggerBadgeText.Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#10B981"));
 			}
 			if (ProcessCurrentTriggerBadgeBorder != null)
@@ -14606,7 +14581,7 @@ public partial class SettingsWindow : Window
 		{
 			if (ProcessCurrentTriggerBadgeText != null)
 			{
-				ProcessCurrentTriggerBadgeText.Text = "🚫 未配置 (完全放行右键)";
+				ProcessCurrentTriggerBadgeText.Text = "🚫 " + I18n.T("ProcessTriggerDefaultPass");
 				ProcessCurrentTriggerBadgeText.Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#94A3B8"));
 			}
 			if (ProcessCurrentTriggerBadgeBorder != null)
@@ -14642,12 +14617,12 @@ public partial class SettingsWindow : Window
 		_isRecordingProcessTrigger = true;
 		if (RecordProcessTriggerButton != null)
 		{
-			RecordProcessTriggerButton.Content = "⚡ 正在监听... 请按专属键 (ESC取消)";
+			RecordProcessTriggerButton.Content = I18n.T("BtnRecordProcessTriggerListening");
 			RecordProcessTriggerButton.Background = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#EF4444"));
 		}
 		if (ProcessLiveSensorStatusText != null)
 		{
-			ProcessLiveSensorStatusText.Text = $"正在监听 [{_recordingProcessName}] 专属呼出键：请直接按下你想作为该程序呼出键的鼠标按键（如中键/侧键）或键盘按键（按 ESC 取消）...";
+			ProcessLiveSensorStatusText.Text = string.Format(I18n.T("ProcessSensorListeningFmt"), _recordingProcessName);
 		}
 		if (ProcessLiveSensorDot != null)
 		{
@@ -14660,18 +14635,18 @@ public partial class SettingsWindow : Window
 		_isRecordingProcessTrigger = false;
 		if (RecordProcessTriggerButton != null)
 		{
-			RecordProcessTriggerButton.Content = "🔴 点击录制专属按键 / 组合键";
+			RecordProcessTriggerButton.Content = I18n.T("BtnRecordProcessTrigger");
 			((DependencyObject)RecordProcessTriggerButton).ClearValue(System.Windows.Controls.Control.BackgroundProperty);
 		}
 		if (ProcessLiveSensorStatusText != null)
 		{
 			if (saved)
 			{
-				ProcessLiveSensorStatusText.Text = $"[{_recordingProcessName}] 专属触发键录制成功并已保存！";
+				ProcessLiveSensorStatusText.Text = string.Format(I18n.T("ProcessSensorSavedFmt"), _recordingProcessName);
 			}
 			else
 			{
-				ProcessLiveSensorStatusText.Text = "硬件感知器已就绪：点击上方录制按钮后，按下你想作为该程序呼出键的鼠标按键（如中键/侧键）或键盘按键...";
+				ProcessLiveSensorStatusText.Text = I18n.T("ProcessSensorReadyTip");
 			}
 		}
 		if (ProcessLiveSensorDot != null)
@@ -14691,7 +14666,7 @@ public partial class SettingsWindow : Window
 			StopProcessTriggerRecording(saved: false);
 			if (ProcessLiveSensorStatusText != null)
 			{
-				ProcessLiveSensorStatusText.Text = $"已恢复 [{_recordingProcessName}] 默认设置：完全放行鼠标右键";
+				ProcessLiveSensorStatusText.Text = string.Format(I18n.T("ProcessSensorResetFmt"), _recordingProcessName);
 			}
 			UpdateProcessTriggerCardVisual();
 			RefreshProcessListUI();

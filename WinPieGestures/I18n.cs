@@ -173,6 +173,292 @@ public static class I18n
 		return key;
 	}
 
+	public static string FormatKeyName(string? keyStr, uint vkCode = 0)
+	{
+		if (string.IsNullOrWhiteSpace(keyStr) && vkCode == 0)
+		{
+			return string.Empty;
+		}
+
+		string normalized = keyStr?.Trim() ?? string.Empty;
+		if (string.Equals(normalized, "None", StringComparison.OrdinalIgnoreCase))
+		{
+			if (vkCode == 0) return string.Empty;
+		}
+
+		LanguageCode lang = _currentLanguage;
+
+		// 1. CapsLock / Capital (VkCode 20 / 0x14)
+		if (vkCode == 20 || string.Equals(normalized, "Capital", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "CapsLock", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "CapsLock (大写锁定)",
+				LanguageCode.ZhTw => "CapsLock (大寫鎖定)",
+				LanguageCode.Ja => "CapsLock (大文字ロック)",
+				_ => "CapsLock"
+			};
+		}
+
+		// 2. Space (VkCode 32 / 0x20)
+		if (vkCode == 32 || string.Equals(normalized, "Space", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Space (空格)",
+				LanguageCode.ZhTw => "Space (空白鍵)",
+				LanguageCode.Ja => "Space (スペース)",
+				_ => "Space"
+			};
+		}
+
+		// 3. Tab (VkCode 9 / 0x09)
+		if (vkCode == 9 || string.Equals(normalized, "Tab", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Tab (制表键)",
+				LanguageCode.ZhTw => "Tab (製表鍵)",
+				LanguageCode.Ja => "Tab",
+				_ => "Tab"
+			};
+		}
+
+		// 4. Wave / Tilde (VkCode 192 / 0xC0)
+		if (vkCode == 192 || string.Equals(normalized, "Oem3", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "OemTilde", StringComparison.OrdinalIgnoreCase) || normalized == "~" || normalized == "`")
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "~ (波浪键)",
+				LanguageCode.ZhTw => "~ (波浪鍵)",
+				LanguageCode.Ja => "~ (チルダ)",
+				_ => "~"
+			};
+		}
+
+		// 5. Enter / Return (VkCode 13 / 0x0D)
+		if (vkCode == 13 || string.Equals(normalized, "Return", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "Enter", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Enter (回车)",
+				LanguageCode.ZhTw => "Enter (回車)",
+				LanguageCode.Ja => "Enter",
+				_ => "Enter"
+			};
+		}
+
+		// 6. Backspace / Back (VkCode 8 / 0x08)
+		if (vkCode == 8 || string.Equals(normalized, "Back", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "Backspace", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Backspace (退格)",
+				LanguageCode.ZhTw => "Backspace (退格)",
+				LanguageCode.Ja => "Backspace",
+				_ => "Backspace"
+			};
+		}
+
+		// 7. Escape / Esc (VkCode 27 / 0x1B)
+		if (vkCode == 27 || string.Equals(normalized, "Escape", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "Esc", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Esc (退出)",
+				LanguageCode.ZhTw => "Esc (退出)",
+				LanguageCode.Ja => "Esc",
+				_ => "Esc"
+			};
+		}
+
+		// 8. Shifts
+		if (vkCode == 160 || string.Equals(normalized, "LeftShift", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.En => "Left Shift",
+				_ => "左 Shift"
+			};
+		}
+		if (vkCode == 161 || string.Equals(normalized, "RightShift", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.En => "Right Shift",
+				_ => "右 Shift"
+			};
+		}
+
+		// 9. Ctrls
+		if (vkCode == 162 || string.Equals(normalized, "LeftCtrl", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.En => "Left Ctrl",
+				_ => "左 Ctrl"
+			};
+		}
+		if (vkCode == 163 || string.Equals(normalized, "RightCtrl", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.En => "Right Ctrl",
+				_ => "右 Ctrl"
+			};
+		}
+
+		// 10. Alts
+		if (vkCode == 164 || string.Equals(normalized, "LeftAlt", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.En => "Left Alt",
+				_ => "左 Alt"
+			};
+		}
+		if (vkCode == 165 || string.Equals(normalized, "RightAlt", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.En => "Right Alt",
+				_ => "右 Alt"
+			};
+		}
+
+		// 11. Wins
+		if (vkCode == 91 || vkCode == 92 || string.Equals(normalized, "LWin", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "RWin", StringComparison.OrdinalIgnoreCase))
+		{
+			return "Win";
+		}
+
+		// 12. Arrows
+		if (vkCode == 38 || string.Equals(normalized, "Up", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "方向键 上",
+				LanguageCode.ZhTw => "方向鍵 上",
+				LanguageCode.Ja => "上矢印",
+				_ => "Up"
+			};
+		}
+		if (vkCode == 40 || string.Equals(normalized, "Down", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "方向键 下",
+				LanguageCode.ZhTw => "方向鍵 下",
+				LanguageCode.Ja => "下矢印",
+				_ => "Down"
+			};
+		}
+		if (vkCode == 37 || string.Equals(normalized, "Left", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "方向键 左",
+				LanguageCode.ZhTw => "方向鍵 左",
+				LanguageCode.Ja => "左矢印",
+				_ => "Left"
+			};
+		}
+		if (vkCode == 39 || string.Equals(normalized, "Right", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "方向键 右",
+				LanguageCode.ZhTw => "方向鍵 右",
+				LanguageCode.Ja => "右矢印",
+				_ => "Right"
+			};
+		}
+
+		// 13. Delete & Insert
+		if (vkCode == 46 || string.Equals(normalized, "Delete", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Delete (删除)",
+				LanguageCode.ZhTw => "Delete (刪除)",
+				LanguageCode.Ja => "Delete (削除)",
+				_ => "Delete"
+			};
+		}
+		if (vkCode == 45 || string.Equals(normalized, "Insert", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "Insert (插入)",
+				LanguageCode.ZhTw => "Insert (插入)",
+				LanguageCode.Ja => "Insert (挿入)",
+				_ => "Insert"
+			};
+		}
+
+		// 14. PageUp & PageDown
+		if (vkCode == 33 || string.Equals(normalized, "PageUp", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "PageUp (上一页)",
+				LanguageCode.ZhTw => "PageUp (上一頁)",
+				_ => "PageUp"
+			};
+		}
+		if (vkCode == 34 || string.Equals(normalized, "PageDown", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "PageDown (下一页)",
+				LanguageCode.ZhTw => "PageDown (下一頁)",
+				_ => "PageDown"
+			};
+		}
+
+		// 15. PrintScreen / Snapshot
+		if (vkCode == 44 || string.Equals(normalized, "PrintScreen", StringComparison.OrdinalIgnoreCase) || string.Equals(normalized, "Snapshot", StringComparison.OrdinalIgnoreCase))
+		{
+			return lang switch
+			{
+				LanguageCode.ZhCn => "PrintScreen (截屏)",
+				LanguageCode.ZhTw => "PrintScreen (截圖)",
+				_ => "PrintScreen"
+			};
+		}
+
+		// 16. Digits D0..D9
+		if (normalized.Length == 2 && normalized[0] == 'D' && char.IsDigit(normalized[1]))
+		{
+			return normalized[1].ToString();
+		}
+
+		// 17. NumPad keys
+		if (normalized.StartsWith("NumPad", StringComparison.OrdinalIgnoreCase) && normalized.Length == 7 && char.IsDigit(normalized[6]))
+		{
+			return "Num " + normalized[6];
+		}
+		if (string.Equals(normalized, "Multiply", StringComparison.OrdinalIgnoreCase)) return "Num *";
+		if (string.Equals(normalized, "Divide", StringComparison.OrdinalIgnoreCase)) return "Num /";
+		if (string.Equals(normalized, "Add", StringComparison.OrdinalIgnoreCase)) return "Num +";
+		if (string.Equals(normalized, "Subtract", StringComparison.OrdinalIgnoreCase)) return "Num -";
+		if (string.Equals(normalized, "Decimal", StringComparison.OrdinalIgnoreCase)) return "Num .";
+
+		// 18. OEM punctuations
+		if (string.Equals(normalized, "OemMinus", StringComparison.OrdinalIgnoreCase)) return "-";
+		if (string.Equals(normalized, "OemPlus", StringComparison.OrdinalIgnoreCase)) return "=";
+		if (string.Equals(normalized, "OemOpenBrackets", StringComparison.OrdinalIgnoreCase)) return "[";
+		if (string.Equals(normalized, "OemCloseBrackets", StringComparison.OrdinalIgnoreCase)) return "]";
+		if (string.Equals(normalized, "OemPipe", StringComparison.OrdinalIgnoreCase)) return "\\";
+		if (string.Equals(normalized, "OemSemicolon", StringComparison.OrdinalIgnoreCase)) return ";";
+		if (string.Equals(normalized, "OemQuotes", StringComparison.OrdinalIgnoreCase)) return "'";
+		if (string.Equals(normalized, "OemComma", StringComparison.OrdinalIgnoreCase)) return ",";
+		if (string.Equals(normalized, "OemPeriod", StringComparison.OrdinalIgnoreCase)) return ".";
+		if (string.Equals(normalized, "OemQuestion", StringComparison.OrdinalIgnoreCase)) return "/";
+
+		return !string.IsNullOrEmpty(normalized) ? normalized : (vkCode > 0 ? $"0x{vkCode:X2}" : string.Empty);
+	}
+
 	static I18n()
 	{
 		Dictionary<string, Dictionary<LanguageCode, string>> dictionary = new Dictionary<string, Dictionary<LanguageCode, string>>();
@@ -1514,6 +1800,104 @@ public static class I18n
 			[LanguageCode.ZhTw] = "🖱️ 滑鼠側鍵 2 / 前進鍵",
 			[LanguageCode.En] = "🖱️ Mouse Side Button 2 / Forward",
 			[LanguageCode.Ja] = "🖱️ マウスサイドボタン 2 / 進む"
+		};
+		dictionary["TriggerBtnLeftOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🖱️ 鼠标左键",
+			[LanguageCode.ZhTw] = "🖱️ 滑鼠左鍵",
+			[LanguageCode.En] = "🖱️ Left Mouse Button",
+			[LanguageCode.Ja] = "🖱️ マウス左ボタン"
+		};
+		dictionary["TriggerHoldOrDrag"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "(长按 / 拖动)",
+			[LanguageCode.ZhTw] = "(長按 / 拖動)",
+			[LanguageCode.En] = "(Hold / Drag)",
+			[LanguageCode.Ja] = "(長押し / ドラッグ)"
+		};
+		dictionary["BtnRecordTriggerListening"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 正在监听... 请按下任意按键 / 组合键 (ESC取消)",
+			[LanguageCode.ZhTw] = "⚡ 正在監聽... 請按下任意按鍵 / 組合鍵 (ESC取消)",
+			[LanguageCode.En] = "⚡ Listening... Press any key / combo (ESC to cancel)",
+			[LanguageCode.Ja] = "⚡ リスニング中... 任意のキー/コンボを押してください (ESCでキャンセル)"
+		};
+		dictionary["BtnRecordProcessTriggerListening"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 正在监听... 请按专属键 (ESC取消)",
+			[LanguageCode.ZhTw] = "⚡ 正在監聽... 請按專屬鍵 (ESC取消)",
+			[LanguageCode.En] = "⚡ Listening... Press dedicated key (ESC to cancel)",
+			[LanguageCode.Ja] = "⚡ リスニング中... 専用キーを押してください (ESCでキャンセル)"
+		};
+		dictionary["LiveSensorRecordingModeTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔴 录制模式中：请直接按下你想作为轮盘唤醒键的鼠标按键、键盘按键或组合键（按 ESC 键取消录制）...",
+			[LanguageCode.ZhTw] = "🔴 錄製模式中：請直接按下你想作為輪盤喚醒鍵的滑鼠按鍵、鍵盤按鍵或組合鍵（按 ESC 鍵取消錄製）...",
+			[LanguageCode.En] = "🔴 Recording mode: Press any mouse button, key, or combo to set as radial trigger (ESC to cancel)...",
+			[LanguageCode.Ja] = "🔴 録画モード中: ラジアルメニュー起動キーとして設定するマウスボタン、キー、またはコンボを押してください（ESCでキャンセル）..."
+		};
+		dictionary["LiveSensorSavedTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🟢 触发按键录制成功并已保存！",
+			[LanguageCode.ZhTw] = "🟢 觸發按鍵錄製成功並已儲存！",
+			[LanguageCode.En] = "🟢 Trigger binding saved successfully!",
+			[LanguageCode.Ja] = "🟢 トリガーキーが正常に保存されました！"
+		};
+		dictionary["LiveSensorResetDefaultFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🟢 已恢复默认触发按键：{0}",
+			[LanguageCode.ZhTw] = "🟢 已恢復預設觸發按鍵：{0}",
+			[LanguageCode.En] = "🟢 Reset to default trigger: {0}",
+			[LanguageCode.Ja] = "🟢 デフォルトのトリガーに戻しました：{0}"
+		};
+		dictionary["LiveSensorMouseFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🟢 实时捕获输入: {0} | 状态: 硬件信号正常响应",
+			[LanguageCode.ZhTw] = "🟢 即時捕獲輸入: {0} | 狀態: 硬體信號正常響應",
+			[LanguageCode.En] = "🟢 Captured Mouse Input: {0} | Status: Hardware signal responding",
+			[LanguageCode.Ja] = "🟢 マウス入力を検出: {0} | 状態: 正常に応答中"
+		};
+		dictionary["LiveSensorKeyboardFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🟢 实时捕获键盘输入: {0} | 虚拟键码 VkCode: 0x{1:X2}",
+			[LanguageCode.ZhTw] = "🟢 即時捕獲鍵盤輸入: {0} | 虛擬鍵碼 VkCode: 0x{1:X2}",
+			[LanguageCode.En] = "🟢 Captured Keyboard Input: {0} | VkCode: 0x{1:X2}",
+			[LanguageCode.Ja] = "🟢 キーボード入力を検出: {0} | 仮想キーコード VkCode: 0x{1:X2}"
+		};
+		dictionary["ProcessSensorListeningFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正在监听 [{0}] 专属呼出键：请直接按下你想作为该程序呼出键的鼠标按键（如中键/侧键）或键盘按键（按 ESC 取消）...",
+			[LanguageCode.ZhTw] = "正在監聽 [{0}] 專屬呼出鍵：請直接按下你想作為該程式呼出鍵的滑鼠按鍵（如中鍵/側鍵）或鍵盤按鍵（按 ESC 取消）...",
+			[LanguageCode.En] = "Listening for [{0}] dedicated trigger: Press any mouse button (Middle/Side) or key to set (ESC to cancel)...",
+			[LanguageCode.Ja] = "[{0}] 専用起動キーをリスニング中: 設定したいマウスボタン（中央/サイド等）またはキーを押してください（ESCでキャンセル）..."
+		};
+		dictionary["ProcessSensorSavedFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "[{0}] 专属触发键录制成功并已保存！",
+			[LanguageCode.ZhTw] = "[{0}] 專屬觸發鍵錄製成功並已儲存！",
+			[LanguageCode.En] = "[{0}] Dedicated trigger saved successfully!",
+			[LanguageCode.Ja] = "[{0}] 専用トリガーが正常に保存されました！"
+		};
+		dictionary["ProcessSensorResetFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已恢复 [{0}] 默认设置：完全放行鼠标右键",
+			[LanguageCode.ZhTw] = "已恢復 [{0}] 預設設定：完全放行滑鼠右鍵",
+			[LanguageCode.En] = "Reset [{0}] to default: Fully pass-through right mouse button",
+			[LanguageCode.Ja] = "[{0}] の設定をデフォルトに戻しました: 右クリックを完全に通過"
+		};
+		dictionary["ProcessSensorMouseFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "实时捕获输入: {0} | 状态: 硬件信号正常响应",
+			[LanguageCode.ZhTw] = "即時捕獲輸入: {0} | 狀態: 硬體信號正常響應",
+			[LanguageCode.En] = "Captured Mouse Input: {0} | Status: Hardware signal responding",
+			[LanguageCode.Ja] = "マウス入力を検出: {0} | 状態: 正常に応答中"
+		};
+		dictionary["ProcessSensorKeyboardFmt"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "实时捕获键盘输入: {0} | 虚拟键码 VkCode: 0x{1:X2}",
+			[LanguageCode.ZhTw] = "即時捕獲鍵盤輸入: {0} | 虛擬鍵碼 VkCode: 0x{1:X2}",
+			[LanguageCode.En] = "Captured Keyboard Input: {0} | VkCode: 0x{1:X2}",
+			[LanguageCode.Ja] = "キーボード入力を検出: {0} | 仮想キーコード VkCode: 0x{1:X2}"
 		};
 		dictionary["SensitivityTitle"] = new Dictionary<LanguageCode, string>
 		{

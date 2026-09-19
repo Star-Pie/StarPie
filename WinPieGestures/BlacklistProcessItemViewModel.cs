@@ -56,9 +56,7 @@ public class BlacklistProcessItemViewModel
 		if (overrideTrigger != null)
 		{
 			vm.BadgeIcon = "🎯";
-			vm.TriggerDisplayText = string.IsNullOrWhiteSpace(overrideTrigger.DisplayText)
-				? I18n.T("ProcessTriggerDedicated")
-				: overrideTrigger.DisplayText;
+			vm.TriggerDisplayText = SettingsWindow.FormatTriggerDisplay(overrideTrigger);
 			vm.BadgeBgBrush = s_activeBg;
 			vm.BadgeBorderBrush = s_activeBorder;
 			vm.BadgeFgBrush = s_activeFg;
