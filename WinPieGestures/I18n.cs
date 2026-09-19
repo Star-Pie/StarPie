@@ -1597,6 +1597,283 @@ public static class I18n
 			[LanguageCode.En] = "The content differs from the installed version.",
 			[LanguageCode.Ja] = "内容はインストール済みのものと異なります。"
 		};
+		// ---- 识别失败：原因标题（PluginScanFailureText.Title） ----
+		// 键名后缀 = PluginScanFailure 枚举成员名，一一对应。Title/Hint 用的是**穷尽 switch 表达式**
+		// （没有 `_` 兜底分支），所以将来往枚举里加一项而忘了加词条，编译器会直接 CS8509 报出来。
+		dictionary["PluginScanFailureTitleNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正常",
+			[LanguageCode.ZhTw] = "正常",
+			[LanguageCode.En] = "Normal",
+			[LanguageCode.Ja] = "正常"
+		};
+		dictionary["PluginScanFailureTitleIdNotDeclared"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未找到插件标识",
+			[LanguageCode.ZhTw] = "找不到外掛識別碼",
+			[LanguageCode.En] = "No plugin ID found",
+			[LanguageCode.Ja] = "プラグイン識別子が見つかりません"
+		};
+		dictionary["PluginScanFailureTitleManifestInvalid"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "plugin.json 格式不正确",
+			[LanguageCode.ZhTw] = "plugin.json 格式不正確",
+			[LanguageCode.En] = "plugin.json is malformed",
+			[LanguageCode.Ja] = "plugin.json の形式が正しくありません"
+		};
+		dictionary["PluginScanFailureTitleInvalidIdFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件 ID 格式非法",
+			[LanguageCode.ZhTw] = "外掛 ID 格式不合法",
+			[LanguageCode.En] = "Invalid plugin ID format",
+			[LanguageCode.Ja] = "プラグイン ID の形式が不正です"
+		};
+		dictionary["PluginScanFailureTitleReservedIdPrefix"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件 ID 使用了保留前缀",
+			[LanguageCode.ZhTw] = "外掛 ID 使用了保留前綴",
+			[LanguageCode.En] = "Plugin ID uses a reserved prefix",
+			[LanguageCode.Ja] = "プラグイン ID が予約済みプレフィックスを使用しています"
+		};
+		dictionary["PluginScanFailureTitleDllNotFound"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "找不到插件程序集",
+			[LanguageCode.ZhTw] = "找不到外掛組件",
+			[LanguageCode.En] = "Plugin assembly not found",
+			[LanguageCode.Ja] = "プラグインアセンブリが見つかりません"
+		};
+		dictionary["PluginScanFailureTitleNotDotNetAssembly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "不是 .NET 程序集",
+			[LanguageCode.ZhTw] = "不是 .NET 組件",
+			[LanguageCode.En] = "Not a .NET assembly",
+			[LanguageCode.Ja] = ".NET アセンブリではありません"
+		};
+		dictionary["PluginScanFailureTitleNotIlOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "程序集含本机代码",
+			[LanguageCode.ZhTw] = "組件含原生程式碼",
+			[LanguageCode.En] = "Assembly contains native code",
+			[LanguageCode.Ja] = "アセンブリにネイティブコードが含まれています"
+		};
+		dictionary["PluginScanFailureTitleWrongArchitecture"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "架构不匹配（需要 64 位）",
+			[LanguageCode.ZhTw] = "架構不符（需要 64 位元）",
+			[LanguageCode.En] = "Wrong architecture (64-bit required)",
+			[LanguageCode.Ja] = "アーキテクチャが一致しません（64 ビットが必要）"
+		};
+		dictionary["PluginScanFailureTitleTargetFrameworkMismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目标框架不兼容",
+			[LanguageCode.ZhTw] = "目標框架不相容",
+			[LanguageCode.En] = "Incompatible target framework",
+			[LanguageCode.Ja] = "ターゲットフレームワークが非互換です"
+		};
+		dictionary["PluginScanFailureTitleNoContractImplementation"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "不是 StarPie 插件",
+			[LanguageCode.ZhTw] = "不是 StarPie 外掛",
+			[LanguageCode.En] = "Not a StarPie plugin",
+			[LanguageCode.Ja] = "StarPie プラグインではありません"
+		};
+		dictionary["PluginScanFailureTitleAmbiguousContractImplementation"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "入口类型不唯一",
+			[LanguageCode.ZhTw] = "進入點類型不唯一",
+			[LanguageCode.En] = "Ambiguous entry type",
+			[LanguageCode.Ja] = "エントリ型が一意に定まりません"
+		};
+		dictionary["PluginScanFailureTitleEntryTypeNotFound"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清单声明的入口类型不存在",
+			[LanguageCode.ZhTw] = "清單宣告的進入點類型不存在",
+			[LanguageCode.En] = "Declared entry type does not exist",
+			[LanguageCode.Ja] = "マニフェストで宣言されたエントリ型が存在しません"
+		};
+		dictionary["PluginScanFailureTitleApiVersionMismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件 SDK 契约版本不兼容",
+			[LanguageCode.ZhTw] = "外掛 SDK 契約版本不相容",
+			[LanguageCode.En] = "Incompatible plugin SDK version",
+			[LanguageCode.Ja] = "プラグイン SDK の契約バージョンが非互換です"
+		};
+		dictionary["PluginScanFailureTitleContractAssemblyVersionMismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "SDK 程序集版本身份不一致",
+			[LanguageCode.ZhTw] = "SDK 組件版本身分不一致",
+			[LanguageCode.En] = "SDK assembly version identity mismatch",
+			[LanguageCode.Ja] = "SDK アセンブリのバージョン同一性が一致しません"
+		};
+		dictionary["PluginScanFailureTitleSha256Mismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文件已损坏或被修改",
+			[LanguageCode.ZhTw] = "檔案已損毀或被修改",
+			[LanguageCode.En] = "File is corrupted or modified",
+			[LanguageCode.Ja] = "ファイルが破損または改変されています"
+		};
+		dictionary["PluginScanFailureTitleHostVersionOutOfRange"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "宿主版本超出插件声明区间",
+			[LanguageCode.ZhTw] = "宿主版本超出外掛宣告區間",
+			[LanguageCode.En] = "Host version outside the declared range",
+			[LanguageCode.Ja] = "ホストのバージョンが宣言範囲外です"
+		};
+		dictionary["PluginScanFailureTitleDependencyMissing"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "缺少依赖插件",
+			[LanguageCode.ZhTw] = "缺少相依外掛",
+			[LanguageCode.En] = "Missing dependency plugin",
+			[LanguageCode.Ja] = "依存プラグインが不足しています"
+		};
+		dictionary["PluginScanFailureTitleDependencyCycle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件依赖存在环",
+			[LanguageCode.ZhTw] = "外掛相依存在環",
+			[LanguageCode.En] = "Cyclic plugin dependency",
+			[LanguageCode.Ja] = "プラグインの依存関係に循環があります"
+		};
+		dictionary["PluginScanFailureSeparator"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "：",
+			[LanguageCode.ZhTw] = "：",
+			[LanguageCode.En] = ": ",
+			[LanguageCode.Ja] = "："
+		};
+		// ---- 识别失败：修复建议（PluginScanFailureText.Hint） ----
+		dictionary["PluginScanFailureHintNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "识别已通过，无需修复。",
+			[LanguageCode.ZhTw] = "識別已通過，無需修復。",
+			[LanguageCode.En] = "The scan passed — nothing to fix.",
+			[LanguageCode.Ja] = "スキャンは通過しました。修正の必要はありません。"
+		};
+		dictionary["PluginScanFailureHintIdNotDeclared"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个 .dll 既没有同级的 plugin.json，也没有在程序集里声明 StarPiePluginId 元数据。让作者按文档在 csproj 里补上 AssemblyMetadata 是推荐做法（分发时只需一枚 .dll）；带 plugin.json 的完整插件包同样可以安装。",
+			[LanguageCode.ZhTw] = "這個 .dll 既沒有同層的 plugin.json，也沒有在組件裡宣告 StarPiePluginId 中繼資料。請作者依文件在 csproj 裡補上 AssemblyMetadata 是推薦做法（散佈時只需一枚 .dll）；附帶 plugin.json 的完整外掛包同樣可以安裝。",
+			[LanguageCode.En] = "This .dll has no plugin.json beside it and declares no StarPiePluginId assembly metadata. The recommended fix is for the author to add AssemblyMetadata in the csproj (so only one .dll needs to ship); a full plugin package with plugin.json works just as well.",
+			[LanguageCode.Ja] = "この .dll には同じ階層の plugin.json も、アセンブリ内の StarPiePluginId メタデータもありません。作者がドキュメントに沿って csproj に AssemblyMetadata を追加するのが推奨です（配布時は .dll 1 枚で済みます）。plugin.json を含む完全なプラグインパッケージでもインストールできます。"
+		};
+		dictionary["PluginScanFailureHintManifestInvalid"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "请检查 plugin.json 的字段名与类型是否与规范一致（可对照 plugin.schema.json）。",
+			[LanguageCode.ZhTw] = "請檢查 plugin.json 的欄位名稱與型別是否與規範一致（可對照 plugin.schema.json）。",
+			[LanguageCode.En] = "Check that the field names and types in plugin.json match the spec (compare against plugin.schema.json).",
+			[LanguageCode.Ja] = "plugin.json のフィールド名と型が仕様どおりか確認してください（plugin.schema.json と照合できます）。"
+		};
+		dictionary["PluginScanFailureHintInvalidIdFormat"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件 ID 需要是反向域名风格，全小写，例如 com.example.mytool。",
+			[LanguageCode.ZhTw] = "外掛 ID 需要是反向網域風格，全小寫，例如 com.example.mytool。",
+			[LanguageCode.En] = "A plugin ID must be reverse-DNS style, all lowercase, for example com.example.mytool.",
+			[LanguageCode.Ja] = "プラグイン ID は逆ドメイン形式のすべて小文字にしてください（例：com.example.mytool）。"
+		};
+		dictionary["PluginScanFailureHintReservedIdPrefix"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "starpie / windows / microsoft / system / builtin 前缀保留给官方，请换一个前缀。",
+			[LanguageCode.ZhTw] = "starpie / windows / microsoft / system / builtin 前綴保留給官方，請換一個前綴。",
+			[LanguageCode.En] = "The starpie / windows / microsoft / system / builtin prefixes are reserved for official modules. Please pick a different prefix.",
+			[LanguageCode.Ja] = "starpie / windows / microsoft / system / builtin の各プレフィックスは公式用に予約されています。別のプレフィックスを使用してください。"
+		};
+		dictionary["PluginScanFailureHintDllNotFound"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "清单里声明的程序集文件不在插件目录中，请确认打包时没有漏掉 .dll。",
+			[LanguageCode.ZhTw] = "清單裡宣告的組件檔案不在外掛目錄中，請確認封裝時沒有漏掉 .dll。",
+			[LanguageCode.En] = "The assembly declared in the manifest is not in the plugin folder. Make sure the .dll was not left out when packaging.",
+			[LanguageCode.Ja] = "マニフェストで宣言されたアセンブリがプラグインフォルダーにありません。パッケージ作成時に .dll を入れ忘れていないか確認してください。"
+		};
+		dictionary["PluginScanFailureHintNotDotNetAssembly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这是一枚原生 C++ DLL 或非托管库，StarPie 插件必须是 .NET 程序集。你可能选错了文件。",
+			[LanguageCode.ZhTw] = "這是一枚原生 C++ DLL 或非受控程式庫，StarPie 外掛必須是 .NET 組件。你可能選錯了檔案。",
+			[LanguageCode.En] = "This is a native C++ DLL or an unmanaged library. A StarPie plugin must be a .NET assembly — you may have picked the wrong file.",
+			[LanguageCode.Ja] = "これはネイティブ C++ DLL またはアンマネージドライブラリです。StarPie プラグインは .NET アセンブリである必要があります。ファイルの選択を誤っている可能性があります。"
+		};
+		dictionary["PluginScanFailureHintNotIlOnly"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "程序集混合了本机代码（C++/CLI）。StarPie 只接受纯托管（ILOnly）程序集。",
+			[LanguageCode.ZhTw] = "組件混合了原生程式碼（C++/CLI）。StarPie 只接受純受控（ILOnly）組件。",
+			[LanguageCode.En] = "The assembly mixes in native code (C++/CLI). StarPie only accepts purely managed (ILOnly) assemblies.",
+			[LanguageCode.Ja] = "アセンブリにネイティブコード（C++/CLI）が混在しています。StarPie は純粋なマネージド（ILOnly）アセンブリのみを受け付けます。"
+		};
+		dictionary["PluginScanFailureHintWrongArchitecture"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "程序集被编译为仅 32 位（Requires32Bit）。请把插件的平台目标改为 x64 或 AnyCPU 后重新发布。",
+			[LanguageCode.ZhTw] = "組件被編譯為僅 32 位元（Requires32Bit）。請把外掛的平台目標改為 x64 或 AnyCPU 後重新發佈。",
+			[LanguageCode.En] = "The assembly is compiled as 32-bit only (Requires32Bit). Change the plugin's platform target to x64 or AnyCPU and rebuild.",
+			[LanguageCode.Ja] = "アセンブリが 32 ビット専用（Requires32Bit）でコンパイルされています。プラグインのプラットフォームターゲットを x64 または AnyCPU に変更して再発行してください。"
+		};
+		dictionary["PluginScanFailureHintTargetFrameworkMismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件的目标框架高于当前 StarPie。请升级 StarPie，或联系作者改用更低的 net8.0-windows 目标。",
+			[LanguageCode.ZhTw] = "外掛的目標框架高於目前的 StarPie。請升級 StarPie，或聯絡作者改用較低的 net8.0-windows 目標。",
+			[LanguageCode.En] = "The plugin targets a newer framework than this StarPie build. Update StarPie, or ask the author to target net8.0-windows or lower.",
+			[LanguageCode.Ja] = "プラグインのターゲットフレームワークが現在の StarPie より新しいものです。StarPie を更新するか、作者に net8.0-windows 以下へ下げてもらってください。"
+		};
+		dictionary["PluginScanFailureHintNoContractImplementation"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "程序集里找不到 IStarPiePlugin 的实现类，说明它不是一个 StarPie 插件。",
+			[LanguageCode.ZhTw] = "組件裡找不到 IStarPiePlugin 的實作類別，說明它不是一個 StarPie 外掛。",
+			[LanguageCode.En] = "The assembly contains no IStarPiePlugin implementation, so it is not a StarPie plugin.",
+			[LanguageCode.Ja] = "アセンブリ内に IStarPiePlugin の実装クラスが見つかりません。StarPie プラグインではありません。"
+		};
+		dictionary["PluginScanFailureHintAmbiguousContractImplementation"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "程序集里有多个 IStarPiePlugin 实现。请在 plugin.json 的 entryType 里明确指定入口类全名。",
+			[LanguageCode.ZhTw] = "組件裡有多個 IStarPiePlugin 實作。請在 plugin.json 的 entryType 裡明確指定進入點類別全名。",
+			[LanguageCode.En] = "The assembly has several IStarPiePlugin implementations. Name the entry class explicitly in plugin.json's entryType.",
+			[LanguageCode.Ja] = "アセンブリ内に IStarPiePlugin の実装が複数あります。plugin.json の entryType でエントリクラスの完全名を指定してください。"
+		};
+		dictionary["PluginScanFailureHintEntryTypeNotFound"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "plugin.json 里 entryType 写的类型名在程序集中不存在，请核对命名空间与类型名拼写。",
+			[LanguageCode.ZhTw] = "plugin.json 裡 entryType 寫的型別名稱在組件中不存在，請核對命名空間與型別名稱拼寫。",
+			[LanguageCode.En] = "The type named in plugin.json's entryType does not exist in the assembly. Check the namespace and type name spelling.",
+			[LanguageCode.Ja] = "plugin.json の entryType に書かれた型名がアセンブリ内に存在しません。名前空間と型名の綴りを確認してください。"
+		};
+		dictionary["PluginScanFailureHintApiVersionMismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件编译时使用的 SDK 契约主版本与当前 StarPie 不一致。请更新插件，或升级 StarPie。",
+			[LanguageCode.ZhTw] = "外掛編譯時使用的 SDK 契約主版本與目前 StarPie 不一致。請更新外掛，或升級 StarPie。",
+			[LanguageCode.En] = "The plugin was built against a different SDK contract major version than this StarPie. Update the plugin, or update StarPie.",
+			[LanguageCode.Ja] = "プラグインがビルド時に使用した SDK 契約のメジャーバージョンが現在の StarPie と一致しません。プラグインを更新するか、StarPie を更新してください。"
+		};
+		dictionary["PluginScanFailureHintContractAssemblyVersionMismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件自带了 StarPie.Plugin.Abstractions.dll 且版本与宿主不一致。请删除插件目录里的这个文件，它会由 StarPie 统一提供。",
+			[LanguageCode.ZhTw] = "外掛自帶了 StarPie.Plugin.Abstractions.dll 且版本與宿主不一致。請刪除外掛目錄裡的這個檔案，它會由 StarPie 統一提供。",
+			[LanguageCode.En] = "The plugin ships its own StarPie.Plugin.Abstractions.dll whose version differs from the host's. Delete that file from the plugin folder — StarPie provides it centrally.",
+			[LanguageCode.Ja] = "プラグインが独自に StarPie.Plugin.Abstractions.dll を同梱しており、バージョンがホストと一致しません。プラグインフォルダーからこのファイルを削除してください。StarPie が一元提供します。"
+		};
+		dictionary["PluginScanFailureHintSha256Mismatch"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "文件内容与清单声明的哈希不一致，可能下载不完整或被第三方修改过。请从官方渠道重新获取。",
+			[LanguageCode.ZhTw] = "檔案內容與清單宣告的雜湊不一致，可能下載不完整或被第三方修改過。請從官方管道重新取得。",
+			[LanguageCode.En] = "The file content does not match the hash declared in the manifest — the download may be incomplete or the file modified by a third party. Get it again from the official source.",
+			[LanguageCode.Ja] = "ファイルの内容がマニフェストで宣言されたハッシュと一致しません。ダウンロードが不完全か、第三者によって改変された可能性があります。公式の配布元から再取得してください。"
+		};
+		dictionary["PluginScanFailureHintHostVersionOutOfRange"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前 StarPie 版本不在插件声明的可运行区间内。请升级 StarPie，或联系作者放宽版本区间。",
+			[LanguageCode.ZhTw] = "目前 StarPie 版本不在外掛宣告的可執行區間內。請升級 StarPie，或聯絡作者放寬版本區間。",
+			[LanguageCode.En] = "This StarPie version is outside the range the plugin declares it runs on. Update StarPie, or ask the author to widen the range.",
+			[LanguageCode.Ja] = "現在の StarPie のバージョンが、プラグインが宣言した動作可能範囲に含まれていません。StarPie を更新するか、作者に範囲の拡大を依頼してください。"
+		};
+		dictionary["PluginScanFailureHintDependencyMissing"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件依赖的另一个插件没有安装或未启用。请先安装并启用依赖项。",
+			[LanguageCode.ZhTw] = "外掛相依的另一個外掛沒有安裝或未啟用。請先安裝並啟用相依項目。",
+			[LanguageCode.En] = "Another plugin this one depends on is not installed or not enabled. Install and enable the dependency first.",
+			[LanguageCode.Ja] = "このプラグインが依存する別のプラグインがインストールされていないか、有効になっていません。先に依存プラグインをインストールして有効にしてください。"
+		};
+		dictionary["PluginScanFailureHintDependencyCycle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件之间形成了循环依赖，无法确定加载顺序。请联系作者修复依赖声明。",
+			[LanguageCode.ZhTw] = "外掛之間形成了循環相依，無法確定載入順序。請聯絡作者修復相依宣告。",
+			[LanguageCode.En] = "The plugins depend on each other in a cycle, so the load order cannot be determined. Ask the author to fix the dependency declarations.",
+			[LanguageCode.Ja] = "プラグイン間に循環依存があり、読み込み順を決定できません。作者に依存関係の宣言を修正してもらってください。"
+		};
 		dictionary["PluginCandidateInstall"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "📦 安装",

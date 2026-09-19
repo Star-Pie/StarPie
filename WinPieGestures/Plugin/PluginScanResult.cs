@@ -41,99 +41,93 @@ internal enum PluginScanFailure
     DependencyCycle,
 }
 
-/// <summary>原因码 → 用户可读文案与修复建议。</summary>
+/// <summary>
+/// 原因码 → 用户可读文案与修复建议。
+/// <para>
+/// 两个方法都用<b>穷尽 switch 表达式</b>（没有 <c>_</c> 兜底），并刻意屏蔽了 <b>CS8524</b>：
+/// </para>
+/// <list type="bullet">
+/// <item>保留穷尽的收益：往 <see cref="PluginScanFailure"/> 里加一项而忘了加分支，编译器报
+/// <b>CS8509</b>（实测：漏一个具名成员时 CS8509 与 CS8524 会同时出现，屏蔽 CS8524 不影响 8509）。</item>
+/// <item>屏蔽 CS8524 的原因：它抱怨的是**未命名**枚举值（<c>(PluginScanFailure)19</c> 这类强制转换产物）。
+/// 本枚举只在宿主内部产生，没有任何路径由外部数据反序列化或强制转换而来，那种值不存在。
+/// 不屏蔽的话，「穷尽」这个特性根本用不了 —— 编译器会对每个穷尽的 switch 都报一次。</item>
+/// </list>
+/// </summary>
 internal static class PluginScanFailureText
 {
+#pragma warning disable CS8524 // 未命名枚举值不可达，理由见类型注释
+    /// <summary>
+    /// 原因码 → 一句用户看得懂的短标题。
+    /// <para>
+    /// <b>刻意不写 <c>_</c> 兜底分支</b>：这样往 <see cref="PluginScanFailure"/> 里加一项、却忘了加词条时，
+    /// 编译器会直接报 CS8509（switch 表达式未穷尽），而不是静默退回一句「未知原因」——
+    /// 「新增了一种失败原因，却没告诉用户这是什么」正是这个类要防的那件事。
+    /// </para>
+    /// <para>
+    /// 枚举值只在宿主内部产生（没有任何一条路径由外部数据反序列化而来），
+    /// 所以不存在「强制转换出未声明的值」因而抛 <c>SwitchExpressionException</c> 的可能。
+    /// </para>
+    /// </summary>
     public static string Title(PluginScanFailure code) => code switch
     {
-        PluginScanFailure.None => "正常",
+        PluginScanFailure.None => I18n.T("PluginScanFailureTitleNone"),
 
-        PluginScanFailure.IdNotDeclared => "未找到插件标识",
-        PluginScanFailure.ManifestInvalid => "plugin.json 格式不正确",
-        PluginScanFailure.InvalidIdFormat => "插件 ID 格式非法",
-        PluginScanFailure.ReservedIdPrefix => "插件 ID 使用了保留前缀",
+        PluginScanFailure.IdNotDeclared => I18n.T("PluginScanFailureTitleIdNotDeclared"),
+        PluginScanFailure.ManifestInvalid => I18n.T("PluginScanFailureTitleManifestInvalid"),
+        PluginScanFailure.InvalidIdFormat => I18n.T("PluginScanFailureTitleInvalidIdFormat"),
+        PluginScanFailure.ReservedIdPrefix => I18n.T("PluginScanFailureTitleReservedIdPrefix"),
 
-        PluginScanFailure.DllNotFound => "找不到插件程序集",
-        PluginScanFailure.NotDotNetAssembly => "不是 .NET 程序集",
-        PluginScanFailure.NotIlOnly => "程序集含本机代码",
-        PluginScanFailure.WrongArchitecture => "架构不匹配（需要 64 位）",
+        PluginScanFailure.DllNotFound => I18n.T("PluginScanFailureTitleDllNotFound"),
+        PluginScanFailure.NotDotNetAssembly => I18n.T("PluginScanFailureTitleNotDotNetAssembly"),
+        PluginScanFailure.NotIlOnly => I18n.T("PluginScanFailureTitleNotIlOnly"),
+        PluginScanFailure.WrongArchitecture => I18n.T("PluginScanFailureTitleWrongArchitecture"),
 
-        PluginScanFailure.TargetFrameworkMismatch => "目标框架不兼容",
-        PluginScanFailure.NoContractImplementation => "不是 StarPie 插件",
-        PluginScanFailure.AmbiguousContractImplementation => "入口类型不唯一",
-        PluginScanFailure.EntryTypeNotFound => "清单声明的入口类型不存在",
-        PluginScanFailure.ApiVersionMismatch => "插件 SDK 契约版本不兼容",
-        PluginScanFailure.ContractAssemblyVersionMismatch => "SDK 程序集版本身份不一致",
+        PluginScanFailure.TargetFrameworkMismatch => I18n.T("PluginScanFailureTitleTargetFrameworkMismatch"),
+        PluginScanFailure.NoContractImplementation => I18n.T("PluginScanFailureTitleNoContractImplementation"),
+        PluginScanFailure.AmbiguousContractImplementation => I18n.T("PluginScanFailureTitleAmbiguousContractImplementation"),
+        PluginScanFailure.EntryTypeNotFound => I18n.T("PluginScanFailureTitleEntryTypeNotFound"),
+        PluginScanFailure.ApiVersionMismatch => I18n.T("PluginScanFailureTitleApiVersionMismatch"),
+        PluginScanFailure.ContractAssemblyVersionMismatch => I18n.T("PluginScanFailureTitleContractAssemblyVersionMismatch"),
 
-        PluginScanFailure.Sha256Mismatch => "文件已损坏或被修改",
-        PluginScanFailure.HostVersionOutOfRange => "宿主版本超出插件声明区间",
+        PluginScanFailure.Sha256Mismatch => I18n.T("PluginScanFailureTitleSha256Mismatch"),
+        PluginScanFailure.HostVersionOutOfRange => I18n.T("PluginScanFailureTitleHostVersionOutOfRange"),
 
-        PluginScanFailure.DependencyMissing => "缺少依赖插件",
-        PluginScanFailure.DependencyCycle => "插件依赖存在环",
-
-        _ => "未知原因",
+        PluginScanFailure.DependencyMissing => I18n.T("PluginScanFailureTitleDependencyMissing"),
+        PluginScanFailure.DependencyCycle => I18n.T("PluginScanFailureTitleDependencyCycle"),
     };
 
+    /// <summary>
+    /// 原因码 → 一段「接下来该怎么办」的建议。同样刻意不写 <c>_</c> 兜底（见 <see cref="Title"/>）。
+    /// </summary>
     public static string Hint(PluginScanFailure code) => code switch
     {
-        PluginScanFailure.IdNotDeclared =>
-            "这个 .dll 既没有同级的 plugin.json，也没有在程序集里声明 StarPiePluginId 元数据。" +
-            "让作者按文档在 csproj 里补上 AssemblyMetadata 是推荐做法（分发时只需一枚 .dll）；" +
-            "带 plugin.json 的完整插件包同样可以安装。",
+        PluginScanFailure.None => I18n.T("PluginScanFailureHintNone"),
 
-        PluginScanFailure.ManifestInvalid =>
-            "请检查 plugin.json 的字段名与类型是否与规范一致（可对照 plugin.schema.json）。",
+        PluginScanFailure.IdNotDeclared => I18n.T("PluginScanFailureHintIdNotDeclared"),
+        PluginScanFailure.ManifestInvalid => I18n.T("PluginScanFailureHintManifestInvalid"),
+        PluginScanFailure.InvalidIdFormat => I18n.T("PluginScanFailureHintInvalidIdFormat"),
+        PluginScanFailure.ReservedIdPrefix => I18n.T("PluginScanFailureHintReservedIdPrefix"),
 
-        PluginScanFailure.InvalidIdFormat =>
-            "插件 ID 需要是反向域名风格，全小写，例如 com.example.mytool。",
+        PluginScanFailure.DllNotFound => I18n.T("PluginScanFailureHintDllNotFound"),
+        PluginScanFailure.NotDotNetAssembly => I18n.T("PluginScanFailureHintNotDotNetAssembly"),
+        PluginScanFailure.NotIlOnly => I18n.T("PluginScanFailureHintNotIlOnly"),
+        PluginScanFailure.WrongArchitecture => I18n.T("PluginScanFailureHintWrongArchitecture"),
 
-        PluginScanFailure.ReservedIdPrefix =>
-            "starpie / windows / microsoft / system / builtin 前缀保留给官方，请换一个前缀。",
+        PluginScanFailure.TargetFrameworkMismatch => I18n.T("PluginScanFailureHintTargetFrameworkMismatch"),
+        PluginScanFailure.NoContractImplementation => I18n.T("PluginScanFailureHintNoContractImplementation"),
+        PluginScanFailure.AmbiguousContractImplementation => I18n.T("PluginScanFailureHintAmbiguousContractImplementation"),
+        PluginScanFailure.EntryTypeNotFound => I18n.T("PluginScanFailureHintEntryTypeNotFound"),
+        PluginScanFailure.ApiVersionMismatch => I18n.T("PluginScanFailureHintApiVersionMismatch"),
+        PluginScanFailure.ContractAssemblyVersionMismatch => I18n.T("PluginScanFailureHintContractAssemblyVersionMismatch"),
 
-        PluginScanFailure.DllNotFound =>
-            "清单里声明的程序集文件不在插件目录中，请确认打包时没有漏掉 .dll。",
+        PluginScanFailure.Sha256Mismatch => I18n.T("PluginScanFailureHintSha256Mismatch"),
+        PluginScanFailure.HostVersionOutOfRange => I18n.T("PluginScanFailureHintHostVersionOutOfRange"),
 
-        PluginScanFailure.NotDotNetAssembly =>
-            "这是一枚原生 C++ DLL 或非托管库，StarPie 插件必须是 .NET 程序集。你可能选错了文件。",
-
-        PluginScanFailure.NotIlOnly =>
-            "程序集混合了本机代码（C++/CLI）。StarPie 只接受纯托管（ILOnly）程序集。",
-
-        PluginScanFailure.WrongArchitecture =>
-            "程序集被编译为仅 32 位（Requires32Bit）。请把插件的平台目标改为 x64 或 AnyCPU 后重新发布。",
-
-        PluginScanFailure.TargetFrameworkMismatch =>
-            "插件的目标框架高于当前 StarPie。请升级 StarPie，或联系作者改用更低的 net8.0-windows 目标。",
-
-        PluginScanFailure.NoContractImplementation =>
-            "程序集里找不到 IStarPiePlugin 的实现类，说明它不是一个 StarPie 插件。",
-
-        PluginScanFailure.AmbiguousContractImplementation =>
-            "程序集里有多个 IStarPiePlugin 实现。请在 plugin.json 的 entryType 里明确指定入口类全名。",
-
-        PluginScanFailure.EntryTypeNotFound =>
-            "plugin.json 里 entryType 写的类型名在程序集中不存在，请核对命名空间与类型名拼写。",
-
-        PluginScanFailure.ApiVersionMismatch =>
-            "插件编译时使用的 SDK 契约主版本与当前 StarPie 不一致。请更新插件，或升级 StarPie。",
-
-        PluginScanFailure.ContractAssemblyVersionMismatch =>
-            "插件自带了 StarPie.Plugin.Abstractions.dll 且版本与宿主不一致。请删除插件目录里的这个文件，它会由 StarPie 统一提供。",
-
-        PluginScanFailure.Sha256Mismatch =>
-            "文件内容与清单声明的哈希不一致，可能下载不完整或被第三方修改过。请从官方渠道重新获取。",
-
-        PluginScanFailure.HostVersionOutOfRange =>
-            "当前 StarPie 版本不在插件声明的可运行区间内。请升级 StarPie，或联系作者放宽版本区间。",
-
-        PluginScanFailure.DependencyMissing =>
-            "插件依赖的另一个插件没有安装或未启用。请先安装并启用依赖项。",
-
-        PluginScanFailure.DependencyCycle =>
-            "插件之间形成了循环依赖，无法确定加载顺序。请联系作者修复依赖声明。",
-
-        _ => "请查看 StarPie 日志获取详细信息。",
+        PluginScanFailure.DependencyMissing => I18n.T("PluginScanFailureHintDependencyMissing"),
+        PluginScanFailure.DependencyCycle => I18n.T("PluginScanFailureHintDependencyCycle"),
     };
+#pragma warning restore CS8524
 }
 
 /// <summary>静态识别的完整结果。这是「安装确认卡」与「插件列表」的数据来源。</summary>
@@ -169,8 +163,15 @@ internal sealed class PluginScanResult
     /// <summary>摘要哈希前 12 位，用于界面展示。</summary>
     public string Sha256Short => Sha256.Length >= 12 ? Sha256.Substring(0, 12) : Sha256;
 
+    /// <summary>
+    /// 「标题：详情」一行。<b>分隔符也走词条</b>（<c>PluginScanFailureSeparator</c>）：
+    /// 中文与日文用全角「：」，英文用半角 ": " —— 写死全角的话，英文界面会出现
+    /// 「Not a .NET assembly：CorFlags=0x1…」这种中英标点混排。
+    /// </summary>
     public string DescribeFailure() =>
         Failure == PluginScanFailure.None
-            ? "正常"
-            : $"{PluginScanFailureText.Title(Failure)}：{ErrorDetail}";
+            ? PluginScanFailureText.Title(PluginScanFailure.None)
+            : PluginScanFailureText.Title(Failure)
+              + I18n.T("PluginScanFailureSeparator")
+              + ErrorDetail;
 }
