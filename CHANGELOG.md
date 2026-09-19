@@ -81,6 +81,30 @@
 - **`conftest.py` 抽出 `find_exe()` / `launch_app()`**：需要「启动前改现场」的用例（预置语言）必须自己控制启动时机，而 `app` 夹具启动得比用例早、替不了。抽出来是为了不再抄第二份候选路径列表 —— 抄一份漂一份，漂掉时的表现是「找不到 exe」这种与被测功能无关的失败。
 - **验收**：`dotnet build -c Release` → **0 警告 0 错误**；`pytest tests/` 收集 **27** 个用例（26 + 1）；修掉网络不确定性后**连续三次运行**（1 次标定 + 2 次断言）结果一致（0 新增 0 减少）；**变异测试**把 `ConfigModeProRadio.Content = I18n.T(...)` 注释掉（＝真实的「漏接线」形态），构建**仍 0 警告**，用例当场报 `英文界面上出现了 10 条台账里没有的中文文案：⚙️ 高级模式` 并列出页签与控件名；**共享夹具冒烟**再跑 `test_switch_all_tabs_smoothly` 与 `test_v138_i18n_multilanguage_support` 两条老用例，均 PASS。标定用的 `scratch/dump_i18n_en_cjk.py` 与中间产物已删除（台账改由用例自身以 `STARPIE_I18N_UPDATE_BASELINE=1` 重采，避免两份实现漂移）。
 
+### 🌍 插件管理页整块接入多语言，并新增 `[3f]`「卡片文案」护栏
+
+上一笔给台账补「插件卡片看不到」这个盲区时，顺查确认同一条渲染路径上还有 **2 处 `DataTemplate` 硬编码**与**约 22 条代码拼串** —— 它们集中在一个自称「所有面向用户的文案都集中在这里」的函数里，**集中了、但一条词条都没接**。本轮把这块整个接掉。
+
+- **`DataTemplate` 那两处只能改 `{Binding}`**：`SettingsWindow.xaml:3990` 的 `Content="🗑 卸载"` 与同模板的 `Content="启用"` 在 `ListBox.ItemTemplate` 里，**命名域不同、`Name` 对它无效**（所以 `check_i18n.py` 的「具名控件漏接 = 0」看不见它们，动态断言也够不着）。改为 `{Binding UninstallText}` / `{Binding EnableText}`。
+- **卡片文案从窗口类搬进 `PluginListItem`**：`BuildPluginListItem`（约 90 行）与 `DescribePluginState` 原本是 `SettingsWindow` 的私有成员，**无界面自检够不着**，「卡片翻没翻」就写不出断言。整体搬成 `Plugin/PluginListItem.Build` 与 `PluginListItem.DescribeState` —— 这一步不是为了整洁，是**可测性的前提**：面向用户的文案构造必须待在纯静态、非窗口类里。
+- **`DescribeState` 拆出「值驱动」重载**（`(state, requiresRestart, entryEnabled)`）：自检要能用 `Enum.GetValues` 逐个成员驱动它，而「逐成员」没法靠构造 9 个 `PluginInstance` 来做（`Active` / `Installed` 还各有两种处境）。
+- **顺带修掉一处藏了很久的缺陷**：状态兜底原是 `_ => instance.State.ToString()`，于是 `Stopping` 在中文界面上直接显示英文枚举名。现收进 `PluginsStateStopping`，并由穷尽 switch 保证它不可能再落兜底。
+- **补 36 个词条 × 4 语言**：卡片摘要与详情 8 个、两个按钮 2 个、状态名 11 个、弹窗与提示 15 个；简中值与原字面量逐字一致 ⇒ **简中界面一字不变**。
+- **收编一个孤儿键**：`PluginsDisableFailed`（原值 `停用失败：{0}`，此前**全仓 0 引用**）。插件行开关的停用失败分支本来就没接词条，现按 `停用插件 {0} 失败：\n\n{1}` 接通 —— 措辞与启用侧的既有文案对齐，不再出现「停用失败只有动作名、没有原因」。
+- **`PluginRowEnabledCheckBox_Click` 一并接线**：确认停用 / 停用中 / 停用失败 / 启动失败 / 插件系统未就绪，以及重新扫描两条结果提示与两个「打开目录失败」提示。
+- **自检新增 `[3f]`（4 条断言）**：① 逐 `PluginRuntimeState` 成员驱动 `DescribeState`，断言非空、**不是裸键名**、有图标，并单独断言 `Active` 与 `Installed` 的两种处境文案不同；② 逐语言 `PluginListItem.Build`，英文卡片的**宿主部分**（先按长度降序摘掉插件自带数据）不许有方块字与全角标点；③ 断言详情里含 `pluginId`（否则「没有中文」可能只是「什么都没拼」）；④ 四语言卡片两两不同。段落刻意排在 `[4]` **之前** —— `--skip-invoke` 会在 `[4]` 开头提前 return，排到后面等于日常回归根本不执行（`[5b]` 踩过这个坑）。
+- **判据与台账对齐**：`[3f]` 的 CJK 判据与 `tests/test_i18n.py` 的 `CJK_RE` 显式一致，**刻意不含 U+3000**（表意空格在本项目里当排版分隔符用，与语言无关）。两处判据漂了会得到「自检绿、UI 套件红」这种自相矛盾的结果。
+
+**两次变异测试证明 `[3f]` 是真护栏**：① 删掉 `Stopping` 分支 ⇒ 编译期 **CS8509** 报「模式 Stopping 未包含在内」，且 `#pragma warning disable CS8524` 没有把它一起吞掉（这正是「穷尽 switch 能当护栏」成立的前提）；② 把 `PluginsStateActive` 写成 `PluginsStateActiveTypo` ⇒ 自检当场报「状态「Active」取到的是裸键名『PluginsStateActiveTypo』—— 词条键写错了」。两次均已还原，还原后 `grep MUTATION` 为空、全量重建回到 0/0。
+
+**诚实边界（写进注释，免得后人以为运行时断言是全覆盖）**：`[3f]` 的裸键名判据是**前缀形状**（「以 `PluginsState` 开头」），因为 `DescribeState` 内部才认识键名，运行时拿不到。保留前缀的错写会红；**前缀整个写错**（如 `PluginStateActive`）运行时看不见 —— 那一路由 `check_i18n.py` 的「引用但未定义」静态兜住。两者是**分工**，不是互相替代：静态管全覆盖，运行时管「取到手的到底像不像话」。
+
+**台账这一轮零变化，而且是正确结果**：接完之后重采 `tests/i18n_baseline.json`，与旧台账**逐字节相同**（`git diff` 为空）。两层原因：卡片在 `ItemTemplate` 里，而**用例沙箱中没有任何已安装插件** ⇒ 列表为空、模板从未实例化；那条「原先引用的插件动作已不可用」提示也只在特定状态下才出现。也就是说这张台账**根本够不着**插件卡片 —— 这恰恰是 `[3f]` 存在的理由。已把这条实测结论写进 `tests/test_i18n.py` 的盲区 5、`AGENTS.md` §5.4，并给「收紧台账」一节补了一句：**重采后 diff 为空也是有效结论**，该做的是补一条够得着那个界面的断言，而不是反复重跑或去搬台账。
+
+**验证**：`dotnet build -c Release -t:Rebuild` → **0 警告 0 错误**（全量重建；增量构建的 0/0 不作数 —— 构建被残留进程锁住时会顺带打印一批假警告）；`--plugin-selftest <官方 Launch.dll> --skip-invoke` → `PASS —— 全链路可用`，段落号 `[0][1][2][3][3b][3c][3d][3e][3f][3j][4][5][5b][6][7]`、0 条 FAIL、`%TEMP%/StarPie-PluginSelfTest-*` 零残留；`check_i18n.py` → **698 唯一键 / 0 重复 / 0 缺语言分支 / 0 简中空值 / 0 引用但未定义**，本次新增 36 键全部「引用=是、语言=4」，占位符跨语言不一致 **0**，插件页漏接具名控件 **0**；`scan_cjk_logic.py --pending` → 34 处全部已分类、默认名 8/8、退出码 0；`pytest tests/test_i18n.py` → PASSED。
+
+**已知未覆盖（登记，不冒充已做）**：`RefreshFocusPluginPanel` 那 19 条 —— 经查它**只在切换动作类型时被调用**，切语言不会重渲染，接完会残留旧语言，须连带一个重渲染钩子，属独立改动；`SettingsWindow.xaml.cs` 其余约 30 处硬编码中文；插件识别 / 清单校验 / 运行时拒绝文案（`PluginScanner`、`PluginManifestReader`、`PluginRuntime` + `PluginPathModules`、`OfficialPluginClient`、`PluginParameterValidator`）约 80 条。**日志与自检控制台输出约 400 行按既有约定不翻**（它们是给排障的人看的，不随界面语言切换）。
+
 ### 🧪 自检
 
 - `dotnet build WinPieGestures/WinPieGestures.csproj -c Release` → **0 警告 0 错误**。

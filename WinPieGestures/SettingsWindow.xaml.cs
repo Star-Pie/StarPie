@@ -2787,6 +2787,12 @@ public partial class SettingsWindow : Window
 		{
 			FocusPluginReloadBtn.Content = I18n.T("FocusPluginReload");
 		}
+		if (FocusPluginActionBrokenHint != null)
+		{
+			// 这一段原先没有 Name，Text 是写死的中文 ⇒ 无论切到哪种语言都一直是中文。
+			// 它不在 DataTemplate 里，所以给个名字在这里重设即可（不用 {Binding}）。
+			FocusPluginActionBrokenHint.Text = I18n.T("PluginsActionBrokenHint");
+		}
 		if (FocusPopulateTileSubActionsBtn != null)
 		{
 			FocusPopulateTileSubActionsBtn.Content = I18n.T("FocusPopulateTileSubActions");
@@ -6616,7 +6622,7 @@ public partial class SettingsWindow : Window
 		{
 			foreach (PluginInstance instance in PluginHost.ListInstances())
 			{
-				items.Add(BuildPluginListItem(instance));
+				items.Add(PluginListItem.Build(instance));
 			}
 		}
 		catch (Exception ex)
@@ -6851,86 +6857,9 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, $"打开扫描目录失败：{ex.Message}", "StarPie 插件",
-				MessageBoxButton.OK, MessageBoxImage.Warning);
+			System.Windows.MessageBox.Show(this, I18n.TF("PluginsOpenScanFolderFailed", ex.Message),
+				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
-	}
-
-	/// <summary>把运行时实例翻译成列表项。所有面向用户的文案都集中在这里。</summary>
-	private static PluginListItem BuildPluginListItem(PluginInstance instance)
-	{
-		PluginRegistryEntry entry = instance.Entry;
-		StarPie.Plugin.PluginManifest? manifest = instance.Scan.Manifest;
-
-		string displayName = !string.IsNullOrWhiteSpace(entry.Name)
-			? entry.Name
-			: (!string.IsNullOrWhiteSpace(manifest?.Name) ? manifest!.Name : instance.PluginId);
-
-		(string glyph, string stateText) = DescribePluginState(instance);
-
-		var summary = new List<string>();
-		if (!string.IsNullOrWhiteSpace(entry.Author)) summary.Add($"作者 {entry.Author}");
-		if (instance.ActionCount > 0) summary.Add($"贡献 {instance.ActionCount} 个动作");
-		else if (instance.State != PluginRuntimeState.Active) summary.Add("未加载");
-		if (!string.IsNullOrWhiteSpace(entry.License)) summary.Add(entry.License);
-
-		string summaryText = string.Join("　|　", summary);
-		if (!string.IsNullOrWhiteSpace(entry.Description))
-		{
-			summaryText = entry.Description + "\n" + summaryText;
-		}
-		if (entry.CapabilitiesAck is { Count: > 0 })
-		{
-			summaryText += $"\n声明能力：{string.Join("、", entry.CapabilitiesAck)}";
-		}
-
-		var detail = new List<string> { $"ID {instance.PluginId}" };
-		if (!string.IsNullOrWhiteSpace(instance.Scan.TargetFramework)) detail.Add(instance.Scan.TargetFramework);
-		if (!string.IsNullOrWhiteSpace(instance.Scan.MachineText)) detail.Add(instance.Scan.MachineText);
-		if (!string.IsNullOrWhiteSpace(instance.Scan.Sha256Short)) detail.Add($"SHA256 {instance.Scan.Sha256Short}");
-		detail.Add(instance.Scan.IsSigned ? "已签名" : "未签名");
-		if (!string.IsNullOrWhiteSpace(instance.Directory)) detail.Add(instance.Directory);
-		if (!string.IsNullOrWhiteSpace(entry.ExternalPath)) detail.Add($"外部路径 {entry.ExternalPath}");
-
-		// 错误行：优先展示插件自己的失败原因；没有失败但待重启时，说明「为什么要重启」。
-		string errorText = instance.LastError ?? "";
-		if (string.IsNullOrWhiteSpace(errorText) && instance.RequiresRestart)
-		{
-			errorText = "旧程序集尚未从内存释放，重启 StarPie 后才会完全生效。";
-		}
-
-		return new PluginListItem
-		{
-			PluginId = instance.PluginId,
-			DisplayName = displayName,
-			VersionText = string.IsNullOrWhiteSpace(entry.Version) ? "" : $"v{entry.Version}",
-			SummaryText = summaryText,
-			DetailText = string.Join("　·　", detail),
-			StateText = stateText,
-			StatusGlyph = glyph,
-			ErrorText = errorText,
-			IsEnabled = entry.Enabled,
-		};
-	}
-
-	private static (string Glyph, string Text) DescribePluginState(PluginInstance instance)
-	{
-		if (instance.State == PluginRuntimeState.Active)
-		{
-			return instance.RequiresRestart ? ("🔄", "运行中 · 待重启") : ("✅", "运行中");
-		}
-
-		return instance.State switch
-		{
-			PluginRuntimeState.Loading => ("⏳", "加载中"),
-			PluginRuntimeState.Installed => ("⭕", instance.Entry.Enabled ? "已启用 · 待加载" : "未启用"),
-			PluginRuntimeState.Faulted => ("⚠️", "运行异常"),
-			PluginRuntimeState.Quarantined => ("🚫", "已隔离"),
-			PluginRuntimeState.Failed => ("❌", "加载失败"),
-			PluginRuntimeState.Incompatible => ("⛔", "不兼容"),
-			PluginRuntimeState.RequiresRestart => ("🔄", "待重启生效"),
-			_ => ("⭕", instance.State.ToString()),
-		};
 	}
 
 	private bool EnsurePluginSystemReady()
@@ -6938,8 +6867,8 @@ public partial class SettingsWindow : Window
 		if (PluginHost.IsInitialized) return true;
 
 		System.Windows.MessageBox.Show(this,
-			"插件系统尚未完成初始化。请稍候片刻再试，或重启 StarPie。",
-			"StarPie 插件", MessageBoxButton.OK, MessageBoxImage.Information);
+			I18n.T("PluginsNotReady"),
+			I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		return false;
 	}
 
@@ -7045,13 +6974,13 @@ public partial class SettingsWindow : Window
 
 		int installable = PluginHost.Candidates.Count(c => c.CanInstall);
 		string candidateHint = installable > 0
-			? $"扫描目录里另有 {installable} 个可安装项。"
+			? I18n.TF("PluginsRescanCandidateHint", installable)
 			: "";
 
-		PluginHost.NotifyUser("StarPie 插件",
+		PluginHost.NotifyUser(I18n.T("PluginsMsgTitle"),
 			discovered > 0
-				? $"扫描完成，新发现 {discovered} 个插件。{candidateHint}"
-				: $"扫描完成，没有发现新插件。{candidateHint}");
+				? I18n.TF("PluginsRescanFound", discovered, candidateHint)
+				: I18n.TF("PluginsRescanNone", candidateHint));
 	}
 
 	private void OpenPluginsFolderButton_Click(object sender, RoutedEventArgs e)
@@ -7067,8 +6996,8 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, $"打开插件目录失败：{ex.Message}", "StarPie 插件",
-				MessageBoxButton.OK, MessageBoxImage.Warning);
+			System.Windows.MessageBox.Show(this, I18n.TF("PluginsOpenDataFolderFailed", ex.Message),
+				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -7100,10 +7029,8 @@ public partial class SettingsWindow : Window
 		if (!desired && affected > 0)
 		{
 			System.Windows.MessageBox.Show(this,
-				$"插件系统已关闭。\n\n" +
-				$"已经分配到轮盘上的 {affected} 个插件动作会原样保留，但触发时不会执行。\n" +
-				"仍在运行的插件任务会收到取消信号并由宿主继续追踪。",
-				"StarPie 插件", MessageBoxButton.OK, MessageBoxImage.Information);
+				I18n.TF("PluginsDisabledNotice", affected),
+				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 	}
 
@@ -7123,10 +7050,8 @@ public partial class SettingsWindow : Window
 			{
 				string pluginName = PluginHost.Find(pluginId)?.Entry.Name ?? pluginId;
 				MessageBoxResult choice = System.Windows.MessageBox.Show(this,
-					$"确定停用「{pluginName}」吗？\n\n" +
-					$"· 当前配置中有 {affected} 个动作由它提供，停用期间这些动作会暂时失效\n" +
-					"· 配置不会丢失，重新启用即可恢复",
-					"停用插件", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
+					I18n.TF("PluginsConfirmDisable", pluginName, affected),
+					I18n.T("PluginsConfirmDisableTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
 				if (choice != MessageBoxResult.Yes)
 				{
 					box.IsChecked = true;
@@ -7141,8 +7066,8 @@ public partial class SettingsWindow : Window
 			{
 				if (!PluginHost.Enable(pluginId, out string enableError))
 				{
-					System.Windows.MessageBox.Show(this, $"启用插件 {pluginId} 失败：\n\n{enableError}",
-						"StarPie 插件", MessageBoxButton.OK, MessageBoxImage.Warning);
+					System.Windows.MessageBox.Show(this, I18n.TF("PluginsEnableFailed", pluginId, enableError),
+						I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 				}
 			}
 			else
@@ -7154,13 +7079,15 @@ public partial class SettingsWindow : Window
 
 				if (stop.Status == PluginStopStatus.Failed)
 				{
-					System.Windows.MessageBox.Show(this, $"停用插件 {pluginId} 失败：\n\n{stop.Message}",
-						"StarPie 插件", MessageBoxButton.OK, MessageBoxImage.Warning);
+					System.Windows.MessageBox.Show(this, I18n.TF("PluginsDisableFailed", pluginId, stop.Message),
+						I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 				}
 				else if (!stop.IsFullyStopped)
 				{
+					// stop.Message 由宿主生成（「插件「X」仍有 N 个调用未结束…」），
+					// 属宿主内部消息，不在本次接线范围内。
 					System.Windows.MessageBox.Show(this, stop.Message,
-						"插件正在后台停止", MessageBoxButton.OK, MessageBoxImage.Information);
+						I18n.T("PluginsStoppingTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 				}
 			}
 		}
@@ -7180,11 +7107,8 @@ public partial class SettingsWindow : Window
 		}
 
 		MessageBoxResult choice = System.Windows.MessageBox.Show(this,
-			$"确定要卸载插件 {pluginId} 吗？\n\n" +
-			"· 插件文件与它自己的配置会被删除\n" +
-			"· 已经分配到轮盘上的插件动作会保留，但触发时会提示「插件不可用」\n\n" +
-			"此操作不可撤销。",
-			"卸载插件", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+			I18n.TF("PluginsConfirmUninstall", pluginId),
+			I18n.T("PluginsConfirmUninstallTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
 
 		if (choice != MessageBoxResult.Yes) return;
 
@@ -7194,8 +7118,8 @@ public partial class SettingsWindow : Window
 			PluginUninstallResult result = await PluginHost.UninstallAsync(pluginId, removePluginData: true);
 			if (!result.Success)
 			{
-				System.Windows.MessageBox.Show(this, $"卸载失败：\n\n{result.Error}", "StarPie 插件",
-					MessageBoxButton.OK, MessageBoxImage.Warning);
+				System.Windows.MessageBox.Show(this, I18n.TF("PluginsUninstallFailed", result.Error),
+					I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 		}
 		finally

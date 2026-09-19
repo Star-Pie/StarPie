@@ -1177,12 +1177,15 @@ public static class I18n
 			[LanguageCode.En] = "StarPie Plugins",
 			[LanguageCode.Ja] = "StarPie プラグイン"
 		};
+		// 这个键此前是「建了没人用」的孤儿（值为「停用失败：{0}」，全仓零引用），而代码里
+		// 实际那处是硬编码的「停用插件 {pluginId} 失败：\n\n{...}」。改为与真实用法一致的
+		// 两占位形式并接线，孤儿键少一个、硬编码少一处。
 		dictionary["PluginsDisableFailed"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "停用失败：{0}",
-			[LanguageCode.ZhTw] = "停用失敗：{0}",
-			[LanguageCode.En] = "Disable failed: {0}",
-			[LanguageCode.Ja] = "無効化に失敗しました：{0}"
+			[LanguageCode.ZhCn] = "停用插件 {0} 失败：\n\n{1}",
+			[LanguageCode.ZhTw] = "停用外掛 {0} 失敗：\n\n{1}",
+			[LanguageCode.En] = "Failed to disable plugin {0}:\n\n{1}",
+			[LanguageCode.Ja] = "プラグイン {0} の無効化に失敗しました：\n\n{1}"
 		};
 		dictionary["PluginsReloadFailed"] = new Dictionary<LanguageCode, string>
 		{
@@ -1753,6 +1756,275 @@ public static class I18n
 			[LanguageCode.ZhTw] = "找不到外掛 {0}，請到「外掛與擴充」頁查看。",
 			[LanguageCode.En] = "Plugin {0} was not found. Check the Plugins page.",
 			[LanguageCode.Ja] = "プラグイン {0} が見つかりません。「プラグイン」ページを確認してください。"
+		};
+
+		// ---- 插件管理页：已安装插件的卡片 ----
+		// 这一组由 PluginListItem 在**构建时**取当前语言填入（每次刷新整体重建列表，
+		// 所以切语言后重新绑定数据源即可换语言）。它们此前是 BuildPluginListItem 里的拼串。
+		dictionary["PluginsCardAuthor"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "作者 {0}",
+			[LanguageCode.ZhTw] = "作者 {0}",
+			[LanguageCode.En] = "by {0}",
+			[LanguageCode.Ja] = "作者 {0}"
+		};
+		dictionary["PluginsCardActionCount"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "贡献 {0} 个动作",
+			[LanguageCode.ZhTw] = "貢獻 {0} 個動作",
+			[LanguageCode.En] = "provides {0} action(s)",
+			[LanguageCode.Ja] = "動作 {0} 個を提供"
+		};
+		dictionary["PluginsCardNotLoaded"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未加载",
+			[LanguageCode.ZhTw] = "未載入",
+			[LanguageCode.En] = "not loaded",
+			[LanguageCode.Ja] = "未読み込み"
+		};
+		dictionary["PluginsCardCapabilities"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "声明能力：{0}",
+			[LanguageCode.ZhTw] = "宣告能力：{0}",
+			[LanguageCode.En] = "Declared capabilities: {0}",
+			[LanguageCode.Ja] = "宣言された機能：{0}"
+		};
+		dictionary["PluginsCardSigned"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已签名",
+			[LanguageCode.ZhTw] = "已簽章",
+			[LanguageCode.En] = "signed",
+			[LanguageCode.Ja] = "署名済み"
+		};
+		dictionary["PluginsCardUnsigned"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未签名",
+			[LanguageCode.ZhTw] = "未簽章",
+			[LanguageCode.En] = "unsigned",
+			[LanguageCode.Ja] = "未署名"
+		};
+		dictionary["PluginsCardExternalPath"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "外部路径 {0}",
+			[LanguageCode.ZhTw] = "外部路徑 {0}",
+			[LanguageCode.En] = "external path {0}",
+			[LanguageCode.Ja] = "外部パス {0}"
+		};
+		dictionary["PluginsCardRestartReason"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "旧程序集尚未从内存释放，重启 StarPie 后才会完全生效。",
+			[LanguageCode.ZhTw] = "舊組件尚未從記憶體釋放，重新啟動 StarPie 後才會完全生效。",
+			[LanguageCode.En] = "The old assembly is still held in memory; it takes full effect only after restarting StarPie.",
+			[LanguageCode.Ja] = "古いアセンブリがまだメモリ上に残っています。StarPie を再起動すると完全に反映されます。"
+		};
+
+		// ---- 插件管理页：卡片上的两个按钮（DataTemplate 内的文字） ----
+		// 它们在 ListBox.ItemTemplate 里，命名域不同 ⇒ Name 无效，只能 {Binding} 到
+		// PluginListItem 的本地化属性。写成 XAML 字面量的话，静态扫「有 Name + 硬编码中文」
+		// 与按 auto_id 的 UI 断言**双双看不见**它们（实测就是这样漏了很久）。
+		dictionary["PluginsCardEnableCheckBox"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启用",
+			[LanguageCode.ZhTw] = "啟用",
+			[LanguageCode.En] = "Enable",
+			[LanguageCode.Ja] = "有効化"
+		};
+		dictionary["PluginsCardUninstallButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🗑 卸载",
+			[LanguageCode.ZhTw] = "🗑 解除安裝",
+			[LanguageCode.En] = "🗑 Uninstall",
+			[LanguageCode.Ja] = "🗑 アンインストール"
+		};
+
+		// ---- 插件管理页：运行时状态徽标 ----
+		// 与 PluginRuntimeState 一一对应，由 DescribePluginState 的穷尽 switch 取用；
+		// 加枚举成员不加词条会触发 CS8509（编译期护栏），不会静默退回一个英文枚举名。
+		dictionary["PluginsStateActive"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "运行中",
+			[LanguageCode.ZhTw] = "執行中",
+			[LanguageCode.En] = "Running",
+			[LanguageCode.Ja] = "実行中"
+		};
+		dictionary["PluginsStateActiveRestartPending"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "运行中 · 待重启",
+			[LanguageCode.ZhTw] = "執行中 · 待重啟",
+			[LanguageCode.En] = "Running · restart pending",
+			[LanguageCode.Ja] = "実行中 · 再起動待ち"
+		};
+		dictionary["PluginsStateLoading"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "加载中",
+			[LanguageCode.ZhTw] = "載入中",
+			[LanguageCode.En] = "Loading",
+			[LanguageCode.Ja] = "読み込み中"
+		};
+		dictionary["PluginsStateEnabledPendingLoad"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已启用 · 待加载",
+			[LanguageCode.ZhTw] = "已啟用 · 待載入",
+			[LanguageCode.En] = "Enabled · pending load",
+			[LanguageCode.Ja] = "有効 · 読み込み待ち"
+		};
+		dictionary["PluginsStateStopping"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正在停止",
+			[LanguageCode.ZhTw] = "正在停止",
+			[LanguageCode.En] = "Stopping",
+			[LanguageCode.Ja] = "停止中"
+		};
+		dictionary["PluginsStateDisabled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未启用",
+			[LanguageCode.ZhTw] = "未啟用",
+			[LanguageCode.En] = "Not enabled",
+			[LanguageCode.Ja] = "無効"
+		};
+		dictionary["PluginsStateFaulted"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "运行异常",
+			[LanguageCode.ZhTw] = "執行異常",
+			[LanguageCode.En] = "Runtime error",
+			[LanguageCode.Ja] = "実行時エラー"
+		};
+		dictionary["PluginsStateQuarantined"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已隔离",
+			[LanguageCode.ZhTw] = "已隔離",
+			[LanguageCode.En] = "Quarantined",
+			[LanguageCode.Ja] = "隔離済み"
+		};
+		dictionary["PluginsStateFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "加载失败",
+			[LanguageCode.ZhTw] = "載入失敗",
+			[LanguageCode.En] = "Load failed",
+			[LanguageCode.Ja] = "読み込み失敗"
+		};
+		dictionary["PluginsStateIncompatible"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "不兼容",
+			[LanguageCode.ZhTw] = "不相容",
+			[LanguageCode.En] = "Incompatible",
+			[LanguageCode.Ja] = "非互換"
+		};
+		dictionary["PluginsStateRestartPending"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "待重启生效",
+			[LanguageCode.ZhTw] = "待重啟生效",
+			[LanguageCode.En] = "Restart required",
+			[LanguageCode.Ja] = "再起動で有効"
+		};
+
+		// ---- 插件管理页：弹窗与托盘提示 ----
+		dictionary["PluginsNotReady"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件系统尚未完成初始化。请稍候片刻再试，或重启 StarPie。",
+			[LanguageCode.ZhTw] = "外掛系統尚未完成初始化。請稍候片刻再試，或重新啟動 StarPie。",
+			[LanguageCode.En] = "The plugin system has not finished initializing yet. Please wait a moment and try again, or restart StarPie.",
+			[LanguageCode.Ja] = "プラグインシステムの初期化が完了していません。しばらく待ってから再試行するか、StarPie を再起動してください。"
+		};
+		dictionary["PluginsOpenDataFolderFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开插件目录失败：{0}",
+			[LanguageCode.ZhTw] = "開啟外掛目錄失敗：{0}",
+			[LanguageCode.En] = "Failed to open the plugin folder: {0}",
+			[LanguageCode.Ja] = "プラグインフォルダーを開けませんでした：{0}"
+		};
+		dictionary["PluginsOpenScanFolderFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开扫描目录失败：{0}",
+			[LanguageCode.ZhTw] = "開啟掃描目錄失敗：{0}",
+			[LanguageCode.En] = "Failed to open the scan folder: {0}",
+			[LanguageCode.Ja] = "スキャンフォルダーを開けませんでした：{0}"
+		};
+		// 英文 / 日文模板末尾刻意留一个空格与提示句分隔；提示为空时会留一个**行尾空格**。
+		// 气泡提示里看不见，换来的是词条值不必藏一个首空格（那种空格更容易在维护中丢失）。
+		dictionary["PluginsRescanFound"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扫描完成，新发现 {0} 个插件。{1}",
+			[LanguageCode.ZhTw] = "掃描完成，新發現 {0} 個外掛。{1}",
+			[LanguageCode.En] = "Scan complete: {0} new plugin(s) found. {1}",
+			[LanguageCode.Ja] = "スキャン完了。新しいプラグインを {0} 個検出しました。{1}"
+		};
+		dictionary["PluginsRescanNone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扫描完成，没有发现新插件。{0}",
+			[LanguageCode.ZhTw] = "掃描完成，沒有發現新外掛。{0}",
+			[LanguageCode.En] = "Scan complete: no new plugins found. {0}",
+			[LanguageCode.Ja] = "スキャン完了。新しいプラグインは見つかりませんでした。{0}"
+		};
+		dictionary["PluginsRescanCandidateHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扫描目录里另有 {0} 个可安装项。",
+			[LanguageCode.ZhTw] = "掃描目錄裡另有 {0} 個可安裝項目。",
+			[LanguageCode.En] = "There are also {0} installable items in the scan folder.",
+			[LanguageCode.Ja] = "スキャンフォルダーには他に {0} 件のインストール可能な項目があります。"
+		};
+		dictionary["PluginsDisabledNotice"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件系统已关闭。\n\n已经分配到轮盘上的 {0} 个插件动作会原样保留，但触发时不会执行。\n仍在运行的插件任务会收到取消信号并由宿主继续追踪。",
+			[LanguageCode.ZhTw] = "外掛系統已關閉。\n\n已經分配到轉盤上的 {0} 個外掛動作會原樣保留，但觸發時不會執行。\n仍在執行的外掛工作會收到取消訊號並由宿主繼續追蹤。",
+			[LanguageCode.En] = "The plugin system is now off.\n\nThe {0} plugin action(s) already assigned to your wheels are kept, but they will not run when triggered.\nPlugin tasks still running will get a cancel signal, and the host keeps tracking them.",
+			[LanguageCode.Ja] = "プラグインシステムをオフにしました。\n\nホイールに割り当て済みの {0} 個のプラグイン動作はそのまま残りますが、実行されません。\n実行中のプラグイン処理にはキャンセルが通知され、ホストが引き続き追跡します。"
+		};
+		dictionary["PluginsConfirmDisableTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "停用插件",
+			[LanguageCode.ZhTw] = "停用外掛",
+			[LanguageCode.En] = "Disable plugin",
+			[LanguageCode.Ja] = "プラグインを無効化"
+		};
+		dictionary["PluginsConfirmDisable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "确定停用「{0}」吗？\n\n· 当前配置中有 {1} 个动作由它提供，停用期间这些动作会暂时失效\n· 配置不会丢失，重新启用即可恢复",
+			[LanguageCode.ZhTw] = "確定停用「{0}」嗎？\n\n· 目前設定中有 {1} 個動作由它提供，停用期間這些動作會暫時失效\n· 設定不會遺失，重新啟用即可恢復",
+			[LanguageCode.En] = "Disable plugin {0}?\n\n· {1} action(s) in the current configuration come from it and will stop working while it is disabled\n· Nothing is lost from your configuration; re-enabling restores them",
+			[LanguageCode.Ja] = "プラグイン「{0}」を無効化しますか？\n\n· 現在の設定には、これが提供する動作が {1} 個あり、無効化中は使用できなくなります\n· 設定は失われません。再度有効化すれば復元します"
+		};
+		dictionary["PluginsEnableFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "启用插件 {0} 失败：\n\n{1}",
+			[LanguageCode.ZhTw] = "啟用外掛 {0} 失敗：\n\n{1}",
+			[LanguageCode.En] = "Failed to enable plugin {0}:\n\n{1}",
+			[LanguageCode.Ja] = "プラグイン {0} の有効化に失敗しました：\n\n{1}"
+		};
+		dictionary["PluginsStoppingTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件正在后台停止",
+			[LanguageCode.ZhTw] = "外掛正在背景停止",
+			[LanguageCode.En] = "Plugin is stopping in the background",
+			[LanguageCode.Ja] = "プラグインはバックグラウンドで停止中"
+		};
+		dictionary["PluginsConfirmUninstallTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "卸载插件",
+			[LanguageCode.ZhTw] = "解除安裝外掛",
+			[LanguageCode.En] = "Uninstall plugin",
+			[LanguageCode.Ja] = "プラグインをアンインストール"
+		};
+		dictionary["PluginsConfirmUninstall"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "确定要卸载插件 {0} 吗？\n\n· 插件文件与它自己的配置会被删除\n· 已经分配到轮盘上的插件动作会保留，但触发时会提示「插件不可用」\n\n此操作不可撤销。",
+			[LanguageCode.ZhTw] = "確定要解除安裝外掛 {0} 嗎？\n\n· 外掛檔案與它自己的設定會被刪除\n· 已經分配到轉盤上的外掛動作會保留，但觸發時會提示「外掛無法使用」\n\n此操作無法復原。",
+			[LanguageCode.En] = "Uninstall plugin {0}?\n\n· The plugin files and its own settings will be deleted\n· Plugin actions already assigned to your wheels are kept, but they will report that the plugin is unavailable when triggered\n\nThis cannot be undone.",
+			[LanguageCode.Ja] = "プラグイン {0} をアンインストールしますか？\n\n· プラグインのファイルと独自の設定が削除されます\n· ホイールに割り当て済みのプラグイン動作は残りますが、実行時にプラグインが利用できない旨が表示されます\n\nこの操作は取り消せません。"
+		};
+		dictionary["PluginsUninstallFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "卸载失败：\n\n{0}",
+			[LanguageCode.ZhTw] = "解除安裝失敗：\n\n{0}",
+			[LanguageCode.En] = "Uninstall failed:\n\n{0}",
+			[LanguageCode.Ja] = "アンインストールに失敗しました：\n\n{0}"
+		};
+		dictionary["PluginsActionBrokenHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚠️ 原先引用的插件动作已不可用（插件可能已被停用或卸载），请重新选择。",
+			[LanguageCode.ZhTw] = "⚠️ 原先引用的外掛動作已無法使用（外掛可能已被停用或解除安裝），請重新選擇。",
+			[LanguageCode.En] = "⚠️ The plugin action this referred to is no longer available (the plugin may be disabled or uninstalled). Please choose another one.",
+			[LanguageCode.Ja] = "⚠️ 参照していたプラグイン動作は利用できません（プラグインが無効化または削除された可能性があります）。選び直してください。"
 		};
 		dictionary["PluginCandidateAuthor"] = new Dictionary<LanguageCode, string>
 		{

@@ -1295,7 +1295,7 @@
                                   </ComboBox.GroupStyle>
                                 </ComboBox>
                               </StackPanel>
-                              <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,9" FontSize="11" TextWrapping="Wrap" Foreground="#D97706" Visibility="{Binding IsPluginActionBroken, Converter={StaticResource BoolToVis}}" Text="⚠️ 原先引用的插件动作已不可用（插件可能已被停用或卸载），请重新选择。" />
+                              <TextBlock Name="FocusPluginActionBrokenHint" Grid.Column="1" VerticalAlignment="Bottom" Margin="0,0,0,9" FontSize="11" TextWrapping="Wrap" Foreground="#D97706" Visibility="{Binding IsPluginActionBroken, Converter={StaticResource BoolToVis}}" Text="⚠️ 原先引用的插件动作已不可用（插件可能已被停用或卸载），请重新选择。" />
                             </Grid>
 
                             <!-- 3. 参数专属配置区 -->
@@ -3986,8 +3986,8 @@
                         </TextBlock>
                       </StackPanel>
                       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                        <CheckBox Content="启用" Tag="{Binding PluginId}" IsChecked="{Binding IsEnabled, Mode=OneWay}" Click="PluginRowEnabledCheckBox_Click" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <Button Content="🗑 卸载" Tag="{Binding PluginId}" Click="UninstallPluginButton_Click" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="10,0,0,0" FontSize="11" />
+                        <CheckBox Content="{Binding EnableText}" Tag="{Binding PluginId}" IsChecked="{Binding IsEnabled, Mode=OneWay}" Click="PluginRowEnabledCheckBox_Click" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Button Content="{Binding UninstallText}" Tag="{Binding PluginId}" Click="UninstallPluginButton_Click" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="10,0,0,0" FontSize="11" />
                       </StackPanel>
                     </Grid>
                   </Border>

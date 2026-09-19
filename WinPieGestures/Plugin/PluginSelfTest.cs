@@ -1595,6 +1595,151 @@ internal static class PluginSelfTest
             line("    本插件的贡献点全部由顶层 Type 认领，普通插件写读往返与清理断言跳过。");
         }
 
+        // ---- 3f 插件管理页卡片文案 ----
+        //
+        // 卡片在 ListBox.ItemTemplate 里，两个按钮的文字绑在 PluginListItem 上，所以
+        // 「卡片文案翻没翻」没法靠按键名取控件来查 —— 只能真的构建一次卡片再看结果。
+        // Build() 因此被放在 PluginListItem 里而不是窗口类里：窗口类里的私有方法自检够不着。
+        //
+        // 这一段刻意放在 [4] 之前：--skip-invoke 会在 [4] 开头提前 return，
+        // 放到 [4] 之后等于日常回归里根本不会执行（那正是 [5b] 曾经踩过的坑）。
+        line("");
+        line("[3f] 插件管理页卡片文案（状态名 / 摘要 / 两个按钮，且整卡随语言切换）");
+
+        // ① 状态名逐个成员核对。I18n.T 取不到键时**原样返回键名** —— 既不空白也不像错的，
+        //    只有逐条比对才看得见。这里直接按「值」驱动，所以 9 个成员一个都不会漏。
+        //
+        //    判据是「以 PluginsState 开头」这个**前缀形状**，不是「等于我期望的那个键」——
+        //    因为 DescribeState 内部才认识键名，运行时拿不到。所以它抓的是**保留前缀的错写**
+        //    （PluginsStateActiveTypo 这种，实测会红）。前缀整个写错（PluginStateActive）
+        //    运行时看不出来，那一路由 scratch/check_i18n.py 的「引用但未定义」静态兜住 ——
+        //    两者是分工关系，不是互相替代：静态管全覆盖，运行时管「取到手的到底像不像话」。
+        var stateTexts = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (PluginRuntimeState state in Enum.GetValues<PluginRuntimeState>())
+        {
+            (string glyph, string text) = PluginListItem.DescribeState(state, requiresRestart: false, entryEnabled: true);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return $"[3f] 状态「{state}」没有任何文案 —— 卡片上会显示一行空白。";
+            }
+            if (text.StartsWith("PluginsState", StringComparison.Ordinal))
+            {
+                return $"[3f] 状态「{state}」取到的是裸键名「{text}」—— 词条键写错了。";
+            }
+            if (string.IsNullOrWhiteSpace(glyph))
+            {
+                return $"[3f] 状态「{state}」没有图标 —— 列表里会少一列用于扫读的标记。";
+            }
+            stateTexts[state.ToString()] = text;
+        }
+
+        // 同一状态、两种处境必须给出不同文案：Active 是否待重启、Installed 是否已启用。
+        if (string.Equals(
+                PluginListItem.DescribeState(PluginRuntimeState.Active, requiresRestart: true, entryEnabled: true).Text,
+                PluginListItem.DescribeState(PluginRuntimeState.Active, requiresRestart: false, entryEnabled: true).Text,
+                StringComparison.Ordinal))
+        {
+            return "[3f] 「运行中」与「运行中 · 待重启」文案相同 —— 用户看不出重启才会生效。";
+        }
+        if (string.Equals(
+                PluginListItem.DescribeState(PluginRuntimeState.Installed, requiresRestart: false, entryEnabled: true).Text,
+                PluginListItem.DescribeState(PluginRuntimeState.Installed, requiresRestart: false, entryEnabled: false).Text,
+                StringComparison.Ordinal))
+        {
+            return "[3f] 「已启用待加载」与「未启用」文案相同 —— 用户看不出启用了没启用。";
+        }
+        line($"    状态名：{stateTexts.Count} 个枚举成员全部有文案且不是裸键名 ✓（含 Active/Installed 两处处境差异）");
+
+        // ② 整卡随语言切换。英文卡片里不许出现方块字与全角标点 ——
+        //    但插件自带的数据（名称 / 描述 / 作者 / 许可证 / 安装路径）本来就可能是任何语言，
+        //    不属于宿主的翻译责任，断言前先按值把它们从字符串里摘掉，剩下的才是宿主拼的部分。
+        PluginInstance? cardInstance = PluginHost.Find(pluginId);
+        if (cardInstance == null)
+        {
+            return "[3f] 插件实例不存在，无法构建卡片 —— 上一段应当已经把它启用。";
+        }
+
+        PluginRegistryEntry cardEntry = cardInstance.Entry;
+        string StripPluginData(string text)
+        {
+            // 必须**按长度降序**摘：插件名往往是描述里的一段（实测「启动程序」就嵌在
+            // 「…内置动作：启动程序或应用。…」中间）。先摘短的那个，长串的匹配就被破坏了，
+            // 于是描述整段留在原文里 —— 断言会报一个看不懂的「摘要里有中文」。
+            var pieces = new[]
+                {
+                    cardEntry.Name, cardEntry.Description, cardEntry.Author,
+                    cardEntry.License, cardEntry.ExternalPath, cardInstance.Directory,
+                }
+                .Where(p => !string.IsNullOrWhiteSpace(p))
+                .Select(p => p!)
+                .OrderByDescending(p => p.Length);
+
+            foreach (string piece in pieces)
+            {
+                text = text.Replace(piece, "", StringComparison.Ordinal);
+            }
+            return text;
+        }
+
+        LanguageCode originalLanguage = I18n.CurrentLanguage;
+        var cards = new Dictionary<LanguageCode, PluginListItem>();
+        try
+        {
+            foreach (LanguageCode language in Enum.GetValues<LanguageCode>())
+            {
+                I18n.CurrentLanguage = language;
+                cards[language] = PluginListItem.Build(cardInstance);
+            }
+
+            PluginListItem enCard = cards[LanguageCode.En];
+            foreach ((string name, string value) in new[]
+                     {
+                         ("状态徽标", enCard.StateText),
+                         ("启用按钮", enCard.EnableText),
+                         ("卸载按钮", enCard.UninstallText),
+                         ("摘要（宿主部分）", StripPluginData(enCard.SummaryText)),
+                         ("详情（宿主部分）", StripPluginData(enCard.DetailText)),
+                     })
+            {
+                char? leak = FindCjkLeak(value);
+                if (leak.HasValue)
+                {
+                    return $"[3f] 英文卡片的{name}里出现了中文/日文字符「{leak.Value}」(U+{(int)leak.Value:X4})：" +
+                           $"…{value.Replace("\n", "\\n")}…";
+                }
+            }
+
+            // ③ 关键字段真的拼进去了 —— 否则「没有中文」可能只是「什么都没有」。
+            if (!enCard.DetailText.Contains(pluginId, StringComparison.Ordinal))
+            {
+                return $"[3f] 卡片详情里没有插件 ID「{pluginId}」—— 拼接逻辑漏了字段。";
+            }
+            if (string.IsNullOrWhiteSpace(enCard.DisplayName) || string.IsNullOrWhiteSpace(enCard.UninstallText))
+            {
+                return "[3f] 卡片的插件名或卸载按钮文案为空。";
+            }
+            line($"    英文卡片：摘要 {enCard.SummaryText.Length} 字符 / 详情 {enCard.DetailText.Length} 字符，宿主部分无方块字与中文标点 ✓");
+
+            // ④ 四种语言必须给出四份不同的卡片 —— 相同说明有一门没走自己的词条。
+            var cardLanguages = cards.Keys.ToList();
+            for (int i = 0; i < cardLanguages.Count; i++)
+            {
+                for (int j = i + 1; j < cardLanguages.Count; j++)
+                {
+                    if (string.Equals(cards[cardLanguages[i]].StateText, cards[cardLanguages[j]].StateText, StringComparison.Ordinal)
+                        || string.Equals(cards[cardLanguages[i]].UninstallText, cards[cardLanguages[j]].UninstallText, StringComparison.Ordinal))
+                    {
+                        return $"[3f] {cardLanguages[i]} 与 {cardLanguages[j]} 的卡片文案完全相同，必然有一门没走自己的词条。";
+                    }
+                }
+            }
+            line($"    四语言卡片：{cards.Count} 份互不相同 ✓");
+        }
+        finally
+        {
+            I18n.CurrentLanguage = originalLanguage;
+        }
+
         // ---- 4 调用 ----
         line("");
         line("[4] 调用动作（走与轮盘完全相同的接缝）");
@@ -2019,14 +2164,27 @@ internal static class PluginSelfTest
     /// 真实插件的名字可能是中文，那时命中不代表缺陷。
     /// </para>
     /// </summary>
+    /// <summary>
+    /// 找出第一个「不该出现在译文里」的字符：CJK 标点 / 假名 / 方块字 / 全角标点。
+    /// <para>
+    /// 判据必须与 <c>tests/test_i18n.py</c> 的 <c>CJK_RE</c> <b>逐码位一致</b>：两处守的是同一件事
+    /// （「这门语言的界面上还残留着中文」），判据漂了就会得到「自检绿、UI 套件红」这种自相矛盾的结论。
+    /// </para>
+    /// <para>
+    /// 刻意<b>不含 U+3000</b>（表意空格）：它在本项目里被当作**排版分隔符**用
+    /// （<c>　|　</c> / <c>　·　</c> / <c>　—　</c>），与语言无关。卡片摘要正是用它分段，
+    /// 把 U+3000 算进来会让每一张英文卡片都判成「有中文」。
+    /// </para>
+    /// </summary>
     private static char? FindCjkLeak(string text)
     {
         foreach (char c in text)
         {
-            bool cjkPunctuation = c >= '\u3000' && c <= '\u303F';
+            bool cjkPunctuation = c >= '\u3001' && c <= '\u303F';
             bool kana = c >= '\u3040' && c <= '\u30FF';
             bool ideograph = c >= '\u4E00' && c <= '\u9FFF';
-            bool fullWidth = c == '\uFF1A' || (c >= '\uFF08' && c <= '\uFF09');
+            bool fullWidth = c == '\uFF08' || c == '\uFF09' || c == '\uFF0C' || c == '\uFF1A'
+                || c == '\uFF1B' || c == '\uFF1F' || c == '\uFF01';
 
             if (cjkPunctuation || kana || ideograph || fullWidth)
             {
