@@ -5048,6 +5048,15 @@ public partial class SettingsWindow : Window
 						if (FocusShellToolTitleText != null) FocusShellToolTitleText.Text = string.IsNullOrEmpty(param) ? "未挑选功能 (点击右侧挑选)" : param;
 						if (FocusShellToolDescText != null) FocusShellToolDescText.Text = "从系统原生增强与右键扩展中选择常用高频功能";
 					}
+					if (FocusShellToolStandardUserCheckBox != null)
+					{
+						FocusShellToolStandardUserCheckBox.Visibility = ActionExecutor.SupportsShellToolStandardUser(param) ? Visibility.Visible : Visibility.Collapsed;
+						FocusShellToolStandardUserCheckBox.IsChecked = displayItem.RunAsStandardUser;
+					}
+				}
+				else if (FocusShellToolStandardUserCheckBox != null)
+				{
+					FocusShellToolStandardUserCheckBox.Visibility = Visibility.Collapsed;
 				}
 			}
 			if (FocusLaunchStandardUserCheckBox != null) FocusLaunchStandardUserCheckBox.IsChecked = displayItem.RunAsStandardUser;
@@ -6546,6 +6555,17 @@ public partial class SettingsWindow : Window
 		if (item != null)
 		{
 			item.RunAsStandardUser = (FocusLaunchStandardUserCheckBox.IsChecked == true);
+			ScheduleAutoSave();
+		}
+	}
+
+	private void FocusShellToolStandardUserCheckBox_Changed(object sender, RoutedEventArgs e)
+	{
+		if (_isUpdatingFocusUi) return;
+		ActionItem? item = GetCurrentFocusActionItem();
+		if (item != null)
+		{
+			item.RunAsStandardUser = (FocusShellToolStandardUserCheckBox.IsChecked == true);
 			ScheduleAutoSave();
 		}
 	}

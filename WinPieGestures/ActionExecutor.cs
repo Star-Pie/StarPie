@@ -322,7 +322,7 @@ public static class ActionExecutor
 				ExecuteSystem(action.Parameter);
 				break;
 			case "ShellTool":
-				ExecuteShellTool(action.Parameter);
+				ExecuteShellTool(action.Parameter, action.RunAsStandardUser);
 				break;
 			}
 		}
@@ -699,10 +699,24 @@ public static class ActionExecutor
 		}
 	}
 
-	public static void ExecuteShellTool(string verb)
+	/// <summary>
+	/// ShellTool 中会拉起外部进程、因而支持「普通权限启动」开关的动作（终端 / 编辑器）。
+	/// </summary>
+	public static bool SupportsShellToolStandardUser(string? verb)
+	{
+		if (string.IsNullOrWhiteSpace(verb)) return false;
+		string v = verb.Trim();
+		return v is "Windows.Terminal" or "windows_terminal"
+			or "Windows.CmdHere" or "cmd_here"
+			or "Windows.PowerShellHere" or "powershell_here"
+			or "Git.BashHere" or "git_bash_here"
+			or "VSCode.Open" or "vscode_open";
+	}
+
+	public static void ExecuteShellTool(string verb, bool runAsStandardUser = false)
 	{
 		if (string.IsNullOrWhiteSpace(verb)) return;
-		AppLogger.LogInfo($"Executing ShellTool verb: '{verb}'");
+		AppLogger.LogInfo($"Executing ShellTool verb: '{verb}', StandardUser={runAsStandardUser}");
 
 		string v = verb.Trim();
 		switch (v)
@@ -806,26 +820,10 @@ public static class ActionExecutor
 			case "vscode_open":
 			{
 				var (folder, selected) = GetActiveExplorerContext();
-				if (selected.Count > 0)
-				{
-					Process.Start(new ProcessStartInfo
-					{
-						FileName = "code",
-						Arguments = string.Join(" ", selected.Select(s => $"\"{s}\"")),
-						UseShellExecute = true,
-						WorkingDirectory = folder
-					});
-				}
-				else
-				{
-					Process.Start(new ProcessStartInfo
-					{
-						FileName = "code",
-						Arguments = $"\"{folder}\"",
-						UseShellExecute = true,
-						WorkingDirectory = folder
-					});
-				}
+				string codeArgs = selected.Count > 0
+					? string.Join(" ", selected.Select(s => $"\"{s}\""))
+					: $"\"{folder}\"";
+				StartProcessMaybeUnelevated("code", codeArgs, folder, runAsStandardUser);
 				break;
 			}
 			case "Git.BashHere":
@@ -839,13 +837,7 @@ public static class ActionExecutor
 					Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Git\git-bash.exe")
 				};
 				string gitExe = possibleGitPaths.FirstOrDefault(File.Exists) ?? "git-bash.exe";
-				Process.Start(new ProcessStartInfo
-				{
-					FileName = gitExe,
-					Arguments = $"--cd=\"{folder}\"",
-					UseShellExecute = true,
-					WorkingDirectory = folder
-				});
+				StartProcessMaybeUnelevated(gitExe, $"--cd=\"{folder}\"", folder, runAsStandardUser);
 				break;
 			}
 			case "Windows.Terminal":
@@ -854,23 +846,11 @@ public static class ActionExecutor
 				var (folder, _) = GetActiveExplorerContext();
 				try
 				{
-					Process.Start(new ProcessStartInfo
-					{
-						FileName = "wt.exe",
-						Arguments = $"-d \"{folder}\"",
-						UseShellExecute = true,
-						WorkingDirectory = folder
-					});
+					StartProcessMaybeUnelevated("wt.exe", $"-d \"{folder}\"", folder, runAsStandardUser);
 				}
 				catch
 				{
-					Process.Start(new ProcessStartInfo
-					{
-						FileName = "powershell.exe",
-						Arguments = $"-NoExit -Command \"Set-Location '{folder}'\"",
-						UseShellExecute = true,
-						WorkingDirectory = folder
-					});
+					StartProcessMaybeUnelevated("powershell.exe", $"-NoExit -Command \"Set-Location '{folder}'\"", folder, runAsStandardUser);
 				}
 				break;
 			}
@@ -878,26 +858,14 @@ public static class ActionExecutor
 			case "cmd_here":
 			{
 				var (folder, _) = GetActiveExplorerContext();
-				Process.Start(new ProcessStartInfo
-				{
-					FileName = "cmd.exe",
-					Arguments = $"/K cd /d \"{folder}\"",
-					UseShellExecute = true,
-					WorkingDirectory = folder
-				});
+				StartProcessMaybeUnelevated("cmd.exe", $"/K cd /d \"{folder}\"", folder, runAsStandardUser);
 				break;
 			}
 			case "Windows.PowerShellHere":
 			case "powershell_here":
 			{
 				var (folder, _) = GetActiveExplorerContext();
-				Process.Start(new ProcessStartInfo
-				{
-					FileName = "powershell.exe",
-					Arguments = $"-NoExit -Command \"Set-Location '{folder}'\"",
-					UseShellExecute = true,
-					WorkingDirectory = folder
-				});
+				StartProcessMaybeUnelevated("powershell.exe", $"-NoExit -Command \"Set-Location '{folder}'\"", folder, runAsStandardUser);
 				break;
 			}
 			case "7-Zip.ExtractHere":
@@ -1272,6 +1240,26 @@ public static class ActionExecutor
 				throw;
 			}
 		}
+	}
+
+	/// <summary>
+	/// 启动外部进程；若 runAsStandardUser 为 true，优先经 Explorer Shell 降权到普通用户完整性级别。
+	/// </summary>
+	private static void StartProcessMaybeUnelevated(string fileName, string arguments, string workingDirectory, bool runAsStandardUser)
+	{
+		if (runAsStandardUser && TryLaunchUnelevatedViaExplorer(fileName, arguments ?? "", workingDirectory ?? ""))
+		{
+			AppLogger.LogInfo($"Launched '{fileName}' unelevated via Explorer (ShellTool)");
+			return;
+		}
+
+		Process.Start(new ProcessStartInfo
+		{
+			FileName = fileName,
+			Arguments = arguments ?? "",
+			UseShellExecute = true,
+			WorkingDirectory = workingDirectory
+		});
 	}
 
 	/// <summary>
