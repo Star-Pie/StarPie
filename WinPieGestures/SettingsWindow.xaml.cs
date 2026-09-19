@@ -4731,6 +4731,8 @@ public partial class SettingsWindow : Window
 					};
 				}
 			}
+			// 初始化中心动作后再次同步，避免 EnsureLayers 在下一次读取时以空的层属性覆盖它。
+			profile.SyncActiveLayerFromRootProperties();
 			return profile.CenterAction;
 		}
 		if (profile.Actions == null || _selectedSlotIndex < 0 || _selectedSlotIndex >= profile.Actions.Count)
@@ -5623,6 +5625,7 @@ public partial class SettingsWindow : Window
 	{
 		if (_isUpdatingFocusUi || _selectedProfile == null) return;
 		_selectedProfile.EnableCenterAction = (EnableCenterActionCheckBox.IsChecked == true);
+		_selectedProfile.SyncActiveLayerFromRootProperties();
 		if (CenterPatternPriorityTip != null)
 		{
 			bool hasCustom = IconHelper.HasCustomCenterPattern(ConfigManager.CurrentConfig);
@@ -5679,6 +5682,7 @@ public partial class SettingsWindow : Window
 		_selectedProfile.CenterAction.Parameter = parameter;
 		_selectedProfile.CenterAction.IconKey = iconKey;
 		_selectedProfile.EnableCenterAction = true;
+		_selectedProfile.SyncActiveLayerFromRootProperties();
 		if (EnableCenterActionCheckBox != null) EnableCenterActionCheckBox.IsChecked = true;
 		UpdateFocusEditorUi();
 		RefreshSlots();
