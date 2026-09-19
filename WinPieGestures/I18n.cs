@@ -1296,6 +1296,139 @@ public static class I18n
 			[LanguageCode.En] = "Drop the plugin .dll into the \"plugin\" folder next to the program and hit \"Rescan\" above, or click \"Install Plugin (.dll)\" at the top right to pick a file",
 			[LanguageCode.Ja] = "プラグインの .dll をプログラムフォルダー内の plugin フォルダーに置いて上の「再スキャン」を押すか、右上の「プラグインをインストール (.dll)」でファイルを選択してください"
 		};
+		dictionary["PluginsOfficialHeader"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方插件",
+			[LanguageCode.ZhTw] = "官方外掛",
+			[LanguageCode.En] = "Official plugins",
+			[LanguageCode.Ja] = "公式プラグイン"
+		};
+		dictionary["PluginsOfficialStatusHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "从 StarPie-Official-Plugins 下载经过 SHA-256 校验的官方模块",
+			[LanguageCode.ZhTw] = "從 StarPie-Official-Plugins 下載經過 SHA-256 校驗的官方模組",
+			[LanguageCode.En] = "Official modules are downloaded from StarPie-Official-Plugins and verified with SHA-256",
+			[LanguageCode.Ja] = "公式モジュールは StarPie-Official-Plugins からダウンロードし、SHA-256 で検証します"
+		};
+		dictionary["PluginsOfficialLoading"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "正在从 GitHub 获取官方插件目录…",
+			[LanguageCode.ZhTw] = "正在從 GitHub 取得官方外掛目錄…",
+			[LanguageCode.En] = "Fetching the official plugin catalog from GitHub…",
+			[LanguageCode.Ja] = "GitHub から公式プラグインカタログを取得しています…"
+		};
+		dictionary["PluginsOfficialCatalogInfo"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "目录 {0} · {1} 个模块 · 来源 StarPie-Official-Plugins",
+			[LanguageCode.ZhTw] = "目錄 {0} · {1} 個模組 · 來源 StarPie-Official-Plugins",
+			[LanguageCode.En] = "Catalog {0} · {1} modules · from StarPie-Official-Plugins",
+			[LanguageCode.Ja] = "カタログ {0} · {1} モジュール · 提供元 StarPie-Official-Plugins"
+		};
+		dictionary["PluginsOfficialUnavailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方插件目录暂时不可用：{0}",
+			[LanguageCode.ZhTw] = "官方外掛目錄暫時無法使用：{0}",
+			[LanguageCode.En] = "The official plugin catalog is temporarily unavailable: {0}",
+			[LanguageCode.Ja] = "公式プラグインカタログは一時的に利用できません：{0}"
+		};
+		dictionary["PluginsOfficialRefreshButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🌐 刷新目录",
+			[LanguageCode.ZhTw] = "🌐 重新整理目錄",
+			[LanguageCode.En] = "🌐 Refresh catalog",
+			[LanguageCode.Ja] = "🌐 カタログを更新"
+		};
+		dictionary["PluginsOfficialMsgTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "StarPie 官方插件",
+			[LanguageCode.ZhTw] = "StarPie 官方外掛",
+			[LanguageCode.En] = "StarPie official plugins",
+			[LanguageCode.Ja] = "StarPie 公式プラグイン"
+		};
+		dictionary["PluginsOfficialInstallFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方插件 {0} 安装失败：\n\n{1}",
+			[LanguageCode.ZhTw] = "官方外掛 {0} 安裝失敗：\n\n{1}",
+			[LanguageCode.En] = "Failed to install official plugin {0}:\n\n{1}",
+			[LanguageCode.Ja] = "公式プラグイン {0} のインストールに失敗しました：\n\n{1}"
+		};
+		dictionary["PluginsOfficialInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方插件 {0} v{1} 已下载、校验并启用。",
+			[LanguageCode.ZhTw] = "官方外掛 {0} v{1} 已下載、校驗並啟用。",
+			[LanguageCode.En] = "Official plugin {0} v{1} has been downloaded, verified and enabled.",
+			[LanguageCode.Ja] = "公式プラグイン {0} v{1} をダウンロード・検証し、有効化しました。"
+		};
+		dictionary["PluginsOfficialStateNotInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未安装",
+			[LanguageCode.ZhTw] = "尚未安裝",
+			[LanguageCode.En] = "Not installed",
+			[LanguageCode.Ja] = "未インストール"
+		};
+		dictionary["PluginsOfficialStateUpToDate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已是最新",
+			[LanguageCode.ZhTw] = "已是最新",
+			[LanguageCode.En] = "Up to date",
+			[LanguageCode.Ja] = "最新です"
+		};
+		dictionary["PluginsOfficialStateUpdateAvailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已装 v{0} · 有更新",
+			[LanguageCode.ZhTw] = "已裝 v{0} · 有更新",
+			[LanguageCode.En] = "v{0} installed · update available",
+			[LanguageCode.Ja] = "v{0} 導入済み · 更新あり"
+		};
+		dictionary["PluginsOfficialActionInstall"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬇️ 下载并安装",
+			[LanguageCode.ZhTw] = "⬇️ 下載並安裝",
+			[LanguageCode.En] = "⬇️ Download and install",
+			[LanguageCode.Ja] = "⬇️ ダウンロードしてインストール"
+		};
+		dictionary["PluginsOfficialActionInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已安装",
+			[LanguageCode.ZhTw] = "已安裝",
+			[LanguageCode.En] = "Installed",
+			[LanguageCode.Ja] = "インストール済み"
+		};
+		dictionary["PluginsOfficialActionUpdate"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⬆️ 更新",
+			[LanguageCode.ZhTw] = "⬆️ 更新",
+			[LanguageCode.En] = "⬆️ Update",
+			[LanguageCode.Ja] = "⬆️ 更新"
+		};
+		dictionary["PluginsOfficialSummaryFallback"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方动作模块",
+			[LanguageCode.ZhTw] = "官方動作模組",
+			[LanguageCode.En] = "Official action module",
+			[LanguageCode.Ja] = "公式アクションモジュール"
+		};
+		dictionary["PluginsOfficialClaimSeparator"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "、",
+			[LanguageCode.ZhTw] = "、",
+			[LanguageCode.En] = ", ",
+			[LanguageCode.Ja] = "、"
+		};
+		dictionary["PluginsActionNotSelected"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前动作尚未选定具体的插件动作。",
+			[LanguageCode.ZhTw] = "目前動作尚未選定具體的外掛動作。",
+			[LanguageCode.En] = "No specific plugin action has been selected for this action yet.",
+			[LanguageCode.Ja] = "この動作には具体的なプラグイン動作がまだ選択されていません。"
+		};
+		dictionary["PluginsActionPluginNotFound"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未找到插件 {0}，请到「插件与扩展」页查看。",
+			[LanguageCode.ZhTw] = "找不到外掛 {0}，請到「外掛與擴充」頁查看。",
+			[LanguageCode.En] = "Plugin {0} was not found. Check the Plugins page.",
+			[LanguageCode.Ja] = "プラグイン {0} が見つかりません。「プラグイン」ページを確認してください。"
+		};
 		dictionary["PluginCandidateAuthor"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "作者 {0}",

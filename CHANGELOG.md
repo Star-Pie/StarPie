@@ -13,6 +13,23 @@
 - 官方模块包下载后校验包大小、包 SHA-256、模块清单和程序集 SHA-256。
 - 保留社区插件的本地安装入口，官方模块默认后台同步。
 
+### 🌍 多语言收口与版本号纠偏
+
+**官方插件面板此前整块没接多语言**：实测 `I18n.cs` 里 `OfficialPlugins*` 词条数 = **0**。这一块是迁移时新加的，只进了 XAML 与代码，没同步接进本地化 —— 切到英文 / 日文后，页头、进度行、卡片徽标、安装按钮与两个弹窗全都还是中文。与 `7cb7120` 修的「插件页整页中文」是同一类问题在新面板上复发。
+
+- **新增 19 个词条 × 4 语言**：XAML 侧 `OfficialPluginsHeaderText` / `OfficialPluginsStatusText` / `RefreshOfficialPluginsButton`；代码侧进度行三态、安装成功 / 失败弹窗与标题；卡片侧 `OfficialPluginListItem` 的状态徽标、按钮文案与摘要兜底（另拆了一个「类型认领分隔符」键 —— 简中仍是 `、`，英文改 `, `，否则英文界面会出现 `Launch、Command` 这种混排）。
+- **进度行改为状态推导**（新增 `RenderOfficialPluginsStatus()`）：原先三个分支各写一遍中文字面量，切语言时无从重渲染。现按「加载中 / 有目录 / 拉取失败 / 初始提示」四态取当前语言，并由 `RefreshPluginManagerUi()` 与 `ApplyPluginsPageLocalization()` 各调一次，所以切语言后这行不会再残留旧语言。
+- **顺带收口**插件动作页两处同样硬编码的中文弹窗（未选动作 / 插件未找到）。
+- **版本号**：`AGENTS.md` §3.7 写「当前契约版本 1.2」，实际已是 **1.4**（1.3 增 `ScreenCapture`、1.4 增 `InputSimulation`），已按 `PluginApi` 注释补齐演进清单；§3.7 能力门禁段还停在「只有 `Process` / `WindowControl` 两个强制点」，实际是**五个服务面、四个能力位**，已改正并补上 `InputSimulation` 为何不与 `Process` 合并。§5.3 的版本同步清单列的是 `App.xaml.cs` / `TrayController.cs` 的「回退文本」，而这两处早已改为统一从 `AppVersionInfo` 取 —— 清单已重写为真实落点（`csproj` / `AppVersionInfo.FallbackVersion` / `SettingsWindow.xaml` 4 处 / `CHANGELOG` / `build-installer.ps1` / `StarPie.iss` 两个 `/D` 兜底）。
+- **消掉一个隐藏同步点**：`UpdateManager` 的 User-Agent 里写着 `?? "1.8.0-beta.1"` 字面量，且取的是 `AssemblyVersion`（会把预发布标识丢成 `1.8.0`），与设置页另一个 UA 写法不一致。改为统一取 `AppVersionInfo.DisplayVersion`。
+
+### 🧪 自检
+
+- `dotnet build WinPieGestures/WinPieGestures.csproj -c Release` → **0 警告 0 错误**。
+- 词条完整性（`scratch/check_i18n.py`）：**571 个唯一键、0 组重复、0 个键缺语言分支、简中无空值**；代码里 `I18n.T` / `I18n.TF` 的字面量引用与字典定义求差，「引用但未定义」= **0**；本次新增 19 键**全部有引用**。
+- 漏接复查：插件页「有 `Name` + 硬编码中文却从未被重设」的具名控件数 = **0**。
+- 不变量「简中界面一字不变」：三个 XAML 设计期占位的字面量与对应词条的简中值逐字比对**完全一致**；其余改动均为「字面量 → 词典同值」，简中输出零变化。
+
 ## [未发布] - 2026-09-17（同步上游 dev-plugin：合并 13 个提交、缝合 4 处冲突、恢复两份插件规范）
 
 向上游提 PR 显示「冲突过多」的根因不是本分支改错了，而是**上游把本分支的 PR #129 合并后又整个 revert（`e558028`），再用 PR #132（`pr-129-migration`）重做了一遍** —— 两边对同一批文件成了「功能相同、写法不同」的并行修改，基线漂移。本次把上游合并进来，让冲突收敛掉。

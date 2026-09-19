@@ -263,9 +263,9 @@ g:\Users\2 Better\Desktop\design\
   - 保留 ID 前缀只在官方在线安装和已登记官方模块的装载路径放行；社区手动安装必须拒绝保留 ID。
   - 认领类型的宿主裸字段仍通过 `ActionParameterProjection` 以显式白名单投影为参数字典；不投影外观字段。
 - **派发顺序不可改变**：`ActionExecutor` 固定按「内建 Hotkey → 官方类型认领 → 普通 `Type="Plugin"` / 历史 switch 兜底」执行。
-- **能力门禁（Capability Gate）：`Process` / `WindowControl` 各有一个真实强制点**：
-  - 带门禁的是三个「产生不可忽略后果」的服务：`IHostCommandService.Run`（命令）与 `IHostShellService.Invoke`（Shell 动词里有 UAC 提权的 `Windows.RunAs`、清空回收站这类不可撤销操作）挂 `Process`；`IHostWindowService` 的五个执行方法（挪走 / 置顶 / 改透明度 / 切走用户正在用的窗口）挂 `WindowControl`。清单未声明对应能力时直接抛 `PluginCapabilityDeniedException`，**绝不静默降级**。
-  - **每个服务认自己那项能力，不复用别人的**。`WindowControl` 刻意不与 `Process` 合并：安装确认页上展示的能力必须对应一个真实后果，用户看到「进程」想的是「它要启动程序」，而实际后果是他的窗口被挪走 —— 那是标签名不副实。`Ui` 同样不符（它的语义是「打开自己的窗口」）。三个服务的门禁实现共用一个基类（`PluginGatedService`），所以**复制粘贴时把 required 传错不会有任何编译错误** —— 自检 `[3j]` 用「只声明 A 的插件调 B 的服务」这一组交叉断言守它，否则「认错能力标志」会让上面那些断言照样全绿。
+- **能力门禁（Capability Gate）：五个服务面、四个能力位，每一位都对应一个真实强制点**：
+  - 带门禁的是五个「产生不可忽略后果」的服务：`IHostCommandService.Run`（命令）与 `IHostShellService.Invoke`（Shell 动词里有 UAC 提权的 `Windows.RunAs`、清空回收站这类不可撤销操作）挂 `Process`；`IHostWindowService` 的五个执行方法（挪走 / 置顶 / 改透明度 / 切走用户正在用的窗口）挂 `WindowControl`；`IHostScreenCaptureService.CaptureAndRecognize`（会抓走用户整个屏幕的内容）挂 `ScreenCapture`；`IHostSystemService.RunPreset`（系统控制既起进程也发按键）挂 `InputSimulation`。清单未声明对应能力时直接抛 `PluginCapabilityDeniedException`，**绝不静默降级**。
+  - **每个服务认自己那项能力，不复用别人的**。`WindowControl` 刻意不与 `Process` 合并：安装确认页上展示的能力必须对应一个真实后果，用户看到「进程」想的是「它要启动程序」，而实际后果是他的窗口被挪走 —— 那是标签名不副实。`Ui` 同样不符（它的语义是「打开自己的窗口」）。`InputSimulation` 也刻意不与 `Process` 合并，虽然「系统控制」里两者都会发生：`Process` 的后果是**多出一个后台进程**，`InputSimulation` 的后果是**往用户正在打字的那个窗口里按键** —— 用户能接受前者不代表能接受后者。五个服务的门禁实现共用一个基类（`PluginGatedService`），所以**复制粘贴时把 required 传错不会有任何编译错误** —— 自检 `[3j]` 用「只声明 A 的插件调 B 的服务」这一组交叉断言守它，否则「认错能力标志」会让上面那些断言照样全绿。
   - **门禁必须在 `Guard` 之外**。若挪进 `Guard` 里，异常会被吞掉、转成一个 `false` 返回值，用户看到的是「命令没执行」而不是「本插件缺少「进程」能力」—— 前者会被当成软件 bug 反复报，后者才指向真正该改的地方。
   - **元数据（`Terminals` / `Verbs` / `Layouts` / `OpacityMinPercent` …）刻意不受门禁约束**：插件的 `Parameters` 是属性、声明期（注册前）就要读这几份清单，在那里抛异常会让一个「忘了声明能力」的插件在注册阶段整个崩掉 —— 而它其实只是不能在运行时干活而已。**门禁拦的是「产生后果」的调用**。
   - **`PluginCapabilityDeniedException` 刻意不继承 `PluginContractException`**：后者的语义是「违反注册契约」，宿主会因此把插件整体标记为加载失败并卸载；而「清单里漏了一行能力声明」远不到那个程度。真继承上去，用户看到的是「插件突然坏了 / 被系统禁用了」，排查方向会完全跑偏。
@@ -278,7 +278,7 @@ g:\Users\2 Better\Desktop\design\
   - 同理 `PluginWindowService.Layouts` 由 `WindowTiler.LayoutKeys` + `LayoutDisplayName` 现取，三个标记（`Cycle` / `CycleBack` / `Restore`）与透明度范围（`MinOpacityPercent` / `MaxOpacityPercent`）也一律转发宿主常量。**这些值写死在插件里必然漂**：宿主加一个布局、或把透明度上界从 100 调到 90，插件那份会继续把旧范围展示给用户并据此判断合法性。自检 `[3j]` 用 `SequenceEqual` 逐项比对（连顺序都比 —— 顺序即下拉顺序）。
   - **`Verbs` 不是白名单**：`ExecuteShellTool` 的每个功能同时接受 `Id` 与 `Verb` 两套命名，按清单校验会把另一套命名的老配置整体判死。它只用来做下拉与展示。
   - **ShellTool 的参数刻意声明成自由文本而不是 `Enum`**：它的正式入口是带搜索/分类的 `ShellActionPickerWindow`，压进通用下拉是体验降级、还会让清单出现两份；而执行体接受两套命名，按清单校验会判死老配置。
-- **`PluginApi.ApiVersion` 那处重复无法用语言特性消除**：`public const string ApiVersion = $"{ApiVersionMajor}.{ApiVersionMinor}"` 编译不过（CS0133 —— C# 的常量插值只对 `string` 常量成立，这两个组成部分是 `int`）。所以它手写在 `PluginApi` 里，改版时必须两处同改，由自检 `[3j]` 断言两者一致。当前契约版本 **1.2**（1.0 → 1.1 新增能力门禁 + `IHostCommandService` / `IHostShellService` / `IHostInfo.HasCapability`；1.1 → 1.2 新增 `IHostWindowService` + `PluginCapability.WindowControl`）。
+- **`PluginApi.ApiVersion` 那处重复无法用语言特性消除**：`public const string ApiVersion = $"{ApiVersionMajor}.{ApiVersionMinor}"` 编译不过（CS0133 —— C# 的常量插值只对 `string` 常量成立，这两个组成部分是 `int`）。所以它手写在 `PluginApi` 里，改版时必须两处同改，由自检 `[3j]` 断言两者一致。**当前契约版本 1.4**，演进清单以 `PluginApi.ApiVersionMinor` 的注释为准（1.1 新增能力门禁 + `IHostCommandService` / `IHostShellService` / `IHostInfo.HasCapability`；1.2 新增 `IHostWindowService` + `WindowControl`；1.3 新增 `IHostScreenCaptureService` + `ScreenCapture`；1.4 新增 `IHostSystemService` + `InputSimulation`）。**每加一个服务面就在那份注释里补一条，别只改数字。**
 
 ---
 
@@ -325,13 +325,14 @@ powershell -Command "Compress-Archive -Path 'g:\Users\2 Better\Desktop\design\re
 >
 > 发布前至少验证：干净 `plugin-data` 下启动能后台拉取模块；网络失败时不阻塞首帧；已安装模块在离线时仍可加载。
 
-### 5.3 版本号同步五要素检查清单 (Version Sync Checklist)
-每次发布新版本 `vX.Y.Z` 时，必须同步更新以下 5 处位置：
-1. `WinPieGestures.csproj`：`<Version>X.Y.Z</Version>`, `<AssemblyVersion>X.Y.Z.0</AssemblyVersion>`, `<FileVersion>X.Y.Z.0</FileVersion>`
-2. `App.xaml.cs`：启动日志中的 `StarPie vX.Y.Z` 回退文本
-3. `SettingsWindow.xaml(.cs)`：左侧边栏、关于卡片、更新页与 User-Agent 中的版本回退文本和里程碑
-4. `TrayController.cs`：托盘右键菜单标题的 `StarPie vX.Y.Z` 回退文本
-5. `CHANGELOG.md`：在顶部添加规范的 `## [vX.Y.Z] - YYYY-MM-DD` 详细变更日志
+### 5.3 版本号同步检查清单 (Version Sync Checklist)
+每次发布新版本 `vX.Y.Z` 时，必须同步更新以下位置（`AppVersionInfo` 是运行时版本的唯一来源，界面 / 日志 / 托盘 / User-Agent 全部从它取，**不要再在别处写版本字面量**）：
+1. `WinPieGestures.csproj`：`<Version>X.Y.Z</Version>`, `<AssemblyVersion>X.Y.Z.0</AssemblyVersion>`, `<FileVersion>X.Y.Z.0</FileVersion>`（`<Version>` 经 `AssemblyInformationalVersion` 驱动 `AppVersionInfo`）
+2. `AppVersionInfo.cs`：`FallbackVersion` 兜底值（取不到程序集元数据时用）
+3. `SettingsWindow.xaml`：设计期占位文本（侧边栏版本、关于卡片徽标、更新页「当前运行版本」、关于页里程碑），共 4 处
+4. `CHANGELOG.md`：在顶部添加规范的 `## [vX.Y.Z] - YYYY-MM-DD` 详细变更日志
+5. `installer/build-installer.ps1`：`$Version` 兜底值（正常情况下脚本从 csproj 读）
+6. `installer/StarPie.iss`：`MyAppVersion` 与 `MyAppNumericVersion` 两个兜底值（正常情况下由脚本以 `/D` 覆盖）
 
 ---
 

@@ -43,6 +43,8 @@ public partial class SettingsWindow : Window
 
 	private OfficialPluginCatalog? _officialPluginCatalog;
 	private bool _officialPluginsLoading;
+	/// <summary>上次拉取官方 catalog 的失败原因。留着是为了切换语言时能把进度行按当前语言重渲染。</summary>
+	private string? _officialPluginsError;
 
 	/// <summary>设置控制台当前已生效的界面缩放比例，用于按倍率换算窗口尺寸增量。</summary>
 	private double _appliedSettingsUiScale = 1.0;
@@ -6408,14 +6410,14 @@ public partial class SettingsWindow : Window
 		StarPie.Plugin.PluginActionRef? reference = item?.PluginActionRef;
 		if (item == null || reference == null || !reference.IsValid)
 		{
-			System.Windows.MessageBox.Show(this, "当前动作尚未选定具体的插件动作。", "StarPie 插件",
+			System.Windows.MessageBox.Show(this, I18n.T("PluginsActionNotSelected"), I18n.T("PluginsMsgTitle"),
 				MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
 		if (PluginHost.Find(reference.PluginId) == null)
 		{
-			System.Windows.MessageBox.Show(this, $"未找到插件 {reference.PluginId}，请到「插件与扩展」页查看。", "StarPie 插件",
+			System.Windows.MessageBox.Show(this, I18n.TF("PluginsActionPluginNotFound", reference.PluginId), I18n.T("PluginsMsgTitle"),
 				MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
 		}
@@ -6495,23 +6497,55 @@ public partial class SettingsWindow : Window
 		if (_officialPluginsLoading) return;
 		_officialPluginsLoading = true;
 		if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = false;
-		if (OfficialPluginsStatusText != null) OfficialPluginsStatusText.Text = "正在从 GitHub 获取官方插件目录…";
+		RenderOfficialPluginsStatus();
 
 		try
 		{
 			_officialPluginCatalog = await OfficialPluginClient.FetchCatalogAsync();
+			_officialPluginsError = null;
 			RenderOfficialPluginItems();
-			if (OfficialPluginsStatusText != null) OfficialPluginsStatusText.Text = $"目录 {_officialPluginCatalog.CatalogVersion} · {_officialPluginCatalog.Modules.Count} 个模块 · 来源 StarPie-Official-Plugins";
+			RenderOfficialPluginsStatus();
 		}
 		catch (Exception ex)
 		{
 			AppLogger.LogWarn($"[plugin] 刷新官方插件目录失败：{ex.Message}");
-			if (OfficialPluginsStatusText != null) OfficialPluginsStatusText.Text = "官方插件目录暂时不可用：" + ex.Message;
+			_officialPluginsError = ex.Message;
+			RenderOfficialPluginsStatus();
 		}
 		finally
 		{
 			_officialPluginsLoading = false;
 			if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = true;
+		}
+	}
+
+	/// <summary>
+	/// 按当前状态重渲染官方目录的进度行。
+	/// <para>
+	/// 必须由状态推导、而不是在几处分支里各写一遍字面量：切换语言时只有重跑这里，
+	/// 才能把「正在获取 / 目录版本 / 拉取失败」三种状态一起换成新语言 ——
+	/// 否则用户切到英文后，卡片与标题都换了，只有这行残留中文。
+	/// </para>
+	/// </summary>
+	private void RenderOfficialPluginsStatus()
+	{
+		if (OfficialPluginsStatusText == null) return;
+
+		if (_officialPluginsLoading)
+		{
+			OfficialPluginsStatusText.Text = I18n.T("PluginsOfficialLoading");
+		}
+		else if (_officialPluginCatalog != null)
+		{
+			OfficialPluginsStatusText.Text = I18n.TF("PluginsOfficialCatalogInfo", _officialPluginCatalog.CatalogVersion, _officialPluginCatalog.Modules.Count);
+		}
+		else if (!string.IsNullOrWhiteSpace(_officialPluginsError))
+		{
+			OfficialPluginsStatusText.Text = I18n.TF("PluginsOfficialUnavailable", _officialPluginsError);
+		}
+		else
+		{
+			OfficialPluginsStatusText.Text = I18n.T("PluginsOfficialStatusHint");
 		}
 	}
 
@@ -6531,8 +6565,9 @@ public partial class SettingsWindow : Window
 		try
 		{
 			OfficialPluginInstallResult result = await OfficialPluginClient.InstallAsync(module);
-			if (!result.Success) System.Windows.MessageBox.Show(this, $"官方插件 {module.Name} 安装失败：\n\n{result.Error}", "StarPie 官方插件", MessageBoxButton.OK, MessageBoxImage.Warning);
-			else System.Windows.MessageBox.Show(this, $"官方插件 {module.Name} v{module.Version} 已下载、校验并启用。", "StarPie 官方插件", MessageBoxButton.OK, MessageBoxImage.Information);
+			string title = I18n.T("PluginsOfficialMsgTitle");
+			if (!result.Success) System.Windows.MessageBox.Show(this, I18n.TF("PluginsOfficialInstallFailed", module.Name, result.Error), title, MessageBoxButton.OK, MessageBoxImage.Warning);
+			else System.Windows.MessageBox.Show(this, I18n.TF("PluginsOfficialInstalled", module.Name, module.Version), title, MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 		finally
 		{
@@ -6616,6 +6651,8 @@ public partial class SettingsWindow : Window
 			}
 		}
 
+		RenderOfficialPluginsStatus();
+
 		if (_officialPluginCatalog == null && !_officialPluginsLoading)
 		{
 			_ = RefreshOfficialPluginsAsync();
@@ -6682,6 +6719,18 @@ public partial class SettingsWindow : Window
 		{
 			PluginsEmptyHintText.Text = I18n.T("PluginsEmptyHint");
 		}
+
+		// 官方在线目录那一块。进度行是状态推导出来的（三种状态各一句），
+		// 所以这里不能只设一个固定文案 —— 得让状态机自己重渲染一次。
+		if (OfficialPluginsHeaderText != null)
+		{
+			OfficialPluginsHeaderText.Text = I18n.T("PluginsOfficialHeader");
+		}
+		if (RefreshOfficialPluginsButton != null)
+		{
+			RefreshOfficialPluginsButton.Content = I18n.T("PluginsOfficialRefreshButton");
+		}
+		RenderOfficialPluginsStatus();
 
 		// 候选卡片的状态徽标与安装按钮文案是 getter（每次读取时才查表），
 		// 光设静态文本不会让它们换语言 —— 得重新绑定一次数据源。

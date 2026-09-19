@@ -196,7 +196,11 @@ public class UpdateManager
 		{
 			Timeout = TimeSpan.FromSeconds(15)
 		};
-		_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("StarPie-Updater", Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.8.0-beta.1"));
+		// User-Agent 里的版本号从 AppVersionInfo 取，不要再写一份字面量：
+		// 那份字面量不在任何发版检查清单上，发版时必然漏改，而且
+		// 这里原来取的是 AssemblyVersion（1.8.0.0 → "1.8.0"），会把预发布标识丢掉，
+		// 与设置页里另一个 UA 的写法也不一致。
+		_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("StarPie-Updater", AppVersionInfo.DisplayVersion));
 	}
 
 	public bool IsCurrentInstallationStandalone()
