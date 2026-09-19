@@ -7457,6 +7457,13 @@ public static class I18n
 			[LanguageCode.En] = "✖ Cancel Download",
 			[LanguageCode.Ja] = "✖ ダウンロードをキャンセル"
 		};
+		dictionary["UpdateDownloadSpeedCalculating"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 计算中...",
+			[LanguageCode.ZhTw] = "⚡ 計算中...",
+			[LanguageCode.En] = "⚡ Calculating...",
+			[LanguageCode.Ja] = "⚡ 計算中..."
+		};
 		dictionary["UpdateReadyTitleText"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "新版本已完整下载就绪",

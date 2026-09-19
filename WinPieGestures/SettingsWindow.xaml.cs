@@ -3082,6 +3082,18 @@ public partial class SettingsWindow : Window
 		if (RollbackPackageArchLabel != null) RollbackPackageArchLabel.Text = I18n.T("RollbackPackageArchLabel");
 		if (RollbackChangelogHeaderLabel != null) RollbackChangelogHeaderLabel.Text = I18n.T("RollbackChangelogHeaderLabel");
 		if (LanguageAutoItem != null) LanguageAutoItem.Content = I18n.T("LanguageFollowSystem");
+		if (UpdateDownloadSpeedText != null && (UpdateDownloadSpeedText.Text.Contains("计算中") || UpdateDownloadSpeedText.Text.Contains("Calculating") || UpdateDownloadSpeedText.Text.Contains("計算中")))
+		{
+			UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedCalculating");
+		}
+		if (FocusShellToolTitleText != null && (FocusShellToolTitleText.Text == "未挑选功能 (点击右侧挑选)" || FocusShellToolTitleText.Text == I18n.T("FocusShellToolDefaultTitle") || string.IsNullOrEmpty(FocusShellToolTitleText.Text)))
+		{
+			FocusShellToolTitleText.Text = I18n.T("FocusShellToolDefaultTitle");
+		}
+		if (FocusShellToolDescText != null && (FocusShellToolDescText.Text == "从系统原生增强与右键扩展中选择常用高频功能" || FocusShellToolDescText.Text == I18n.T("FocusShellToolDefaultDesc") || string.IsNullOrEmpty(FocusShellToolDescText.Text)))
+		{
+			FocusShellToolDescText.Text = I18n.T("FocusShellToolDefaultDesc");
+		}
 
 		// Tab 3 ToolTips
 		if (Tab4TestOcrBtn != null) Tab4TestOcrBtn.ToolTip = I18n.T("TipTestOcr");
@@ -5807,8 +5819,8 @@ public partial class SettingsWindow : Window
 							FocusShellToolIconText.FontFamily = new FontFamily("Segoe UI Emoji, Segoe UI Symbol, Segoe UI");
 							FocusShellToolIconText.Foreground = (Brush)FindResource("AccentPrimaryBrush");
 						}
-						if (FocusShellToolTitleText != null) FocusShellToolTitleText.Text = string.IsNullOrEmpty(param) ? "未挑选功能 (点击右侧挑选)" : param;
-						if (FocusShellToolDescText != null) FocusShellToolDescText.Text = "从系统原生增强与右键扩展中选择常用高频功能";
+						if (FocusShellToolTitleText != null) FocusShellToolTitleText.Text = string.IsNullOrEmpty(param) ? I18n.T("FocusShellToolDefaultTitle") : param;
+						if (FocusShellToolDescText != null) FocusShellToolDescText.Text = I18n.T("FocusShellToolDefaultDesc");
 					}
 				}
 			}
