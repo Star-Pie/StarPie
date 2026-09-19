@@ -457,6 +457,510 @@ internal static class PluginSelfTest
                 }
             }
 
+            // ---- 3j 宿主服务面与能力门禁 ----
+            //
+            // 这一段验的是「插件干活时真正碰到的那几层宿主接口」，与具体插件无关，
+            // 所以刻意放在候选扫描之后 —— 它不需要任何插件在场，也不加载任何程序集。
+            //
+            // 守的是一处**设计意图**，而不是某个具体实现：
+            // 「安装确认页上展示的能力，真的对应一个后果」。
+            //
+            // 必须在这里说清的是：门禁换来的**不是安全**。进程内插件本来就能自己
+            // Process.Start / P/Invoke SetWindowPos，SDK 拦不住 ——
+            // 它拦的只是「让宿主替你干活」这条路径。
+            // 用户看到「本插件需要『进程』能力」与「它其实什么都能干」之间的矛盾，
+            // 是进程内插件模型的固有代价；摊开写在这里，免得后来者以为这里守住了什么。
+            //
+            // 反过来，这条门禁要是漏了，插件清单里的能力声明就成了一句空话：
+            // 安装页照旧弹一个「需要『窗口控制』能力」的确认框，用户点了同意，
+            // 而这个勾选在运行时没有任何对应物 —— 那才是真正骗人的地方。
+            //
+            // ★ 本段曾在 refactor 分支重写自检时被整段丢弃（段落号与行数两重证据见
+            // CHANGELOG「自检护栏丢失」一节），此后 AGENTS.md 与若干类注释仍声称它存在。
+            // 恢复时按<b>现行</b>服务名重写，编号一律按执行顺序重排（旧版是 ①②③③b③c③d⑤④⑤）。
+            Line("");
+            Line("[3j] 宿主服务面与能力门禁（命令 / Shell 动词 / 窗口控制 / 屏幕截取 / 系统功能）");
+
+            // ① 类型关系：拒绝异常刻意不继承 PluginContractException。
+            //
+            // 后者会让宿主把插件整体标记为加载失败并卸载 —— 而「清单里漏了一行能力声明」
+            // 远不到那个程度。真继承上去，用户看到的是「插件突然坏了 / 被系统禁用了」，
+            // 排查方向会完全跑偏。
+            if (typeof(PluginContractException).IsAssignableFrom(typeof(PluginCapabilityDeniedException)))
+            {
+                Fail("能力门禁",
+                    "PluginCapabilityDeniedException 继承了 PluginContractException —— " +
+                    "漏写一行能力声明会让整个插件被卸载，而用户看到的提示是「插件坏了」");
+            }
+
+            const string gateProbePluginId = "starpie.selftest.gate";
+            var deniedCommandService = new PluginCommandService(gateProbePluginId, PluginCapability.None);
+            var deniedShellService = new PluginShellService(gateProbePluginId, PluginCapability.None);
+            var deniedWindowService = new PluginWindowService(gateProbePluginId, PluginCapability.None);
+            var deniedCaptureService = new PluginScreenCaptureService(gateProbePluginId, PluginCapability.None);
+            var deniedSystemService = new PluginSystemService(gateProbePluginId, PluginCapability.None);
+
+            // ② 未声明所需能力：必须拒绝。
+            //
+            // 探针一律传<b>空参数</b>（空命令 / 空动词 / 空布局码）—— 这一点都不影响结论：
+            // 门禁是 RequireCapability 的第一件事，排在「空值短路」之前，
+            // 所以被拒绝时参数根本没被分析过。更重要的是，它证明门禁确实在 Guard **之外** ——
+            // 若挪进 Guard 里，异常会被吞掉、转成一个 false 返回值，
+            // 用户看到的是「命令没执行」，而不是「本插件缺少『进程』能力」。
+            (bool commandDenied, string commandGateDetail) =
+                ProbeCapabilityGate(() => deniedCommandService.Run(""));
+
+            if (commandDenied)
+            {
+                Line($"  Commands.Run：{commandGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁", $"未声明 Process 的插件调用 Commands.Run 没有被正确拒绝：{commandGateDetail}");
+            }
+
+            (bool shellDenied, string shellGateDetail) =
+                ProbeCapabilityGate(() => deniedShellService.Invoke(""));
+
+            if (shellDenied)
+            {
+                Line($"  Shell.Invoke：{shellGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁", $"未声明 Process 的插件调用 Shell.Invoke 没有被正确拒绝：{shellGateDetail}");
+            }
+
+            // 窗口服务用空布局码做探针还有一层额外好处：万一门禁真的漏了，
+            // 空值短路会让它返回 false —— 探针<b>不会动到自检者自己的窗口</b>。
+            // 换成 ToggleTopmost / SetOpacity 之类，门禁一旦写错就会当场改掉用户窗口的状态，
+            // 而那时自检已经在报错了，没人会想到这个额外的副作用。
+            (bool windowDenied, string windowGateDetail) =
+                ProbeCapabilityGate(() => deniedWindowService.ApplyLayout(""), PluginCapability.WindowControl);
+
+            if (windowDenied)
+            {
+                Line($"  Windows.ApplyLayout：{windowGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"未声明 WindowControl 的插件调用 Windows.ApplyLayout 没有被正确拒绝：{windowGateDetail}");
+            }
+
+            // 截屏服务<b>只断言拒绝路径</b>，刻意不断言「声明后放行」，也不做跨能力交叉断言。
+            //
+            // 它是这一批里唯一没有「可以传空值短路的参数」的服务（CaptureAndRecognize 无参）：
+            // 一旦门禁真的漏了，探针会当场弹出全屏框选界面，把自检者正在做的事打断 ——
+            // 而那时自检已经在报错了，没人会想到这个额外的副作用。
+            // 「放行」那一半的正确性由真实使用保证（官方 Ocr 包的清单声明了 ScreenCapture）。
+            (bool captureDenied, string captureGateDetail) =
+                ProbeVoidCapabilityGate(
+                    () => deniedCaptureService.CaptureAndRecognize(),
+                    PluginCapability.ScreenCapture);
+
+            if (captureDenied)
+            {
+                Line($"  ScreenCapture.CaptureAndRecognize：{captureGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"未声明 ScreenCapture 的插件调用 ScreenCapture.CaptureAndRecognize 没有被正确拒绝：{captureGateDetail}");
+            }
+
+            // 系统功能服务的三段断言与窗口服务那三条并排，读起来才成体系。
+            //
+            // 它与前三个服务有一处不同，也是这一段存在的理由：门禁认的是
+            // <b>InputSimulation 而不是 Process</b>。系统控制这个包里两者都会发生
+            // （最小化 = 合成按键，关机 = 起进程），所以「认错能力」在这里的后果最具体 ——
+            // 若哪天有人把 required 改成 Process，一个只声明了「进程」的插件
+            // 就能往用户正在打字的窗口里按键，而安装确认页上那句「模拟输入」变成空话。
+            //
+            // 三段探针一律传<b>空键</b>：门禁排在空值短路之前，所以拒绝路径照样被验到；
+            // 而万一门禁真漏了，空值短路会让它返回 false —— 不起进程、不按键。
+            (bool systemDenied, string systemGateDetail) =
+                ProbeCapabilityGate(() => deniedSystemService.RunPreset(""), PluginCapability.InputSimulation);
+
+            if (systemDenied)
+            {
+                Line($"  System.RunPreset：{systemGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"未声明 InputSimulation 的插件调用 System.RunPreset 没有被正确拒绝：{systemGateDetail}");
+            }
+
+            // ③ 声明了所需能力：同一个调用必须放行。
+            //
+            // 少了这一半，把门禁写成「永远拒绝」也能通过上面全部断言 ——
+            // 而那会让所有正常插件都废掉，且现象与「插件坏了」一模一样。
+            var allowedCommandService = new PluginCommandService(
+                gateProbePluginId, PluginCapability.Process | PluginCapability.FileSystem);
+
+            try
+            {
+                bool emptyCommandResult = allowedCommandService.Run("   ");
+
+                if (emptyCommandResult)
+                {
+                    Fail("能力门禁", "空命令竟然报告执行成功 —— 空值短路失效，用户会以为命令跑过了");
+                }
+                else
+                {
+                    Line("  已声明 Process：放行 ✓（空命令由空值短路拦下，未真的起进程）");
+                }
+            }
+            catch (PluginCapabilityDeniedException denied)
+            {
+                Fail("能力门禁", $"已声明 Process 却被拒绝（{denied.Capability}）—— 门禁判据写错了，正常插件会全部废掉");
+            }
+            catch (Exception gateError)
+            {
+                Fail("能力门禁", $"已声明 Process 的调用抛出异常：{gateError}");
+            }
+
+            // ③b 同一个基类，服务必须各认自己的能力。
+            //
+            // 守的是「required 传错」：所有服务的门禁现在是同一段代码（PluginGatedService），
+            // 复制粘贴时把 WindowControl 写成 Process（或反过来）不会有任何编译错误，
+            // 而后果是「只声明了进程的插件可以任意动用户的窗口」或「合法插件全被拒」。
+            // <b>上面那些断言对这个错误照样全绿</b> —— 因为它们只验了各自那一对。
+            var mismatchedWindowService = new PluginWindowService(gateProbePluginId, PluginCapability.Process);
+            var mismatchedCommandService = new PluginCommandService(gateProbePluginId, PluginCapability.WindowControl);
+
+            try
+            {
+                // 空布局码：真被放行时也只会走到空值短路并返回 false，不动任何窗口。
+                bool leaked = mismatchedWindowService.ApplyLayout("");
+
+                Fail("能力门禁",
+                    $"只声明 Process 的插件调用了窗口服务却没被拒绝（返回 {leaked}）—— " +
+                    "服务认错了能力标志，安装确认页上的「窗口控制」标签形同虚设");
+            }
+            catch (PluginCapabilityDeniedException)
+            {
+                Line("  跨能力：只声明 Process 调用窗口服务仍被拒绝 ✓（各服务认自己的能力）");
+            }
+
+            try
+            {
+                mismatchedCommandService.Run("");
+                Fail("能力门禁", "只声明 WindowControl 的插件调用命令服务却没被拒绝 —— 服务认错了能力标志");
+            }
+            catch (PluginCapabilityDeniedException)
+            {
+                Line("  跨能力：只声明 WindowControl 调用命令服务仍被拒绝 ✓");
+            }
+
+            // 「只声明 Process 也不行」——把「系统服务认的不是 Process」变成机器可验的。
+            var processOnlySystemService = new PluginSystemService(
+                gateProbePluginId, PluginCapability.Process);
+
+            (bool processOnlyDenied, string processOnlyDetail) =
+                ProbeCapabilityGate(() => processOnlySystemService.RunPreset(""), PluginCapability.InputSimulation);
+
+            if (processOnlyDenied)
+            {
+                Line($"  跨能力：只声明 Process 调用系统服务仍被拒绝 ✓（{processOnlyDetail}）");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    "只声明了 Process 的插件调用 System.RunPreset 竟然被放行 —— " +
+                    "两种能力在系统控制里都会发生，但后果不同：前者是多一个后台进程，" +
+                    $"后者是往用户正在打字的窗口里按键。{processOnlyDetail}");
+            }
+
+            // ③c 窗口服务声明了对应能力：同样必须放行。
+            var allowedWindowService = new PluginWindowService(
+                gateProbePluginId, PluginCapability.WindowControl);
+
+            try
+            {
+                bool emptyLayoutResult = allowedWindowService.ApplyLayout("   ");
+
+                if (emptyLayoutResult)
+                {
+                    Fail("能力门禁", "空布局码竟然报告应用成功 —— 空值短路失效，用户会以为窗口被排过了");
+                }
+                else
+                {
+                    Line("  已声明 WindowControl：放行 ✓（空布局码由空值短路拦下，未真的动窗口）");
+                }
+            }
+            catch (PluginCapabilityDeniedException denied)
+            {
+                Fail("能力门禁",
+                    $"已声明 WindowControl 却被拒绝（{denied.Capability}）—— 门禁判据写错了，正常插件会全部废掉");
+            }
+            catch (Exception gateError)
+            {
+                Fail("能力门禁", $"已声明 WindowControl 的调用抛出异常：{gateError}");
+            }
+
+            // 反过来：系统服务声明了 InputSimulation 就必须放行，否则「门禁写成永远拒绝」也能过上面两条。
+            var allowedSystemService = new PluginSystemService(
+                gateProbePluginId, PluginCapability.InputSimulation);
+
+            try
+            {
+                bool emptyPresetResult = allowedSystemService.RunPreset("   ");
+
+                if (emptyPresetResult)
+                {
+                    Fail("能力门禁",
+                        "空预设键竟然报告「已匹配到预设」—— 空值短路失效，用户会以为系统功能执行过了");
+                }
+                else
+                {
+                    Line("  已声明 InputSimulation：放行 ✓（空键由空值短路拦下，未起进程、未按键）");
+                }
+            }
+            catch (PluginCapabilityDeniedException denied)
+            {
+                Fail("能力门禁",
+                    $"已声明 InputSimulation 却被拒绝（{denied.Capability}）—— 门禁判据写错了，正常插件会全部废掉");
+            }
+            catch (Exception gateError)
+            {
+                Fail("能力门禁", $"已声明 InputSimulation 的调用抛出异常：{gateError}");
+            }
+
+            // ④ 能力位本身的形状：两两不重复。
+            //
+            // 「取新位不插中间」是约定，但真正会咬人的是**位值撞车**（复制上一行忘了改 << n），
+            // 那会让两个能力在 `& required` 下互相代理：勾了 A 就自动获得 B。
+            // 枚举值允许有空洞（无副作用），不允许有重复。
+            var capabilityBits = new List<PluginCapability>();
+            bool capabilityBitsUnique = true;
+
+            foreach (PluginCapability capability in Enum.GetValues<PluginCapability>())
+            {
+                if (capability == PluginCapability.None) continue;
+
+                if (capabilityBits.Contains(capability))
+                {
+                    capabilityBitsUnique = false;
+                    Fail("能力位", $"PluginCapability 里有两个成员取到了同一个位值「{capability}」—— " +
+                        "复制上一行忘了改位移时就是这个现象：声明其中一个会连带获得另一个");
+                    continue;
+                }
+
+                capabilityBits.Add(capability);
+            }
+
+            Line(capabilityBitsUnique
+                ? $"  能力位：{capabilityBits.Count} 项，位值两两不重复 ✓"
+                : $"  能力位：{capabilityBits.Count} 项，存在重复位值（见上面的 [FAIL]）");
+
+            // ⑤ 每一个能力位都必须在安装确认页上有一句人话。
+            //
+            // 这条护栏是被两处真实遗漏逼出来的：WindowControl 与 ScreenCapture
+            // 各自独立成项的理由，写的都是「安装确认页上必须让用户看见后果」——
+            // 而确认页那份清单当初是内联在 SettingsWindow 里的一个 if 串，
+            // 没人记得回去补，于是这两项能力至今没在用户眼前出现过一行字。
+            //
+            // 能力位的全部意义就是「让用户在安装前看见后果」。一个查不到文案的能力位，
+            // 既骗用户（什么都没说）也骗审核者（以为已经说过了）。所以这里逐个成员核对，
+            // 而不是抽查几个常见的 —— 漏掉的恰好总是新加的那一个。
+            string[] labeledCapabilities = PluginCapabilityLabels.All
+                .Select(entry => entry.Capability.ToString())
+                .ToArray();
+
+            bool capabilityLabelsComplete = true;
+
+            foreach (PluginCapability capability in Enum.GetValues<PluginCapability>())
+            {
+                if (capability == PluginCapability.None) continue;
+
+                if (!labeledCapabilities.Contains(capability.ToString(), StringComparer.Ordinal))
+                {
+                    capabilityLabelsComplete = false;
+                    Fail("能力文案",
+                        $"能力位「{capability}」在安装确认页上没有对应文案（PluginCapabilityLabels.All）—— " +
+                        "用户勾选确认时看不到这项能力的后果，而这个能力位存在的全部理由就是要让他看见");
+                }
+            }
+
+            foreach ((PluginCapability capability, string label) in PluginCapabilityLabels.All)
+            {
+                if (string.IsNullOrWhiteSpace(label))
+                {
+                    capabilityLabelsComplete = false;
+                    Fail("能力文案", $"能力位「{capability}」的确认页文案是空的 —— 确认框里会出现一行空白");
+                }
+
+                // 反向核对：表里挂着一个枚举里已经没有的位，通常意味着能力位被改名后这里没跟上。
+                if (!Enum.IsDefined(capability))
+                {
+                    capabilityLabelsComplete = false;
+                    Fail("能力文案", $"确认页文案表里的「{capability}」已不是 PluginCapability 的成员 —— 能力位改过名？");
+                }
+            }
+
+            // 上面两条核对里任何一条响了，这里就<b>不能</b>再印一个勾 ——
+            // 一份在 [FAIL] 旁边说「覆盖全部 ✓」的报告，比不打印还糟：
+            // 它会让人以为那行 [FAIL] 是误报。
+            Line(capabilityLabelsComplete
+                ? $"  能力文案：{PluginCapabilityLabels.All.Length} 项，覆盖枚举里全部非空能力位 ✓"
+                : $"  能力文案：{PluginCapabilityLabels.All.Length} 项，覆盖不完整（见上面的 [FAIL]）");
+
+            // 两组服务面逐一验完之后，报一次确认页的实际渲染结果。
+            // 这一段是给「自检通过但用户看不到」这种情况准备的：断言只看表，这里看拼出来的文本。
+            string sampleLabels = PluginCapabilityLabels.Describe(
+                PluginCapability.Process | PluginCapability.InputSimulation | PluginCapability.ScreenCapture);
+
+            Line($"  确认页示例（进程+模拟输入+截屏）：{sampleLabels.Replace("\n", "｜")}");
+
+            // ⑥ 元数据不受门禁约束，这是刻意的。
+            //
+            // 插件的 Parameters 是属性，声明期（注册前）就要读这几份清单。
+            // 在那里抛异常，一个「忘了声明能力」的插件会在注册阶段整个崩掉 ——
+            // 而它其实只是不能在运行时干活而已。门禁拦的是**产生后果**的调用。
+            try
+            {
+                IReadOnlyList<CommandTerminalOption> terminals = deniedCommandService.Terminals;
+                IReadOnlyList<ShellVerbOption> shellVerbs = deniedShellService.Verbs;
+                IReadOnlyList<SystemPresetOption> presets = deniedSystemService.Presets;
+                IReadOnlyList<WindowLayoutOption> layouts = deniedWindowService.Layouts;
+
+                if (terminals.Count == 0)
+                {
+                    Fail("宿主服务面", "终端清单为空 —— 「运行命令」动作的终端下拉会是空的，用户选不了终端");
+                }
+                else if (!terminals.Any(t => string.Equals(t.Id, "cmd", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Fail("宿主服务面", "终端清单里没有 \"cmd\" —— 动作的默认值在界面上选不中任何一项");
+                }
+                else if (terminals.Any(t => string.IsNullOrWhiteSpace(t.DisplayName)))
+                {
+                    Fail("宿主服务面", "终端清单里有显示名为空的项 —— 下拉里会出现一个没有文字的选项");
+                }
+                else if (terminals.Select(t => t.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != terminals.Count)
+                {
+                    Fail("宿主服务面", "终端清单里有重复的标识 —— 下拉选中项会错位到另一个终端上");
+                }
+                else
+                {
+                    Line($"  终端清单：{terminals.Count} 项，含 cmd ✓（未声明能力也能读，因为它不产生后果）");
+                }
+
+                // Shell 动词：用户配置里存的是短 ID（copy_path），不是 Verb（Windows.CopyAsPath）。
+                // 清单漏项不会有任何报错 —— 只会让那个动作在挑选器里找不到对应项。
+                if (shellVerbs.Count == 0)
+                {
+                    Fail("宿主服务面", "Shell 动词清单为空 —— 该动作的下拉会是空的");
+                }
+                else if (!shellVerbs.Any(v => string.Equals(v.Id, "copy_path", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Fail("宿主服务面",
+                        "Shell 动词清单里没有 \"copy_path\" —— 用户配置里存的就是这个短 ID，" +
+                        "少了它老配置在挑选器里找不到对应项（注意：清单要的是 Id，不是 Verb）");
+                }
+                else if (shellVerbs.Select(v => v.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != shellVerbs.Count)
+                {
+                    Fail("宿主服务面", "Shell 动词清单里有重复的标识 —— 选中项会错位");
+                }
+                else
+                {
+                    Line($"  Shell 动词清单：{shellVerbs.Count} 项，含 copy_path ✓");
+                }
+
+                // 窗口布局清单：它是「平铺窗口」动作生成下拉的<b>唯一来源</b>，
+                // 所以必须与宿主执行体那份表逐项同源（SequenceEqual 连顺序都比 ——
+                // 顺序即下拉顺序）。插件另抄一份的后果是宿主加布局之后，
+                // 「新布局在下拉里选不到」或「选了不生效」，两种都是静默失效。
+                if (layouts.Any(l => string.IsNullOrWhiteSpace(l.Key) || string.IsNullOrWhiteSpace(l.DisplayName)))
+                {
+                    Fail("宿主服务面", "窗口布局清单里有空键或空显示名 —— 下拉里会出现一个没有文字的选项");
+                }
+                else if (!layouts.Select(l => l.Key).SequenceEqual(WindowTiler.LayoutKeys, StringComparer.OrdinalIgnoreCase))
+                {
+                    Fail("宿主服务面",
+                        $"窗口布局清单（{layouts.Count} 项）与 WindowTiler.LayoutKeys（{WindowTiler.LayoutKeys.Count} 项）" +
+                        "不一致 —— 两者已经漂了，用户会遇到「新布局选不到」或「选了不生效」");
+                }
+                else if (!string.Equals(deniedWindowService.CycleToken, WindowTiler.CycleParam, StringComparison.Ordinal)
+                    || !string.Equals(deniedWindowService.CycleBackToken, WindowTiler.CycleBackParam, StringComparison.Ordinal)
+                    || !string.Equals(deniedWindowService.RestoreToken, WindowTiler.RestoreParam, StringComparison.Ordinal))
+                {
+                    Fail("宿主服务面",
+                        "三个布局标记与 WindowTiler 的常量对不上 —— " +
+                        "「循环切换 / 循环返回 / 还原」选下去会静默无效（执行体的 switch 认的是宿主那两个常量）");
+                }
+                else if (deniedWindowService.OpacityMinPercent >= deniedWindowService.OpacityMaxPercent)
+                {
+                    Fail("宿主服务面",
+                        "透明度范围不合法（下界不小于上界）—— 插件据它生成的参数声明会把所有值都判成非法");
+                }
+                else
+                {
+                    Line($"  窗口布局清单：{layouts.Count} 项，与 WindowTiler.LayoutKeys 逐项同源 ✓" +
+                        $"（透明度 {deniedWindowService.OpacityMinPercent}~{deniedWindowService.OpacityMaxPercent}）");
+                }
+
+                // 系统预设清单：与终端 / 动词同理，也必须与宿主那份表同源。
+                // 旧版只比了「项数相等」，那挡不住「项数对得上但名字串位」——
+                // 插件下拉里会出现「关机」写成「睡眠」这种，用户选下去才发现不对。
+                if (presets.Count != SlotViewModel.SystemPresetList.Count)
+                {
+                    Fail("宿主服务面",
+                        $"未声明能力的插件读到的预设清单是 {presets.Count} 项，宿主表是 " +
+                        $"{SlotViewModel.SystemPresetList.Count} 项 —— 两者必须是同一份数据");
+                }
+                else
+                {
+                    bool presetsAligned = true;
+
+                    for (int i = 0; i < presets.Count; i++)
+                    {
+                        SystemPresetItem hostItem = SlotViewModel.SystemPresetList[i];
+
+                        if (!string.Equals(presets[i].Key, hostItem.Key, StringComparison.Ordinal)
+                            || !string.Equals(presets[i].DisplayName, hostItem.FormattedDisplay, StringComparison.Ordinal))
+                        {
+                            presetsAligned = false;
+                            Fail("宿主服务面",
+                                $"系统预设清单第 {i + 1} 项与宿主表不一致：" +
+                                $"插件侧（{presets[i].Key} / {presets[i].DisplayName}），" +
+                                $"宿主侧（{hostItem.Key} / {hostItem.FormattedDisplay}）—— " +
+                                "下标串位会让用户在插件下拉里选中一个不是他要的预设");
+                            break;
+                        }
+                    }
+
+                    Line(presetsAligned
+                        ? $"  系统预设清单：{presets.Count} 项，与宿主表逐项同源 ✓"
+                        : $"  系统预设清单：{presets.Count} 项，与宿主表不一致（见上面的 [FAIL]）");
+                }
+            }
+            catch (PluginCapabilityDeniedException deniedMeta)
+            {
+                Fail("宿主服务面",
+                    $"读元数据（终端 / 动词 / 布局 / 预设清单）被能力门禁拦下了（{deniedMeta.ServiceName}）—— " +
+                    "插件的 Parameters 是声明期就要读它的，这会让忘了声明的插件在注册阶段整个崩掉");
+            }
+
+            // ⑦ SDK 契约版本号的内部一致性。
+            //
+            // ApiVersion 是个手写常量：C# 的常量插值只对 string 常量成立，
+            // 这两个组成部分是 int，所以拼不出来（CS0133）。这处重复只能靠断言守。
+            // 漏改的表现极其隐蔽：插件按 ApiVersion 做兼容判断，而它和真实版本号对不上。
+            string expectedApiVersion = $"{PluginApi.ApiVersionMajor}.{PluginApi.ApiVersionMinor}";
+
+            if (!string.Equals(PluginApi.ApiVersion, expectedApiVersion, StringComparison.Ordinal))
+            {
+                Fail("SDK 契约",
+                    $"ApiVersion（{PluginApi.ApiVersion}）与主次版本号（{expectedApiVersion}）不一致 —— " +
+                    "两者手写在两处，改了其中一个却忘了另一个");
+            }
+            else
+            {
+                Line($"  SDK 契约版本：{PluginApi.ApiVersion} ✓（与主次版本号一致）");
+            }
+
             // ---- 7 环境还原性检查 ----
             Line("");
             Line("[7] 环境还原性检查");
@@ -1190,6 +1694,109 @@ internal static class PluginSelfTest
             parts.Add($"{pair.Key}={pair.Value}");
         }
         return string.Join(", ", parts);
+    }
+
+    /// <summary>
+    /// 能力门禁探针：调一次<b>应当被拒绝</b>的宿主服务，把结果压成一行可读结论。
+    /// <para>
+    /// 不写成「catch 到异常就算过」：那条断言分三件事，混在一起就没法定位 ——
+    /// <list type="number">
+    /// <item>门禁存在但归因错了（required 传错，另一项能力的标签变成空话）；</item>
+    /// <item>门禁存在但抛了别的异常（例如空引用，看起来也「被拒绝了」）；</item>
+    /// <item>正常返回 —— 门禁根本不存在。</item>
+    /// </list>
+    /// 只判「有没有抛异常」会把后两种混在一起，而它们的修法完全不同。
+    /// </para>
+    /// <para>
+    /// 「拦得清楚」的三条判据：能力必须正好是 <paramref name="expected"/>、
+    /// 异常类型不能是 <see cref="PluginContractException"/>（那会让插件被整体卸载）、
+    /// 消息里要给出修复动作（去清单里补一行，而不是「权限不足」四个字）。
+    /// </para>
+    /// </summary>
+    /// <param name="expected">
+    /// 这次调用<b>应当</b>被拦在哪一项能力上。默认 <c>Process</c>（命令 / Shell 两个服务）——
+    /// 窗口服务是 <c>WindowControl</c>、系统服务是 <c>InputSimulation</c>。
+    /// 归因错了说明服务的 required 传错了。
+    /// </param>
+    private static (bool Denied, string Detail) ProbeCapabilityGate(
+        Func<bool> call,
+        PluginCapability expected = PluginCapability.Process)
+    {
+        try
+        {
+            bool accepted = call();
+            return (false, $"调用被直接放行（返回 {accepted}）—— 门禁不存在");
+        }
+        catch (Exception ex)
+        {
+            return ClassifyGateOutcome(ex, expected);
+        }
+    }
+
+    /// <summary>
+    /// <see cref="ProbeCapabilityGate(Func{bool}, PluginCapability)"/> 的姊妹版，
+    /// 供<b>返回 void</b> 的宿主服务使用（目前只有 <c>ScreenCapture.CaptureAndRecognize</c>）。
+    /// <para>
+    /// 刻意做成<b>另一个名字</b>而不是同名重载。C# 里 <c>() =&gt; M()</c> 这种语句表达式 lambda
+    /// 既能转成 <c>Func&lt;bool&gt;</c>（M 返回 bool 时）也能转成 <c>Action</c>（丢弃返回值），
+    /// 于是同名重载会让上面几处 <c>Run</c> / <c>Invoke</c> / <c>ApplyLayout</c> 的探针
+    /// 落进「谁更匹配」的规则里 —— 那是一个编译器说了算、读代码的人看不出来的选择。
+    /// 名字分开，读一眼就知道哪条探针没有返回值可看。
+    /// </para>
+    /// <para>
+    /// 也不能图省事把它包成 <c>() =&gt; { call(); return false; }</c> 塞进上面那个：
+    /// 门禁真缺失时打印出来的会是「调用被直接放行（返回 False）」——
+    /// 一个凭空捏造的 <c>false</c> 混进结论里，而这条断言的整个意义就是分清
+    /// 「门禁不存在」和「门禁在，但它放行了」。
+    /// </para>
+    /// </summary>
+    private static (bool Denied, string Detail) ProbeVoidCapabilityGate(
+        Action call,
+        PluginCapability expected)
+    {
+        try
+        {
+            call();
+            return (false, "调用被直接放行（void 方法正常返回）—— 门禁不存在");
+        }
+        catch (Exception ex)
+        {
+            return ClassifyGateOutcome(ex, expected);
+        }
+    }
+
+    /// <summary>
+    /// 把「应当被拒绝」的调用<b>实际抛出的异常</b>压成一行可读结论。
+    /// <para>
+    /// 两个探针共用这一段的理由是「拦得清楚」的三条判据与「谁去调用它」无关：
+    /// 能力必须正好是 <paramref name="expected"/>、异常类型不能是
+    /// <see cref="PluginContractException"/>、消息里要给出修复动作。
+    /// </para>
+    /// <para>
+    /// 归因错了说明服务的 required 传错了，而那会让安装确认页上另一项能力的标签变成空话：
+    /// 用户勾的是「窗口控制」，运行时拦的却是「进程」。
+    /// </para>
+    /// </summary>
+    private static (bool Denied, string Detail) ClassifyGateOutcome(
+        Exception ex,
+        PluginCapability expected)
+    {
+        if (ex is PluginCapabilityDeniedException denied)
+        {
+            if (denied.Capability != expected)
+            {
+                return (false, $"拒绝时归因的能力是 {denied.Capability}，应为 {expected}");
+            }
+
+            if (!denied.Message.Contains("capabilities", StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, $"拒绝消息里没说清该怎么修（未提到清单里的 capabilities 数组）：{denied.Message}");
+            }
+
+            return (true, $"已拒绝（{denied.ServiceName} / {denied.Capability}）");
+        }
+
+        return (false, $"抛出的不是 PluginCapabilityDeniedException，而是 {ex.GetType().Name}：{ex.Message}");
     }
 
     private static int Write(StringBuilder report, string? reportPath, bool pass)
