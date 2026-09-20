@@ -7482,6 +7482,131 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	/// <summary>
+	/// 「⚡ 分配至轮盘」：把插件卡上的一个动作一键放进轮盘扇区，并跳过去让用户精调参数。
+	/// <para>
+	/// <b>为什么值得存在</b>：装完插件最想做的事就是「让它出现在轮盘上」，
+	/// 而原先要走「切到手势页 → 挑扇区 → 展开动作类型下拉 → 在插件分组里找那个动作」四步，
+	/// 且第一步就得先想清楚放哪个扇区。
+	/// </para>
+	/// <para>
+	/// <b>跨页改配置这件事先由 <see cref="PluginWheelAssignment.Plan"/> 算清楚</b>：
+	/// 目标扇区、会不会覆盖、有没有可分配的动作全在那里定，本方法只负责
+	/// 「按计划切页 → 选中 → 写入 → 通知」。这样那三条分支能在自检里被合成数据驱动，
+	/// 而不是只能靠人肉凑出「恰好有 N 个空扇区」的现场。
+	/// </para>
+	/// <para>
+	/// 写入走 <see cref="PluginActionBinding.Apply"/>，与子下拉选中动作时**同一条路**：
+	/// 另写一份写入逻辑的话，两条路迟早会在「名称 / 图标要不要自动填」这类细节上分叉。
+	/// </para>
+	/// </summary>
+	private void AssignPluginToWheelButton_Click(object sender, RoutedEventArgs e)
+	{
+		if (sender is not System.Windows.Controls.Button { Tag: string pluginId } ||
+			string.IsNullOrWhiteSpace(pluginId))
+		{
+			return;
+		}
+
+		WheelProfile? profile = _selectedProfile ?? ConfigManager.CurrentConfig?.Profiles.FirstOrDefault();
+		if (profile == null)
+		{
+			PluginHost.NotifyUser(I18n.T("PluginsAssignTitle"), I18n.T("PluginsAssignNoSlot"));
+			return;
+		}
+
+		profile.EnsureLayers();
+
+		// 扇区快照：既要「这一格空不空」，也要「占着它的动作叫什么」—— 提示语里要报出替换掉了谁。
+		// 长度按当前配置的扇区数取，而不是 profile.Actions.Count：后者可能还没被 RefreshSlots 补齐。
+		int count = NormalizeSectorCount(profile.SectorCount);
+		string[] directions = ResolveDirectionNames(count);
+		var slotNames = new List<string>(count);
+		for (int i = 0; i < count; i++)
+		{
+			slotNames.Add(profile.Actions != null && i < profile.Actions.Count
+				? profile.Actions[i]?.Name ?? ""
+				: "");
+		}
+
+		// 惰性加载契约：注册表里只有「已加载」插件的贡献点，而宿主默认不预加载
+		// （R1 内存红线，见 PluginRegistryEntry.Preload）。所以必须先把**这一个**插件拉起来，
+		// 再去查它的动作 —— 顺序反了的话，界面上明明有 ⚡ 按钮，点下去只会得到
+		// 「这个插件没有可分配的动作」，而插件本身完全正常。
+		//
+		// 只加载被点到的这一个：进插件页就把十几个模块全拉起来，是拿内存红线换一点手感。
+		// 也正因为如此，卡片上的可用性判据不能是「已登记的动作数」（那样启动后全是灰的），
+		// 而是「能不能加载」—— 见 PluginWheelAssignment.BlockReason。
+		PluginActivationResult activation = PluginHost.EnsureLoadedForOperation(pluginId);
+		if (!activation.IsReady)
+		{
+			// activation.Error 是宿主内部消息（中文、含插件名），只进日志；
+			// 气泡给用户的是一句始终本地化的说明 —— 否则英文界面上会漏出中文。
+			AppLogger.LogWarn($"[plugin] 分配至轮盘前加载 {pluginId} 失败：{activation.Status} {activation.Error}");
+			PluginHost.NotifyUser(
+				I18n.T("PluginsAssignTitle"),
+				I18n.T(DescribeActivationFailure(activation.Status)));
+			return;
+		}
+
+		PluginAssignPlan plan = PluginWheelAssignment.Plan(pluginId, slotNames, _selectedSlotIndex);
+		if (!plan.Ok)
+		{
+			PluginHost.NotifyUser(
+				I18n.T("PluginsAssignTitle"),
+				plan.Failure == PluginAssignFailure.NoActions
+					? I18n.TF("PluginsAssignNoAction", PluginActionBinding.ResolvePluginDisplayName(pluginId))
+					: I18n.T("PluginsAssignNoSlot"));
+			return;
+		}
+
+		// 顺序不能反：SwitchToTab(2) 内部会 RefreshSlots()，先选好的扇区会被它冲掉，
+		// 而表现是「跳过去了，但右边编辑的不是刚分配的那个扇区」。
+		SwitchToTab(2);
+		SelectPrimarySlot(plan.SlotIndex);
+
+		ActionItem? item = GetCurrentFocusActionItem();
+		if (item == null || !PluginActionBinding.Apply(item, plan.FullId))
+		{
+			// Apply 返回 false = 贡献点已经不在（插件刚被停用 / 卸载）。此时配置保持原样。
+			PluginHost.NotifyUser(I18n.T("PluginsAssignTitle"), I18n.T("PluginsAssignFailed"));
+			return;
+		}
+
+		UpdateFocusEditorUi();
+		ScheduleAutoSave();
+
+		string slotLabel = plan.SlotIndex >= 0 && plan.SlotIndex < directions.Length
+			? directions[plan.SlotIndex]
+			: I18n.TF("PluginsAssignSlotFallback", plan.SlotIndex + 1);
+
+		var parts = new List<string> { I18n.TF("PluginsAssignDone", plan.ActionName, slotLabel) };
+		if (plan.Overwrites) parts.Add(I18n.TF("PluginsAssignOverwriteNote", plan.ReplacedName));
+		if (plan.ActionCount > 1) parts.Add(I18n.TF("PluginsAssignMultiNote", plan.ActionCount));
+
+		PluginHost.NotifyUser(I18n.T("PluginsAssignTitle"), string.Join(" ", parts));
+	}
+
+	/// <summary>
+	/// 「分配那一刻插件没拉起来」的原因 → 词条键。
+	/// <para>
+	/// <b>刻意不显示 <c>PluginActivationResult.Error</c></b>：那句是宿主内部消息
+	/// （中文、且含插件名），没有走 i18n —— 直接塞进气泡的话，英文界面上会冒出一句中文，
+	/// 而这类「只有切了语言才看得见」的泄漏不会被任何自动检查抓住（气泡不在控件树里）。
+	/// 它只进日志；用户看到的是这里映射出来的本地化说明。
+	/// </para>
+	/// <para>
+	/// 只分三类而不逐状态给文案：隔离 / 不兼容 / 待重启 / 正在停止对用户而言是同一件事
+	/// ——「先按卡片上那个状态把它修好」。状态名已经在卡片徽章上了，这里重复一遍只是噪音。
+	/// </para>
+	/// </summary>
+	private static string DescribeActivationFailure(PluginActivationStatus status) => status switch
+	{
+		PluginActivationStatus.PluginSystemDisabled => "PluginsAssignPluginSystemOff",
+		PluginActivationStatus.LoadFailed => "PluginsAssignLoadFailed",
+		_ => "PluginsAssignUnavailable",
+	};
+
 	private void UpdateFocusActionTypeItemsSource(string? currentTag = null)
 	{
 		if (FocusActionTypeComboBox == null) return;

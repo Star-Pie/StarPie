@@ -115,6 +115,17 @@ internal enum PluginActivationReason
     StartupPreload,
     ActionExecution,
     WheelStructureQuery,
+
+    /// <summary>
+    /// 用户在插件页点了「⚡ 分配至轮盘」—— 只为了读出这个插件的动作清单而起一次加载。
+    /// <para>
+    /// 单独一项而不是复用 <see cref="ActionExecution"/>：这个值会写进日志
+    /// （<c>[plugin] {reason} 触发运行时加载</c>），而「为什么这一下会加载一个插件」
+    /// 恰恰是排查「界面卡顿」时第一个要回答的问题 —— 复用会让日志写着「执行动作」，
+    /// 而那一刻根本没有任何动作被执行。
+    /// </para>
+    /// </summary>
+    WheelAssignment,
 }
 
 internal enum PluginActivationStatus

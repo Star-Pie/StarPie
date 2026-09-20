@@ -4030,7 +4030,21 @@
                         </TextBlock>
                       </StackPanel>
                       <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
-                        <CheckBox Content="{Binding EnableText}" Tag="{Binding PluginId}" IsChecked="{Binding IsEnabled, Mode=OneWay}" Click="PluginRowEnabledCheckBox_Click" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <!-- ⚡ 分配至轮盘：概念稿里把它排在最前（它是这一页最有价值的一个出口 ——
+                             装完插件最想做的事就是"让它出现在轮盘上"，而原先要手动切到
+                             手势页逐个扇区找）。禁用态用气泡解释原因，见 PluginListItem.AssignToolTip。 -->
+                        <Button Content="{Binding AssignText}" Tag="{Binding PluginId}" ToolTip="{Binding AssignToolTip}" Click="AssignPluginToWheelButton_Click" Height="26" Padding="8,0" FontSize="11" VerticalAlignment="Center">
+                          <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                              <Style.Triggers>
+                                <DataTrigger Binding="{Binding CanAssign}" Value="False">
+                                  <Setter Property="IsEnabled" Value="False" />
+                                </DataTrigger>
+                              </Style.Triggers>
+                            </Style>
+                          </Button.Style>
+                        </Button>
+                        <CheckBox Content="{Binding EnableText}" Tag="{Binding PluginId}" IsChecked="{Binding IsEnabled, Mode=OneWay}" Click="PluginRowEnabledCheckBox_Click" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="10,0,0,0" />
                         <Button Content="{Binding UninstallText}" Tag="{Binding PluginId}" Click="UninstallPluginButton_Click" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="10,0,0,0" FontSize="11" />
                       </StackPanel>
                     </Grid>

@@ -1701,7 +1701,7 @@ internal static class PluginSelfTest
         // 这一段刻意放在 [4] 之前：--skip-invoke 会在 [4] 开头提前 return，
         // 放到 [4] 之后等于日常回归里根本不会执行（那正是 [5b] 曾经踩过的坑）。
         line("");
-        line("[3f] 插件管理页卡片文案（六层：头像 / 状态名 / 描述 / meta 行 / 能力标签 / 两个按钮）");
+        line("[3f] 插件管理页卡片文案（六层：头像 / 状态名 / 描述 / meta 行 / 能力标签 / 三个按钮）");
 
         // ① 状态名逐个成员核对。I18n.T 取不到键时**原样返回键名** —— 既不空白也不像错的，
         //    只有逐条比对才看得见。这里直接按「值」驱动，所以 9 个成员一个都不会漏。
@@ -1794,6 +1794,8 @@ internal static class PluginSelfTest
                          ("状态徽标", enCard.StateText),
                          ("启用按钮", enCard.EnableText),
                          ("卸载按钮", enCard.UninstallText),
+                         ("⚡ 分配按钮", enCard.AssignText),
+                         ("⚡ 分配气泡", enCard.AssignToolTip),
                          ("描述（宿主部分）", StripPluginData(enCard.DescriptionText)),
                          ("meta 行（宿主部分）", StripPluginData(enCard.MetaText)),
                          ("详情（宿主部分）", StripPluginData(enCard.DetailText)),
@@ -1889,13 +1891,255 @@ internal static class PluginSelfTest
                 for (int j = i + 1; j < cardLanguages.Count; j++)
                 {
                     if (string.Equals(cards[cardLanguages[i]].StateText, cards[cardLanguages[j]].StateText, StringComparison.Ordinal)
-                        || string.Equals(cards[cardLanguages[i]].UninstallText, cards[cardLanguages[j]].UninstallText, StringComparison.Ordinal))
+                        || string.Equals(cards[cardLanguages[i]].UninstallText, cards[cardLanguages[j]].UninstallText, StringComparison.Ordinal)
+                        || string.Equals(cards[cardLanguages[i]].AssignText, cards[cardLanguages[j]].AssignText, StringComparison.Ordinal))
                     {
                         return $"[3f] {cardLanguages[i]} 与 {cardLanguages[j]} 的卡片文案完全相同，必然有一门没走自己的词条。";
                     }
                 }
             }
             line($"    四语言卡片：{cards.Count} 份互不相同 ✓");
+
+            // ⑥ 「⚡ 分配至轮盘」的决策层（PluginWheelAssignment）—— 三个分支全部用合成数据驱动。
+            //
+            //    这一段的重点是**「有空格就不许覆盖用户配置」**能不能被机器守住：
+            //    只要还有空扇区，选中的就必须是空扇区。写错不会有任何报错 ——
+            //    用户点一下，某个他根本没看见的扇区里的动作就没了，而且有自动保存，撤销不了。
+            //
+            //    扇区名刻意用 ASCII（"copy" / "paste"…）：这一段只想区分「空」与「非空」，
+            //    用中文名会让 scratch/scan_cjk_logic.py 的中文判据地雷扫描多出无谓的候选。
+            var emptySlots = new List<string> { "", "", "", "" };
+            var partlyFull = new List<string> { "copy", "", "paste", "" };
+            var fullSlots = new List<string> { "copy", "paste", "view", "close" };
+
+            if (PluginWheelAssignment.ChooseSlotIndex(emptySlots, 2) != 2)
+            {
+                return "[3f] 扇区全空时没有采用「当前扇区」—— 跳过去的位置会和提示语说的对不上。";
+            }
+            if (PluginWheelAssignment.ChooseSlotIndex(partlyFull, 0) != 1)
+            {
+                return "[3f] 当前扇区被占用时没有让给第一个空扇区 —— 会静默覆盖用户已配好的动作。";
+            }
+            if (PluginWheelAssignment.ChooseSlotIndex(partlyFull, 1) != 1)
+            {
+                return "[3f] 当前扇区本身就是空的时候，没有直接用它。";
+            }
+            if (PluginWheelAssignment.ChooseSlotIndex(fullSlots, 3) != 3)
+            {
+                return "[3f] 扇区全满时没有回落到当前扇区 —— 分配会落到一个提示语没提过的位置上。";
+            }
+            if (PluginWheelAssignment.ChooseSlotIndex(new List<string>(), 0) != -1)
+            {
+                return "[3f] 没有扇区时应返回 -1 而不是 0 —— 调用方会往一个不存在的扇区写配置。";
+            }
+
+            // 动作候选：不存在的插件拿 0 个（0 分支），沙箱里那个已启用插件拿 N 个（N 分支）。
+            if (PluginWheelAssignment.ActionsOf("no.such.plugin").Count != 0)
+            {
+                return "[3f] 不存在的插件竟然有可分配动作 —— 筛选没按 PluginId 过滤，或压根没筛。";
+            }
+
+            IReadOnlyList<PluginActionItem> assignable = PluginWheelAssignment.ActionsOf(pluginId);
+            if (assignable.Count == 0)
+            {
+                return $"[3f] 已启用的插件「{pluginId}」一个可分配动作都没有 —— 动作登记或筛选出了问题。";
+            }
+            foreach (PluginActionItem action in assignable)
+            {
+                if (!string.Equals(action.PluginId, pluginId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return $"[3f] 分配候选里混进了别的插件的动作「{action.FullId}」" +
+                           "—— 表现是把 A 插件的动作装到 B 插件的卡片上。";
+                }
+            }
+
+            // 三条出路：没有动作 / 没有扇区 / 正常。
+            PluginAssignPlan noActionPlan = PluginWheelAssignment.Plan("no.such.plugin", emptySlots, 0);
+            if (noActionPlan.Ok || noActionPlan.Failure != PluginAssignFailure.NoActions)
+            {
+                return "[3f] 插件没有动作时计划却是可执行的 —— 调用方会拿着一个空动作 ID 去写配置。";
+            }
+
+            PluginAssignPlan noSlotPlan = PluginWheelAssignment.Plan(pluginId, new List<string>(), 0);
+            if (noSlotPlan.Ok || noSlotPlan.Failure != PluginAssignFailure.NoSlots)
+            {
+                return "[3f] 没有扇区时计划却是可执行的 —— 调用方会往一个不存在的扇区写配置。";
+            }
+
+            PluginAssignPlan freshPlan = PluginWheelAssignment.Plan(pluginId, emptySlots, 1);
+            if (!freshPlan.Ok || string.IsNullOrWhiteSpace(freshPlan.FullId))
+            {
+                return "[3f] 正常情形算不出可执行计划 —— 分配按钮会永远只弹「没有可分配的动作」。";
+            }
+            if (freshPlan.SlotIndex != 1 || freshPlan.Overwrites)
+            {
+                return $"[3f] 空扇区上竟然算出了「覆盖」（slot={freshPlan.SlotIndex}，" +
+                       $"replaced=\"{freshPlan.ReplacedName}\"）—— 提示语会吓用户一跳。";
+            }
+            if (freshPlan.ActionCount != assignable.Count)
+            {
+                return "[3f] 计划里的动作数与实际候选数不一致 —— 「这个插件有 N 个动作」那句提示会撒谎。";
+            }
+            if (string.IsNullOrWhiteSpace(freshPlan.ActionName))
+            {
+                return "[3f] 计划里没有动作显示名 —— 提示语里会出现一对空引号。";
+            }
+
+            // 只有「一个空扇区都没有」时才允许覆盖，且必须报出被替换的是谁。
+            PluginAssignPlan forcedPlan = PluginWheelAssignment.Plan(pluginId, fullSlots, 2);
+            if (!forcedPlan.Overwrites
+                || !string.Equals(forcedPlan.ReplacedName, "view", StringComparison.Ordinal))
+            {
+                return "[3f] 扇区全满时没有报出被替换的动作名 —— 用户会以为原来那个动作还在。";
+            }
+
+            line($"    分配决策：空扇区优先 ✓ / 全满才覆盖并报出被替换项（{forcedPlan.ReplacedName}）✓ / " +
+                 $"候选 {assignable.Count} 个动作");
+
+            // ⑦ 分配相关文案逐语言：按钮文案不能是裸键名，两条气泡必须不同，
+            //    成功提示必须真的把动作名与扇区名填了进去。
+            foreach (LanguageCode language in Enum.GetValues<LanguageCode>())
+            {
+                I18n.CurrentLanguage = language;
+
+                string assignLabel = I18n.T("PluginsAssignToWheel");
+                if (string.IsNullOrWhiteSpace(assignLabel) || assignLabel.StartsWith("Plugins", StringComparison.Ordinal))
+                {
+                    return $"[3f] {language} 下「⚡ 分配至轮盘」的按钮文案取到的是「{assignLabel}」—— 词条键写错了。";
+                }
+
+                // 气泡的分叉检查在下面 ⑥ 里统一做（四条两两不同），这里不重复一遍 ——
+                // 重复的断言会在两条都还绿着的时候给人一种「双重保险」的错觉，
+                // 而改动一来往往只改一处，另一处就悄悄变成了空转。
+                string done = I18n.TF("PluginsAssignDone", "ActionX", "SlotY");
+                if (done.StartsWith("Plugins", StringComparison.Ordinal))
+                {
+                    return $"[3f] {language} 的分配成功提示取到的是裸键名「{done}」。";
+                }
+                if (!done.Contains("ActionX", StringComparison.Ordinal)
+                    || !done.Contains("SlotY", StringComparison.Ordinal))
+                {
+                    return $"[3f] {language} 的分配成功提示没把动作名与扇区名填进去：「{done}」" +
+                           "—— 用户不知道该去哪儿找这个动作。";
+                }
+
+                // 四条「⚡」气泡（1 条可用 + 3 条禁用原因）必须两两不同：
+                // 禁用原因不同却给同一句话，用户只知道点不了、不知道该去做什么 ——
+                // 而这三件事的下一步完全不同（去启用 / 去类型下拉里选 / 去把插件修好）。
+                string[] assignToolTips =
+                {
+                    I18n.T("PluginsAssignToWheelToolTip"),
+                    I18n.T("PluginsAssignToWheelBlockedHint"),
+                    I18n.T("PluginsAssignBlockedClaimed"),
+                    I18n.T("PluginsAssignBlockedUnavailable"),
+                };
+                for (int i = 0; i < assignToolTips.Length; i++)
+                {
+                    if (string.IsNullOrWhiteSpace(assignToolTips[i])
+                        || assignToolTips[i].StartsWith("Plugins", StringComparison.Ordinal))
+                    {
+                        return $"[3f] {language} 下第 {i + 1} 条「⚡」气泡取到的是「{assignToolTips[i]}」—— 词条键写错了。";
+                    }
+
+                    for (int j = i + 1; j < assignToolTips.Length; j++)
+                    {
+                        if (string.Equals(assignToolTips[i], assignToolTips[j], StringComparison.Ordinal))
+                        {
+                            return $"[3f] {language} 下两条「⚡」气泡文案相同：「{assignToolTips[i]}」" +
+                                   "—— 禁用原因不同却给同一句话，用户看不出该去做什么。";
+                        }
+                    }
+                }
+
+                // meta 行「贡献了什么」四档。第 4 档是**什么都不说**，也正是这一档原先说错了话。
+                string withActions = PluginListItem.DescribeContribution(3, 0, PluginRuntimeState.Active);
+                string claimed = PluginListItem.DescribeContribution(0, 2, PluginRuntimeState.Active);
+                string empty = PluginListItem.DescribeContribution(0, 0, PluginRuntimeState.Active);
+                string unknown = PluginListItem.DescribeContribution(0, 0, PluginRuntimeState.Installed);
+
+                if (!withActions.Contains("3", StringComparison.Ordinal)
+                    || !claimed.Contains("2", StringComparison.Ordinal))
+                {
+                    return $"[3f] {language} 下 meta 行没把动作数 / 认领数填进去：" +
+                           $"「{withActions}」「{claimed}」—— 用户看到的是一句没有数字的话。";
+                }
+
+                if (string.IsNullOrWhiteSpace(empty) || empty.StartsWith("Plugins", StringComparison.Ordinal))
+                {
+                    return $"[3f] {language} 下「已加载且确实没有动作」的插件，meta 行取到的是「{empty}」" +
+                           "—— 这一档本该说「暂无动作」。";
+                }
+
+                if (!string.IsNullOrEmpty(unknown))
+                {
+                    return $"[3f] {language} 下「已启用但还没加载」的插件，meta 行多说了「{unknown}」—— " +
+                           "那是在断言一件还没观测到的事（此刻根本不知道它有几个动作），" +
+                           "而紧邻的状态徽章正写着「已启用 · 待加载」，两句话会互相否认。";
+                }
+
+                if (string.Equals(withActions, empty, StringComparison.Ordinal)
+                    || string.Equals(claimed, empty, StringComparison.Ordinal))
+                {
+                    return $"[3f] {language} 下「有动作 / 认领型 / 没有动作」在 meta 行上分不出来。";
+                }
+            }
+
+            // ⑧ 「⚡」可用性判据（PluginWheelAssignment.BlockReason）—— 全部用合成数据驱动。
+            //    这一条守的正是本次修的那件事：判据**不能**是「已登记的动作数」——
+            //    动作只在插件加载后登记，而宿主默认不预加载（R1），
+            //    于是每次启动后全体按钮都会灰掉，可点一下本来是能成功的。
+            if (PluginWheelAssignment.BlockReason(true, 0, PluginRuntimeState.Installed, false) != PluginAssignBlock.None)
+            {
+                return "[3f] 一个已启用、无认领、尚未加载的插件被判成「不能分配」—— 宿主默认不预加载，" +
+                       "这等于每次启动后所有 ⚡ 都是灰的，而点一下本来能成功。";
+            }
+
+            if (PluginWheelAssignment.BlockReason(true, 0, PluginRuntimeState.Active, false) != PluginAssignBlock.None)
+            {
+                return "[3f] 已经加载好的插件被判成「不能分配」。";
+            }
+
+            if (PluginWheelAssignment.BlockReason(false, 0, PluginRuntimeState.Installed, false) != PluginAssignBlock.Disabled)
+            {
+                return "[3f] 未启用的插件没被判成「未启用」—— 气泡会把用户指错方向。";
+            }
+
+            if (PluginWheelAssignment.BlockReason(true, 1, PluginRuntimeState.Active, false) != PluginAssignBlock.ClaimsTypes)
+            {
+                return "[3f] 认领型模块（ClaimedTypes 非空）没被判成「动作以顶层类型提供」—— " +
+                       "那样 ⚡ 会亮着，点下去只会得到「没有可分配的动作」。";
+            }
+
+            // 认领要排在「未启用」前面：那是插件固有属性，启用与否都改不了它，
+            // 先报「未启用」会引导用户去做一件做完也没用的事。
+            if (PluginWheelAssignment.BlockReason(false, 1, PluginRuntimeState.Installed, false) != PluginAssignBlock.ClaimsTypes)
+            {
+                return "[3f] 未启用的认领型模块被判成「未启用」—— 会引导用户去启用一个启用了也用不上的功能。";
+            }
+
+            foreach (PluginRuntimeState brokenState in new[]
+                     {
+                         PluginRuntimeState.Quarantined,
+                         PluginRuntimeState.Incompatible,
+                         PluginRuntimeState.Failed,
+                         PluginRuntimeState.Faulted,
+                         PluginRuntimeState.Stopping,
+                         PluginRuntimeState.RequiresRestart,
+                     })
+            {
+                if (PluginWheelAssignment.BlockReason(true, 0, brokenState, false) != PluginAssignBlock.Unavailable)
+                {
+                    return $"[3f] 处于 {brokenState} 的插件没被判成「不可用」—— ⚡ 会亮着，点下去必然失败。";
+                }
+            }
+
+            if (PluginWheelAssignment.BlockReason(true, 0, PluginRuntimeState.Installed, true) != PluginAssignBlock.Unavailable)
+            {
+                return "[3f] 「需要重启」的插件没被判成「不可用」—— 此刻加载必然失败。";
+            }
+
+            line("    分配文案：4 语言下按钮文案非裸键名 ✓ / 四条气泡两两不同 ✓ / 成功提示含动作名与扇区名 ✓");
+            line("    分配可用性：未启用 / 认领型 / 坏状态各自分叉 ✓ / 已启用但未加载仍可点 ✓ / meta 行四档 ✓");
         }
         finally
         {

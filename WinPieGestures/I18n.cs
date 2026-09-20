@@ -2019,6 +2019,17 @@ public static class I18n
 			[LanguageCode.En] = "no actions yet",
 			[LanguageCode.Ja] = "動作なし"
 		};
+		// meta 行里「贡献了什么」那一格，给**认领型**模块用（官方 12 个模块全是这一类：
+		// 它们的动作以顶层动作类型提供，不出现在「插件动作」子下拉里）。
+		// 有这一句，卡片才解释得清「为什么它的 ⚡ 是灰的」—— 否则用户看到的是
+		// 一颗灰按钮加一句「暂无动作」，而它其实贡献了整整一类动作。
+		dictionary["PluginsCardClaimCount"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "认领 {0} 个顶层动作类型",
+			[LanguageCode.ZhTw] = "認領 {0} 個頂層動作類型",
+			[LanguageCode.En] = "claims {0} top-level action type(s)",
+			[LanguageCode.Ja] = "トップレベル動作タイプ {0} 件を担当"
+		};
 		dictionary["PluginsCardSigned"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "已签名",
@@ -2065,6 +2076,143 @@ public static class I18n
 			[LanguageCode.ZhTw] = "🗑 解除安裝",
 			[LanguageCode.En] = "🗑 Uninstall",
 			[LanguageCode.Ja] = "🗑 アンインストール"
+		};
+
+		// ---- 卡片上的「⚡ 分配至轮盘」与其结果提示 ----
+		// 这一组文案只在气泡里出现（不进控件），所以 check_i18n.py 的具名控件判据覆盖不到它 ——
+		// 靠的是自检 [3f] 逐语言驱动 PluginListItem.Build 与 PluginWheelAssignment，以及
+		// 「相对 HEAD 新增键全部被引用」那一节。
+		dictionary["PluginsAssignToWheel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 分配至轮盘",
+			[LanguageCode.ZhTw] = "⚡ 分配至轉盤",
+			[LanguageCode.En] = "⚡ Assign to wheel",
+			[LanguageCode.Ja] = "⚡ ホイールに割り当て"
+		};
+		dictionary["PluginsAssignToWheelToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "把这个插件的动作放进轮盘扇区，并跳到手势页精调参数",
+			[LanguageCode.ZhTw] = "把這個外掛的動作放進轉盤扇區，並跳到手勢頁微調參數",
+			[LanguageCode.En] = "Put this plugin's action on a wheel sector and jump there to fine-tune its parameters",
+			[LanguageCode.Ja] = "このプラグインのアクションをホイールのセクターに割り当て、ジェスチャーページで詳細設定します"
+		};
+		// 「⚡」禁用时的气泡之一：**插件未启用**（另外两条见 PluginsAssignBlockedClaimed /
+		// PluginsAssignBlockedUnavailable）。三条拆开写是刻意的 —— 它们要求用户做的下一步
+		// 完全不同，合成一句「当前不可用」用户就只能挨个试。
+		//
+		// 旧值是「这个插件还没有已登记的动作」：那句话把现象当原因说了，而且是在断言一件
+		// 尚未观测到的事（插件其实有动作，只是没登记）。判据改成「能不能加载」之后，
+		// 这里就只该说「为什么不能加载」。
+		dictionary["PluginsAssignToWheelBlockedHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件未启用 —— 动作只在插件启用后才会登记。先启用它，再回来分配",
+			[LanguageCode.ZhTw] = "外掛未啟用 —— 動作只在外掛啟用後才會登記。先啟用它，再回來分配",
+			[LanguageCode.En] = "The plugin is disabled — its actions are only registered while it is enabled. Enable it, then assign.",
+			[LanguageCode.Ja] = "プラグインが無効です。アクションは有効な間だけ登録されます。有効にしてから割り当ててください"
+		};
+		// 「⚡」禁用时的气泡之二：**认领型模块**。它的动作以顶层动作类型提供（官方 12 个模块
+		// 都是这一类），本来就在「动作类型」下拉里直接可选，不需要「分配」这一步。
+		// 同样地，它们也被从「插件动作」子下拉里排除 —— 所以点下去只会得到
+		// 「没有可分配的动作」，而证据在点之前就看得见。
+		dictionary["PluginsAssignBlockedClaimed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个模块的动作以顶层动作类型提供（如「平铺窗口」「OCR」），在「动作类型」下拉里直接选即可，不需要分配",
+			[LanguageCode.ZhTw] = "這個模組的動作以頂層動作類型提供（如「並排視窗」「OCR」），在「動作類型」下拉裡直接選即可，不需要分配",
+			[LanguageCode.En] = "This module's actions are exposed as top-level action types (e.g. Tile, OCR) — pick them straight from the \"Action type\" dropdown; there is nothing to assign.",
+			[LanguageCode.Ja] = "このモジュールのアクションはトップレベルの動作タイプ（例：タイル、OCR）として提供されます。「動作タイプ」から直接選んでください"
+		};
+		// 「⚡」禁用时的气泡之三：其余不可用状态（隔离 / 不兼容 / 加载失败 / 正在停止 / 需要重启）。
+		// 这几种对用户而言是同一件事 ——「先去修好卡片上那个状态」—— 所以合成一句，
+		// 而不是逐个状态配一句：状态名已经在卡片徽章上了，这里重复一遍只是噪音。
+		dictionary["PluginsAssignBlockedUnavailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件当前不可用 —— 先按卡片上显示的状态把它修好，再回来分配",
+			[LanguageCode.ZhTw] = "外掛目前無法使用 —— 先依卡片上顯示的狀態修好，再回來分配",
+			[LanguageCode.En] = "The plugin is unavailable right now — resolve the state shown on its card, then assign.",
+			[LanguageCode.Ja] = "プラグインは現在利用できません。カードに表示された状態を解消してから割り当ててください"
+		};
+		dictionary["PluginsAssignTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 分配至轮盘",
+			[LanguageCode.ZhTw] = "⚡ 分配至轉盤",
+			[LanguageCode.En] = "⚡ Assign to wheel",
+			[LanguageCode.Ja] = "⚡ ホイールに割り当て"
+		};
+		dictionary["PluginsAssignDone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "「{0}」已分配到「{1}」，请在右侧精调参数。",
+			[LanguageCode.ZhTw] = "「{0}」已分配到「{1}」，請在右側微調參數。",
+			[LanguageCode.En] = "\"{0}\" is now on \"{1}\" — fine-tune its parameters on the right.",
+			[LanguageCode.Ja] = "「{0}」を「{1}」に割り当てました。右側で詳細を調整してください。"
+		};
+		dictionary["PluginsAssignOverwriteNote"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "该扇区原有的「{0}」已被替换。",
+			[LanguageCode.ZhTw] = "該扇區原有的「{0}」已被替換。",
+			[LanguageCode.En] = "The previous action there, \"{0}\", was replaced.",
+			[LanguageCode.Ja] = "そのセクターにあった「{0}」は置き換えられました。"
+		};
+		dictionary["PluginsAssignMultiNote"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个插件有 {0} 个动作，已选第一个 —— 可在「插件动作」下拉里换。",
+			[LanguageCode.ZhTw] = "這個外掛有 {0} 個動作，已選第一個 —— 可在「外掛動作」下拉裡換。",
+			[LanguageCode.En] = "This plugin contributes {0} actions; the first one was used — switch it in the \"Plugin action\" dropdown.",
+			[LanguageCode.Ja] = "このプラグインは {0} 個のアクションを持ちます。先頭を使用しました（「プラグインのアクション」で切り替えられます）。"
+		};
+		dictionary["PluginsAssignNoAction"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "「{0}」当前没有可分配的动作 —— 插件未启用时动作不会登记，先启用它再试。",
+			[LanguageCode.ZhTw] = "「{0}」目前沒有可分配的動作 —— 外掛未啟用時動作不會登記，先啟用再試。",
+			[LanguageCode.En] = "\"{0}\" has no assignable action right now — actions are only registered while the plugin is enabled. Enable it and try again.",
+			[LanguageCode.Ja] = "「{0}」に割り当て可能なアクションがありません（有効な間だけ登録されます）。有効化してから再試行してください。"
+		};
+		dictionary["PluginsAssignNoSlot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前配置里没有可用的扇区，无法分配。",
+			[LanguageCode.ZhTw] = "目前設定裡沒有可用的扇區，無法分配。",
+			[LanguageCode.En] = "The current profile has no usable sector, so there is nowhere to assign this action.",
+			[LanguageCode.Ja] = "現在の設定にセクターがないため、割り当て先がありません。"
+		};
+		dictionary["PluginsAssignFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "写入失败：这个动作已经失效（插件可能刚被停用），配置保持原样。",
+			[LanguageCode.ZhTw] = "寫入失敗：這個動作已經失效（外掛可能剛被停用），設定保持原樣。",
+			[LanguageCode.En] = "Could not assign it: the action is no longer available (the plugin may just have been disabled). Your settings were left untouched.",
+			[LanguageCode.Ja] = "割り当てできませんでした。このアクションは現在利用できません（プラグインが無効化された可能性があります）。設定は変更していません。"
+		};
+		dictionary["PluginsAssignSlotFallback"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区 {0}",
+			[LanguageCode.ZhTw] = "扇區 {0}",
+			[LanguageCode.En] = "Sector {0}",
+			[LanguageCode.Ja] = "セクター {0}"
+		};
+		// 下面三条是「分配那一刻，插件没拉起来」的三种原因。
+		// 只按**用户能采取的行动**分类，不逐状态配文案：隔离 / 不兼容 / 待重启对用户而言
+		// 都是「先去修好卡片上那个状态」，各配一句只是把同一件事说三遍。
+		//
+		// 注意：加载失败时宿主内部那句 activation.Error（中文、含插件名）只进日志，
+		// 不进气泡 —— 它没有走 i18n，直接显示会在英文界面上漏出中文。
+		dictionary["PluginsAssignLoadFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件加载失败，读不到它的动作。详情见日志。",
+			[LanguageCode.ZhTw] = "外掛載入失敗，讀不到它的動作。詳情見日誌。",
+			[LanguageCode.En] = "The plugin failed to load, so its actions could not be read. See the log for details.",
+			[LanguageCode.Ja] = "プラグインの読み込みに失敗したため、アクションを取得できません。詳細はログを参照してください。"
+		};
+		dictionary["PluginsAssignPluginSystemOff"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件系统已关闭，读不到插件动作。请先在插件页打开总开关。",
+			[LanguageCode.ZhTw] = "外掛系統已關閉，讀不到外掛動作。請先在頁面開啟總開關。",
+			[LanguageCode.En] = "The plugin system is off, so plugin actions cannot be read. Turn it back on in the Plugins page.",
+			[LanguageCode.Ja] = "プラグイン機能が無効なため、アクションを取得できません。プラグインページで有効にしてください。"
+		};
+		dictionary["PluginsAssignUnavailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件此刻不可用（已隔离 / 不兼容 / 正在停止 / 需要重启），无法分配。",
+			[LanguageCode.ZhTw] = "外掛此刻無法使用（已隔離 / 不相容 / 正在停止 / 需要重新啟動），無法分配。",
+			[LanguageCode.En] = "The plugin is not usable right now (quarantined / incompatible / stopping / awaiting restart), so nothing can be assigned.",
+			[LanguageCode.Ja] = "プラグインは現在利用できません（隔離済み / 非互換 / 停止中 / 再起動待ち）。割り当てできません。"
 		};
 
 		// ---- 插件管理页：运行时状态徽标 ----

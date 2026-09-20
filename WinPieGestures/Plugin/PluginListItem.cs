@@ -82,6 +82,35 @@ internal sealed class PluginListItem
     /// <summary>卡片上「卸载」按钮的文字。同 <see cref="EnableText"/> 的绑定理由。</summary>
     public string UninstallText { get; init; } = "";
 
+    /// <summary>卡片上「⚡ 分配至轮盘」按钮的文字。同 <see cref="EnableText"/> 的绑定理由。</summary>
+    public string AssignText { get; init; } = "";
+
+    /// <summary>
+    /// 「⚡ 分配至轮盘」的气泡。
+    /// <para>
+    /// 能分配时讲「这一下会做什么」，不能分配时讲「为什么点不了」——
+    /// 禁用态本身只会让按钮变灰，用户看不出原因。文案由
+    /// <see cref="DescribeAssignBlock"/> 按原因挑，<b>不走 DataTrigger</b>：
+    /// 模板里没有 <c>Name</c>，写死在 XAML 里的文案过不了本地化。
+    /// </para>
+    /// </summary>
+    public string AssignToolTip { get; init; } = "";
+
+
+    /// <summary>
+    /// 这个插件当前能不能「分配至轮盘」——即点下去有没有可能成功。
+    /// <para>
+    /// 判据是<b>插件当前能不能被加载</b>，不是「已经登记了几个动作」：动作只在插件加载后登记，
+    /// 而宿主默认不预加载（R1 内存红线）。按已登记数来判的话，每次启动后所有插件都「没有动作」，
+    /// 按钮全体灰掉 —— 而点一下本来是能成功的（处理器会先把这一个插件拉起来，见
+    /// <c>PluginHost.EnsureLoadedForOperation</c>）。
+    /// </para>
+    /// <para>
+    /// 具体归类由 <see cref="PluginWheelAssignment.BlockReason"/> 决定（纯函数，可自检）。
+    /// </para>
+    /// </summary>
+    public bool CanAssign { get; init; }
+
     /// <summary>错误详情。为空表示健康。</summary>
     public string ErrorText { get; init; } = "";
 
@@ -110,13 +139,28 @@ internal sealed class PluginListItem
 
         (string glyph, string stateText) = DescribeState(instance);
 
-        // ④ meta 行只放「用户关心」的三项：作者、许可证、贡献了几个动作。
+        // ⚡ 的可用性：判据、以及不亮时的原因，都由 PluginWheelAssignment 这个纯函数给出 ——
+        // 界面这里只负责把原因翻成词条。判据不能写在本层，因为自检要逐个分支驱动它。
+        int claimedTypeCount = entry.ClaimedTypes?.Count ?? 0;
+        PluginAssignBlock assignBlock = PluginWheelAssignment.BlockReason(
+            entry.Enabled,
+            claimedTypeCount,
+            instance.State,
+            instance.RequiresRestart);
+
+        // ④ meta 行只放「用户关心」的三项：作者、许可证、贡献了什么。
         // 技术细节（ID / 架构 / 哈希 / 路径 / 签名）沉到 DetailText，两层信息不互相淹没。
+        //
+        // 「贡献了什么」按**证据强弱**分三档，而不是一律写「暂无动作」：
+        //   已加载且有动作 → 报个数；认领了顶层类型 → 报认领数；确实观测到是空的 → 才说「暂无动作」。
+        // 原先「已启用但还没加载」也被写进第三档 —— 那是在断言一件尚未观测到的事：
+        // 插件其实有动作，只是还没登记，而紧邻的状态徽章正写着「已启用 · 待加载」，
+        // 两句话并排读起来像在互相否认。那一档现在什么都不说。
         var meta = new List<string>();
         if (!string.IsNullOrWhiteSpace(entry.Author)) meta.Add(I18n.TF("PluginsCardAuthor", entry.Author));
         if (!string.IsNullOrWhiteSpace(entry.License)) meta.Add(I18n.TF("PluginsCardLicense", entry.License));
-        if (instance.ActionCount > 0) meta.Add(I18n.TF("PluginsCardActionCount", instance.ActionCount));
-        else if (instance.State != PluginRuntimeState.Active) meta.Add(I18n.T("PluginsCardNoActions"));
+        string contribution = DescribeContribution(instance.ActionCount, claimedTypeCount, instance.State);
+        if (!string.IsNullOrEmpty(contribution)) meta.Add(contribution);
 
         // 「　|　」是**字形**分隔符：分隔的是若干等权短语，英文里换成 ", " 反而会与短语
         // 内部的逗号混在一起看不出来。与 PluginsEnumSeparator（顿号，标点）不是一类。
@@ -153,10 +197,64 @@ internal sealed class PluginListItem
             StatusGlyph = glyph,
             EnableText = I18n.T("PluginsCardEnableCheckBox"),
             UninstallText = I18n.T("PluginsCardUninstallButton"),
+            AssignText = I18n.T("PluginsAssignToWheel"),
+            CanAssign = assignBlock == PluginAssignBlock.None,
+            AssignToolTip = I18n.T(DescribeAssignBlock(assignBlock)),
             ErrorText = errorText,
             IsEnabled = entry.Enabled,
         };
     }
+
+    /// <summary>
+    /// ④ meta 行里「贡献了什么」那一格。返回空串表示<b>这一格什么都不说</b>。
+    /// <para>
+    /// 按<b>证据强弱</b>分档，而不是一律写「暂无动作」：
+    /// <list type="number">
+    /// <item>已加载、确实登记了动作 → 报个数；</item>
+    /// <item>认领了顶层动作类型 → 报认领数（官方 12 个模块全是这一类）；</item>
+    /// <item>已加载且确认是空的 → 才说「暂无动作」；</item>
+    /// <item>其余（已启用但还没加载）→ <b>不说</b>。</item>
+    /// </list>
+    /// </para>
+    /// <para>
+    /// 第 4 档原先也写「暂无动作」，那是在断言一件尚未观测到的事：插件其实有动作，只是还没登记，
+    /// 而紧邻的状态徽章正写着「已启用 · 待加载」—— 两句话并排读起来像在互相否认。
+    /// </para>
+    /// <para>
+    /// <b>刻意是 internal 而不是 private</b>：自检 <c>[3f]</c> 要直接驱动它。这一支「什么都不说」
+    /// 只有把四种组合都摆出来才验得动，而「有没有多说一句」正是这次要守住的东西。
+    /// </para>
+    /// </summary>
+    internal static string DescribeContribution(
+        int registeredActionCount,
+        int claimedTypeCount,
+        PluginRuntimeState state)
+    {
+        if (registeredActionCount > 0) return I18n.TF("PluginsCardActionCount", registeredActionCount);
+        if (claimedTypeCount > 0) return I18n.TF("PluginsCardClaimCount", claimedTypeCount);
+        if (state == PluginRuntimeState.Active) return I18n.T("PluginsCardNoActions");
+        return "";
+    }
+
+    /// <summary>
+    /// 「⚡」的禁用原因 → 词条键。
+    /// <para>
+    /// <b>三种禁用原因必须是三句话</b>：它们要求用户做的下一步不同
+    /// （去打开开关 / 去类型下拉里选 / 去把插件修好）。合成一句「当前不可用」，
+    /// 用户就只能挨个试 —— 而按钮灰掉本身不给任何线索。
+    /// </para>
+    /// <para>
+    /// 放在本层而不是窗口类里：窗口类的私有方法<b>无界面自检够不着</b>，
+    /// 「英文界面下这三条气泡还残留中文吗」就只能靠人肉切语言点一遍。
+    /// </para>
+    /// </summary>
+    private static string DescribeAssignBlock(PluginAssignBlock block) => block switch
+    {
+        PluginAssignBlock.Disabled => "PluginsAssignToWheelBlockedHint",
+        PluginAssignBlock.ClaimsTypes => "PluginsAssignBlockedClaimed",
+        PluginAssignBlock.Unavailable => "PluginsAssignBlockedUnavailable",
+        _ => "PluginsAssignToWheelToolTip",
+    };
 
     /// <summary>
     /// ① 头像字形。清单的 <c>Icon</c> 约定是相对路径（SVG/PNG），本层不做图片加载 ——
