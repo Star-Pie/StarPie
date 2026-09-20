@@ -46,6 +46,12 @@ public partial class SettingsWindow : Window
 	/// <summary>上次拉取官方 catalog 的失败原因。留着是为了切换语言时能把进度行按当前语言重渲染。</summary>
 	private string? _officialPluginsError;
 
+	/// <summary>市场页的搜索关键词（空表示不按关键词过滤）。纯本地过滤，不触发联网。</summary>
+	private string _pluginMarketSearch = "";
+
+	/// <summary>市场页的筛选标签：All / NotInstalled / Installed / Updatable。</summary>
+	private string _pluginMarketFilter = "All";
+
 	/// <summary>设置控制台当前已生效的界面缩放比例，用于按倍率换算窗口尺寸增量。</summary>
 	private double _appliedSettingsUiScale = 1.0;
 
@@ -813,23 +819,56 @@ public partial class SettingsWindow : Window
 			}
 		}
 
-		System.Windows.Controls.RadioButton[] navigationButtons = new System.Windows.Controls.RadioButton[6] { NavTab0, NavTab1, NavTab2, NavTab3, NavTab4, NavTab5 };
-		TextBlock[] navigationTexts = new TextBlock[6] { NavTab0Text, NavTab1Text, NavTab2Text, NavTab3Text, NavTab4Text, NavTab5Text };
+		// 分组标题（偏好设置 / 扩展生态）在折叠态必须一起收起来：
+		// 它们是纯标签，不留位置也不影响导航；留着只会在 68px 里被切成「扩展生」这种半截字，
+		// 看起来像界面坏了而不是「收起来了」。
+		TextBlock?[] navigationGroupTitles = new TextBlock?[] { NavGroupPrefsTitleText, NavGroupExtTitleText };
+		foreach (TextBlock? groupTitle in navigationGroupTitles)
+		{
+			if (groupTitle != null)
+			{
+				groupTitle.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+			}
+		}
+
+		// 侧边栏有 7 个页签（NavTab0..NavTab6）。加页签时**必须同步扩这两个数组**：
+		// 漏一个的后果是折叠态下那一项的名字不消失、图标也不归位，挤在 68px 里。
+		System.Windows.Controls.RadioButton[] navigationButtons = new System.Windows.Controls.RadioButton[7] { NavTab0, NavTab1, NavTab2, NavTab3, NavTab4, NavTab5, NavTab6 };
+		TextBlock[] navigationTexts = new TextBlock[7] { NavTab0Text, NavTab1Text, NavTab2Text, NavTab3Text, NavTab4Text, NavTab5Text, NavTab6Text };
+		// 页签的徽章（Core / SPP-1.0）。折叠态必须一起收起来：它们和名字占同一列，
+		// 只藏名字的话 68px 宽的侧边栏里会剩下一个孤零零的徽章，把图标挤到边上。
+		FrameworkElement?[] navigationBadges = new FrameworkElement?[7] { null, null, null, null, null, NavTab5BadgeBorder, NavTab6BadgeBorder };
 		for (int i = 0; i < navigationButtons.Length; i++)
 		{
 			if (navigationButtons[i] == null) continue;
 			navigationButtons[i].Padding = isCollapsed ? new Thickness(10) : new Thickness(14, 10, 14, 10);
-			if (navigationButtons[i].Content is StackPanel sp)
+
+			// 页签内容有两种容器：前五项是 StackPanel（图标 + 名字），
+			// 带徽章的两项是 Grid（图标 / 名字 / 徽章三列）。这里**两种都要认**——
+			// 只认 StackPanel 的话，那两项在折叠态下图标会保留 14px 右边距，看上去是歪的。
+			if (navigationButtons[i].Content is FrameworkElement contentRoot)
 			{
-				sp.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
-				if (sp.Children.Count > 0 && sp.Children[0] is FrameworkElement iconElem)
+				contentRoot.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+
+				UIElement? firstChild = navigationButtons[i].Content switch
+				{
+					StackPanel stack => stack.Children.Count > 0 ? stack.Children[0] : null,
+					Grid grid => grid.Children.Count > 0 ? grid.Children[0] : null,
+					_ => null,
+				};
+				if (firstChild is FrameworkElement iconElem)
 				{
 					iconElem.Margin = isCollapsed ? new Thickness(0) : new Thickness(0, 0, 14, 0);
 				}
 			}
+
 			if (navigationTexts[i] != null)
 			{
 				navigationTexts[i].Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
+			}
+			if (navigationBadges[i] != null)
+			{
+				navigationBadges[i]!.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
 			}
 		}
 	}
@@ -1798,6 +1837,28 @@ public partial class SettingsWindow : Window
 		{
 			NavTab5Text.Text = I18n.T("TabPlugins");
 		}
+		// 侧边栏两级分组的分组标题与徽章。新增分组时若漏接这里，中文界面会「一次对、切语言后错」——
+		// check_i18n.py 的「具名控件漏接」判据能抓到这一条（有 Name + 硬编码中文却从未被重设）。
+		if (NavGroupPrefsTitleText != null)
+		{
+			NavGroupPrefsTitleText.Text = I18n.T("NavGroupPreferences");
+		}
+		if (NavGroupExtTitleText != null)
+		{
+			NavGroupExtTitleText.Text = I18n.T("NavGroupExtensions");
+		}
+		if (NavTab5BadgeText != null)
+		{
+			NavTab5BadgeText.Text = I18n.T("NavBadgeCore");
+		}
+		if (NavTab6Text != null)
+		{
+			NavTab6Text.Text = I18n.T("TabPluginMarket");
+		}
+		if (NavTab6BadgeText != null)
+		{
+			NavTab6BadgeText.Text = I18n.T("NavBadgeSpp");
+		}
 		ApplyPluginsPageLocalization();
 		if (SidebarToggleButton != null)
 		{
@@ -2106,6 +2167,47 @@ public partial class SettingsWindow : Window
 		if (SubThemeCustomItem != null)
 		{
 			SubThemeCustomItem.Content = I18n.T("ThemeCustom");
+		}
+		// 侧边栏底部那排四分段（系统 / 浅色 / 曜黑 / 钛灰）。它们是**无名 TextBlock**，
+		// 既进不了按 auto_id 的 UI 断言、也进不了静态差集的「有 Name + 硬编码中文」判据，
+		// 于是长期在英文界面上显示中文 —— 2026-09-20 加市场页把 tab_6 纳入台账范围时才被看见
+		// （它们出现在每一个页签上，所以那一轮 4 条命中被记进了每个页签的桶里）。
+		// 提示行复用已有的 Theme* 词条（那一串是 emoji + 全名，正好当 tooltip 用）。
+		if (ThemeSegmentSystemText != null)
+		{
+			ThemeSegmentSystemText.Text = I18n.T("ThemeSegmentSystem");
+		}
+		if (ThemeSegmentLightText != null)
+		{
+			ThemeSegmentLightText.Text = I18n.T("ThemeSegmentLight");
+		}
+		if (ThemeSegmentDarkText != null)
+		{
+			ThemeSegmentDarkText.Text = I18n.T("ThemeSegmentDark");
+		}
+		if (ThemeSegmentGrayText != null)
+		{
+			ThemeSegmentGrayText.Text = I18n.T("ThemeSegmentGray");
+		}
+		if (ThemeBtnSystem != null)
+		{
+			ThemeBtnSystem.ToolTip = I18n.T("ThemeSystem");
+		}
+		if (ThemeBtnLight != null)
+		{
+			ThemeBtnLight.ToolTip = I18n.T("ThemeLight");
+		}
+		if (ThemeBtnDark != null)
+		{
+			ThemeBtnDark.ToolTip = I18n.T("ThemeDark");
+		}
+		if (ThemeBtnGray != null)
+		{
+			ThemeBtnGray.ToolTip = I18n.T("ThemeGray");
+		}
+		if (SidebarThemeCollapsedButton != null)
+		{
+			SidebarThemeCollapsedButton.ToolTip = I18n.T("SidebarThemeCollapsedToolTip");
 		}
 		if (NewCustomColorPresetButton != null)
 		{
@@ -2787,6 +2889,11 @@ public partial class SettingsWindow : Window
 		if (FocusPluginReloadBtn != null)
 		{
 			FocusPluginReloadBtn.Content = I18n.T("FocusPluginReload");
+			FocusPluginReloadBtn.ToolTip = I18n.T("FocusPluginReloadToolTip");
+		}
+		if (FocusPluginActionComboBox != null)
+		{
+			FocusPluginActionComboBox.ToolTip = I18n.T("FocusPluginActionComboToolTip");
 		}
 		if (FocusPluginActionBrokenHint != null)
 		{
@@ -2962,11 +3069,13 @@ public partial class SettingsWindow : Window
 
 	public void SwitchToTab(int index)
 	{
-		if (TriggerSettingsGrid == null || AppearanceSettingsGrid == null || MappingsSettingsGrid == null || SystemSettingsGrid == null || AboutSettingsGrid == null || PluginsSettingsGrid == null)
+		if (TriggerSettingsGrid == null || AppearanceSettingsGrid == null || MappingsSettingsGrid == null || SystemSettingsGrid == null || AboutSettingsGrid == null || PluginsSettingsGrid == null || PluginMarketGrid == null)
 		{
 			return;
 		}
-		index = Math.Clamp(index, 0, 5);
+		// 上界与页签数一起变：NavTab6（官方插件市场）是最后一个页签。
+		// 漏改这里，点它会被 Clamp 回插件页 —— 侧边栏高亮跳回上一项，看起来像「这一页打不开」。
+		index = Math.Clamp(index, 0, 6);
 		_lastSelectedTabIndex = index;
 		TriggerSettingsGrid.Visibility = ((index != 0) ? Visibility.Collapsed : Visibility.Visible);
 		AppearanceSettingsGrid.Visibility = ((index != 1) ? Visibility.Collapsed : Visibility.Visible);
@@ -2974,6 +3083,7 @@ public partial class SettingsWindow : Window
 		SystemSettingsGrid.Visibility = ((index != 3) ? Visibility.Collapsed : Visibility.Visible);
 		AboutSettingsGrid.Visibility = ((index != 4) ? Visibility.Collapsed : Visibility.Visible);
 		PluginsSettingsGrid.Visibility = ((index != 5) ? Visibility.Collapsed : Visibility.Visible);
+		PluginMarketGrid.Visibility = ((index != 6) ? Visibility.Collapsed : Visibility.Visible);
 		_isUpdatingUi = true;
 		try
 		{
@@ -3001,6 +3111,10 @@ public partial class SettingsWindow : Window
 			{
 				NavTab5.IsChecked = index == 5;
 			}
+			if (NavTab6 != null)
+			{
+				NavTab6.IsChecked = index == 6;
+			}
 		}
 		finally
 		{
@@ -3011,6 +3125,12 @@ public partial class SettingsWindow : Window
 			// 进入插件页时重新与磁盘对一次账：用户可能在资源管理器里手工拷入了新插件，
 			// 也可能直接删掉了某个插件目录。不重扫的话界面会显示陈旧状态。
 			RefreshPluginManagerUi(resyncFromDisk: true);
+		}
+		if (index == 6)
+		{
+			// 进入市场页时才联网拉目录。原先这一步挂在插件页的刷新里，
+			// 面板搬走后若仍留在那里，进度行会在一个看不见的页面上转 —— 用户只看到界面卡一下。
+			RefreshPluginMarketUi();
 		}
 		switch (index)
 		{
@@ -6530,30 +6650,44 @@ public partial class SettingsWindow : Window
 		await RefreshOfficialPluginsAsync();
 	}
 
+	/// <summary>
+	/// 官方目录的「在拉 / 拉完了」状态，<b>与进度行的重渲染绑成一个动作</b>。
+	/// <para>
+	/// 为什么不让调用方自己 <c>_officialPluginsLoading = xxx</c> 再顺手渲染一次：
+	/// <see cref="RenderOfficialPluginsStatus"/> 的判据链<b>第一项就是这个标志</b>，
+	/// 所以「在标志还是 true 的时候渲染」会画成「正在获取…」。原先 try 与 catch 里各有一处
+	/// 这样的渲染，于是成功与失败**两种结局都停在「正在获取」**，目录版本号与失败原因谁也没见过。
+	/// （2026-09-20 给市场页截图时被看见：网格里已经有 4 张卡，进度行还在转。）
+	/// 把标志与渲染合成一个动作之后，这个顺序错误在结构上写不出来了。
+	/// </para>
+	/// </summary>
+	private void SetOfficialPluginsLoading(bool loading)
+	{
+		_officialPluginsLoading = loading;
+		if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = !loading;
+		RenderOfficialPluginsStatus();
+	}
+
 	private async Task RefreshOfficialPluginsAsync()
 	{
 		if (_officialPluginsLoading) return;
-		_officialPluginsLoading = true;
-		if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = false;
-		RenderOfficialPluginsStatus();
+		SetOfficialPluginsLoading(true);
 
 		try
 		{
 			_officialPluginCatalog = await OfficialPluginClient.FetchCatalogAsync();
 			_officialPluginsError = null;
 			RenderOfficialPluginItems();
-			RenderOfficialPluginsStatus();
 		}
 		catch (Exception ex)
 		{
 			AppLogger.LogWarn($"[plugin] 刷新官方插件目录失败：{ex.Message}");
 			_officialPluginsError = ex.Message;
-			RenderOfficialPluginsStatus();
 		}
 		finally
 		{
-			_officialPluginsLoading = false;
-			if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = true;
+			// 这一次才是真正把结果画出来的那一次（标志已经落回 false）。
+			SetOfficialPluginsLoading(false);
 		}
 	}
 
@@ -6587,12 +6721,148 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	/// <summary>
+	/// 重渲染市场页的双列网格。
+	/// <para>
+	/// 每次刷新都整体重建 <see cref="OfficialPluginListItem"/>（它们按当前语言取词条），
+	/// 所以切换语言只要重跑这里就能换掉卡片文案 —— 这与插件卡片是同一套约定。
+	/// </para>
+	/// <para>
+	/// 计数与空状态由**同一次筛选的结果**推导，不在别处各写一遍：
+	/// 两处各算一次，迟早会出现「计数说 3 个，网格里 2 张卡」这种没有报错的分歧。
+	/// </para>
+	/// </summary>
 	private void RenderOfficialPluginItems()
 	{
-		if (OfficialPluginItemsControl == null || _officialPluginCatalog == null) return;
-		var installed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-		foreach (PluginInstance instance in PluginHost.ListInstances()) installed[instance.PluginId] = instance.Entry.Version;
-		OfficialPluginItemsControl.ItemsSource = _officialPluginCatalog.Modules.OrderBy(module => module.Name, StringComparer.CurrentCultureIgnoreCase).Select(module => new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null)).ToList();
+		if (OfficialPluginItemsControl == null) return;
+
+		List<OfficialPluginListItem> all = new List<OfficialPluginListItem>();
+		if (_officialPluginCatalog != null)
+		{
+			var installed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+			foreach (PluginInstance instance in PluginHost.ListInstances()) installed[instance.PluginId] = instance.Entry.Version;
+			foreach (OfficialPluginModule module in _officialPluginCatalog.Modules.OrderBy(module => module.Name, StringComparer.CurrentCultureIgnoreCase))
+			{
+				all.Add(new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null));
+			}
+		}
+
+		List<OfficialPluginListItem> visible = all.Where(MatchesPluginMarketFilter).ToList();
+		OfficialPluginItemsControl.ItemsSource = visible;
+
+		if (PluginMarketCountText != null)
+		{
+			PluginMarketCountText.Text = _officialPluginCatalog == null
+				? ""
+				: I18n.TF("PluginsMarketCount", visible.Count, all.Count);
+		}
+
+		if (PluginMarketEmptyStatePanel != null)
+		{
+			// 只在「目录已经拿到、却被筛选条件筛空了」时露面。
+			// 目录还没拿到时（正在拉 / 拉失败）由上方状态行负责说明，
+			// 这里再说一句「没有匹配的模块」等于答非所问 —— 用户会去改关键词，而问题在网络上。
+			bool hasCatalog = _officialPluginCatalog != null;
+			PluginMarketEmptyStatePanel.Visibility = hasCatalog && visible.Count == 0
+				? Visibility.Visible
+				: Visibility.Collapsed;
+		}
+	}
+
+	/// <summary>市场页的本地筛选：关键词命中模块名或模块 ID，再叠加当前筛选标签。</summary>
+	private bool MatchesPluginMarketFilter(OfficialPluginListItem item)
+	{
+		string keyword = _pluginMarketSearch.Trim();
+		if (keyword.Length > 0
+			&& !item.DisplayName.Contains(keyword, StringComparison.CurrentCultureIgnoreCase)
+			&& !item.Module.Id.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+		{
+			return false;
+		}
+
+		return _pluginMarketFilter switch
+		{
+			"NotInstalled" => !item.IsInstalled,
+			"Installed" => item.IsInstalled,
+			"Updatable" => item.HasUpdate,
+			_ => true,
+		};
+	}
+
+	/// <summary>
+	/// 进入市场页时调一次：目录还没拿到就联网拉一份，拿到了就只按当前筛选重画。
+	/// <para>
+	/// 缓存住 catalog 是有意的 —— 页签来回切不该每次都发一次网络请求；
+	/// 想重新拉的用户点「刷新目录」。
+	/// </para>
+	/// </summary>
+	private void RefreshPluginMarketUi()
+	{
+		UpdatePluginMarketSearchPlaceholder();
+		if (_officialPluginCatalog == null && !_officialPluginsLoading)
+		{
+			_ = RefreshOfficialPluginsAsync();
+		}
+		else
+		{
+			RenderOfficialPluginItems();
+		}
+	}
+
+	/// <summary>
+	/// 搜索框占位文案的显隐。有内容或有焦点时收起。
+	/// <para>
+	/// 只看「有没有内容」是不够的：空框拿到焦点后插入符停在最左边，占位文案正好压在它下面 ——
+	/// 用户看到的是两层字叠在一起。
+	/// </para>
+	/// </summary>
+	private void UpdatePluginMarketSearchPlaceholder()
+	{
+		if (PluginMarketSearchPlaceholder == null || PluginMarketSearchBox == null) return;
+
+		bool show = string.IsNullOrEmpty(PluginMarketSearchBox.Text) && !PluginMarketSearchBox.IsKeyboardFocusWithin;
+		PluginMarketSearchPlaceholder.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+	}
+
+	private void PluginMarketSearchBox_TextChanged(object sender, TextChangedEventArgs e)
+	{
+		_pluginMarketSearch = PluginMarketSearchBox?.Text ?? "";
+		UpdatePluginMarketSearchPlaceholder();
+		RenderOfficialPluginItems();
+	}
+
+	private void PluginMarketSearchBox_GotKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => UpdatePluginMarketSearchPlaceholder();
+
+	private void PluginMarketSearchBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e) => UpdatePluginMarketSearchPlaceholder();
+
+	/// <summary>筛选标签切换。四个 RadioButton 共用一个处理器，靠 Tag 区分。</summary>
+	private void MarketFilter_Checked(object sender, RoutedEventArgs e)
+	{
+		// 构造期 XAML 会按声明顺序逐个 Checked，此刻窗口字段还没接上 —— 直接忽略。
+		if (!_isUiInitialized) return;
+		if (sender is not FrameworkElement { Tag: string filter } || filter.Length == 0) return;
+		if (string.Equals(_pluginMarketFilter, filter, StringComparison.Ordinal)) return;
+
+		_pluginMarketFilter = filter;
+		RenderOfficialPluginItems();
+	}
+
+	/// <summary>打开官方模块仓库，方便用户核对源码与 Release 资产。</summary>
+	private void OpenOfficialRepoButton_Click(object sender, RoutedEventArgs e)
+	{
+		try
+		{
+			System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+			{
+				FileName = OfficialPluginClient.RepositoryUrl,
+				UseShellExecute = true,
+			});
+		}
+		catch (Exception ex)
+		{
+			AppLogger.LogWarn($"[plugin] 打开官方仓库失败：{ex.Message}");
+			System.Windows.MessageBox.Show(this, I18n.TF("PluginsMarketOpenRepoFailed", ex.Message), I18n.T("PluginsOfficialMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+		}
 	}
 
 	private async void InstallOfficialPluginButton_Click(object sender, RoutedEventArgs e)
@@ -6691,14 +6961,12 @@ public partial class SettingsWindow : Window
 
 		RenderOfficialPluginsStatus();
 
-		if (_officialPluginCatalog == null && !_officialPluginsLoading)
-		{
-			_ = RefreshOfficialPluginsAsync();
-		}
-		else
-		{
-			RenderOfficialPluginItems();
-		}
+		// 这里**不再**自动联网拉目录：目录是市场页的数据，由 RefreshPluginMarketUi 在进入那一页时拉一次。
+		// 留在插件页刷新的后果是「在一个看不见的页面上转圈」—— 用户只看到界面卡一下，
+		// 而且每进一次插件页都会白白发一次网络请求。
+		// 但已安装版本的投影必须跟着刷新：用户刚在插件页启停/卸载过，市场卡片的
+		// 「未安装 / 已安装 / 可更新」若还停在旧投影上，切过去看到的就是错的。
+		RenderOfficialPluginItems();
 
 		RefreshPluginCandidatesUi();
 	}
@@ -6736,10 +7004,12 @@ public partial class SettingsWindow : Window
 		if (RescanPluginsButton != null)
 		{
 			RescanPluginsButton.Content = I18n.T("PluginsRescanButton");
+			RescanPluginsButton.ToolTip = I18n.T("PluginsRescanToolTip");
 		}
 		if (OpenPluginsFolderButton != null)
 		{
 			OpenPluginsFolderButton.Content = I18n.T("PluginsOpenDataFolderButton");
+			OpenPluginsFolderButton.ToolTip = I18n.T("PluginsOpenDataFolderToolTip");
 		}
 		if (OpenPluginScanFolderButton != null)
 		{
@@ -6748,6 +7018,7 @@ public partial class SettingsWindow : Window
 		if (PluginSystemEnabledCheckBox != null)
 		{
 			PluginSystemEnabledCheckBox.Content = I18n.T("PluginsEnableCheckBox");
+			PluginSystemEnabledCheckBox.ToolTip = I18n.T("PluginsEnableCheckBoxToolTip");
 		}
 		if (PluginsEmptyTitleText != null)
 		{
@@ -6758,17 +7029,65 @@ public partial class SettingsWindow : Window
 			PluginsEmptyHintText.Text = I18n.T("PluginsEmptyHint");
 		}
 
-		// 官方在线目录那一块。进度行是状态推导出来的（三种状态各一句），
-		// 所以这里不能只设一个固定文案 —— 得让状态机自己重渲染一次。
-		if (OfficialPluginsHeaderText != null)
+		// 官方插件市场（NavTab6）那一页。它整体是新增的，所以要逐项重设 ——
+		// 漏一项的后果不是「少翻一句」，而是英文界面上孤零零留一句中文，
+		// 而 check_i18n.py 的「具名控件漏接」判据正是按「有 Name + 硬编码中文却从未被重设」抓的。
+		if (PluginMarketHeader != null)
 		{
-			OfficialPluginsHeaderText.Text = I18n.T("PluginsOfficialHeader");
+			PluginMarketHeader.Text = I18n.T("TabPluginMarket");
+		}
+		if (PluginMarketSubheader != null)
+		{
+			PluginMarketSubheader.Text = I18n.T("PluginsMarketSubheader");
 		}
 		if (RefreshOfficialPluginsButton != null)
 		{
 			RefreshOfficialPluginsButton.Content = I18n.T("PluginsOfficialRefreshButton");
+			RefreshOfficialPluginsButton.ToolTip = I18n.T("PluginsMarketRefreshToolTip");
 		}
+		if (OpenOfficialRepoButton != null)
+		{
+			OpenOfficialRepoButton.Content = I18n.T("PluginsMarketOpenRepoButton");
+			OpenOfficialRepoButton.ToolTip = I18n.T("PluginsMarketOpenRepoToolTip");
+		}
+		if (PluginMarketSearchBox != null)
+		{
+			PluginMarketSearchBox.ToolTip = I18n.T("PluginsMarketSearchToolTip");
+		}
+		if (PluginMarketSearchPlaceholder != null)
+		{
+			PluginMarketSearchPlaceholder.Text = I18n.T("PluginsMarketSearchPlaceholder");
+		}
+		if (MarketFilterAll != null)
+		{
+			MarketFilterAll.Content = I18n.T("PluginsMarketFilterAll");
+		}
+		if (MarketFilterNotInstalled != null)
+		{
+			MarketFilterNotInstalled.Content = I18n.T("PluginsMarketFilterNotInstalled");
+		}
+		if (MarketFilterInstalled != null)
+		{
+			MarketFilterInstalled.Content = I18n.T("PluginsMarketFilterInstalled");
+		}
+		if (MarketFilterUpdatable != null)
+		{
+			MarketFilterUpdatable.Content = I18n.T("PluginsMarketFilterUpdatable");
+		}
+		if (PluginMarketEmptyTitleText != null)
+		{
+			PluginMarketEmptyTitleText.Text = I18n.T("PluginsMarketEmptyTitle");
+		}
+		if (PluginMarketEmptyHintText != null)
+		{
+			PluginMarketEmptyHintText.Text = I18n.T("PluginsMarketEmptyHint");
+		}
+
+		// 进度行与计数都是**状态推导**出来的（正在获取 / 目录版本 / 拉取失败；筛选后 N / M），
+		// 所以这里不能只设一个固定文案 —— 得让渲染路径自己重跑一次。
+		// 计数在 RenderOfficialPluginItems 里，由下面这次整体刷新间接触发。
 		RenderOfficialPluginsStatus();
+		UpdatePluginMarketSearchPlaceholder();
 
 		// 候选卡片的状态徽标与安装按钮文案是 getter（每次读取时才查表），
 		// 光设静态文本不会让它们换语言 —— 得重新绑定一次数据源。
@@ -6988,10 +7307,16 @@ public partial class SettingsWindow : Window
 	/// 正文之所以挪出去，是为了让它在无界面自检里能被逐语言驱动 —— 「切到英文后
 	/// 这一页还剩下多少中文」只有变成断言才守得住（自检 <c>[3e]</c>）。
 	/// </para>
+	/// <para>
+	/// <b>2026-09-20：从 <c>MessageBox</c> 换成自绘窗口</b>。WPF 的 <c>MessageBox</c> 无法定制，
+	/// 而这一页是唯一的知情同意关口，风险条目与能力清单挤在一段等权文字里读不下去。
+	/// 窗口按 <see cref="PluginInstallConfirmationText.BuildSections"/> 逐区渲染，
+	/// 能力行还会加行首 ✔ —— 信息仍是同一份（<c>Build</c> 由分区展平而来），
+	/// 所以自检 <c>[3e]</c> 的字符串断言一条都不用改。
+	/// </para>
 	/// </summary>
 	private bool ConfirmPluginInstall(PluginInstallConfirmation info) =>
-		System.Windows.MessageBox.Show(this, PluginInstallConfirmationText.Build(info),
-			I18n.T("PluginsConfirmTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
+		new PluginInstallDialog(info) { Owner = this }.ShowDialog() == true;
 
 	private void RescanPluginsButton_Click(object sender, RoutedEventArgs e)
 	{
@@ -7156,6 +7481,131 @@ public partial class SettingsWindow : Window
 			RefreshPluginManagerUi();
 		}
 	}
+
+	/// <summary>
+	/// 「⚡ 分配至轮盘」：把插件卡上的一个动作一键放进轮盘扇区，并跳过去让用户精调参数。
+	/// <para>
+	/// <b>为什么值得存在</b>：装完插件最想做的事就是「让它出现在轮盘上」，
+	/// 而原先要走「切到手势页 → 挑扇区 → 展开动作类型下拉 → 在插件分组里找那个动作」四步，
+	/// 且第一步就得先想清楚放哪个扇区。
+	/// </para>
+	/// <para>
+	/// <b>跨页改配置这件事先由 <see cref="PluginWheelAssignment.Plan"/> 算清楚</b>：
+	/// 目标扇区、会不会覆盖、有没有可分配的动作全在那里定，本方法只负责
+	/// 「按计划切页 → 选中 → 写入 → 通知」。这样那三条分支能在自检里被合成数据驱动，
+	/// 而不是只能靠人肉凑出「恰好有 N 个空扇区」的现场。
+	/// </para>
+	/// <para>
+	/// 写入走 <see cref="PluginActionBinding.Apply"/>，与子下拉选中动作时**同一条路**：
+	/// 另写一份写入逻辑的话，两条路迟早会在「名称 / 图标要不要自动填」这类细节上分叉。
+	/// </para>
+	/// </summary>
+	private void AssignPluginToWheelButton_Click(object sender, RoutedEventArgs e)
+	{
+		if (sender is not System.Windows.Controls.Button { Tag: string pluginId } ||
+			string.IsNullOrWhiteSpace(pluginId))
+		{
+			return;
+		}
+
+		WheelProfile? profile = _selectedProfile ?? ConfigManager.CurrentConfig?.Profiles.FirstOrDefault();
+		if (profile == null)
+		{
+			PluginHost.NotifyUser(I18n.T("PluginsAssignTitle"), I18n.T("PluginsAssignNoSlot"));
+			return;
+		}
+
+		profile.EnsureLayers();
+
+		// 扇区快照：既要「这一格空不空」，也要「占着它的动作叫什么」—— 提示语里要报出替换掉了谁。
+		// 长度按当前配置的扇区数取，而不是 profile.Actions.Count：后者可能还没被 RefreshSlots 补齐。
+		int count = NormalizeSectorCount(profile.SectorCount);
+		string[] directions = ResolveDirectionNames(count);
+		var slotNames = new List<string>(count);
+		for (int i = 0; i < count; i++)
+		{
+			slotNames.Add(profile.Actions != null && i < profile.Actions.Count
+				? profile.Actions[i]?.Name ?? ""
+				: "");
+		}
+
+		// 惰性加载契约：注册表里只有「已加载」插件的贡献点，而宿主默认不预加载
+		// （R1 内存红线，见 PluginRegistryEntry.Preload）。所以必须先把**这一个**插件拉起来，
+		// 再去查它的动作 —— 顺序反了的话，界面上明明有 ⚡ 按钮，点下去只会得到
+		// 「这个插件没有可分配的动作」，而插件本身完全正常。
+		//
+		// 只加载被点到的这一个：进插件页就把十几个模块全拉起来，是拿内存红线换一点手感。
+		// 也正因为如此，卡片上的可用性判据不能是「已登记的动作数」（那样启动后全是灰的），
+		// 而是「能不能加载」—— 见 PluginWheelAssignment.BlockReason。
+		PluginActivationResult activation = PluginHost.EnsureLoadedForOperation(pluginId);
+		if (!activation.IsReady)
+		{
+			// activation.Error 是宿主内部消息（中文、含插件名），只进日志；
+			// 气泡给用户的是一句始终本地化的说明 —— 否则英文界面上会漏出中文。
+			AppLogger.LogWarn($"[plugin] 分配至轮盘前加载 {pluginId} 失败：{activation.Status} {activation.Error}");
+			PluginHost.NotifyUser(
+				I18n.T("PluginsAssignTitle"),
+				I18n.T(DescribeActivationFailure(activation.Status)));
+			return;
+		}
+
+		PluginAssignPlan plan = PluginWheelAssignment.Plan(pluginId, slotNames, _selectedSlotIndex);
+		if (!plan.Ok)
+		{
+			PluginHost.NotifyUser(
+				I18n.T("PluginsAssignTitle"),
+				plan.Failure == PluginAssignFailure.NoActions
+					? I18n.TF("PluginsAssignNoAction", PluginActionBinding.ResolvePluginDisplayName(pluginId))
+					: I18n.T("PluginsAssignNoSlot"));
+			return;
+		}
+
+		// 顺序不能反：SwitchToTab(2) 内部会 RefreshSlots()，先选好的扇区会被它冲掉，
+		// 而表现是「跳过去了，但右边编辑的不是刚分配的那个扇区」。
+		SwitchToTab(2);
+		SelectPrimarySlot(plan.SlotIndex);
+
+		ActionItem? item = GetCurrentFocusActionItem();
+		if (item == null || !PluginActionBinding.Apply(item, plan.FullId))
+		{
+			// Apply 返回 false = 贡献点已经不在（插件刚被停用 / 卸载）。此时配置保持原样。
+			PluginHost.NotifyUser(I18n.T("PluginsAssignTitle"), I18n.T("PluginsAssignFailed"));
+			return;
+		}
+
+		UpdateFocusEditorUi();
+		ScheduleAutoSave();
+
+		string slotLabel = plan.SlotIndex >= 0 && plan.SlotIndex < directions.Length
+			? directions[plan.SlotIndex]
+			: I18n.TF("PluginsAssignSlotFallback", plan.SlotIndex + 1);
+
+		var parts = new List<string> { I18n.TF("PluginsAssignDone", plan.ActionName, slotLabel) };
+		if (plan.Overwrites) parts.Add(I18n.TF("PluginsAssignOverwriteNote", plan.ReplacedName));
+		if (plan.ActionCount > 1) parts.Add(I18n.TF("PluginsAssignMultiNote", plan.ActionCount));
+
+		PluginHost.NotifyUser(I18n.T("PluginsAssignTitle"), string.Join(" ", parts));
+	}
+
+	/// <summary>
+	/// 「分配那一刻插件没拉起来」的原因 → 词条键。
+	/// <para>
+	/// <b>刻意不显示 <c>PluginActivationResult.Error</c></b>：那句是宿主内部消息
+	/// （中文、且含插件名），没有走 i18n —— 直接塞进气泡的话，英文界面上会冒出一句中文，
+	/// 而这类「只有切了语言才看得见」的泄漏不会被任何自动检查抓住（气泡不在控件树里）。
+	/// 它只进日志；用户看到的是这里映射出来的本地化说明。
+	/// </para>
+	/// <para>
+	/// 只分三类而不逐状态给文案：隔离 / 不兼容 / 待重启 / 正在停止对用户而言是同一件事
+	/// ——「先按卡片上那个状态把它修好」。状态名已经在卡片徽章上了，这里重复一遍只是噪音。
+	/// </para>
+	/// </summary>
+	private static string DescribeActivationFailure(PluginActivationStatus status) => status switch
+	{
+		PluginActivationStatus.PluginSystemDisabled => "PluginsAssignPluginSystemOff",
+		PluginActivationStatus.LoadFailed => "PluginsAssignLoadFailed",
+		_ => "PluginsAssignUnavailable",
+	};
 
 	private void UpdateFocusActionTypeItemsSource(string? currentTag = null)
 	{

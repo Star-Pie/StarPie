@@ -1032,38 +1032,38 @@ public static class I18n
 		};
 		dictionary["TabTrigger"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "触发设置",
-			[LanguageCode.ZhTw] = "觸發設定",
-			[LanguageCode.En] = "Triggers",
-			[LanguageCode.Ja] = "トリガー設定"
+			[LanguageCode.ZhCn] = "触发与场景",
+			[LanguageCode.ZhTw] = "觸發與情境",
+			[LanguageCode.En] = "Triggers & Scenes",
+			[LanguageCode.Ja] = "トリガーとシーン"
 		};
 		dictionary["TabAppearance"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "外观样式",
-			[LanguageCode.ZhTw] = "外觀樣式",
-			[LanguageCode.En] = "Appearance",
-			[LanguageCode.Ja] = "外観スタイル"
+			[LanguageCode.ZhCn] = "外观与形态",
+			[LanguageCode.ZhTw] = "外觀與形態",
+			[LanguageCode.En] = "Appearance & Shape",
+			[LanguageCode.Ja] = "外観と形状"
 		};
 		dictionary["TabGestures"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "手势动作",
-			[LanguageCode.ZhTw] = "手勢動作",
+			[LanguageCode.ZhCn] = "手势与动作",
+			[LanguageCode.ZhTw] = "手勢與動作",
 			[LanguageCode.En] = "Gestures & Actions",
-			[LanguageCode.Ja] = "ジェスチャー"
+			[LanguageCode.Ja] = "ジェスチャーとアクション"
 		};
 		dictionary["TabAdvanced"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "系统设置",
-			[LanguageCode.ZhTw] = "系統設定",
-			[LanguageCode.En] = "System Settings",
-			[LanguageCode.Ja] = "システム設定"
+			[LanguageCode.ZhCn] = "高级与系统",
+			[LanguageCode.ZhTw] = "進階與系統",
+			[LanguageCode.En] = "Advanced & System",
+			[LanguageCode.Ja] = "詳細設定とシステム"
 		};
 		dictionary["TabAbout"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "关于软件",
-			[LanguageCode.ZhTw] = "關於軟體",
-			[LanguageCode.En] = "About StarPie",
-			[LanguageCode.Ja] = "バージョン情報"
+			[LanguageCode.ZhCn] = "关于与更新",
+			[LanguageCode.ZhTw] = "關於與更新",
+			[LanguageCode.En] = "About & Updates",
+			[LanguageCode.Ja] = "バージョンと更新"
 		};
 		dictionary["TabPlugins"] = new Dictionary<LanguageCode, string>
 		{
@@ -1072,12 +1072,55 @@ public static class I18n
 			[LanguageCode.En] = "Plugins",
 			[LanguageCode.Ja] = "プラグイン"
 		};
+		// 页签索引是**测试契约**（tests/test_plugins.py 的 TAB_PLUGIN、tests/test_i18n.py 的
+		// _IN_SCOPE_TABS、tests/i18n_baseline.json 的 tab_{i} 分桶），所以市场页只能是 NavTab6 ——
+		// 插在插件页之前会让那三处静默指向错页。加页签只加在末尾。
+		dictionary["TabPluginMarket"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方插件市场",
+			[LanguageCode.ZhTw] = "官方外掛市集",
+			[LanguageCode.En] = "Plugin Market",
+			[LanguageCode.Ja] = "プラグインマーケット"
+		};
+		// 侧边栏两级分组的标题。术语刻意保持中性：不出现「核心 / 官方」这类会随版本变化的措辞。
+		dictionary["NavGroupPreferences"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "偏好设置",
+			[LanguageCode.ZhTw] = "偏好設定",
+			[LanguageCode.En] = "Preferences",
+			[LanguageCode.Ja] = "基本設定"
+		};
+		dictionary["NavGroupExtensions"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扩展生态",
+			[LanguageCode.ZhTw] = "擴充生態",
+			[LanguageCode.En] = "Ecosystem",
+			[LanguageCode.Ja] = "エコシステム"
+		};
+		// 分组徽章：标识性短标签（协议名 / 分层名），四语言共用同一串，不随界面语言翻译。
+		// 仍然走词条表 —— 文案一律从这里取是项目约定，且以后改措辞只需改一处。
+		dictionary["NavBadgeCore"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Core",
+			[LanguageCode.ZhTw] = "Core",
+			[LanguageCode.En] = "Core",
+			[LanguageCode.Ja] = "Core"
+		};
+		// 「SPP-1.0」= StarPie Plugin Protocol 1.0，指这一页装的东西所遵循的包与清单协议版本。
+		// 与 NavBadgeCore 同属标识性短标签，四语言共用同一串。
+		dictionary["NavBadgeSpp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "SPP-1.0",
+			[LanguageCode.ZhTw] = "SPP-1.0",
+			[LanguageCode.En] = "SPP-1.0",
+			[LanguageCode.Ja] = "SPP-1.0"
+		};
 		dictionary["PluginsPageSubheader"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "官方插件从 StarPie-Official-Plugins 下载并校验；社区插件仍可手动选择 .dll 安装。插件以 StarPie 当前权限在进程内运行，请只安装你信任的来源。",
-			[LanguageCode.ZhTw] = "官方外掛從 StarPie-Official-Plugins 下載並校驗；社群外掛仍可手動選擇 .dll 安裝。外掛以 StarPie 目前權限在行程內執行，請只安裝你信任的來源。",
-			[LanguageCode.En] = "Official plugins are downloaded and verified from StarPie-Official-Plugins; community plugins can still be installed manually. Plugins run in-process with StarPie's own privileges, so only install sources you trust.",
-			[LanguageCode.Ja] = "公式プラグインは StarPie-Official-Plugins からダウンロードして検証します。コミュニティプラグインは引き続き .dll を手動で選択できます。プラグインは StarPie と同じ権限で実行されるため、信頼できる提供元のみインストールしてください。"
+			[LanguageCode.ZhCn] = "插件以 StarPie 当前权限在进程内运行，请只安装你信任的来源。官方动作模块请在左侧「官方插件市场」安装；社区插件可手动选择 .dll，或放进程序目录的 plugin 文件夹后重新扫描。",
+			[LanguageCode.ZhTw] = "外掛以 StarPie 目前權限在行程內執行，請只安裝你信任的來源。官方動作模組請在左側「官方外掛市集」安裝；社群外掛可手動選擇 .dll，或放進程式目錄的 plugin 資料夾後重新掃描。",
+			[LanguageCode.En] = "Plugins run in-process with StarPie's own privileges, so only install sources you trust. Official action modules are installed from Plugin Market on the left; for community plugins, pick a .dll manually or drop it into the \"plugin\" folder next to the program and rescan.",
+			[LanguageCode.Ja] = "プラグインは StarPie と同じ権限で実行されるため、信頼できる提供元のみインストールしてください。公式アクションモジュールは左側の「プラグインマーケット」からインストールします。コミュニティプラグインは .dll を手動で選択するか、プログラムフォルダーの plugin フォルダーに置いて再スキャンしてください。"
 		};
 		dictionary["PluginsInstallButton"] = new Dictionary<LanguageCode, string>
 		{
@@ -1113,6 +1156,31 @@ public static class I18n
 			[LanguageCode.ZhTw] = "啟用外掛系統",
 			[LanguageCode.En] = "Enable plugin system",
 			[LanguageCode.Ja] = "プラグイン機能を有効にする"
+		};
+		// 以下 4 条是插件页上那排按钮 / 开关的气泡。
+		// 它们长期是「有 Name + 中文 ToolTip 却从未重设」的状态，而当时的漏接判据用
+		// `Name="…"[^>]*?(Text|Content)="…"` 一条正则横扫，**同一个元素只报第一个中文属性** ⇒
+		// 这几个控件因为 Content 已接而被判为「已接」，ToolTip 就这样漏了很多轮。
+		dictionary["PluginsRescanToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重新读取扫描目录与插件数据目录，识别新增、手工拷入或外部修改过的插件",
+			[LanguageCode.ZhTw] = "重新讀取掃描目錄與外掛資料目錄，識別新增、手動拷入或外部修改過的外掛",
+			[LanguageCode.En] = "Re-read the scan folder and plugin data folder to pick up new, hand-copied or externally modified plugins",
+			[LanguageCode.Ja] = "スキャンフォルダーとプラグインデータフォルダーを読み直し、追加・手動コピー・外部で変更されたプラグインを検出します"
+		};
+		dictionary["PluginsOpenDataFolderToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开 StarPie 的可写插件目录：安装副本、启用记录与插件私有数据都在这里",
+			[LanguageCode.ZhTw] = "開啟 StarPie 的可寫外掛目錄：安裝副本、啟用記錄與外掛私有資料都在這裡",
+			[LanguageCode.En] = "Open StarPie's writable plugin folder — installed copies, enable records and private plugin data all live here",
+			[LanguageCode.Ja] = "StarPie の書き込み可能なプラグインフォルダーを開きます（インストール済みのコピー、有効化の記録、プラグイン専用データはここにあります）"
+		};
+		dictionary["PluginsEnableCheckBoxToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭后所有插件动作都不会被触发，但插件配置与已分配到轮盘的动作会被完整保留",
+			[LanguageCode.ZhTw] = "關閉後所有外掛動作都不會被觸發，但外掛設定與已分配到轉盤的動作會被完整保留",
+			[LanguageCode.En] = "When off, no plugin action fires at all — but plugin settings and wheel-sector assignments are fully preserved",
+			[LanguageCode.Ja] = "オフにするとプラグインの動作は一切実行されませんが、設定とホイールへの割り当てはそのまま保持されます"
 		};
 		dictionary["PluginsDataDirectoryHint"] = new Dictionary<LanguageCode, string>
 		{
@@ -1538,6 +1606,67 @@ public static class I18n
 			[LanguageCode.En] = "⚠️ Security notice",
 			[LanguageCode.Ja] = "⚠️ セキュリティ上の注意"
 		};
+		// 确认页从 MessageBox 换成自绘窗口后，正文被分成了五块可跳读的分区（外加「扫描结果」那一段）。
+		// 标题走词条而不是写死在 XAML：窗口是按数据（PluginConfirmSection.Title）渲染的，
+		// 分区标题只在词条表里存在一处，自检 [3e] 也才有「键」可断言。
+		dictionary["PluginsConfirmSectionIdentity"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "模块身份",
+			[LanguageCode.ZhTw] = "模組身分",
+			[LanguageCode.En] = "What it is",
+			[LanguageCode.Ja] = "モジュールの素性"
+		};
+		dictionary["PluginsConfirmSectionSource"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "来源与文件",
+			[LanguageCode.ZhTw] = "來源與檔案",
+			[LanguageCode.En] = "Where it comes from",
+			[LanguageCode.Ja] = "入手元とファイル"
+		};
+		dictionary["PluginsConfirmSectionCapabilities"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "它会拿到什么能力",
+			[LanguageCode.ZhTw] = "它會取得什麼能力",
+			[LanguageCode.En] = "What it can do",
+			[LanguageCode.Ja] = "要求する権限"
+		};
+		dictionary["PluginsConfirmSectionTarget"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "装到哪里 · 装完会怎样",
+			[LanguageCode.ZhTw] = "裝到哪裡 · 裝完會怎樣",
+			[LanguageCode.En] = "Where it goes · what happens next",
+			[LanguageCode.Ja] = "インストール先と結果"
+		};
+		dictionary["PluginsConfirmInstallButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "安装",
+			[LanguageCode.ZhTw] = "安裝",
+			[LanguageCode.En] = "Install",
+			[LanguageCode.Ja] = "インストール"
+		};
+		dictionary["PluginsConfirmCopyButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "复制详情",
+			[LanguageCode.ZhTw] = "複製詳情",
+			[LanguageCode.En] = "Copy details",
+			[LanguageCode.Ja] = "詳細をコピー"
+		};
+		dictionary["PluginsConfirmCopied"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已复制",
+			[LanguageCode.ZhTw] = "已複製",
+			[LanguageCode.En] = "Copied",
+			[LanguageCode.Ja] = "コピーしました"
+		};
+		// 「复制详情」的气泡。XAML 里那串中文只是设计期占位，运行时由窗口构造重设 ——
+		// 属性是 ToolTip 而不是 Content/Text，所以旧的「具名控件漏接」判据抓不到它。
+		dictionary["PluginsConfirmCopyToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "把这一页的纯文本形态复制到剪贴板，便于贴进 issue 或聊天里求助",
+			[LanguageCode.ZhTw] = "把這一頁的純文字形態複製到剪貼簿，便於貼進 issue 或聊天裡求助",
+			[LanguageCode.En] = "Copy this page as plain text to the clipboard — handy for pasting into an issue or a chat",
+			[LanguageCode.Ja] = "このページをプレーンテキストとしてクリップボードにコピーします（issue やチャットへの貼り付け用）"
+		};
 		dictionary["PluginsConfirmSecurityBody"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "插件会以 StarPie 当前的权限在你的电脑上运行代码，请只安装你信任的来源。",
@@ -1547,10 +1676,10 @@ public static class I18n
 		};
 		dictionary["PluginsConfirmAccept"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "点击「确定」表示你已了解并接受以上风险。",
-			[LanguageCode.ZhTw] = "點擊「確定」表示你已了解並接受以上風險。",
-			[LanguageCode.En] = "Clicking OK means you understand and accept these risks.",
-			[LanguageCode.Ja] = "「OK」を押すと、以上のリスクを理解し受け入れたものとみなします。"
+			[LanguageCode.ZhCn] = "点击「安装」表示你已了解并接受以上风险。",
+			[LanguageCode.ZhTw] = "點擊「安裝」表示你已了解並接受以上風險。",
+			[LanguageCode.En] = "Clicking Install means you understand and accept these risks.",
+			[LanguageCode.Ja] = "「インストール」を押すと、以上のリスクを理解し受け入れたものとみなします。"
 		};
 
 		// ---- 手动安装（选择 .dll）这条路的对话框与结果提示 ----
@@ -1619,17 +1748,115 @@ public static class I18n
 		};
 		dictionary["PluginsEmptyHint"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "把插件 .dll 放进程序目录的 plugin 文件夹并点上方「重新扫描」，或直接点右上角「安装插件 (.dll)」选择文件",
-			[LanguageCode.ZhTw] = "把外掛 .dll 放進程式目錄的 plugin 資料夾並點上方「重新掃描」，或直接點右上角「安裝外掛 (.dll)」選擇檔案",
-			[LanguageCode.En] = "Drop the plugin .dll into the \"plugin\" folder next to the program and hit \"Rescan\" above, or click \"Install Plugin (.dll)\" at the top right to pick a file",
-			[LanguageCode.Ja] = "プラグインの .dll をプログラムフォルダー内の plugin フォルダーに置いて上の「再スキャン」を押すか、右上の「プラグインをインストール (.dll)」でファイルを選択してください"
+			[LanguageCode.ZhCn] = "想要官方动作模块，请到左侧「官方插件市场」安装。社区插件：把 .dll 放进程序目录的 plugin 文件夹再点上方「重新扫描」，或直接点右上角「手动安装社区插件 (.dll)...」选择文件。",
+			[LanguageCode.ZhTw] = "想要官方動作模組，請到左側「官方外掛市集」安裝。社群外掛：把 .dll 放進程式目錄的 plugin 資料夾再點上方「重新掃描」，或直接點右上角「手動安裝社群外掛 (.dll)...」選擇檔案。",
+			[LanguageCode.En] = "For official action modules, install them from Plugin Market on the left. For community plugins, drop the .dll into the \"plugin\" folder next to the program and hit \"Rescan\" above, or click \"Install Community Plugin (.dll)...\" at the top right to pick a file.",
+			[LanguageCode.Ja] = "公式アクションモジュールは左側の「プラグインマーケット」からインストールしてください。コミュニティプラグインは、.dll をプログラムフォルダー内の plugin フォルダーに置いて上の「再スキャン」を押すか、右上の「コミュニティプラグインを手動インストール (.dll)...」でファイルを選択してください。"
 		};
-		dictionary["PluginsOfficialHeader"] = new Dictionary<LanguageCode, string>
+		// ---- 官方插件市场（独立页 NavTab6） ----
+		// 此前这一块内嵌在「插件与扩展」页里（一个 MaxHeight=220 的小面板）。
+		// 独立成页后：页头 / 说明 / 搜索 / 四个筛选项 / 计数 / 空状态各自成键，
+		// 卡片上除「状态 + 安装按钮」外不再添文案（模块名与 ID 是官方数据，不翻译）。
+		dictionary["PluginsMarketSubheader"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "官方插件",
-			[LanguageCode.ZhTw] = "官方外掛",
-			[LanguageCode.En] = "Official plugins",
-			[LanguageCode.Ja] = "公式プラグイン"
+			[LanguageCode.ZhCn] = "官方动作模块的在线目录。每个包下载后会核对包 SHA-256、清单与程序集哈希，安装前也会先让你确认它申请的能力。",
+			[LanguageCode.ZhTw] = "官方動作模組的線上目錄。每個套件下載後會核對套件 SHA-256、清單與組件雜湊，安裝前也會先讓你確認它申請的能力。",
+			[LanguageCode.En] = "The online catalog of official action modules. Every package is checked against the package SHA-256, the manifest and the assembly hash, and you still confirm its requested capabilities before installation.",
+			[LanguageCode.Ja] = "公式アクションモジュールのオンラインカタログです。各パッケージは SHA-256・マニフェスト・アセンブリのハッシュを照合し、インストール前には要求する権限の確認もあります。"
+		};
+		dictionary["PluginsMarketOpenRepoButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔗 打开官方仓库",
+			[LanguageCode.ZhTw] = "🔗 開啟官方倉庫",
+			[LanguageCode.En] = "🔗 Open official repo",
+			[LanguageCode.Ja] = "🔗 公式リポジトリを開く"
+		};
+		dictionary["PluginsMarketOpenRepoFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开官方仓库失败：{0}",
+			[LanguageCode.ZhTw] = "開啟官方倉庫失敗：{0}",
+			[LanguageCode.En] = "Failed to open the official repository: {0}",
+			[LanguageCode.Ja] = "公式リポジトリを開けませんでした：{0}"
+		};
+		dictionary["PluginsMarketSearchPlaceholder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "搜索模块名称或 ID…",
+			[LanguageCode.ZhTw] = "搜尋模組名稱或 ID…",
+			[LanguageCode.En] = "Search module name or ID…",
+			[LanguageCode.Ja] = "モジュール名または ID で検索…"
+		};
+		dictionary["PluginsMarketSearchToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "按模块名称或模块 ID 过滤本地目录（不会重新联网拉取）",
+			[LanguageCode.ZhTw] = "依模組名稱或模組 ID 篩選本機目錄（不會重新連線抓取）",
+			[LanguageCode.En] = "Filter the locally fetched catalog by module name or ID (this does not refetch)",
+			[LanguageCode.Ja] = "ローカルに取得済みのカタログをモジュール名または ID で絞り込みます（再取得はしません）"
+		};
+		// 这两个是**联网动作**的按钮提示。分两个键而不是复用 PluginsOfficialStatusHint：
+		// 那句描述的是「这个目录是什么」，按钮要说的是「按下去会发生什么」。
+		dictionary["PluginsMarketRefreshToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重新从 StarPie-Official-Plugins 拉取模块目录（会联网）",
+			[LanguageCode.ZhTw] = "重新從 StarPie-Official-Plugins 抓取模組目錄（會連線）",
+			[LanguageCode.En] = "Refetch the module catalog from StarPie-Official-Plugins (requires network)",
+			[LanguageCode.Ja] = "StarPie-Official-Plugins からモジュールカタログを再取得します（通信が発生します）"
+		};
+		dictionary["PluginsMarketOpenRepoToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "用系统默认浏览器打开 StarPie-Official-Plugins 仓库，核对模块源码与 Release 资产",
+			[LanguageCode.ZhTw] = "用系統預設瀏覽器開啟 StarPie-Official-Plugins 倉庫，核對模組原始碼與 Release 資產",
+			[LanguageCode.En] = "Open the StarPie-Official-Plugins repository in your default browser to inspect module sources and release assets",
+			[LanguageCode.Ja] = "既定のブラウザーで StarPie-Official-Plugins リポジトリを開き、モジュールのソースと Release 資産を確認します"
+		};
+		// 四个筛选项。「未安装 / 已安装」刻意与卡片状态徽章共用同一组措辞（同一件事只有一种说法）。
+		dictionary["PluginsMarketFilterAll"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全部",
+			[LanguageCode.ZhTw] = "全部",
+			[LanguageCode.En] = "All",
+			[LanguageCode.Ja] = "すべて"
+		};
+		dictionary["PluginsMarketFilterNotInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未安装",
+			[LanguageCode.ZhTw] = "尚未安裝",
+			[LanguageCode.En] = "Not installed",
+			[LanguageCode.Ja] = "未インストール"
+		};
+		dictionary["PluginsMarketFilterInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已安装",
+			[LanguageCode.ZhTw] = "已安裝",
+			[LanguageCode.En] = "Installed",
+			[LanguageCode.Ja] = "インストール済み"
+		};
+		dictionary["PluginsMarketFilterUpdatable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "可更新",
+			[LanguageCode.ZhTw] = "可更新",
+			[LanguageCode.En] = "Update available",
+			[LanguageCode.Ja] = "更新あり"
+		};
+		dictionary["PluginsMarketCount"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "筛选后 {0} / {1} 个模块",
+			[LanguageCode.ZhTw] = "篩選後 {0} / {1} 個模組",
+			[LanguageCode.En] = "Showing {0} of {1} modules",
+			[LanguageCode.Ja] = "{1} 件中 {0} 件を表示"
+		};
+		dictionary["PluginsMarketEmptyTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "没有匹配的模块",
+			[LanguageCode.ZhTw] = "沒有符合的模組",
+			[LanguageCode.En] = "No matching modules",
+			[LanguageCode.Ja] = "一致するモジュールがありません"
+		};
+		dictionary["PluginsMarketEmptyHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "换个关键词，或把筛选切回「全部」。想重新拉一遍目录就点右上角「刷新目录」。",
+			[LanguageCode.ZhTw] = "換個關鍵字，或把篩選切回「全部」。想重新抓一次目錄就點右上角「重新整理目錄」。",
+			[LanguageCode.En] = "Try another keyword, or switch the filter back to \"All\". To refetch the catalog, click \"Refresh catalog\" at the top right.",
+			[LanguageCode.Ja] = "別のキーワードを試すか、絞り込みを「すべて」に戻してください。カタログを再取得するには右上の「カタログを更新」を押します。"
 		};
 		dictionary["PluginsOfficialStatusHint"] = new Dictionary<LanguageCode, string>
 		{
@@ -1775,19 +2002,33 @@ public static class I18n
 			[LanguageCode.En] = "provides {0} action(s)",
 			[LanguageCode.Ja] = "動作 {0} 個を提供"
 		};
-		dictionary["PluginsCardNotLoaded"] = new Dictionary<LanguageCode, string>
+		dictionary["PluginsCardLicense"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "未加载",
-			[LanguageCode.ZhTw] = "未載入",
-			[LanguageCode.En] = "not loaded",
-			[LanguageCode.Ja] = "未読み込み"
+			[LanguageCode.ZhCn] = "许可证 {0}",
+			[LanguageCode.ZhTw] = "授權條款 {0}",
+			[LanguageCode.En] = "License {0}",
+			[LanguageCode.Ja] = "ライセンス {0}"
 		};
-		dictionary["PluginsCardCapabilities"] = new Dictionary<LanguageCode, string>
+		// meta 行里「贡献动作数」那一格，当插件当前没贡献出任何动作时用它顶替。
+		// 旧值是「未加载」—— 它与紧邻的状态徽章「已启用 · 待加载」撞词，两句话读起来像在互相否认；
+		// 而这一格描述的对象本来就是「有几个动作」，不是「插件加载了没」。
+		dictionary["PluginsCardNoActions"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "声明能力：{0}",
-			[LanguageCode.ZhTw] = "宣告能力：{0}",
-			[LanguageCode.En] = "Declared capabilities: {0}",
-			[LanguageCode.Ja] = "宣言された機能：{0}"
+			[LanguageCode.ZhCn] = "暂无动作",
+			[LanguageCode.ZhTw] = "暫無動作",
+			[LanguageCode.En] = "no actions yet",
+			[LanguageCode.Ja] = "動作なし"
+		};
+		// meta 行里「贡献了什么」那一格，给**认领型**模块用（官方 12 个模块全是这一类：
+		// 它们的动作以顶层动作类型提供，不出现在「插件动作」子下拉里）。
+		// 有这一句，卡片才解释得清「为什么它的 ⚡ 是灰的」—— 否则用户看到的是
+		// 一颗灰按钮加一句「暂无动作」，而它其实贡献了整整一类动作。
+		dictionary["PluginsCardClaimCount"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "认领 {0} 个顶层动作类型",
+			[LanguageCode.ZhTw] = "認領 {0} 個頂層動作類型",
+			[LanguageCode.En] = "claims {0} top-level action type(s)",
+			[LanguageCode.Ja] = "トップレベル動作タイプ {0} 件を担当"
 		};
 		dictionary["PluginsCardSigned"] = new Dictionary<LanguageCode, string>
 		{
@@ -1835,6 +2076,143 @@ public static class I18n
 			[LanguageCode.ZhTw] = "🗑 解除安裝",
 			[LanguageCode.En] = "🗑 Uninstall",
 			[LanguageCode.Ja] = "🗑 アンインストール"
+		};
+
+		// ---- 卡片上的「⚡ 分配至轮盘」与其结果提示 ----
+		// 这一组文案只在气泡里出现（不进控件），所以 check_i18n.py 的具名控件判据覆盖不到它 ——
+		// 靠的是自检 [3f] 逐语言驱动 PluginListItem.Build 与 PluginWheelAssignment，以及
+		// 「相对 HEAD 新增键全部被引用」那一节。
+		dictionary["PluginsAssignToWheel"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 分配至轮盘",
+			[LanguageCode.ZhTw] = "⚡ 分配至轉盤",
+			[LanguageCode.En] = "⚡ Assign to wheel",
+			[LanguageCode.Ja] = "⚡ ホイールに割り当て"
+		};
+		dictionary["PluginsAssignToWheelToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "把这个插件的动作放进轮盘扇区，并跳到手势页精调参数",
+			[LanguageCode.ZhTw] = "把這個外掛的動作放進轉盤扇區，並跳到手勢頁微調參數",
+			[LanguageCode.En] = "Put this plugin's action on a wheel sector and jump there to fine-tune its parameters",
+			[LanguageCode.Ja] = "このプラグインのアクションをホイールのセクターに割り当て、ジェスチャーページで詳細設定します"
+		};
+		// 「⚡」禁用时的气泡之一：**插件未启用**（另外两条见 PluginsAssignBlockedClaimed /
+		// PluginsAssignBlockedUnavailable）。三条拆开写是刻意的 —— 它们要求用户做的下一步
+		// 完全不同，合成一句「当前不可用」用户就只能挨个试。
+		//
+		// 旧值是「这个插件还没有已登记的动作」：那句话把现象当原因说了，而且是在断言一件
+		// 尚未观测到的事（插件其实有动作，只是没登记）。判据改成「能不能加载」之后，
+		// 这里就只该说「为什么不能加载」。
+		dictionary["PluginsAssignToWheelBlockedHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件未启用 —— 动作只在插件启用后才会登记。先启用它，再回来分配",
+			[LanguageCode.ZhTw] = "外掛未啟用 —— 動作只在外掛啟用後才會登記。先啟用它，再回來分配",
+			[LanguageCode.En] = "The plugin is disabled — its actions are only registered while it is enabled. Enable it, then assign.",
+			[LanguageCode.Ja] = "プラグインが無効です。アクションは有効な間だけ登録されます。有効にしてから割り当ててください"
+		};
+		// 「⚡」禁用时的气泡之二：**认领型模块**。它的动作以顶层动作类型提供（官方 12 个模块
+		// 都是这一类），本来就在「动作类型」下拉里直接可选，不需要「分配」这一步。
+		// 同样地，它们也被从「插件动作」子下拉里排除 —— 所以点下去只会得到
+		// 「没有可分配的动作」，而证据在点之前就看得见。
+		dictionary["PluginsAssignBlockedClaimed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个模块的动作以顶层动作类型提供（如「平铺窗口」「OCR」），在「动作类型」下拉里直接选即可，不需要分配",
+			[LanguageCode.ZhTw] = "這個模組的動作以頂層動作類型提供（如「並排視窗」「OCR」），在「動作類型」下拉裡直接選即可，不需要分配",
+			[LanguageCode.En] = "This module's actions are exposed as top-level action types (e.g. Tile, OCR) — pick them straight from the \"Action type\" dropdown; there is nothing to assign.",
+			[LanguageCode.Ja] = "このモジュールのアクションはトップレベルの動作タイプ（例：タイル、OCR）として提供されます。「動作タイプ」から直接選んでください"
+		};
+		// 「⚡」禁用时的气泡之三：其余不可用状态（隔离 / 不兼容 / 加载失败 / 正在停止 / 需要重启）。
+		// 这几种对用户而言是同一件事 ——「先去修好卡片上那个状态」—— 所以合成一句，
+		// 而不是逐个状态配一句：状态名已经在卡片徽章上了，这里重复一遍只是噪音。
+		dictionary["PluginsAssignBlockedUnavailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件当前不可用 —— 先按卡片上显示的状态把它修好，再回来分配",
+			[LanguageCode.ZhTw] = "外掛目前無法使用 —— 先依卡片上顯示的狀態修好，再回來分配",
+			[LanguageCode.En] = "The plugin is unavailable right now — resolve the state shown on its card, then assign.",
+			[LanguageCode.Ja] = "プラグインは現在利用できません。カードに表示された状態を解消してから割り当ててください"
+		};
+		dictionary["PluginsAssignTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "⚡ 分配至轮盘",
+			[LanguageCode.ZhTw] = "⚡ 分配至轉盤",
+			[LanguageCode.En] = "⚡ Assign to wheel",
+			[LanguageCode.Ja] = "⚡ ホイールに割り当て"
+		};
+		dictionary["PluginsAssignDone"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "「{0}」已分配到「{1}」，请在右侧精调参数。",
+			[LanguageCode.ZhTw] = "「{0}」已分配到「{1}」，請在右側微調參數。",
+			[LanguageCode.En] = "\"{0}\" is now on \"{1}\" — fine-tune its parameters on the right.",
+			[LanguageCode.Ja] = "「{0}」を「{1}」に割り当てました。右側で詳細を調整してください。"
+		};
+		dictionary["PluginsAssignOverwriteNote"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "该扇区原有的「{0}」已被替换。",
+			[LanguageCode.ZhTw] = "該扇區原有的「{0}」已被替換。",
+			[LanguageCode.En] = "The previous action there, \"{0}\", was replaced.",
+			[LanguageCode.Ja] = "そのセクターにあった「{0}」は置き換えられました。"
+		};
+		dictionary["PluginsAssignMultiNote"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "这个插件有 {0} 个动作，已选第一个 —— 可在「插件动作」下拉里换。",
+			[LanguageCode.ZhTw] = "這個外掛有 {0} 個動作，已選第一個 —— 可在「外掛動作」下拉裡換。",
+			[LanguageCode.En] = "This plugin contributes {0} actions; the first one was used — switch it in the \"Plugin action\" dropdown.",
+			[LanguageCode.Ja] = "このプラグインは {0} 個のアクションを持ちます。先頭を使用しました（「プラグインのアクション」で切り替えられます）。"
+		};
+		dictionary["PluginsAssignNoAction"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "「{0}」当前没有可分配的动作 —— 插件未启用时动作不会登记，先启用它再试。",
+			[LanguageCode.ZhTw] = "「{0}」目前沒有可分配的動作 —— 外掛未啟用時動作不會登記，先啟用再試。",
+			[LanguageCode.En] = "\"{0}\" has no assignable action right now — actions are only registered while the plugin is enabled. Enable it and try again.",
+			[LanguageCode.Ja] = "「{0}」に割り当て可能なアクションがありません（有効な間だけ登録されます）。有効化してから再試行してください。"
+		};
+		dictionary["PluginsAssignNoSlot"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "当前配置里没有可用的扇区，无法分配。",
+			[LanguageCode.ZhTw] = "目前設定裡沒有可用的扇區，無法分配。",
+			[LanguageCode.En] = "The current profile has no usable sector, so there is nowhere to assign this action.",
+			[LanguageCode.Ja] = "現在の設定にセクターがないため、割り当て先がありません。"
+		};
+		dictionary["PluginsAssignFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "写入失败：这个动作已经失效（插件可能刚被停用），配置保持原样。",
+			[LanguageCode.ZhTw] = "寫入失敗：這個動作已經失效（外掛可能剛被停用），設定保持原樣。",
+			[LanguageCode.En] = "Could not assign it: the action is no longer available (the plugin may just have been disabled). Your settings were left untouched.",
+			[LanguageCode.Ja] = "割り当てできませんでした。このアクションは現在利用できません（プラグインが無効化された可能性があります）。設定は変更していません。"
+		};
+		dictionary["PluginsAssignSlotFallback"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扇区 {0}",
+			[LanguageCode.ZhTw] = "扇區 {0}",
+			[LanguageCode.En] = "Sector {0}",
+			[LanguageCode.Ja] = "セクター {0}"
+		};
+		// 下面三条是「分配那一刻，插件没拉起来」的三种原因。
+		// 只按**用户能采取的行动**分类，不逐状态配文案：隔离 / 不兼容 / 待重启对用户而言
+		// 都是「先去修好卡片上那个状态」，各配一句只是把同一件事说三遍。
+		//
+		// 注意：加载失败时宿主内部那句 activation.Error（中文、含插件名）只进日志，
+		// 不进气泡 —— 它没有走 i18n，直接显示会在英文界面上漏出中文。
+		dictionary["PluginsAssignLoadFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件加载失败，读不到它的动作。详情见日志。",
+			[LanguageCode.ZhTw] = "外掛載入失敗，讀不到它的動作。詳情見日誌。",
+			[LanguageCode.En] = "The plugin failed to load, so its actions could not be read. See the log for details.",
+			[LanguageCode.Ja] = "プラグインの読み込みに失敗したため、アクションを取得できません。詳細はログを参照してください。"
+		};
+		dictionary["PluginsAssignPluginSystemOff"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件系统已关闭，读不到插件动作。请先在插件页打开总开关。",
+			[LanguageCode.ZhTw] = "外掛系統已關閉，讀不到外掛動作。請先在頁面開啟總開關。",
+			[LanguageCode.En] = "The plugin system is off, so plugin actions cannot be read. Turn it back on in the Plugins page.",
+			[LanguageCode.Ja] = "プラグイン機能が無効なため、アクションを取得できません。プラグインページで有効にしてください。"
+		};
+		dictionary["PluginsAssignUnavailable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件此刻不可用（已隔离 / 不兼容 / 正在停止 / 需要重启），无法分配。",
+			[LanguageCode.ZhTw] = "外掛此刻無法使用（已隔離 / 不相容 / 正在停止 / 需要重新啟動），無法分配。",
+			[LanguageCode.En] = "The plugin is not usable right now (quarantined / incompatible / stopping / awaiting restart), so nothing can be assigned.",
+			[LanguageCode.Ja] = "プラグインは現在利用できません（隔離済み / 非互換 / 停止中 / 再起動待ち）。割り当てできません。"
 		};
 
 		// ---- 插件管理页：运行时状态徽标 ----
@@ -2869,6 +3247,20 @@ public static class I18n
 			[LanguageCode.ZhTw] = "🔄 停用後重新載入",
 			[LanguageCode.En] = "🔄 Reload after disabling",
 			[LanguageCode.Ja] = "🔄 無効化して再読み込み"
+		};
+		dictionary["FocusPluginReloadToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件二进制被重新编译后，需要停用再启用才能生效（进程内插件无法原地热替换）",
+			[LanguageCode.ZhTw] = "外掛二進位檔被重新編譯後，需要停用再啟用才能生效（行程內外掛無法原地熱替換）",
+			[LanguageCode.En] = "After a plugin binary is rebuilt, it must be disabled and re-enabled to take effect (in-process plugins cannot be hot-swapped in place)",
+			[LanguageCode.Ja] = "プラグインのバイナリを再ビルドした後は、無効化してから再度有効化しないと反映されません（インプロセスのプラグインはその場でのホットスワップができません）"
+		};
+		dictionary["FocusPluginActionComboToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "同一插件的动作归入以该插件名命名的分组",
+			[LanguageCode.ZhTw] = "同一外掛的動作歸入以該外掛名命名的分組",
+			[LanguageCode.En] = "Actions from the same plugin are grouped under that plugin's name",
+			[LanguageCode.Ja] = "同じプラグインのアクションは、そのプラグイン名のグループにまとめられます"
 		};
 		dictionary["FocusPopulateTileSubActions"] = new Dictionary<LanguageCode, string>
 		{
@@ -4234,6 +4626,47 @@ public static class I18n
 			[LanguageCode.ZhTw] = "⚙\ufe0f 鈦金深灰",
 			[LanguageCode.En] = "⚙\ufe0f Titanium Gray",
 			[LanguageCode.Ja] = "⚙\ufe0f チタングレー"
+		};
+		// 侧边栏底部那排四分段的**短名**（图标与文字是两个控件，所以这里的值不带 emoji）。
+		//
+		// 为什么不复用上面的 Theme* ：那是一整串（emoji + 全名），用在四分段的窄胶囊里会折行；
+		// 而"不复用"的代价就是这四处长期没有词条 —— 2026-09-20 加市场页时被台账当场抓到：
+		// 英文界面的侧边栏仍显示「系统 / 浅色 / 曜黑 / 钛灰」。它们出现在**每一个**页签上，
+		// 所以那一轮 4 条命中被记进了每一个页签的桶里，直到有人真的把这一页接完。
+		dictionary["ThemeSegmentSystem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统",
+			[LanguageCode.ZhTw] = "系統",
+			[LanguageCode.En] = "System",
+			[LanguageCode.Ja] = "システム"
+		};
+		dictionary["ThemeSegmentLight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "浅色",
+			[LanguageCode.ZhTw] = "淺色",
+			[LanguageCode.En] = "Light",
+			[LanguageCode.Ja] = "ライト"
+		};
+		dictionary["ThemeSegmentDark"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "曜黑",
+			[LanguageCode.ZhTw] = "曜黑",
+			[LanguageCode.En] = "Dark",
+			[LanguageCode.Ja] = "ダーク"
+		};
+		dictionary["ThemeSegmentGray"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "钛灰",
+			[LanguageCode.ZhTw] = "鈦灰",
+			[LanguageCode.En] = "Gray",
+			[LanguageCode.Ja] = "グレー"
+		};
+		dictionary["SidebarThemeCollapsedToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "切换控制台界面主题（点击循环切换）",
+			[LanguageCode.ZhTw] = "切換主控台介面主題（點擊循環切換）",
+			[LanguageCode.En] = "Switch console theme (click to cycle)",
+			[LanguageCode.Ja] = "コンソールのテーマを切り替え（クリックで順に切替）"
 		};
 		dictionary["GesturesHeader"] = new Dictionary<LanguageCode, string>
 		{

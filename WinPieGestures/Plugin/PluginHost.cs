@@ -401,6 +401,24 @@ internal static class PluginHost
         return true;
     }
 
+    /// <summary>
+    /// 惰性加载契约的公开入口：为「即将发生的一次操作」把一个<b>已启用</b>的插件拉起来。
+    /// <para>
+    /// <b>为什么必须暴露出这一层</b>：注册表里只有<b>已加载</b>插件的贡献点
+    /// （见 <see cref="GetRegisteredActions"/>），而宿主默认不预加载 —— 那是 R1 内存红线，
+    /// 见 <see cref="PluginRegistryEntry.Preload"/>（默认 <c>false</c>）。于是任何
+    /// 「先看这个插件有哪些动作，再决定做什么」的界面路径都必须先走这一步。
+    /// 漏掉的表现不是报错，而是「界面上明明有入口，点下去却说这个插件没有动作」——
+    /// 插件本身完全正常，用户会去翻它的清单找一个不存在的 bug。
+    /// </para>
+    /// <para>
+    /// 与 <see cref="Enable"/> 的区别：不改 <c>Enabled</c> 偏好、不落盘、不通知插件集合变化。
+    /// 这是「用一下」而不是「启用」—— 顺手把一个用户没打算启用的插件持久化成启用是越权。
+    /// </para>
+    /// </summary>
+    public static PluginActivationResult EnsureLoadedForOperation(string pluginId) =>
+        Runtime.EnsurePluginLoaded(pluginId, PluginActivationReason.WheelAssignment, requireEnabled: true);
+
     /// <summary>兼容同步调用；新 UI 与管理流程应使用 <see cref="DisableAsync"/>。</summary>
     public static bool Disable(string pluginId, out string error)
     {
