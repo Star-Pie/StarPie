@@ -160,14 +160,14 @@ def test_modify_slider_and_save(app):
 
 def test_switch_all_tabs_smoothly(advanced_mode):
     """
-    Test clicking through all 6 navigation radio buttons (NavTab0 ~ NavTab5)
+    Test clicking through all 7 navigation radio buttons (NavTab0 ~ NavTab6)
     to guarantee zero crashes, zero freezes, and that controls remain fully responsive.
 
     用 advanced_mode 而不是 app：本用例末尾要断言配置方案列表，而那是高级 UI。
     """
     win, local_app_data = advanced_mode
     
-    # Iterate through all 6 tabs. 这里是「全页遍历」的唯一出处，
+    # Iterate through all 7 tabs. 这里是「全页遍历」的唯一出处，
     # 新增页时务必把上界一起推进 —— 否则新页只是没被测，而不是测过了。
     # 0: 触发与场景 (NavTab0)
     # 1: 外观与形态 (NavTab1)
@@ -175,7 +175,9 @@ def test_switch_all_tabs_smoothly(advanced_mode):
     # 3: 高级与系统 (NavTab3)
     # 4: 关于与更新 (NavTab4)
     # 5: 插件与扩展 (NavTab5)
-    for i in range(6):
+    # 6: 官方插件市场 (NavTab6) —— 这一页进来会联网拉目录；
+    #    失败只会让状态行显示「目录暂时不可用」，不影响本用例的断言
+    for i in range(7):
         tab_btn = win.child_window(auto_id=f"NavTab{i}", control_type="RadioButton")
         assert tab_btn.exists(timeout=5), f"NavTab{i} must exist"
         tab_btn.select()

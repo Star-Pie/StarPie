@@ -166,8 +166,13 @@ internal sealed class PluginListItem
     /// 名字以 emoji 开头是常见写法，而 emoji 是代理对，<c>name[0]</c> 会切出半个字符 ——
     /// 界面上显示成一个方块，既不报错也不像有问题，是典型的「静默错值」。
     /// </para>
+    /// <para>
+    /// <b>internal 而非 private</b>：官方插件市场页的卡片（<c>OfficialPluginListItem</c>）
+    /// 也要同一份退化逻辑。两处各写一遍就会漂移 —— 一处改成 <c>name[0]</c>，
+    /// 只有那一处的 emoji 名会显示成方块，而且没人会想到去比对另一个页签。
+    /// </para>
     /// </summary>
-    private static string ResolveAvatar(string? icon, string displayName)
+    internal static string ResolveAvatar(string? icon, string displayName)
     {
         if (!string.IsNullOrWhiteSpace(icon))
         {

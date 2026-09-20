@@ -646,8 +646,24 @@
               </Grid.ColumnDefinitions>
               <Path Width="18" Height="18" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type RadioButton}}}" Margin="0,0,14,0" Data="M20.5,11H19V7C19,5.89 18.1,5 17,5H13V3.5A2.5,2.5 0 0,0 10.5,1A2.5,2.5 0 0,0 8,3.5V5H4A2,2 0 0,0 2,7V10.8H3.5C5,10.8 6.2,12 6.2,13.5C6.2,15 5,16.2 3.5,16.2H2V20A2,2 0 0,0 4,22H7.8V20.5C7.8,19 9,17.8 10.5,17.8C12,17.8 13.2,19 13.2,20.5V22H17A2,2 0 0,0 19,20V16H20.5A2.5,2.5 0 0,0 23,13.5A2.5,2.5 0 0,0 20.5,11Z" />
               <TextBlock Name="NavTab5Text" Grid.Column="1" Text="插件与扩展" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-              <Border Grid.Column="2" Background="{DynamicResource AccentPrimaryBrush}" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+              <Border Name="NavTab5BadgeBorder" Grid.Column="2" Background="{DynamicResource AccentPrimaryBrush}" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
                 <TextBlock Name="NavTab5BadgeText" Text="Core" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}" />
+              </Border>
+            </Grid>
+          </RadioButton>
+          <!-- 市场页的徽章与 NavTab5 的 Core 徽章刻意不同色：Core 是「这一页是核心能力」，
+               SPP-1.0 是「这一页装的东西遵循哪个协议版本」—— 前者是强调，后者是标识。 -->
+          <RadioButton Name="NavTab6" Style="{StaticResource NavTabRadioButtonStyle}" GroupName="SidebarTabs" Tag="6" Checked="NavTab_Checked" ToolTip="{Binding Text, ElementName=NavTab6Text}">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Path Width="18" Height="18" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type RadioButton}}}" Margin="0,0,14,0" Data="M12,18H6V14H12M21,14V12L20,7H4L3,12V14H4V20H14V14H18V20H20V14M20,4H4V6H20V4Z" />
+              <TextBlock Name="NavTab6Text" Grid.Column="1" Text="官方插件市场" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <Border Name="NavTab6BadgeBorder" Grid.Column="2" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                <TextBlock Name="NavTab6BadgeText" Text="SPP-1.0" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
               </Border>
             </Grid>
           </RadioButton>
@@ -665,25 +681,25 @@
               <RadioButton Name="ThemeBtnSystem" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="System" ToolTip="跟随系统" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="🌓" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="系统" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="ThemeSegmentSystemText" Text="系统" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
               <RadioButton Name="ThemeBtnLight" Grid.Column="1" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="Light" ToolTip="极简纯白" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="☀️" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="浅色" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="ThemeSegmentLightText" Text="浅色" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
               <RadioButton Name="ThemeBtnDark" Grid.Column="2" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="Dark" ToolTip="极夜曜黑" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="🌙" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="曜黑" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="ThemeSegmentDarkText" Text="曜黑" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
               <RadioButton Name="ThemeBtnGray" Grid.Column="3" GroupName="SidebarAppThemeGroup" Style="{StaticResource SidebarThemeSegmentRadioStyle}" Tag="TitaniumGray" ToolTip="钛金深灰" Click="ThemeSegmentButton_Click" Checked="ThemeSegmentButton_Click">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                   <TextBlock Text="⚙️" FontSize="11" Margin="0,0,2,0" VerticalAlignment="Center" />
-                  <TextBlock Text="钛灰" FontSize="11" VerticalAlignment="Center" />
+                  <TextBlock Name="ThemeSegmentGrayText" Text="钛灰" FontSize="11" VerticalAlignment="Center" />
                 </StackPanel>
               </RadioButton>
             </Grid>
@@ -3808,7 +3824,6 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
 
@@ -3843,63 +3858,12 @@
             </Grid>
           </Border>
 
-          <!-- 官方插件在线目录 -->
-          <Border Grid.Row="2" Name="OfficialPluginsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
-            <StackPanel>
-              <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                  <TextBlock Name="OfficialPluginsHeaderText" Text="官方插件" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Name="OfficialPluginsStatusText" Text="从 StarPie-Official-Plugins 下载经过 SHA-256 校验的官方模块" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap" />
-                </StackPanel>
-                <Button Name="RefreshOfficialPluginsButton" Grid.Column="1" Content="🌐 刷新目录" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="11" VerticalAlignment="Center" Click="RefreshOfficialPluginsButton_Click" />
-              </Grid>
-              <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl Name="OfficialPluginItemsControl">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
-                        <Grid>
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                              <TextBlock Text="🔌" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0" />
-                              <TextBlock Text="{Binding DisplayName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                              <TextBlock Text="{Binding VersionText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
-                              <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="8" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding StateText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
-                              </Border>
-                            </StackPanel>
-                            <TextBlock Text="{Binding SummaryText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
-                          </StackPanel>
-                          <Button Grid.Column="1" Content="{Binding InstallButtonText}" Tag="{Binding Module}" Click="InstallOfficialPluginButton_Click" Height="28" Padding="10,0" FontSize="11.5" VerticalAlignment="Top" Margin="10,0,0,0">
-                            <Button.Style>
-                              <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                <Style.Triggers>
-                                  <DataTrigger Binding="{Binding CanInstall}" Value="False">
-                                    <Setter Property="IsEnabled" Value="False" />
-                                  </DataTrigger>
-                                </Style.Triggers>
-                              </Style>
-                            </Button.Style>
-                          </Button>
-                        </Grid>
-                      </Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </ScrollViewer>
-            </StackPanel>
-          </Border>
+          <!-- 官方在线目录原先内嵌在这里（MaxHeight=220 的面板）。现已独立成页（NavTab6「官方插件市场」），
+               控件名保持不变 —— 只是换了容器，代码后置里的 RenderOfficialPluginItems /
+               RenderOfficialPluginsStatus / RefreshOfficialPluginsAsync 一行未改。 -->
 
           <!-- 只读扫描目录里的待安装候选 -->
-          <Border Grid.Row="3" Name="PluginCandidatesPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
+          <Border Grid.Row="2" Name="PluginCandidatesPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
             <StackPanel>
               <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
@@ -3966,7 +3930,7 @@
           </Border>
 
           <!-- 插件列表 -->
-          <Grid Grid.Row="4">
+          <Grid Grid.Row="3">
             <ListBox Name="PluginListBox" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
               <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
@@ -4083,6 +4047,167 @@
             </StackPanel>
           </Grid>
         </Grid>
+        </ScrollViewer>
+
+        <!-- ==================== 官方插件市场（NavTab6） ====================
+             概念稿里这一页是插件页内部的一个小面板；独立成页之后「找模块 → 看它要什么能力 →
+             装下来」这三步才有地方铺开（双列网格 + 搜索 + 筛选）。
+             页签索引是测试契约，所以它必须是**最后一个**页签（见 I18n.cs 里 TabPluginMarket 的注释）。 -->
+        <ScrollViewer Name="PluginMarketGrid" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PanningMode="VerticalOnly">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- 页头 + 操作按钮 -->
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                <TextBlock Name="PluginMarketHeader" Text="官方插件市场" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Name="PluginMarketSubheader" Text="从 StarPie-Official-Plugins 下载并校验官方动作模块；每个包在下载后会核对包哈希、清单与程序集 SHA-256，安装前仍会先让你确认它申请的能力。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Name="RefreshOfficialPluginsButton" Content="🌐 刷新目录" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" ToolTip="重新从 StarPie-Official-Plugins 拉取模块目录（会联网）" Click="RefreshOfficialPluginsButton_Click" />
+                <Button Name="OpenOfficialRepoButton" Content="🔗 打开官方仓库" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" Margin="8,0,0,0" ToolTip="用系统默认浏览器打开 StarPie-Official-Plugins 仓库，查看模块源码与 Release 资产" Click="OpenOfficialRepoButton_Click" />
+              </StackPanel>
+            </Grid>
+
+            <!-- 搜索 + 筛选。纯本地过滤：改这里不会联网（「刷新目录」才联网）。 -->
+            <Grid Grid.Row="1" Margin="0,0,0,10">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" CornerRadius="8" Height="32" Padding="10,0" SnapsToDevicePixels="True">
+                <Grid>
+                  <!-- 占位文案用叠加的 TextBlock 而不是 TextBox.Text 默认值：后者要靠判空区分
+                       「用户没输入」与「用户就想搜这句」，而且会在搜索时被当成关键词的一部分。 -->
+                  <TextBlock Name="PluginMarketSearchPlaceholder" Text="搜索模块名称或 ID…" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" IsHitTestVisible="False" Opacity="0.75" />
+                  <TextBox Name="PluginMarketSearchBox" Background="Transparent" BorderThickness="0" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" VerticalContentAlignment="Center" TextChanged="PluginMarketSearchBox_TextChanged" GotKeyboardFocus="PluginMarketSearchBox_GotKeyboardFocus" LostKeyboardFocus="PluginMarketSearchBox_LostKeyboardFocus" />
+                </Grid>
+              </Border>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0" VerticalAlignment="Center">
+                <RadioButton Name="MarketFilterAll" Style="{StaticResource CardSegmentRadioStyle}" GroupName="PluginMarketFilter" Tag="All" Content="全部" FontSize="11" Padding="10,5" IsChecked="True" Checked="MarketFilter_Checked" />
+                <RadioButton Name="MarketFilterNotInstalled" Style="{StaticResource CardSegmentRadioStyle}" GroupName="PluginMarketFilter" Tag="NotInstalled" Content="未安装" FontSize="11" Padding="10,5" Margin="6,0,0,0" Checked="MarketFilter_Checked" />
+                <RadioButton Name="MarketFilterInstalled" Style="{StaticResource CardSegmentRadioStyle}" GroupName="PluginMarketFilter" Tag="Installed" Content="已安装" FontSize="11" Padding="10,5" Margin="6,0,0,0" Checked="MarketFilter_Checked" />
+                <RadioButton Name="MarketFilterUpdatable" Style="{StaticResource CardSegmentRadioStyle}" GroupName="PluginMarketFilter" Tag="Updatable" Content="可更新" FontSize="11" Padding="10,5" Margin="6,0,0,0" Checked="MarketFilter_Checked" />
+              </StackPanel>
+            </Grid>
+
+            <!-- 目录状态行（正在获取 / 目录版本 / 拉取失败）+ 命中计数 -->
+            <Grid Grid.Row="2" Margin="0,0,0,10">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Name="OfficialPluginsStatusText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <TextBlock Name="PluginMarketCountText" Grid.Column="1" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0,0,0" />
+            </Grid>
+
+            <!-- 双列网格。卡片文案全部走 {Binding}：DataTemplate 有自己的命名域，
+                 Name 在这里无效，写死任何一句中文都会绕过 ApplyPluginsPageLocalization。 -->
+            <Grid Grid.Row="3">
+              <!-- VerticalAlignment=Top 是必需的：这一格在 ScrollViewer 里会被拉到视口高度，
+                   而 UniformGrid 会把可用高度平分给每一行 ⇒ 卡片被撑成一大块空白。
+                   靠内容顶高之后，行高才是「这一行最高的那张卡」的天然高度。 -->
+              <ItemsControl Name="OfficialPluginItemsControl" VerticalAlignment="Top">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <UniformGrid Columns="2" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12" Margin="0,0,10,10">
+                      <Grid>
+                        <Grid.RowDefinitions>
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="Auto" />
+                          <RowDefinition Height="*" />
+                          <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- ① 头像 + 模块名 + 版本 + 状态徽章 -->
+                        <Grid Grid.Row="0">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                          </Grid.ColumnDefinitions>
+                          <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Top" Margin="0,0,10,0" SnapsToDevicePixels="True">
+                            <TextBlock Text="{Binding AvatarText}" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Border>
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                              <TextBlock Text="{Binding VersionText}" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                              <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="8" Padding="6,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding StateText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                              </Border>
+                            </StackPanel>
+                          </StackPanel>
+                        </Grid>
+
+                        <!-- ② 模块 ID（ASCII 标识符，不翻译） -->
+                        <TextBlock Grid.Row="1" Text="{Binding IdText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,8,0,0" TextTrimming="CharacterEllipsis" />
+
+                        <!-- ③ 认领的动作类型：逐项标签，窄卡片里自动换行 -->
+                        <ItemsControl Grid.Row="2" ItemsSource="{Binding ClaimTags}" Margin="0,6,0,0">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="9" Padding="7,2" Margin="0,0,6,4">
+                                <TextBlock Text="{Binding}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- ④ 下载并安装。装过的条目不隐藏按钮而只置灰：隐藏会让「为什么这个卡片少了东西」
+                             无从查起，置灰 + 文案变成「已安装」才说明得了状态。 -->
+                        <Grid Grid.Row="4" Margin="0,6,0,0">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <TextBlock Text="{Binding MetaText}" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                          <Button Grid.Column="1" Content="{Binding InstallButtonText}" Tag="{Binding Module}" Click="InstallOfficialPluginButton_Click" Height="28" Padding="10,0" FontSize="11.5" VerticalAlignment="Center" Margin="8,0,0,0">
+                            <Button.Style>
+                              <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding CanInstall}" Value="False">
+                                    <Setter Property="IsEnabled" Value="False" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </Button.Style>
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- 空状态：只在「目录拿到了、但被筛选条件筛空」时出现。
+                   目录还没拿到时有上方的状态行负责说明，这里再显示「没有匹配的模块」会答非所问。 -->
+              <StackPanel Name="PluginMarketEmptyStatePanel" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,40" Visibility="Collapsed">
+                <TextBlock Text="🔍" FontSize="38" HorizontalAlignment="Center" Opacity="0.35" />
+                <TextBlock Name="PluginMarketEmptyTitleText" Text="没有匹配的模块" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,0" HorizontalAlignment="Center" />
+                <TextBlock Name="PluginMarketEmptyHintText" Text="换个关键词，或把筛选切回「全部」。" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" Opacity="0.8" MaxWidth="420" />
+              </StackPanel>
+            </Grid>
+          </Grid>
         </ScrollViewer>
 
         <Grid Name="SystemSettingsGrid" Visibility="Collapsed">

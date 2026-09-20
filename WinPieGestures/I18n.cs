@@ -1072,6 +1072,16 @@ public static class I18n
 			[LanguageCode.En] = "Plugins",
 			[LanguageCode.Ja] = "プラグイン"
 		};
+		// 页签索引是**测试契约**（tests/test_plugins.py 的 TAB_PLUGIN、tests/test_i18n.py 的
+		// _IN_SCOPE_TABS、tests/i18n_baseline.json 的 tab_{i} 分桶），所以市场页只能是 NavTab6 ——
+		// 插在插件页之前会让那三处静默指向错页。加页签只加在末尾。
+		dictionary["TabPluginMarket"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "官方插件市场",
+			[LanguageCode.ZhTw] = "官方外掛市集",
+			[LanguageCode.En] = "Plugin Market",
+			[LanguageCode.Ja] = "プラグインマーケット"
+		};
 		// 侧边栏两级分组的标题。术语刻意保持中性：不出现「核心 / 官方」这类会随版本变化的措辞。
 		dictionary["NavGroupPreferences"] = new Dictionary<LanguageCode, string>
 		{
@@ -1096,12 +1106,21 @@ public static class I18n
 			[LanguageCode.En] = "Core",
 			[LanguageCode.Ja] = "Core"
 		};
+		// 「SPP-1.0」= StarPie Plugin Protocol 1.0，指这一页装的东西所遵循的包与清单协议版本。
+		// 与 NavBadgeCore 同属标识性短标签，四语言共用同一串。
+		dictionary["NavBadgeSpp"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "SPP-1.0",
+			[LanguageCode.ZhTw] = "SPP-1.0",
+			[LanguageCode.En] = "SPP-1.0",
+			[LanguageCode.Ja] = "SPP-1.0"
+		};
 		dictionary["PluginsPageSubheader"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "官方插件从 StarPie-Official-Plugins 下载并校验；社区插件仍可手动选择 .dll 安装。插件以 StarPie 当前权限在进程内运行，请只安装你信任的来源。",
-			[LanguageCode.ZhTw] = "官方外掛從 StarPie-Official-Plugins 下載並校驗；社群外掛仍可手動選擇 .dll 安裝。外掛以 StarPie 目前權限在行程內執行，請只安裝你信任的來源。",
-			[LanguageCode.En] = "Official plugins are downloaded and verified from StarPie-Official-Plugins; community plugins can still be installed manually. Plugins run in-process with StarPie's own privileges, so only install sources you trust.",
-			[LanguageCode.Ja] = "公式プラグインは StarPie-Official-Plugins からダウンロードして検証します。コミュニティプラグインは引き続き .dll を手動で選択できます。プラグインは StarPie と同じ権限で実行されるため、信頼できる提供元のみインストールしてください。"
+			[LanguageCode.ZhCn] = "插件以 StarPie 当前权限在进程内运行，请只安装你信任的来源。官方动作模块请在左侧「官方插件市场」安装；社区插件可手动选择 .dll，或放进程序目录的 plugin 文件夹后重新扫描。",
+			[LanguageCode.ZhTw] = "外掛以 StarPie 目前權限在行程內執行，請只安裝你信任的來源。官方動作模組請在左側「官方外掛市集」安裝；社群外掛可手動選擇 .dll，或放進程式目錄的 plugin 資料夾後重新掃描。",
+			[LanguageCode.En] = "Plugins run in-process with StarPie's own privileges, so only install sources you trust. Official action modules are installed from Plugin Market on the left; for community plugins, pick a .dll manually or drop it into the \"plugin\" folder next to the program and rescan.",
+			[LanguageCode.Ja] = "プラグインは StarPie と同じ権限で実行されるため、信頼できる提供元のみインストールしてください。公式アクションモジュールは左側の「プラグインマーケット」からインストールします。コミュニティプラグインは .dll を手動で選択するか、プログラムフォルダーの plugin フォルダーに置いて再スキャンしてください。"
 		};
 		dictionary["PluginsInstallButton"] = new Dictionary<LanguageCode, string>
 		{
@@ -1643,17 +1662,115 @@ public static class I18n
 		};
 		dictionary["PluginsEmptyHint"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "把插件 .dll 放进程序目录的 plugin 文件夹并点上方「重新扫描」，或直接点右上角「安装插件 (.dll)」选择文件",
-			[LanguageCode.ZhTw] = "把外掛 .dll 放進程式目錄的 plugin 資料夾並點上方「重新掃描」，或直接點右上角「安裝外掛 (.dll)」選擇檔案",
-			[LanguageCode.En] = "Drop the plugin .dll into the \"plugin\" folder next to the program and hit \"Rescan\" above, or click \"Install Plugin (.dll)\" at the top right to pick a file",
-			[LanguageCode.Ja] = "プラグインの .dll をプログラムフォルダー内の plugin フォルダーに置いて上の「再スキャン」を押すか、右上の「プラグインをインストール (.dll)」でファイルを選択してください"
+			[LanguageCode.ZhCn] = "想要官方动作模块，请到左侧「官方插件市场」安装。社区插件：把 .dll 放进程序目录的 plugin 文件夹再点上方「重新扫描」，或直接点右上角「手动安装社区插件 (.dll)...」选择文件。",
+			[LanguageCode.ZhTw] = "想要官方動作模組，請到左側「官方外掛市集」安裝。社群外掛：把 .dll 放進程式目錄的 plugin 資料夾再點上方「重新掃描」，或直接點右上角「手動安裝社群外掛 (.dll)...」選擇檔案。",
+			[LanguageCode.En] = "For official action modules, install them from Plugin Market on the left. For community plugins, drop the .dll into the \"plugin\" folder next to the program and hit \"Rescan\" above, or click \"Install Community Plugin (.dll)...\" at the top right to pick a file.",
+			[LanguageCode.Ja] = "公式アクションモジュールは左側の「プラグインマーケット」からインストールしてください。コミュニティプラグインは、.dll をプログラムフォルダー内の plugin フォルダーに置いて上の「再スキャン」を押すか、右上の「コミュニティプラグインを手動インストール (.dll)...」でファイルを選択してください。"
 		};
-		dictionary["PluginsOfficialHeader"] = new Dictionary<LanguageCode, string>
+		// ---- 官方插件市场（独立页 NavTab6） ----
+		// 此前这一块内嵌在「插件与扩展」页里（一个 MaxHeight=220 的小面板）。
+		// 独立成页后：页头 / 说明 / 搜索 / 四个筛选项 / 计数 / 空状态各自成键，
+		// 卡片上除「状态 + 安装按钮」外不再添文案（模块名与 ID 是官方数据，不翻译）。
+		dictionary["PluginsMarketSubheader"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "官方插件",
-			[LanguageCode.ZhTw] = "官方外掛",
-			[LanguageCode.En] = "Official plugins",
-			[LanguageCode.Ja] = "公式プラグイン"
+			[LanguageCode.ZhCn] = "官方动作模块的在线目录。每个包下载后会核对包 SHA-256、清单与程序集哈希，安装前也会先让你确认它申请的能力。",
+			[LanguageCode.ZhTw] = "官方動作模組的線上目錄。每個套件下載後會核對套件 SHA-256、清單與組件雜湊，安裝前也會先讓你確認它申請的能力。",
+			[LanguageCode.En] = "The online catalog of official action modules. Every package is checked against the package SHA-256, the manifest and the assembly hash, and you still confirm its requested capabilities before installation.",
+			[LanguageCode.Ja] = "公式アクションモジュールのオンラインカタログです。各パッケージは SHA-256・マニフェスト・アセンブリのハッシュを照合し、インストール前には要求する権限の確認もあります。"
+		};
+		dictionary["PluginsMarketOpenRepoButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "🔗 打开官方仓库",
+			[LanguageCode.ZhTw] = "🔗 開啟官方倉庫",
+			[LanguageCode.En] = "🔗 Open official repo",
+			[LanguageCode.Ja] = "🔗 公式リポジトリを開く"
+		};
+		dictionary["PluginsMarketOpenRepoFailed"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开官方仓库失败：{0}",
+			[LanguageCode.ZhTw] = "開啟官方倉庫失敗：{0}",
+			[LanguageCode.En] = "Failed to open the official repository: {0}",
+			[LanguageCode.Ja] = "公式リポジトリを開けませんでした：{0}"
+		};
+		dictionary["PluginsMarketSearchPlaceholder"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "搜索模块名称或 ID…",
+			[LanguageCode.ZhTw] = "搜尋模組名稱或 ID…",
+			[LanguageCode.En] = "Search module name or ID…",
+			[LanguageCode.Ja] = "モジュール名または ID で検索…"
+		};
+		dictionary["PluginsMarketSearchToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "按模块名称或模块 ID 过滤本地目录（不会重新联网拉取）",
+			[LanguageCode.ZhTw] = "依模組名稱或模組 ID 篩選本機目錄（不會重新連線抓取）",
+			[LanguageCode.En] = "Filter the locally fetched catalog by module name or ID (this does not refetch)",
+			[LanguageCode.Ja] = "ローカルに取得済みのカタログをモジュール名または ID で絞り込みます（再取得はしません）"
+		};
+		// 这两个是**联网动作**的按钮提示。分两个键而不是复用 PluginsOfficialStatusHint：
+		// 那句描述的是「这个目录是什么」，按钮要说的是「按下去会发生什么」。
+		dictionary["PluginsMarketRefreshToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重新从 StarPie-Official-Plugins 拉取模块目录（会联网）",
+			[LanguageCode.ZhTw] = "重新從 StarPie-Official-Plugins 抓取模組目錄（會連線）",
+			[LanguageCode.En] = "Refetch the module catalog from StarPie-Official-Plugins (requires network)",
+			[LanguageCode.Ja] = "StarPie-Official-Plugins からモジュールカタログを再取得します（通信が発生します）"
+		};
+		dictionary["PluginsMarketOpenRepoToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "用系统默认浏览器打开 StarPie-Official-Plugins 仓库，核对模块源码与 Release 资产",
+			[LanguageCode.ZhTw] = "用系統預設瀏覽器開啟 StarPie-Official-Plugins 倉庫，核對模組原始碼與 Release 資產",
+			[LanguageCode.En] = "Open the StarPie-Official-Plugins repository in your default browser to inspect module sources and release assets",
+			[LanguageCode.Ja] = "既定のブラウザーで StarPie-Official-Plugins リポジトリを開き、モジュールのソースと Release 資産を確認します"
+		};
+		// 四个筛选项。「未安装 / 已安装」刻意与卡片状态徽章共用同一组措辞（同一件事只有一种说法）。
+		dictionary["PluginsMarketFilterAll"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "全部",
+			[LanguageCode.ZhTw] = "全部",
+			[LanguageCode.En] = "All",
+			[LanguageCode.Ja] = "すべて"
+		};
+		dictionary["PluginsMarketFilterNotInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "未安装",
+			[LanguageCode.ZhTw] = "尚未安裝",
+			[LanguageCode.En] = "Not installed",
+			[LanguageCode.Ja] = "未インストール"
+		};
+		dictionary["PluginsMarketFilterInstalled"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已安装",
+			[LanguageCode.ZhTw] = "已安裝",
+			[LanguageCode.En] = "Installed",
+			[LanguageCode.Ja] = "インストール済み"
+		};
+		dictionary["PluginsMarketFilterUpdatable"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "可更新",
+			[LanguageCode.ZhTw] = "可更新",
+			[LanguageCode.En] = "Update available",
+			[LanguageCode.Ja] = "更新あり"
+		};
+		dictionary["PluginsMarketCount"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "筛选后 {0} / {1} 个模块",
+			[LanguageCode.ZhTw] = "篩選後 {0} / {1} 個模組",
+			[LanguageCode.En] = "Showing {0} of {1} modules",
+			[LanguageCode.Ja] = "{1} 件中 {0} 件を表示"
+		};
+		dictionary["PluginsMarketEmptyTitle"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "没有匹配的模块",
+			[LanguageCode.ZhTw] = "沒有符合的模組",
+			[LanguageCode.En] = "No matching modules",
+			[LanguageCode.Ja] = "一致するモジュールがありません"
+		};
+		dictionary["PluginsMarketEmptyHint"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "换个关键词，或把筛选切回「全部」。想重新拉一遍目录就点右上角「刷新目录」。",
+			[LanguageCode.ZhTw] = "換個關鍵字，或把篩選切回「全部」。想重新抓一次目錄就點右上角「重新整理目錄」。",
+			[LanguageCode.En] = "Try another keyword, or switch the filter back to \"All\". To refetch the catalog, click \"Refresh catalog\" at the top right.",
+			[LanguageCode.Ja] = "別のキーワードを試すか、絞り込みを「すべて」に戻してください。カタログを再取得するには右上の「カタログを更新」を押します。"
 		};
 		dictionary["PluginsOfficialStatusHint"] = new Dictionary<LanguageCode, string>
 		{
@@ -4261,6 +4378,47 @@ public static class I18n
 			[LanguageCode.ZhTw] = "⚙\ufe0f 鈦金深灰",
 			[LanguageCode.En] = "⚙\ufe0f Titanium Gray",
 			[LanguageCode.Ja] = "⚙\ufe0f チタングレー"
+		};
+		// 侧边栏底部那排四分段的**短名**（图标与文字是两个控件，所以这里的值不带 emoji）。
+		//
+		// 为什么不复用上面的 Theme* ：那是一整串（emoji + 全名），用在四分段的窄胶囊里会折行；
+		// 而"不复用"的代价就是这四处长期没有词条 —— 2026-09-20 加市场页时被台账当场抓到：
+		// 英文界面的侧边栏仍显示「系统 / 浅色 / 曜黑 / 钛灰」。它们出现在**每一个**页签上，
+		// 所以那一轮 4 条命中被记进了每一个页签的桶里，直到有人真的把这一页接完。
+		dictionary["ThemeSegmentSystem"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "系统",
+			[LanguageCode.ZhTw] = "系統",
+			[LanguageCode.En] = "System",
+			[LanguageCode.Ja] = "システム"
+		};
+		dictionary["ThemeSegmentLight"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "浅色",
+			[LanguageCode.ZhTw] = "淺色",
+			[LanguageCode.En] = "Light",
+			[LanguageCode.Ja] = "ライト"
+		};
+		dictionary["ThemeSegmentDark"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "曜黑",
+			[LanguageCode.ZhTw] = "曜黑",
+			[LanguageCode.En] = "Dark",
+			[LanguageCode.Ja] = "ダーク"
+		};
+		dictionary["ThemeSegmentGray"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "钛灰",
+			[LanguageCode.ZhTw] = "鈦灰",
+			[LanguageCode.En] = "Gray",
+			[LanguageCode.Ja] = "グレー"
+		};
+		dictionary["SidebarThemeCollapsedToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "切换控制台界面主题（点击循环切换）",
+			[LanguageCode.ZhTw] = "切換主控台介面主題（點擊循環切換）",
+			[LanguageCode.En] = "Switch console theme (click to cycle)",
+			[LanguageCode.Ja] = "コンソールのテーマを切り替え（クリックで順に切替）"
 		};
 		dictionary["GesturesHeader"] = new Dictionary<LanguageCode, string>
 		{
