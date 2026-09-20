@@ -1798,6 +1798,20 @@ public partial class SettingsWindow : Window
 		{
 			NavTab5Text.Text = I18n.T("TabPlugins");
 		}
+		// 侧边栏两级分组的分组标题与徽章。新增分组时若漏接这里，中文界面会「一次对、切语言后错」——
+		// check_i18n.py 的「具名控件漏接」判据能抓到这一条（有 Name + 硬编码中文却从未被重设）。
+		if (NavGroupPrefsTitleText != null)
+		{
+			NavGroupPrefsTitleText.Text = I18n.T("NavGroupPreferences");
+		}
+		if (NavGroupExtTitleText != null)
+		{
+			NavGroupExtTitleText.Text = I18n.T("NavGroupExtensions");
+		}
+		if (NavTab5BadgeText != null)
+		{
+			NavTab5BadgeText.Text = I18n.T("NavBadgeCore");
+		}
 		ApplyPluginsPageLocalization();
 		if (SidebarToggleButton != null)
 		{

@@ -1032,38 +1032,38 @@ public static class I18n
 		};
 		dictionary["TabTrigger"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "触发设置",
-			[LanguageCode.ZhTw] = "觸發設定",
-			[LanguageCode.En] = "Triggers",
-			[LanguageCode.Ja] = "トリガー設定"
+			[LanguageCode.ZhCn] = "触发与场景",
+			[LanguageCode.ZhTw] = "觸發與情境",
+			[LanguageCode.En] = "Triggers & Scenes",
+			[LanguageCode.Ja] = "トリガーとシーン"
 		};
 		dictionary["TabAppearance"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "外观样式",
-			[LanguageCode.ZhTw] = "外觀樣式",
-			[LanguageCode.En] = "Appearance",
-			[LanguageCode.Ja] = "外観スタイル"
+			[LanguageCode.ZhCn] = "外观与形态",
+			[LanguageCode.ZhTw] = "外觀與形態",
+			[LanguageCode.En] = "Appearance & Shape",
+			[LanguageCode.Ja] = "外観と形状"
 		};
 		dictionary["TabGestures"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "手势动作",
-			[LanguageCode.ZhTw] = "手勢動作",
+			[LanguageCode.ZhCn] = "手势与动作",
+			[LanguageCode.ZhTw] = "手勢與動作",
 			[LanguageCode.En] = "Gestures & Actions",
-			[LanguageCode.Ja] = "ジェスチャー"
+			[LanguageCode.Ja] = "ジェスチャーとアクション"
 		};
 		dictionary["TabAdvanced"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "系统设置",
-			[LanguageCode.ZhTw] = "系統設定",
-			[LanguageCode.En] = "System Settings",
-			[LanguageCode.Ja] = "システム設定"
+			[LanguageCode.ZhCn] = "高级与系统",
+			[LanguageCode.ZhTw] = "進階與系統",
+			[LanguageCode.En] = "Advanced & System",
+			[LanguageCode.Ja] = "詳細設定とシステム"
 		};
 		dictionary["TabAbout"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "关于软件",
-			[LanguageCode.ZhTw] = "關於軟體",
-			[LanguageCode.En] = "About StarPie",
-			[LanguageCode.Ja] = "バージョン情報"
+			[LanguageCode.ZhCn] = "关于与更新",
+			[LanguageCode.ZhTw] = "關於與更新",
+			[LanguageCode.En] = "About & Updates",
+			[LanguageCode.Ja] = "バージョンと更新"
 		};
 		dictionary["TabPlugins"] = new Dictionary<LanguageCode, string>
 		{
@@ -1071,6 +1071,30 @@ public static class I18n
 			[LanguageCode.ZhTw] = "外掛與擴充",
 			[LanguageCode.En] = "Plugins",
 			[LanguageCode.Ja] = "プラグイン"
+		};
+		// 侧边栏两级分组的标题。术语刻意保持中性：不出现「核心 / 官方」这类会随版本变化的措辞。
+		dictionary["NavGroupPreferences"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "偏好设置",
+			[LanguageCode.ZhTw] = "偏好設定",
+			[LanguageCode.En] = "Preferences",
+			[LanguageCode.Ja] = "基本設定"
+		};
+		dictionary["NavGroupExtensions"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "扩展生态",
+			[LanguageCode.ZhTw] = "擴充生態",
+			[LanguageCode.En] = "Ecosystem",
+			[LanguageCode.Ja] = "エコシステム"
+		};
+		// 分组徽章：标识性短标签（协议名 / 分层名），四语言共用同一串，不随界面语言翻译。
+		// 仍然走词条表 —— 文案一律从这里取是项目约定，且以后改措辞只需改一处。
+		dictionary["NavBadgeCore"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "Core",
+			[LanguageCode.ZhTw] = "Core",
+			[LanguageCode.En] = "Core",
+			[LanguageCode.Ja] = "Core"
 		};
 		dictionary["PluginsPageSubheader"] = new Dictionary<LanguageCode, string>
 		{

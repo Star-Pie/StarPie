@@ -454,9 +454,15 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type RadioButton}">
-              <Border Name="TabBorder" Background="{TemplateBinding Control.Background}" CornerRadius="8" Padding="{TemplateBinding Control.Padding}" SnapsToDevicePixels="True">
-                <ContentPresenter VerticalAlignment="Center" />
-              </Border>
+              <Grid>
+                <Border Name="TabBorder" Background="{TemplateBinding Control.Background}" CornerRadius="8" Padding="{TemplateBinding Control.Padding}" SnapsToDevicePixels="True">
+                  <ContentPresenter VerticalAlignment="Center" />
+                </Border>
+                <!-- 选中态左侧 3.5px 圆角指示条（概念稿 .nav-item.active::before）。
+                     刻意排在 TabBorder **之后**：Grid 中后声明者在上，排在前面会被卡片背景整块盖住。
+                     宽度落在卡片的 padding(14) 内，不会压到文字；命中测试一律留给 TabBorder。 -->
+                <Border Name="TabActiveBar" Width="3.5" HorizontalAlignment="Left" Margin="0,9,0,9" CornerRadius="2" Background="Transparent" IsHitTestVisible="False" />
+              </Grid>
               <ControlTemplate.Triggers>
                 <Trigger Property="UIElement.IsMouseOver" Value="True">
                   <Setter TargetName="TabBorder" Value="{DynamicResource NavTabHoverBgBrush}" Property="Border.Background" />
@@ -465,6 +471,7 @@
                 <Trigger Property="ToggleButton.IsChecked" Value="True">
                   <Setter TargetName="TabBorder" Value="{DynamicResource NavTabActiveBgBrush}" Property="Border.Background" />
                   <Setter Value="{DynamicResource NavTabActiveFgBrush}" Property="Foreground" />
+                  <Setter TargetName="TabActiveBar" Value="{DynamicResource NavTabActiveFgBrush}" Property="Border.Background" />
                   <Setter Property="FontWeight" Value="SemiBold" />
                 </Trigger>
               </ControlTemplate.Triggers>
@@ -594,6 +601,9 @@
           </Grid>
         </StackPanel>
         <StackPanel Grid.Row="1" Margin="0,0,0,0">
+          <!-- 两级分组（概念稿 .nav-group-title）。分组只是视觉分区，导航仍是同一个 GroupName，
+               页码 Tag 与既有测试契约（NavTab0…NavTab5）完全不变。 -->
+          <TextBlock Name="NavGroupPrefsTitleText" Text="偏好设置" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" Margin="14,0,0,6" />
           <RadioButton Name="NavTab0" Style="{StaticResource NavTabRadioButtonStyle}" GroupName="SidebarTabs" Tag="0" IsChecked="True" Checked="NavTab_Checked" ToolTip="{Binding Text, ElementName=NavTab0Text}">
             <StackPanel Orientation="Horizontal">
               <Path Width="18" Height="18" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type RadioButton}}}" Margin="0,0,14,0" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z" />
@@ -624,11 +634,22 @@
               <TextBlock Name="NavTab4Text" Text="关于软件" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
             </StackPanel>
           </RadioButton>
+          <TextBlock Name="NavGroupExtTitleText" Text="扩展生态" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextMutedBrush}" Margin="14,14,0,6" />
           <RadioButton Name="NavTab5" Style="{StaticResource NavTabRadioButtonStyle}" GroupName="SidebarTabs" Tag="5" Checked="NavTab_Checked" ToolTip="{Binding Text, ElementName=NavTab5Text}">
-            <StackPanel Orientation="Horizontal">
+            <!-- 三列：图标 / 名称（可压缩并省略号）/ 右侧徽章。用 Grid 而非 StackPanel 是为了让徽章
+                 贴右边缘（概念稿 .nav-badge 的 margin-left:auto 等价物），侧边栏变窄时优先压文字。 -->
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
               <Path Width="18" Height="18" Stretch="Uniform" Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type RadioButton}}}" Margin="0,0,14,0" Data="M20.5,11H19V7C19,5.89 18.1,5 17,5H13V3.5A2.5,2.5 0 0,0 10.5,1A2.5,2.5 0 0,0 8,3.5V5H4A2,2 0 0,0 2,7V10.8H3.5C5,10.8 6.2,12 6.2,13.5C6.2,15 5,16.2 3.5,16.2H2V20A2,2 0 0,0 4,22H7.8V20.5C7.8,19 9,17.8 10.5,17.8C12,17.8 13.2,19 13.2,20.5V22H17A2,2 0 0,0 19,20V16H20.5A2.5,2.5 0 0,0 23,13.5A2.5,2.5 0 0,0 20.5,11Z" />
-              <TextBlock Name="NavTab5Text" Text="插件与扩展" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-            </StackPanel>
+              <TextBlock Name="NavTab5Text" Grid.Column="1" Text="插件与扩展" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+              <Border Grid.Column="2" Background="{DynamicResource AccentPrimaryBrush}" CornerRadius="10" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                <TextBlock Name="NavTab5BadgeText" Text="Core" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}" />
+              </Border>
+            </Grid>
           </RadioButton>
         </StackPanel>
         <StackPanel Grid.Row="2" VerticalAlignment="Bottom" Margin="0,10,0,0">
