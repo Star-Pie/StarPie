@@ -5,6 +5,12 @@ on:
     tags:
       - 'v*.*.*'
       - 'V*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 Git 标签，例如 v1.4.4 或 v1.4.4-beta.1'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,31 +19,62 @@ jobs:
   release:
     name: Build and Publish StarPie Release
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
-      - name: Verify tag points to latest main commit
+      - name: Verify tag points to latest commit of an allowed release branch
         shell: pwsh
         run: |
-          git fetch origin main
+          # Release tags may only point to the current tip of main, dev-* or dev/**.
+          # A tag push does not carry the source branch, so compare the tagged commit
+          # with every remote branch that matches the allowed release-branch policy.
+          git fetch origin "+refs/heads/*:refs/remotes/origin/*" --prune
 
-          $tagCommit = (git rev-list -n 1 $env:GITHUB_REF_NAME).Trim()
-          $mainCommit = (git rev-parse origin/main).Trim()
+          $tagCommit = (git rev-parse "$env:RELEASE_TAG^{commit}").Trim()
+          $allowedBranches = @(
+            git for-each-ref --format="%(refname:strip=3)" refs/remotes/origin |
+              Where-Object { $_ -match '^(main|dev-.*|dev/.*)$' }
+          )
 
-          if ($tagCommit -ne $mainCommit) {
-            throw "Release tag must point to the latest origin/main commit. Tag=$tagCommit Main=$mainCommit"
+          if ($allowedBranches.Count -eq 0) {
+            throw "No release branches matched the allowed patterns: main, dev-* or dev/**"
+          }
+
+          $matchingBranches = [System.Collections.Generic.List[string]]::new()
+          foreach ($branch in $allowedBranches) {
+            $branchCommit = (git rev-parse "origin/$branch").Trim()
+            if ($tagCommit -eq $branchCommit) {
+              $matchingBranches.Add($branch)
+            }
+          }
+
+          if ($matchingBranches.Count -eq 0) {
+            $allowedTips = @($allowedBranches | ForEach-Object {
+              $branchCommit = (git rev-parse "origin/$_").Trim()
+              "$_=$branchCommit"
+            })
+            throw @"
+          Release tag must point to the latest commit of an allowed release branch.
+          Allowed branches: main, dev-* or dev/**
+          Tag=$tagCommit
+          Allowed branch tips:
+          $($allowedTips -join [Environment]::NewLine)
+          "@
           }
 
           Write-Host "Verified release commit: $tagCommit"
-
+          Write-Host "Matching release branch(es): $($matchingBranches -join ', ')"
       - name: Verify compiled version fields
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           if ($tag -inotmatch '^v(?<baseVersion>\d+\.\d+\.\d+)(?<prerelease>-beta\.\d+)?$') {
             throw "Release tag must use vX.Y.Z/VX.Y.Z or vX.Y.Z-beta.N/VX.Y.Z-beta.N format: $tag"
           }
@@ -112,7 +149,7 @@ jobs:
       - name: Build Inno Setup Installer
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           $tagClean = $tag.TrimStart('v', 'V')
           $outputBaseFilename = "StarPie-$tag-Setup-win-x64"
 
@@ -145,7 +182,7 @@ jobs:
       - name: Package release assets
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           New-Item -ItemType Directory -Force -Path "dist" | Out-Null
 
           $lightweightArchive = "dist/StarPie-$tag-Lightweight-win-x64.zip"
@@ -170,7 +207,7 @@ jobs:
       - name: Extract Release Notes from CHANGELOG.md
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
+          $tag = $env:RELEASE_TAG
           $tagClean = $tag.TrimStart('v', 'V')
           $changelogPath = "CHANGELOG.md"
           $notes = ""
@@ -209,20 +246,20 @@ jobs:
             Sort-Object Name |
             Select-Object -ExpandProperty FullName
 
-          $releaseArguments = @("release", "create", $env:GITHUB_REF_NAME)
+          $releaseArguments = @("release", "create", $env:RELEASE_TAG)
           $releaseArguments += $assets
-          $releaseArguments += @("--verify-tag", "--title", "StarPie $env:GITHUB_REF_NAME")
+          $releaseArguments += @("--verify-tag", "--title", "StarPie $env:RELEASE_TAG")
 
           $notesFile = "dist/RELEASE_NOTES.md"
           if (Test-Path $notesFile) {
             $releaseArguments += @("--notes-file", $notesFile)
           } else {
-            $releaseArguments += @("--notes", "StarPie $env:GITHUB_REF_NAME")
+            $releaseArguments += @("--notes", "StarPie $env:RELEASE_TAG")
           }
 
-          if ($env:GITHUB_REF_NAME -imatch '^v\d+\.\d+\.\d+-beta\.\d+$') {
+          if ($env:RELEASE_TAG -imatch '^v\d+\.\d+\.\d+-beta\.\d+$') {
             $releaseArguments += "--prerelease"
-            Write-Host "Publishing GitHub pre-release: $env:GITHUB_REF_NAME"
+            Write-Host "Publishing GitHub pre-release: $env:RELEASE_TAG"
           }
 
           & gh @releaseArguments
@@ -231,14 +268,14 @@ jobs:
           }
 
       - name: Retain latest three beta releases
-        if: ${{ contains(github.ref_name, '-beta.') }}
+        if: ${{ contains(env.RELEASE_TAG, '-beta.') }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          if ($env:GITHUB_REF_NAME -inotmatch '^v(?<baseVersion>\d+\.\d+\.\d+)-beta\.\d+$') {
-            throw "Unexpected beta tag format: $env:GITHUB_REF_NAME"
+          if ($env:RELEASE_TAG -inotmatch '^v(?<baseVersion>\d+\.\d+\.\d+)-beta\.\d+$') {
+            throw "Unexpected beta tag format: $env:RELEASE_TAG"
           }
 
           $baseVersion = $Matches.baseVersion

@@ -532,9 +532,11 @@ public class Program
             Console.WriteLine("FAIL: ExecuteFolder method not found!");
         }
 
-        // 10. Test v1.7.4-beta.3 Defaults
-        Console.WriteLine("\n--- Testing v1.7.4-beta.3 Default Configuration ---");
+        // 10. Test v1.7.4 Defaults
+        Console.WriteLine("\n--- Testing v1.7.4 Default Configuration ---");
         var defCfg = ConfigManager.CreateDefaultConfig();
+        if (defCfg.EnableGlobalInheritance != false)
+            throw new Exception($"FAIL: EnableGlobalInheritance expected false but was {defCfg.EnableGlobalInheritance}");
         if (defCfg.MappingsCanvasShowText != false)
             throw new Exception($"FAIL: MappingsCanvasShowText expected false but was {defCfg.MappingsCanvasShowText}");
         if (defCfg.WheelRadius != 133.0)
@@ -567,10 +569,10 @@ public class Program
             throw new Exception($"FAIL: ShowCoreIcon expected false but was {defCfg.ShowCoreIcon}");
         if (defCfg.CoreIconType != "Image")
             throw new Exception($"FAIL: CoreIconType expected Image but was {defCfg.CoreIconType}");
-        Console.WriteLine("SUCCESS: All v1.7.4-beta.3 default configuration assertions passed!");
+        Console.WriteLine("SUCCESS: All v1.7.4 default configuration assertions passed!");
 
-        // 11. Test Multi-Layer Global Inheritance Isolation (v1.7.4-beta.4)
-        Console.WriteLine("\n--- Testing Multi-Layer Global Inheritance Isolation (v1.7.4-beta.4) ---");
+        // 11. Test Multi-Layer Global Inheritance Isolation (v1.7.4)
+        Console.WriteLine("\n--- Testing Multi-Layer Global Inheritance Isolation (v1.7.4) ---");
         ConfigManager.CurrentConfig.EnableGlobalInheritance = true;
 
         WheelProfile testGlobal = new WheelProfile

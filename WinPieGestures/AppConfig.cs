@@ -107,8 +107,8 @@ public class AppConfig
 	/// <summary>手势动作页（Tab 2）右侧交互画布列宽度（0 表示自适应比例 1*，大于 0 表示用户自定义拖拽宽度）。</summary>
 	public double MappingsCanvasColumnWidth { get; set; } = 0.0;
 
-	/// <summary>是否开启应用专属方案继承/叠加 Global 全局方案（当应用方案槽位留空未配置时自动透传全局动作）。</summary>
-	public bool EnableGlobalInheritance { get; set; } = true;
+	/// <summary>是否开启应用专属方案继承/叠加 Global 全局方案（当应用方案槽位留空未配置时自动透传全局动作，默认 false）。</summary>
+	public bool EnableGlobalInheritance { get; set; } = false;
 
 	/// <summary>当前正在使用的配置方案名称（如 "默认配置"、"CAD建模方案" 等），对应 AppData/Configs/<Name>.json。</summary>
 	public string ActiveConfigProfileName { get; set; } = "默认配置";

@@ -4795,6 +4795,29 @@
                   <StaticResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
+                  <TextBlock Text="v1.8.0-beta.1 插件系统首个公开测试版" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Text="• 🧩 【官方动作插件化】：程序启动、命令、OCR、系统与窗口管理等动作拆分为独立模块，并统一通过插件路径执行；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Text="• 📦 【手动安装与集中管理】：新增插件管理页，支持刷新官方目录以及安装、启用、停用、更新和卸载，启动时不自动下载模块；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Text="• 🧰 【社区 SDK 与参数表单】：开放插件契约、宿主服务和声明式参数系统，插件动作统一分组选择并继承主程序主题与多语言；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Text="• 🛡️ 【惰性加载与故障保护】：完善调用租约、异步停用、能力门禁、异常隔离和端到端自检，降低插件对轮盘核心运行的影响。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+              </Border>
+              <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
+                <UIElement.Effect>
+                  <StaticResource ResourceKey="CardShadowEffect" />
+                </UIElement.Effect>
+                <StackPanel>
+                  <TextBlock Text="v1.7.4 正式版 原生全盘极速秒搜 &amp; 专属方案隔离 &amp; 控制台精简 &amp; 性能调优" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
+                  <TextBlock Text="• ⚡ 【StarPie 100% 纯原生极速秒搜】：全面告别外部第三方依赖，毫秒级应用内存短路与 50ms 深盘时间预算硬控，消除扫描卡顿；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Text="• 🌐 【全局方案继承按需隔离】：专属程序方案支持多层独立轮盘并彻底解耦全局串扰；继承全局未配置槽位功能默认调整为关闭，保障新建方案纯净独立；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Text="• 🎨 【控制台界面与文案规范化精炼】：全面解决 Issue #119，统一右上角单选模式切换，消除繁琐并列句式与英文后缀，清理侧边栏冗余图标；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                  <TextBlock Text="• 🎛️ 【自定义音效合成与渲染零堆分配】：高级模式开放交互音效独立调配，纠正播放图标朝向；动画画刷冻结复用，全局鼠标钩子零堆分配，丝滑高帧。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+              </Border>              <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="12" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
+                <UIElement.Effect>
+                  <StaticResource ResourceKey="CardShadowEffect" />
+                </UIElement.Effect>
+                <StackPanel>
                   <TextBlock Text="v1.7.4-beta.4 多层轮盘全局继承解耦 &amp; 同层精准映射与超层优雅回退" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,10" />
                   <TextBlock Text="• 🧩 【全局层级状态污染消除】：重构动作继承求值链路，彻底解耦对全局方案当前浏览层指针的依赖，在控制台切换全局方案层数时不再污染其他应用程序方案的未配置槽位；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                   <TextBlock Text="• 🎯 【同层对应优先继承】：专属程序方案第 N 层的空白扇区与中心核心圆，优先对应继承全局方案第 N 层的动作与子动作配置；" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />

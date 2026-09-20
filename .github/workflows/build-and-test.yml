@@ -68,59 +68,27 @@ jobs:
           exit 0
         }
 
-        function Test-IgnoredNonRuntimePath([string]$path) {
-          $normalized = $path.Replace('\', '/')
-
-          if ($normalized -match '(?i)\.md$') { return $true }
-          if ($normalized -match '^(?i:docs|attachments|\.claude|\.agents)/') { return $true }
-          if ($normalized -match '^(?i:LICENSE)(?:\..*)?$') { return $true }
-          if ($normalized -match '^\.github/ISSUE_TEMPLATE/') { return $true }
-          if ($normalized -match '^\.github/workflows/') { return $true }
-          if ($normalized -match '^\.github/PULL_REQUEST_TEMPLATE(?:/|\.|$)') { return $true }
-
-          return $false
-        }
-
-        function Test-VersionOnlyProjectChange {
-          $projectPath = 'WinPieGestures/WinPieGestures.csproj'
-          $projectDiff = @(& git diff --unified=0 --no-ext-diff $baseSha $headSha -- $projectPath)
-          if ($LASTEXITCODE -ne 0) {
-            throw "Failed to inspect version changes in $projectPath."
-          }
-
-          $changedLines = @($projectDiff | Where-Object {
-            $_ -match '^[+-]' -and $_ -notmatch '^(\+\+\+|---)'
-          })
-          if ($changedLines.Count -eq 0) {
-            return $false
-          }
-
-          $nonVersionLines = @($changedLines | Where-Object {
-            $_ -notmatch '^[+-]\s*<(Version|AssemblyVersion|FileVersion)>[^<]*</\1>\s*$'
-          })
-          return $nonVersionLines.Count -eq 0
-        }
-
+        $buildRoots = @(
+          'StarPie.Plugin.Abstractions/',
+          'installer/',
+          'WinPieGestures/'
+        )
         $requiresBuild = $false
         $ignoredFiles = [System.Collections.Generic.List[string]]::new()
         $buildFiles = [System.Collections.Generic.List[string]]::new()
-        $projectPath = 'WinPieGestures/WinPieGestures.csproj'
-        $versionOnlyProjectChange = $changedFiles -contains $projectPath -and
-          (Test-VersionOnlyProjectChange)
 
         foreach ($file in $changedFiles) {
           $normalized = $file.Replace('\', '/')
-          if ($normalized -eq $projectPath -and $versionOnlyProjectChange) {
-            $ignoredFiles.Add("$normalized (version fields only)")
-            continue
+          $isBuildRelevant = $buildRoots | Where-Object {
+            $normalized.StartsWith($_, [System.StringComparison]::OrdinalIgnoreCase)
           }
-          if (Test-IgnoredNonRuntimePath $normalized) {
+          if ($isBuildRelevant) {
+            $requiresBuild = $true
+            $buildFiles.Add($normalized)
+          }
+          else {
             $ignoredFiles.Add($normalized)
-            continue
           }
-
-          $requiresBuild = $true
-          $buildFiles.Add($normalized)
         }
 
         $requiresBuildText = $requiresBuild.ToString().ToLowerInvariant()

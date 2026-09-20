@@ -1,2 +1,0 @@
-dc7da0702d46bb3c293fb3cc60a803e5fadaaa11fac0b942efeec3b0167df661  StarPie-V1.7.3-beta.3-Lightweight-win-x64.zip
-d3c13aae490267ac46f860880eda53e076a539e53246a9908e1b3e62926341a9  StarPie-V1.7.3-beta.3-Standalone-win-x64.zip
