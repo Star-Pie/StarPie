@@ -1157,6 +1157,31 @@ public static class I18n
 			[LanguageCode.En] = "Enable plugin system",
 			[LanguageCode.Ja] = "プラグイン機能を有効にする"
 		};
+		// 以下 4 条是插件页上那排按钮 / 开关的气泡。
+		// 它们长期是「有 Name + 中文 ToolTip 却从未重设」的状态，而当时的漏接判据用
+		// `Name="…"[^>]*?(Text|Content)="…"` 一条正则横扫，**同一个元素只报第一个中文属性** ⇒
+		// 这几个控件因为 Content 已接而被判为「已接」，ToolTip 就这样漏了很多轮。
+		dictionary["PluginsRescanToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "重新读取扫描目录与插件数据目录，识别新增、手工拷入或外部修改过的插件",
+			[LanguageCode.ZhTw] = "重新讀取掃描目錄與外掛資料目錄，識別新增、手動拷入或外部修改過的外掛",
+			[LanguageCode.En] = "Re-read the scan folder and plugin data folder to pick up new, hand-copied or externally modified plugins",
+			[LanguageCode.Ja] = "スキャンフォルダーとプラグインデータフォルダーを読み直し、追加・手動コピー・外部で変更されたプラグインを検出します"
+		};
+		dictionary["PluginsOpenDataFolderToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "打开 StarPie 的可写插件目录：安装副本、启用记录与插件私有数据都在这里",
+			[LanguageCode.ZhTw] = "開啟 StarPie 的可寫外掛目錄：安裝副本、啟用記錄與外掛私有資料都在這裡",
+			[LanguageCode.En] = "Open StarPie's writable plugin folder — installed copies, enable records and private plugin data all live here",
+			[LanguageCode.Ja] = "StarPie の書き込み可能なプラグインフォルダーを開きます（インストール済みのコピー、有効化の記録、プラグイン専用データはここにあります）"
+		};
+		dictionary["PluginsEnableCheckBoxToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "关闭后所有插件动作都不会被触发，但插件配置与已分配到轮盘的动作会被完整保留",
+			[LanguageCode.ZhTw] = "關閉後所有外掛動作都不會被觸發，但外掛設定與已分配到轉盤的動作會被完整保留",
+			[LanguageCode.En] = "When off, no plugin action fires at all — but plugin settings and wheel-sector assignments are fully preserved",
+			[LanguageCode.Ja] = "オフにするとプラグインの動作は一切実行されませんが、設定とホイールへの割り当てはそのまま保持されます"
+		};
 		dictionary["PluginsDataDirectoryHint"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "数据目录：{0}",
@@ -1581,6 +1606,67 @@ public static class I18n
 			[LanguageCode.En] = "⚠️ Security notice",
 			[LanguageCode.Ja] = "⚠️ セキュリティ上の注意"
 		};
+		// 确认页从 MessageBox 换成自绘窗口后，正文被分成了五块可跳读的分区（外加「扫描结果」那一段）。
+		// 标题走词条而不是写死在 XAML：窗口是按数据（PluginConfirmSection.Title）渲染的，
+		// 分区标题只在词条表里存在一处，自检 [3e] 也才有「键」可断言。
+		dictionary["PluginsConfirmSectionIdentity"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "模块身份",
+			[LanguageCode.ZhTw] = "模組身分",
+			[LanguageCode.En] = "What it is",
+			[LanguageCode.Ja] = "モジュールの素性"
+		};
+		dictionary["PluginsConfirmSectionSource"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "来源与文件",
+			[LanguageCode.ZhTw] = "來源與檔案",
+			[LanguageCode.En] = "Where it comes from",
+			[LanguageCode.Ja] = "入手元とファイル"
+		};
+		dictionary["PluginsConfirmSectionCapabilities"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "它会拿到什么能力",
+			[LanguageCode.ZhTw] = "它會取得什麼能力",
+			[LanguageCode.En] = "What it can do",
+			[LanguageCode.Ja] = "要求する権限"
+		};
+		dictionary["PluginsConfirmSectionTarget"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "装到哪里 · 装完会怎样",
+			[LanguageCode.ZhTw] = "裝到哪裡 · 裝完會怎樣",
+			[LanguageCode.En] = "Where it goes · what happens next",
+			[LanguageCode.Ja] = "インストール先と結果"
+		};
+		dictionary["PluginsConfirmInstallButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "安装",
+			[LanguageCode.ZhTw] = "安裝",
+			[LanguageCode.En] = "Install",
+			[LanguageCode.Ja] = "インストール"
+		};
+		dictionary["PluginsConfirmCopyButton"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "复制详情",
+			[LanguageCode.ZhTw] = "複製詳情",
+			[LanguageCode.En] = "Copy details",
+			[LanguageCode.Ja] = "詳細をコピー"
+		};
+		dictionary["PluginsConfirmCopied"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "已复制",
+			[LanguageCode.ZhTw] = "已複製",
+			[LanguageCode.En] = "Copied",
+			[LanguageCode.Ja] = "コピーしました"
+		};
+		// 「复制详情」的气泡。XAML 里那串中文只是设计期占位，运行时由窗口构造重设 ——
+		// 属性是 ToolTip 而不是 Content/Text，所以旧的「具名控件漏接」判据抓不到它。
+		dictionary["PluginsConfirmCopyToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "把这一页的纯文本形态复制到剪贴板，便于贴进 issue 或聊天里求助",
+			[LanguageCode.ZhTw] = "把這一頁的純文字形態複製到剪貼簿，便於貼進 issue 或聊天裡求助",
+			[LanguageCode.En] = "Copy this page as plain text to the clipboard — handy for pasting into an issue or a chat",
+			[LanguageCode.Ja] = "このページをプレーンテキストとしてクリップボードにコピーします（issue やチャットへの貼り付け用）"
+		};
 		dictionary["PluginsConfirmSecurityBody"] = new Dictionary<LanguageCode, string>
 		{
 			[LanguageCode.ZhCn] = "插件会以 StarPie 当前的权限在你的电脑上运行代码，请只安装你信任的来源。",
@@ -1590,10 +1676,10 @@ public static class I18n
 		};
 		dictionary["PluginsConfirmAccept"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "点击「确定」表示你已了解并接受以上风险。",
-			[LanguageCode.ZhTw] = "點擊「確定」表示你已了解並接受以上風險。",
-			[LanguageCode.En] = "Clicking OK means you understand and accept these risks.",
-			[LanguageCode.Ja] = "「OK」を押すと、以上のリスクを理解し受け入れたものとみなします。"
+			[LanguageCode.ZhCn] = "点击「安装」表示你已了解并接受以上风险。",
+			[LanguageCode.ZhTw] = "點擊「安裝」表示你已了解並接受以上風險。",
+			[LanguageCode.En] = "Clicking Install means you understand and accept these risks.",
+			[LanguageCode.Ja] = "「インストール」を押すと、以上のリスクを理解し受け入れたものとみなします。"
 		};
 
 		// ---- 手动安装（选择 .dll）这条路的对话框与结果提示 ----
@@ -3013,6 +3099,20 @@ public static class I18n
 			[LanguageCode.ZhTw] = "🔄 停用後重新載入",
 			[LanguageCode.En] = "🔄 Reload after disabling",
 			[LanguageCode.Ja] = "🔄 無効化して再読み込み"
+		};
+		dictionary["FocusPluginReloadToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "插件二进制被重新编译后，需要停用再启用才能生效（进程内插件无法原地热替换）",
+			[LanguageCode.ZhTw] = "外掛二進位檔被重新編譯後，需要停用再啟用才能生效（行程內外掛無法原地熱替換）",
+			[LanguageCode.En] = "After a plugin binary is rebuilt, it must be disabled and re-enabled to take effect (in-process plugins cannot be hot-swapped in place)",
+			[LanguageCode.Ja] = "プラグインのバイナリを再ビルドした後は、無効化してから再度有効化しないと反映されません（インプロセスのプラグインはその場でのホットスワップができません）"
+		};
+		dictionary["FocusPluginActionComboToolTip"] = new Dictionary<LanguageCode, string>
+		{
+			[LanguageCode.ZhCn] = "同一插件的动作归入以该插件名命名的分组",
+			[LanguageCode.ZhTw] = "同一外掛的動作歸入以該外掛名命名的分組",
+			[LanguageCode.En] = "Actions from the same plugin are grouped under that plugin's name",
+			[LanguageCode.Ja] = "同じプラグインのアクションは、そのプラグイン名のグループにまとめられます"
 		};
 		dictionary["FocusPopulateTileSubActions"] = new Dictionary<LanguageCode, string>
 		{

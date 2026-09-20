@@ -674,6 +674,103 @@ internal static class PluginSelfTest
                     $"{fallbackStates.Count} 个共用兜底（{string.Join(" / ", fallbackStates)}） ✓");
             }
 
+            // ⑦ 正文的**分区结构**。自绘窗口按 BuildSections 逐区渲染，所以「分区分成什么样」
+            //    本身就能被机器查 —— 而它必须被查，因为窗口只负责摆控件：
+            //    分区一旦退化成「所有内容挤成一段」，窗口会安静地渲染成一张没有分区的大卡片，
+            //    不报错、也不像坏了，只是用户再也找不到「它会拿到什么能力」那一段。
+            //    这一段是 2026-09-20 把确认页从 MessageBox 换成自绘窗口时带出来的。
+            {
+                IReadOnlyList<PluginConfirmSection> sections = PluginInstallConfirmationText.BuildSections(confirmInput);
+
+                if (sections.Count < 5)
+                {
+                    Fail("确认页文案", $"正文只分出了 {sections.Count} 个分区（预期至少 5 个）—— 分区退化了。");
+                }
+
+                for (int i = 0; i < sections.Count; i++)
+                {
+                    if (sections[i].Lines.Count == 0)
+                    {
+                        Fail("确认页文案",
+                            $"第 {i + 1} 个分区（{sections[i].TitleKey}）一行内容都没有 —— 窗口上会多出一张空卡片。");
+                    }
+                }
+
+                // 最后一段必须是安全提示：那一段要挨着「安装」按钮。
+                // 顺序反了的话，用户在按下之前看到的最后一句会是文件哈希 —— 信息都在，重点没了。
+                // 键走常量而不是字面量：窗口靠**同一个**常量把这一段摘出来固定到按钮上方，
+                // 两处各写一份字面量的话，改一处漏一处时自检会继续绿，只有窗口上少一块风险提示。
+                string lastTitleKey = sections[^1].TitleKey;
+                if (!string.Equals(lastTitleKey, PluginInstallConfirmationText.SecuritySectionKey, StringComparison.Ordinal))
+                {
+                    Fail("确认页文案",
+                        $"最后一段是「{lastTitleKey}」而不是安全提示（{PluginInstallConfirmationText.SecuritySectionKey}）—— "
+                        + "「安装」按钮上方最后一句必须是风险，不是文件信息。");
+                }
+
+                // 分区标题：互不相同，且四个语言下都要取得到词条（取不到时 I18n.T 原样返回键名）。
+                var titleKeys = sections
+                    .Select(section => section.TitleKey)
+                    .Where(key => !string.IsNullOrEmpty(key))
+                    .ToList();
+                if (titleKeys.Distinct(StringComparer.Ordinal).Count() != titleKeys.Count)
+                {
+                    Fail("确认页文案", "有两个分区共用同一个标题 —— 用户会以为下面是同一件事的两半。");
+                }
+
+                LanguageCode titleProbeLanguage = I18n.CurrentLanguage;
+                try
+                {
+                    foreach (LanguageCode language in Enum.GetValues<LanguageCode>())
+                    {
+                        I18n.CurrentLanguage = language;
+                        foreach (string key in titleKeys)
+                        {
+                            string title = I18n.T(key);
+                            if (string.IsNullOrWhiteSpace(title) || string.Equals(title, key, StringComparison.Ordinal))
+                            {
+                                Fail("确认页文案", $"{language} 下分区标题「{key}」取到的是空串或裸键名。");
+                            }
+                            if (language == LanguageCode.En && FindCjkLeak(title).HasValue)
+                            {
+                                Fail("确认页文案", $"英文界面下的分区标题「{title}」里有中文/日文字符。");
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    I18n.CurrentLanguage = titleProbeLanguage;
+                }
+
+                // 「扫描结果」那一段刻意没有标题，且只在扫描路径给出说明时才存在。
+                bool hasUntitledSection = sections.Any(section => section.TitleKey.Length == 0);
+                bool expectUntitledSection = !string.IsNullOrWhiteSpace(confirmInput.Note);
+                if (hasUntitledSection != expectUntitledSection)
+                {
+                    Fail("确认页文案",
+                        $"无标题分区的存在性与「有没有扫描说明」不一致（实际 {hasUntitledSection}，预期 {expectUntitledSection}）" +
+                        "—— 手动安装那条路会凭空多出一张没有标题的卡片。");
+                }
+
+                // 能力行必须**逐条成行**：窗口按 Kind 给每行画一个 ✔，用户扫读的粒度就是一行人一项。
+                // 把它们 join 成一行时这里会立刻从 2 变成 1（变异测试验过）。
+                int capabilityRows = sections
+                    .Sum(section => section.Lines.Count(line => line.Kind == PluginConfirmLineKind.Capability));
+                int expectedCapabilityRows = PluginCapabilityLabels
+                    .DescribeTags(confirmScan.Manifest!.ResolveCapabilities())
+                    .Count;
+                if (capabilityRows != expectedCapabilityRows)
+                {
+                    Fail("确认页文案",
+                        $"能力清单只渲染成 {capabilityRows} 行，而清单里声明了 {expectedCapabilityRows} 项能力" +
+                        "—— 多项被拼进同一行，窗口上就只画得出一个 ✔。");
+                }
+
+                Line($"  分区结构：{sections.Count} 个分区 / 标题 {titleKeys.Count} 个互不相同 / " +
+                    $"能力逐条成行 {capabilityRows} 行 / 末段为安全提示 ✓");
+            }
+
             Line("");
             Line("[3j] 宿主服务面与能力门禁（命令 / Shell 动词 / 窗口控制 / 屏幕截取 / 系统功能）");
 

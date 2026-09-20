@@ -126,17 +126,109 @@ print(f"\n实参非字面量的 TF 调用点（需人工顺来源追是否已本
 for c in nonliteral[:20]:
     print(f"  {c}")
 
-# 5) 插件页静态控件漏接复查（有 Name + 硬编码中文，但代码从未重设）
-xaml = (src / "SettingsWindow.xaml").read_text(encoding="utf-8")
-code = "\n".join((f.read_text(encoding="utf-8", errors="ignore") for f in [src / "SettingsWindow.xaml.cs"]))
-named_cjk = re.findall(r'Name="(\w+)"[^>]*?(?:Text|Content)="([^"]*[\u4e00-\u9fff][^"]*)"', xaml)
+# 5) XAML 具名控件的属性漏接复查（有 Name + 硬编码中文，但代码从未重设）
+#
+# **必须按「开标签 → 标签内属性」两层解析，不能用 `Name="…"[^>]*?(Text|Content|ToolTip)="…"`
+# 那种一条正则横扫的写法**：非贪婪的 `[^>]*?` 只会命中**标签里的第一个**含中文属性，
+# 命中之后正则从匹配结束处继续扫，同一元素里剩下的属性就整体落在消费区间里再也不会被看到 ——
+# `PluginInstallDialog` 的 `CopyButton` 就是这样把 `Content`（已接）报掉、`ToolTip`（没接）漏掉的。
+# 一个元素上挂三四个中文属性是本项目的常态，所以这个盲区一直在放真漏翻过去。
+elementpat = re.compile(r"<(\w+)\b([^>]*?)/?>", re.S)
+attributepat = re.compile(r'\b(Text|Content|ToolTip)="([^"]*)"')
+namepat = re.compile(r'\bName="(\w+)"')
+cjkpat = re.compile(r"[\u4e00-\u9fff]")
+
+# 所有 *.xaml.cs 拼在一起找「重设点」：某个控件可能在别的窗口 / 公共辅助类里被统一重设。
+all_code = "\n".join(
+    f.read_text(encoding="utf-8", errors="ignore")
+    for f in src.rglob("*.xaml.cs")
+    if "obj" not in f.parts and "bin" not in f.parts
+)
+
+
+def scan_named_leaks(path, keep=None):
+    """列出 `path` 里「有 Name + 含中文的属性 + 全仓代码从未重设过」的属性。"""
+    found = []
+    for m in elementpat.finditer(path.read_text(encoding="utf-8", errors="ignore")):
+        tag = m.group(0)
+        nm = namepat.search(tag)
+        if not nm:
+            continue
+        for am in attributepat.finditer(tag):
+            attr, val = am.group(1), am.group(2)
+            if not cjkpat.search(val):
+                continue
+            if keep is not None and not keep(val):
+                continue
+            if f"{nm.group(1)}.{attr}" in all_code:
+                continue
+            found.append((nm.group(1), attr, val))
+    return found
+
+
+xaml_files = sorted(
+    f for f in src.rglob("*.xaml") if "obj" not in f.parts and "bin" not in f.parts
+)
+
+# 5a) 插件页专项（历史语义：只看插件相关文案，避免被存量欠账冲掉视线）
 leaks = []
-for name, text in named_cjk:
-    # 只看插件页（官方目录 + 候选 + 列表）
-    if not any(t in text for t in ["官方", "插件", "外掛"]):
-        continue
-    if f"{name}.Text" not in code and f"{name}.Content" not in code:
-        leaks.append((name, text[:40]))
+for name, attr, text in scan_named_leaks(
+    src / "SettingsWindow.xaml", keep=lambda v: any(t in v for t in ["官方", "插件", "外掛"])
+):
+    leaks.append((name, text[:40]))
 print(f"\n插件页仍漏接的具名控件: {len(leaks)}")
 for n, t in leaks:
     print(f"  {n}: {t}")
+
+# 5b) 全仓棘轮：存量登记在基线里，**只对新增报红**。
+#
+# 存在的意义：5a 是一条「插件页」专用网，网眼之外（OCR / 快速搜索 / 各类选择器窗口）
+# 长期积着几十处有 Name 却从未本地化的控件，在英文界面上一直显示中文。
+# 一次性修完会做出一个跨十几个窗口的巨型 diff（与本项目的「一阶段一提交」相冲突），
+# 所以这里先把它们**登记下来**，把「不许变多」变成可执行的门禁 —— 存量是这个脚本
+# 唯一允许存在的负债，且它不会自己变少，只会被显式收紧。
+baseline_path = root / "scratch" / "i18n_xaml_leak_baseline.json"
+observed = set()
+for xf in xaml_files:
+    for name, attr, _ in scan_named_leaks(xf):
+        observed.add(f"{xf.name}::{name}.{attr}")
+
+import json
+
+if "--write-baseline" in sys.argv:
+    # 收紧/重建基线。**只在确实修掉了漏翻之后跑**：它把「当前观测」整体记为已知，
+    # 所以它既能收紧也能悄悄放宽 —— 跑完必须 `git diff` 逐条看，确认没有把新漏翻一起写进去。
+    baseline_path.write_text(
+        json.dumps(
+            {
+                "_comment": "check_i18n.py 第 5b 段的存量基线：有 Name + 含中文的属性，但全仓 *.xaml.cs 从未重设过。只允许变少；新增即红（EXIT=1）。",
+                "known": sorted(observed),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"已写入基线: {baseline_path}（{len(observed)} 条）")
+    sys.exit(0)
+
+if baseline_path.exists():
+    known = set(json.loads(baseline_path.read_text(encoding="utf-8"))["known"])
+else:
+    known = set(observed)   # 首次运行：就地登记，不让缺基线变成假红
+
+added = sorted(observed - known)
+stale = sorted(known - observed)
+print(f"\nXAML 具名控件漏接（全仓棘轮）: 存量 {len(known)}  当前 {len(observed)}  新增 {len(added)}")
+for a in added:
+    print(f"  [新增] {a}")
+if stale:
+    print(f"  以下 {len(stale)} 条已不再是漏翻，可从基线收紧:")
+    for s in stale[:10]:
+        print(f"    {s}")
+
+# 有新增即非零退出 —— 门禁要能被脚本调用方直接判，而不是靠人读输出。
+if added:
+    sys.exit(1)
+

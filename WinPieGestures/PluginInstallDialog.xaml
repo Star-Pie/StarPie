@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="WinPieGestures.PluginInstallDialog" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Icon="app_icon.ico" Width="600" SizeToContent="Height" MaxHeight="760" Background="{DynamicResource WindowBackgroundBrush}" FontFamily="Segoe UI, Microsoft YaHei, PingFang SC" WindowStartupLocation="CenterOwner" ResizeMode="NoResize" ShowInTaskbar="False" Title="确认安装插件">
+  <FrameworkElement.Resources>
+    <ResourceDictionary>
+      <Style x:Key="DialogButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="FrameworkElement.Cursor" Value="Hand" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter Value="{DynamicResource ButtonHoverBgBrush}" Property="Background" />
+                  <Setter Value="{DynamicResource AccentPrimaryBrush}" Property="BorderBrush" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter Value="{DynamicResource ItemHoverBrush}" Property="Background" />
+                </Trigger>
+                <Trigger Property="UIElement.IsEnabled" Value="False">
+                  <Setter Property="UIElement.Opacity" Value="0.5" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+      <Style x:Key="DialogPrimaryButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource DialogButtonStyle}">
+        <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter Value="{DynamicResource AccentHoverBrush}" Property="Background" />
+                  <Setter Value="{DynamicResource AccentHoverBrush}" Property="BorderBrush" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter Value="{DynamicResource AccentHoverBrush}" Property="Background" />
+                  <Setter Property="UIElement.Opacity" Value="0.9" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+      <!-- 分区卡片的模板提到窗口级资源：它要被**两处**消费 —— 可滚动的正文区，
+           以及固定在「安装」按钮上方那一块风险提示。内联写两遍就会漂成两种样式，
+           而那种差异只有在内容把滚动区撑满时才看得见。 -->
+      <DataTemplate x:Key="ConfirmSectionTemplate">
+        <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+          <StackPanel>
+            <!-- DataTemplate 有自己的命名域：这里所有文字必须 {Binding}，
+                 写死任何一句都会绕过 PluginInstallDialog 构造时的本地化。 -->
+            <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6" TextWrapping="Wrap">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding HasTitle}" Value="False">
+                      <Setter Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
+            <ItemsControl ItemsSource="{Binding Lines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Grid Margin="0,0,0,3">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <!-- 行首标记：能力是 ✔（强调色），需要多看一眼的用 ⚠️（与项目里既有的安全模式橙同色），
+                         普通行不占位置也不留空白列。 -->
+                    <Grid Grid.Column="0" Margin="0,0,6,0" VerticalAlignment="Top">
+                      <TextBlock Text="✔" FontSize="11.5" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsCapability}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                      <TextBlock Text="⚠️" FontSize="11">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsNotice}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </DataTemplate>
+    </ResourceDictionary>
+  </FrameworkElement.Resources>
+  <Border Padding="22" Background="{DynamicResource CardBackgroundBrush}" Margin="10" CornerRadius="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+    <UIElement.Effect>
+      <DropShadowEffect BlurRadius="16" ShadowDepth="2" Color="#000000" Opacity="0.12" />
+    </UIElement.Effect>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <!-- 正文是唯一的 * 行：这样窗口被 MaxHeight 夹住时，被压缩的是它（并因此出滚动条），
+             而不是「安装」按钮被挤到屏幕外面去。行写成 Auto 的话，Auto 行不会被压缩，
+             超出的部分会被直接裁掉 —— 表现就是按钮凭空消失。 -->
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Name="HeadingText" Grid.Row="0" Text="确认安装插件" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,14" />
+
+      <!-- 正文逐区渲染。高度不写死：真正的上限是屏幕可用高度（构造时算进 Window.MaxHeight），
+           写死 MaxHeight 会在高分辨率屏上白白浪费几百像素 —— 用户得滚动才看得到「会拿到什么能力」，
+           而那一段正是这一页存在的理由。 -->
+      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl Name="SectionItemsControl" ItemTemplate="{StaticResource ConfirmSectionTemplate}" />
+      </ScrollViewer>
+
+      <!-- 风险提示**不参与滚动**，固定贴着「安装」按钮。
+           它原本只是滚动区的最后一段，于是内容稍多就被滚出可视区 —— 一个能力多的插件，
+           用户按「安装」之前最后看到的是文件哈希，而不是「它会以你的权限运行代码」。
+           这一段是本窗口存在的理由，宁可挤正文也不能让它被滚走。
+           用 ContentControl 复用同一个模板：Content 是单个分区视图模型，
+           为空时整个收起（手写 .dll 那条路没有 Note 时分区数会少一段，布局不该留个空洞）。 -->
+      <ContentControl Name="SecuritySectionHost" Grid.Row="2" Margin="0,4,0,0" ContentTemplate="{StaticResource ConfirmSectionTemplate}" />
+
+      <Grid Grid.Row="3" Margin="0,14,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <Button Name="CopyButton" Grid.Column="0" Content="复制详情" Style="{StaticResource DialogButtonStyle}" Padding="12,0" ToolTip="把这一页的纯文本形态复制到剪贴板，便于贴进 issue 或聊天里求助" Click="CopyButton_Click" />
+        <Button Name="CancelButton" Grid.Column="2" Content="取消" Style="{StaticResource DialogButtonStyle}" Width="90" IsCancel="True" Click="CancelButton_Click" />
+        <Button Name="InstallButton" Grid.Column="3" Content="安装" Style="{StaticResource DialogPrimaryButtonStyle}" Width="110" Margin="10,0,0,0" IsDefault="True" Click="InstallButton_Click" />
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

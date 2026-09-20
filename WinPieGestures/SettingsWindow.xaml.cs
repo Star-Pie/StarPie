@@ -2889,6 +2889,11 @@ public partial class SettingsWindow : Window
 		if (FocusPluginReloadBtn != null)
 		{
 			FocusPluginReloadBtn.Content = I18n.T("FocusPluginReload");
+			FocusPluginReloadBtn.ToolTip = I18n.T("FocusPluginReloadToolTip");
+		}
+		if (FocusPluginActionComboBox != null)
+		{
+			FocusPluginActionComboBox.ToolTip = I18n.T("FocusPluginActionComboToolTip");
 		}
 		if (FocusPluginActionBrokenHint != null)
 		{
@@ -6999,10 +7004,12 @@ public partial class SettingsWindow : Window
 		if (RescanPluginsButton != null)
 		{
 			RescanPluginsButton.Content = I18n.T("PluginsRescanButton");
+			RescanPluginsButton.ToolTip = I18n.T("PluginsRescanToolTip");
 		}
 		if (OpenPluginsFolderButton != null)
 		{
 			OpenPluginsFolderButton.Content = I18n.T("PluginsOpenDataFolderButton");
+			OpenPluginsFolderButton.ToolTip = I18n.T("PluginsOpenDataFolderToolTip");
 		}
 		if (OpenPluginScanFolderButton != null)
 		{
@@ -7011,6 +7018,7 @@ public partial class SettingsWindow : Window
 		if (PluginSystemEnabledCheckBox != null)
 		{
 			PluginSystemEnabledCheckBox.Content = I18n.T("PluginsEnableCheckBox");
+			PluginSystemEnabledCheckBox.ToolTip = I18n.T("PluginsEnableCheckBoxToolTip");
 		}
 		if (PluginsEmptyTitleText != null)
 		{
@@ -7299,10 +7307,16 @@ public partial class SettingsWindow : Window
 	/// 正文之所以挪出去，是为了让它在无界面自检里能被逐语言驱动 —— 「切到英文后
 	/// 这一页还剩下多少中文」只有变成断言才守得住（自检 <c>[3e]</c>）。
 	/// </para>
+	/// <para>
+	/// <b>2026-09-20：从 <c>MessageBox</c> 换成自绘窗口</b>。WPF 的 <c>MessageBox</c> 无法定制，
+	/// 而这一页是唯一的知情同意关口，风险条目与能力清单挤在一段等权文字里读不下去。
+	/// 窗口按 <see cref="PluginInstallConfirmationText.BuildSections"/> 逐区渲染，
+	/// 能力行还会加行首 ✔ —— 信息仍是同一份（<c>Build</c> 由分区展平而来），
+	/// 所以自检 <c>[3e]</c> 的字符串断言一条都不用改。
+	/// </para>
 	/// </summary>
 	private bool ConfirmPluginInstall(PluginInstallConfirmation info) =>
-		System.Windows.MessageBox.Show(this, PluginInstallConfirmationText.Build(info),
-			I18n.T("PluginsConfirmTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
+		new PluginInstallDialog(info) { Owner = this }.ShowDialog() == true;
 
 	private void RescanPluginsButton_Click(object sender, RoutedEventArgs e)
 	{
