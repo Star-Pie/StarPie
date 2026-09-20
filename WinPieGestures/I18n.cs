@@ -1799,19 +1799,22 @@ public static class I18n
 			[LanguageCode.En] = "provides {0} action(s)",
 			[LanguageCode.Ja] = "動作 {0} 個を提供"
 		};
-		dictionary["PluginsCardNotLoaded"] = new Dictionary<LanguageCode, string>
+		dictionary["PluginsCardLicense"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "未加载",
-			[LanguageCode.ZhTw] = "未載入",
-			[LanguageCode.En] = "not loaded",
-			[LanguageCode.Ja] = "未読み込み"
+			[LanguageCode.ZhCn] = "许可证 {0}",
+			[LanguageCode.ZhTw] = "授權條款 {0}",
+			[LanguageCode.En] = "License {0}",
+			[LanguageCode.Ja] = "ライセンス {0}"
 		};
-		dictionary["PluginsCardCapabilities"] = new Dictionary<LanguageCode, string>
+		// meta 行里「贡献动作数」那一格，当插件当前没贡献出任何动作时用它顶替。
+		// 旧值是「未加载」—— 它与紧邻的状态徽章「已启用 · 待加载」撞词，两句话读起来像在互相否认；
+		// 而这一格描述的对象本来就是「有几个动作」，不是「插件加载了没」。
+		dictionary["PluginsCardNoActions"] = new Dictionary<LanguageCode, string>
 		{
-			[LanguageCode.ZhCn] = "声明能力：{0}",
-			[LanguageCode.ZhTw] = "宣告能力：{0}",
-			[LanguageCode.En] = "Declared capabilities: {0}",
-			[LanguageCode.Ja] = "宣言された機能：{0}"
+			[LanguageCode.ZhCn] = "暂无动作",
+			[LanguageCode.ZhTw] = "暫無動作",
+			[LanguageCode.En] = "no actions yet",
+			[LanguageCode.Ja] = "動作なし"
 		};
 		dictionary["PluginsCardSigned"] = new Dictionary<LanguageCode, string>
 		{

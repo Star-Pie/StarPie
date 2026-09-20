@@ -77,4 +77,30 @@ internal static class PluginCapabilityLabels
 
         return parts.Count == 0 ? I18n.T("PluginCapabilityNone") : string.Join("\n", parts);
     }
+
+    /// <summary>
+    /// 把一组能力位拆成<b>逐个</b>标签（插件卡片上那一排小标签用），顺序与 <see cref="All"/> 一致。
+    /// <para>
+    /// 与 <see cref="Describe"/> 的分工：那个把多项拼成确认页要读的一整段多行文本，
+    /// 这个交给界面逐项渲染成独立标签。之所以不写成 <c>Describe(...).Split('\n')</c> ——
+    /// 那会把「换行即分隔符」变成一个只存在于人脑里的约定，以后谁在某条文案里换一次行，
+    /// 卡片上就会莫名多出一个空标签。
+    /// </para>
+    /// <para>
+    /// 卡片上的能力名此前是直接拼 <c>PluginRegistryEntry.CapabilitiesAck</c> 的原始字符串
+    /// （形如 <c>Process</c> / <c>WindowControl</c>），于是中文界面里显示的是英文枚举名 ——
+    /// 一个既不空白、也不像错的值，扫代码很难发现。改由本方法按能力位取词条后消失。
+    /// </para>
+    /// </summary>
+    internal static IReadOnlyList<string> DescribeTags(PluginCapability capabilities)
+    {
+        var tags = new List<string>();
+
+        foreach ((PluginCapability capability, string key) in All)
+        {
+            if (capabilities.HasFlag(capability)) tags.Add(I18n.T(key));
+        }
+
+        return tags;
+    }
 }

@@ -1604,7 +1604,7 @@ internal static class PluginSelfTest
         // 这一段刻意放在 [4] 之前：--skip-invoke 会在 [4] 开头提前 return，
         // 放到 [4] 之后等于日常回归里根本不会执行（那正是 [5b] 曾经踩过的坑）。
         line("");
-        line("[3f] 插件管理页卡片文案（状态名 / 摘要 / 两个按钮，且整卡随语言切换）");
+        line("[3f] 插件管理页卡片文案（六层：头像 / 状态名 / 描述 / meta 行 / 能力标签 / 两个按钮）");
 
         // ① 状态名逐个成员核对。I18n.T 取不到键时**原样返回键名** —— 既不空白也不像错的，
         //    只有逐条比对才看得见。这里直接按「值」驱动，所以 9 个成员一个都不会漏。
@@ -1697,7 +1697,8 @@ internal static class PluginSelfTest
                          ("状态徽标", enCard.StateText),
                          ("启用按钮", enCard.EnableText),
                          ("卸载按钮", enCard.UninstallText),
-                         ("摘要（宿主部分）", StripPluginData(enCard.SummaryText)),
+                         ("描述（宿主部分）", StripPluginData(enCard.DescriptionText)),
+                         ("meta 行（宿主部分）", StripPluginData(enCard.MetaText)),
                          ("详情（宿主部分）", StripPluginData(enCard.DetailText)),
                      })
             {
@@ -1718,7 +1719,71 @@ internal static class PluginSelfTest
             {
                 return "[3f] 卡片的插件名或卸载按钮文案为空。";
             }
-            line($"    英文卡片：摘要 {enCard.SummaryText.Length} 字符 / 详情 {enCard.DetailText.Length} 字符，宿主部分无方块字与中文标点 ✓");
+            if (cardEntry.CapabilitiesAck.Count > 0 && enCard.CapabilityTags.Count == 0)
+            {
+                return "[3f] 登记表声明了能力，卡片上却一个标签都没有 —— 能力区会整块消失。";
+            }
+
+            // ④ 能力标签必须是词条文案，不能是英文枚举名。
+            //    卡片上原本直接拼 PluginRegistryEntry.CapabilitiesAck（形如 "Process" / "WindowControl"），
+            //    于是**中文界面上显示的是英文枚举名** —— 一个既不空白、也不像错的值，
+            //    光盯着代码看发现不了。这条断言在把它改回原始字符串时会当场变红（变异测试验过）。
+            //
+            //    「出现了未翻译的枚举名」只在**非英文**语言下断言：英文词条本身就可能与枚举名
+            //    同形（"Process"），在英文卡片上断言等于自找误报。
+            foreach ((LanguageCode language, PluginListItem card) in cards)
+            {
+                foreach (string tag in card.CapabilityTags)
+                {
+                    if (string.IsNullOrWhiteSpace(tag))
+                    {
+                        return $"[3f] {language} 卡片上有一个空白的能力标签。";
+                    }
+                    if (tag.StartsWith("PluginCapability", StringComparison.Ordinal))
+                    {
+                        return $"[3f] {language} 卡片的能力标签取到的是裸键名「{tag}」—— 词条键写错了。";
+                    }
+                }
+
+                if (language == LanguageCode.En) continue;
+                foreach (string raw in cardEntry.CapabilitiesAck)
+                {
+                    if (card.CapabilityTags.Contains(raw, StringComparer.Ordinal))
+                    {
+                        return $"[3f] {language} 卡片的能力标签里出现了未翻译的英文枚举名「{raw}」" +
+                               "—— 卡片应经 PluginCapabilityLabels.DescribeTags 取词条。";
+                    }
+                }
+            }
+
+            // ⑤ 再直接驱动一遍合成数据，不依赖「沙箱里那个插件恰好声明了能力」——
+            //    否则声明 0 个时上面整段静默跳过，声明 1 个时「不认识的名字」那条分支永远跑不到。
+            //    三个名字刻意覆盖两条分支：认识的（要翻）、不认识的（要原样留）。
+            foreach (LanguageCode language in Enum.GetValues<LanguageCode>())
+            {
+                I18n.CurrentLanguage = language;
+                IReadOnlyList<string> synthetic = PluginListItem.BuildCapabilityTags(
+                    new List<string> { "Process", "WindowControl", "NotARealCapability" });
+
+                if (synthetic.Count != 3)
+                {
+                    return $"[3f] 合成能力名应展开成 3 个标签，实际 {synthetic.Count} 个" +
+                           "—— 「认识 / 不认识」两条分支有一条把项丢了。";
+                }
+                if (language != LanguageCode.En
+                    && (synthetic[0] == "Process" || synthetic[1] == "WindowControl"))
+                {
+                    return $"[3f] {language} 下能力名被原样显示成「{synthetic[0]} / {synthetic[1]}」" +
+                           "—— 应经 PluginCapabilityLabels.DescribeTags 取词条。";
+                }
+                if (!string.Equals(synthetic[2], "NotARealCapability", StringComparison.Ordinal))
+                {
+                    return $"[3f] 认不出的能力名被改写成「{synthetic[2]}」—— 应原样保留，不能静默丢弃。";
+                }
+            }
+
+            line($"    英文卡片：meta {enCard.MetaText.Length} 字符 / 详情 {enCard.DetailText.Length} 字符，" +
+                 $"能力标签 {enCard.CapabilityTags.Count} 个，宿主部分无方块字与中文标点 ✓");
 
             // ④ 四种语言必须给出四份不同的卡片 —— 相同说明有一门没走自己的词条。
             var cardLanguages = cards.Keys.ToList();

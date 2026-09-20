@@ -3977,22 +3977,81 @@
               </ListBox.ItemContainerStyle>
               <ListBox.ItemTemplate>
                 <DataTemplate>
-                  <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,10">
+                  <!-- 卡片六层（概念稿）：① 头像 ② 名称行 ③ 描述 ④ meta 行 ⑤ 能力标签 ⑥ 操作组。
+                       全是 {Binding}：DataTemplate 有自己的命名域，Name 在这里无效，
+                       任何一处写死文案都会绕过 ApplyPluginsPageLocalization。 -->
+                  <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14,12">
                     <Grid>
                       <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                       </Grid.ColumnDefinitions>
-                      <StackPanel>
+
+                      <!-- ① 头像。清单的 Icon 是相对路径（本层不做图片加载）⇒ 退化为名称首字，
+                           见 PluginListItem.ResolveAvatar 的注释。 -->
+                      <Border Grid.Column="0" Width="40" Height="40" CornerRadius="9" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" VerticalAlignment="Top" Margin="0,0,12,0" SnapsToDevicePixels="True">
+                        <TextBlock Text="{Binding AvatarText}" FontSize="19" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+
+                      <StackPanel Grid.Column="1">
+                        <!-- ② 名称行：名称 / 版本 / 状态徽章（图标收进徽章内，扫读时状态与图标不再分家） -->
                         <StackPanel Orientation="Horizontal">
-                          <TextBlock Text="{Binding StatusGlyph}" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0" />
-                          <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                          <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                           <TextBlock Text="{Binding VersionText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
                           <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="8" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding StateText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                            <StackPanel Orientation="Horizontal">
+                              <TextBlock Text="{Binding StatusGlyph}" FontSize="10" VerticalAlignment="Center" Margin="0,0,3,0" />
+                              <TextBlock Text="{Binding StateText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
                           </Border>
                         </StackPanel>
-                        <TextBlock Text="{Binding SummaryText}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0" TextWrapping="Wrap" />
+
+                        <!-- ③ 描述（清单原话），空则整行折叠 -->
+                        <TextBlock Text="{Binding DescriptionText}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0" TextWrapping="Wrap">
+                          <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                              <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasDescription}" Value="False">
+                                  <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                              </Style.Triggers>
+                            </Style>
+                          </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- ④ meta 行：作者 / 许可证 / 贡献动作数 -->
+                        <TextBlock Text="{Binding MetaText}" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
+
+                        <!-- ⑤ 能力标签：逐项渲染（不是拼成一行），空则整体折叠 -->
+                        <ItemsControl ItemsSource="{Binding CapabilityTags}" Margin="0,6,0,0">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                              <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="9" Padding="7,2" Margin="0,0,6,4">
+                                <StackPanel Orientation="Horizontal">
+                                  <TextBlock Text="🏷️" FontSize="9" VerticalAlignment="Center" Margin="0,0,3,0" />
+                                  <TextBlock Text="{Binding}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                          <ItemsControl.Style>
+                            <Style TargetType="ItemsControl">
+                              <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasCapabilities}" Value="False">
+                                  <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                              </Style.Triggers>
+                            </Style>
+                          </ItemsControl.Style>
+                        </ItemsControl>
+
+                        <!-- 技术细节：ID / 架构 / 哈希 / 签名 / 路径，沉在最底部的小字 -->
                         <TextBlock Text="{Binding DetailText}" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" Opacity="0.8" />
                         <TextBlock Text="{Binding ErrorText}" FontSize="11" Foreground="#DC2626" Margin="0,4,0,0" TextWrapping="Wrap">
                           <TextBlock.Style>
@@ -4006,7 +4065,7 @@
                           </TextBlock.Style>
                         </TextBlock>
                       </StackPanel>
-                      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="12,0,0,0">
                         <CheckBox Content="{Binding EnableText}" Tag="{Binding PluginId}" IsChecked="{Binding IsEnabled, Mode=OneWay}" Click="PluginRowEnabledCheckBox_Click" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" />
                         <Button Content="{Binding UninstallText}" Tag="{Binding PluginId}" Click="UninstallPluginButton_Click" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="10,0,0,0" FontSize="11" />
                       </StackPanel>

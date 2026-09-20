@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace WinPieGestures.Plugins;
 
 /// <summary>
@@ -25,10 +27,40 @@ internal sealed class PluginListItem
     /// <summary>形如 <c>v1.2.0</c>；未知版本时为空串，列表中不占位。</summary>
     public string VersionText { get; init; } = "";
 
-    /// <summary>一行摘要：作者、动作数、声明的高风险能力。</summary>
-    public string SummaryText { get; init; } = "";
+    /// <summary>
+    /// ① 头像方块里显示的字形。
+    /// <para>
+    /// 清单的 <c>Icon</c> 字段约定是<b>相对路径</b>（SVG/PNG），本层不做图片加载，
+    /// 所以只有当清单把图标写成单个字形（emoji）时才直接采用，其余一律退化为名称首字 ——
+    /// 见 <see cref="ResolveAvatar"/>。这是「概念稿上给了方形头像、我们手上只有名字」的
+    /// 诚实降级，不是没做完。
+    /// </para>
+    /// </summary>
+    public string AvatarText { get; init; } = "";
 
-    /// <summary>次级细节：安装路径、目标框架、摘要哈希、签名状态。</summary>
+    /// <summary>③ 插件自己的描述（清单原话），独立成行。为空时整行折叠。</summary>
+    public string DescriptionText { get; init; } = "";
+
+    /// <summary>供 DataTrigger 判断是否显示描述行。</summary>
+    public bool HasDescription => !string.IsNullOrWhiteSpace(DescriptionText);
+
+    /// <summary>④ 一行 meta：作者、许可证、贡献动作数（或「未加载」）。</summary>
+    public string MetaText { get; init; } = "";
+
+    /// <summary>
+    /// ⑤ 声明的高风险能力，<b>逐个</b>渲染成标签。
+    /// <para>
+    /// 用列表而不是拼成一行：拼成一行之后界面就没法逐项加底色、也没法断言
+    /// 「每一项都真的取到了词条」—— 而这里恰好出过事故（见
+    /// <see cref="PluginCapabilityLabels.DescribeTags"/> 的注释）。
+    /// </para>
+    /// </summary>
+    public IReadOnlyList<string> CapabilityTags { get; init; } = Array.Empty<string>();
+
+    /// <summary>供 DataTrigger 判断是否显示能力标签区。</summary>
+    public bool HasCapabilities => CapabilityTags.Count > 0;
+
+    /// <summary>次级细节：ID、目标框架、摘要哈希、签名状态、安装路径。沉在卡片最底部的小字。</summary>
     public string DetailText { get; init; } = "";
 
     /// <summary>状态的当前语言名称，如「运行中」「已隔离」。</summary>
@@ -78,24 +110,17 @@ internal sealed class PluginListItem
 
         (string glyph, string stateText) = DescribeState(instance);
 
-        var summary = new List<string>();
-        if (!string.IsNullOrWhiteSpace(entry.Author)) summary.Add(I18n.TF("PluginsCardAuthor", entry.Author));
-        if (instance.ActionCount > 0) summary.Add(I18n.TF("PluginsCardActionCount", instance.ActionCount));
-        else if (instance.State != PluginRuntimeState.Active) summary.Add(I18n.T("PluginsCardNotLoaded"));
-        if (!string.IsNullOrWhiteSpace(entry.License)) summary.Add(entry.License);
+        // ④ meta 行只放「用户关心」的三项：作者、许可证、贡献了几个动作。
+        // 技术细节（ID / 架构 / 哈希 / 路径 / 签名）沉到 DetailText，两层信息不互相淹没。
+        var meta = new List<string>();
+        if (!string.IsNullOrWhiteSpace(entry.Author)) meta.Add(I18n.TF("PluginsCardAuthor", entry.Author));
+        if (!string.IsNullOrWhiteSpace(entry.License)) meta.Add(I18n.TF("PluginsCardLicense", entry.License));
+        if (instance.ActionCount > 0) meta.Add(I18n.TF("PluginsCardActionCount", instance.ActionCount));
+        else if (instance.State != PluginRuntimeState.Active) meta.Add(I18n.T("PluginsCardNoActions"));
 
         // 「　|　」是**字形**分隔符：分隔的是若干等权短语，英文里换成 ", " 反而会与短语
         // 内部的逗号混在一起看不出来。与 PluginsEnumSeparator（顿号，标点）不是一类。
-        string summaryText = string.Join("　|　", summary);
-        if (!string.IsNullOrWhiteSpace(entry.Description))
-        {
-            summaryText = entry.Description + "\n" + summaryText;
-        }
-        if (entry.CapabilitiesAck is { Count: > 0 })
-        {
-            summaryText += "\n" + I18n.TF("PluginsCardCapabilities",
-                string.Join(I18n.T("PluginsEnumSeparator"), entry.CapabilitiesAck));
-        }
+        string metaText = string.Join("　|　", meta);
 
         // 「ID」「SHA256」是国际通用标识符，不翻译；其余每一项都走词条。
         var detail = new List<string> { $"ID {instance.PluginId}" };
@@ -119,7 +144,10 @@ internal sealed class PluginListItem
             PluginId = instance.PluginId,
             DisplayName = displayName,
             VersionText = string.IsNullOrWhiteSpace(entry.Version) ? "" : $"v{entry.Version}",
-            SummaryText = summaryText,
+            AvatarText = ResolveAvatar(manifest?.Icon, displayName),
+            DescriptionText = entry.Description ?? "",
+            MetaText = metaText,
+            CapabilityTags = BuildCapabilityTags(entry.CapabilitiesAck),
             DetailText = string.Join("　·　", detail),
             StateText = stateText,
             StatusGlyph = glyph,
@@ -128,6 +156,65 @@ internal sealed class PluginListItem
             ErrorText = errorText,
             IsEnabled = entry.Enabled,
         };
+    }
+
+    /// <summary>
+    /// ① 头像字形。清单的 <c>Icon</c> 约定是相对路径（SVG/PNG），本层不做图片加载 ——
+    /// 于是只有当它被写成单个字形（emoji）时才直接采用，其余退化为名称首字。
+    /// <para>
+    /// 首字用 <see cref="StringInfo.GetNextTextElement(string)"/> 取，而不是 <c>name[0]</c>：
+    /// 名字以 emoji 开头是常见写法，而 emoji 是代理对，<c>name[0]</c> 会切出半个字符 ——
+    /// 界面上显示成一个方块，既不报错也不像有问题，是典型的「静默错值」。
+    /// </para>
+    /// </summary>
+    private static string ResolveAvatar(string? icon, string displayName)
+    {
+        if (!string.IsNullOrWhiteSpace(icon))
+        {
+            string trimmed = icon.Trim();
+            bool looksLikePath = trimmed.Contains('/') || trimmed.Contains('\\') || trimmed.Contains('.');
+            if (!looksLikePath) return trimmed;
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName)) return "🧩";
+
+        string first = StringInfo.GetNextTextElement(displayName.Trim());
+        return first.ToUpperInvariant();
+    }
+
+    /// <summary>
+    /// ⑤ 把登记表里的能力名（英文枚举名）翻成本语言的标签。
+    /// <para>
+    /// 认不出来的名字原样保留，不静默丢弃：登记表可能来自比宿主更新、能力位更多的插件，
+    /// 而「少显示一项能力」会让用户以为这个插件没要过那个权限 ——
+    /// 把原始名字摊在卡片上，至少看得见。
+    /// </para>
+    /// <para>
+    /// <b>刻意是 internal 而不是 private</b>：自检 <c>[3f]</c> 要直接驱动它。
+    /// 只靠「卡片构建」那条链路断言的话，覆盖面就取决于「沙箱里那个插件恰好声明了几个能力」——
+    /// 声明 0 个时整条断言静默跳过，声明 1 个时「不认识的名字」那条分支永远跑不到。
+    /// </para>
+    /// </summary>
+    internal static IReadOnlyList<string> BuildCapabilityTags(List<string> capabilitiesAck)
+    {
+        var tags = new List<string>();
+
+        foreach (string name in capabilitiesAck)
+        {
+            if (string.IsNullOrWhiteSpace(name)) continue;
+
+            if (Enum.TryParse(name, ignoreCase: true, out StarPie.Plugin.PluginCapability capability)
+                && capability != 0)
+            {
+                tags.AddRange(PluginCapabilityLabels.DescribeTags(capability));
+            }
+            else
+            {
+                tags.Add(name);
+            }
+        }
+
+        return tags;
     }
 
     /// <summary>
