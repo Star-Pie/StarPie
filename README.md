@@ -292,9 +292,7 @@ StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用
 当前动作执行路径已经具备从注册、配置、参数校验到 Sequential / Background 调度的完整基础闭环；
 交互事件与轮盘结构路径也已建立可扩展入口，后续可以继续扩展而不复制整套插件生命周期代码。
 
-> 📖 **开发者文档**：需要了解插件加载与原子注册、`PluginInstance`、活动调用租约、异步停用、
-> 动作执行全链路及关键类职责，请阅读
-> [《StarPie 插件系统架构与动作执行路径》](docs/plugin-system-architecture.md)。
+> 📖 **插件开发入口**：开发文档、当前 API、架构说明、示例工程和历史资料统一收录在 [《StarPie 插件开发资源》](plugin/README.md)。
 
 - **官方插件必须手动安装**：主程序不会在启动后自动下载或安装官方模块。用户需要在插件管理页手动刷新 `StarPie-Official-Plugins` 的 catalog，并点击具体模块的安装按钮；下载包仍会校验 SHA-256 与程序集 SHA-256。
 - **社区插件仍可本地安装**：把社区插件 `.dll` 放进**程序目录的 `plugin` 文件夹**后点「重新扫描」，在候选卡片上点安装；或在设置里点「手动安装社区插件 (.dll)」直接挑文件。
@@ -315,10 +313,7 @@ StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用
   ID 重复 / 无法识别。同一 ID 出现两份文件时两份都会被标成「ID 重复」且不给安装按钮。
 - **失败自保护**：单个插件加载失败或连续触发异常会被隔离，不影响 StarPie 本体；
   连续两次启动异常会进入安全模式并临时禁用可疑插件。
-- **给插件作者**：`samples/` 下有三个可直接参照的示例（`HelloAction` 为参考模板，
-  `ScreenBrightness` 覆盖 P/Invoke、COM 与耗时 IO 三类难题，`FloatingBall` 是常驻窗口形态：
-  插件自己画球、点球经 `IHostWheelService` 呼出宿主轮盘，外观参数同时示范了「动作参数」与
-  「插件级设置页」两种来源 —— 后者的界面由宿主在插件卡片上统一渲染）。调试时可用
+- **给插件作者**：`plugin/samples/` 下有三个可直接参照的示例（`HelloAction` 为参考模板，`ScreenBrightness` 覆盖 P/Invoke、COM 与耗时 IO 三类难题，`FloatingBall` 是常驻窗口形态：插件自己画球、点球经 `IHostWheelService` 呼出宿主轮盘，外观参数同时示范动作参数与插件级设置页）。调试时可用
   `StarPie.exe --plugin-selftest <插件.dll> [报告路径] [--skip-invoke]` 在临时沙箱里跑
   全链路自检（不会碰你已装好的插件），或用 `StarPie.exe --plugin-paths` 查看当前生效的目录。
 
@@ -365,6 +360,7 @@ StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用
 - Python 3.10+ (仅运行自动化测试套件需要)
 
 ### 编译与运行
+
 ```bash
 # 1. 克隆代码仓库
 git clone https://github.com/SoftBlack42/StarPie.git
@@ -384,6 +380,7 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 ```
 
 ### 运行自动化测试（当前包含 19 项 GUI 用例）
+
 ```bash
 # 安装测试依赖
 pip install pytest pywinauto
@@ -423,8 +420,7 @@ StarPie/
 │   ├── ConfigManager.cs             # 配置持久化、导入导出与自启
 │   ├── IconHelper.cs                # 内置 / 程序 / 自定义图标解析
 │   └── WinPieGestures.csproj        # .NET 8 WPF 项目配置
-├── StarPie.Plugin.Abstractions/     # 插件 SDK 契约（插件唯一允许引用的 StarPie 程序集）
-├── samples/                         # 示例插件（参考模板 + P/Invoke / COM / 耗时 IO 压力样本 + 常驻窗口形态）
+├── plugin/                          # 插件开发文档、SDK、历史资料与示例工程
 ├── releases/                        # 历史版本与发布归档
 ├── attachments/                     # README 截图、GIF 与待补演示素材
 ├── tests/                           # pywinauto GUI 自动化测试

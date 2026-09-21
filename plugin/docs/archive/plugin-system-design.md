@@ -3,7 +3,7 @@
 > **文档状态**：设计草案（Draft v1.0），**仅含设计与契约约定，不含实现代码**
 > **对应程序版本**：`1.7.4-beta.2`（`WinPieGestures.csproj`）
 > **编制日期**：2026-09-15
-> **配套文档**：`PLUGIN_SYSTEM_PERFORMANCE_AND_API.md`（性能实测数据 · 完整接口清单 · 社区开发指南 · 使用场景）
+> **配套文档**：`../plugin-system-api-and-performance.md`（性能实测数据 · 完整接口清单 · 社区开发指南 · 使用场景）
 > **目标**：以「用户手动选择启用 `.dll`」为唯一入口，建立可供社区共创的插件体系，且不破坏既有的轻量、低延迟、确定性三大红线。
 
 ---
@@ -23,7 +23,7 @@
 > 2. 新增了「只读来源区 → 候选列表 → 用户点安装」这条流程：来源区里的 `.dll` 不登记、不加载、不出现在插件列表；
 > 3. 安装时的复制策略改为按清单来源分叉（有 `plugin.json` 整目录复制，裸 DLL 只复制那一枚）。
 >
-> 权威定义见 `AGENTS.md` 第 3.7 节与 `WinPieGestures/Plugin/PluginPaths.cs`。
+> 权威定义见 `AGENTS.md` 第 4 节与 `WinPieGestures/Plugin/PluginPaths.cs`。
 > **保留正文原样是为了留住设计推理过程，不要照着正文里的路径写新代码。**
 
 ---
@@ -317,7 +317,7 @@ ParameterField { Key, Label(i18n key), Type(Text|Number|Bool|Path|File|Folder|En
 | G-3 契约符合性 | 是否存在实现 `IStarPiePlugin` 的类型；是否引用了 Abstractions；`TargetFrameworkAttribute` 是否为 `net8.0-windows*`；`CorFlags` 是否 x64/ILOnly | `MetadataReader` 扫 `TypeDefinition` + `InterfaceImplementation` + 自定义特性 blob；**不加载程序集** |
 | G-4 完整性/来源 | SHA256 与 manifest 声明一致；是否有 Authenticode 签名（可选）；是否在「已知不良」黑名单 | `SHA256.Create()` + `X509Certificate.CreateFromSignedFile` |
 
-> **为什么必须静态识别（决策 D8）**：实测（见 `PLUGIN_SYSTEM_PERFORMANCE_AND_API.md` §1.1.4）表明 —— `Assembly.LoadFrom` 返回时 `module initializer` **尚未执行**，但在完成「反射取类型 + 实例化」后**已执行**。也就是说触发点在**首次触碰模块成员**，而非加载瞬间。
+> **为什么必须静态识别（决策 D8）**：实测（见 `../plugin-system-api-and-performance.md` §1.1.4）表明 —— `Assembly.LoadFrom` 返回时 `module initializer` **尚未执行**，但在完成「反射取类型 + 实例化」后**已执行**。也就是说触发点在**首次触碰模块成员**，而非加载瞬间。
 > 结论因此更严格：识别阶段必须坚持纯元数据读取，**既不 Load、也不反射取类型、也不实例化** —— 「加载」与「反射取类型」这两个看似无害的动作，都已经进入了会执行不可信代码的边界之内。
 > `System.Reflection.Metadata` 属于 .NET 共享框架自带程序集，不违反零依赖红线。实测单次全量扫描 **50 ~ 90 µs**，扫 50 个插件约 3 ~ 4.5 ms，可异步执行。
 

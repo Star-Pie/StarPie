@@ -49,7 +49,7 @@
       Private=false：不把 SDK 程序集复制到输出目录。
       这一行是「避免类型身份分裂」的关键，请勿删除。
     -->
-    <ProjectReference Include="..\..\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj">
+    <ProjectReference Include="..\..\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>

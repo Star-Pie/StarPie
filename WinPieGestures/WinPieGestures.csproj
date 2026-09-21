@@ -30,7 +30,7 @@
     若插件目录里出现第二份 Abstractions.dll，会造成类型身份分裂，所有强转都会失败。
   -->
   <ItemGroup>
-    <ProjectReference Include="..\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj" />
+    <ProjectReference Include="..\plugin\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

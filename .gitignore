@@ -50,6 +50,8 @@ $RECYCLE.BIN/
 
 # AI Assistant Workspace Data
 .workbuddy/
+.claude/
+CLAUDE.md
 
 *.bak
 build-out-*/

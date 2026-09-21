@@ -283,7 +283,9 @@ Action execution and display icons are fully decoupled — the same action can i
 
 ### 16. 🧩 Plugin System (Community Extensions, In-Process)
 
-- **Official plugins sync online by default**: StarPie fetches the module catalog from the `StarPie-Official-Plugins` GitHub Releases in the background after startup. Missing or outdated official modules are downloaded as `.spkg`, checked against package and assembly SHA-256 values, then installed and enabled.
+> 📖 Plugin documentation, API references, architecture notes, and sample projects are centralized in [plugin/README.md](plugin/README.md).
+
+- **Official plugins are installed manually**: StarPie does not download or install official modules at startup. Refresh the `StarPie-Official-Plugins` catalog from the plugin page and install the modules you need; downloaded packages are checked against package and assembly SHA-256 values.
 - **Community plugins remain locally installable**: drop a community plugin `.dll` into the **`plugin` folder next to the executable** and hit "Rescan", then click Install on the candidate card; or pick it via "Install Community Plugin (.dll)" in settings.
 - **⚠️ A `.dll` in `plugin\` brings only itself**: other files in the plugin package (icons, resources,
   dependency DLLs) are *not* copied along. For a **full-package install**, use "Install Community Plugin (.dll)" and select
@@ -303,7 +305,7 @@ Action execution and display icons are fully decoupled — the same action can i
   duplicates and neither can be installed.
 - **Fail-safe by default**: a single plugin that fails to load or keeps throwing is isolated and never affects the
   host; two consecutive abnormal startups switch on safe mode and temporarily disable the suspect plugins.
-- **For plugin authors**: `samples/` contains two reference projects (`HelloAction` as the template,
+- **For plugin authors**: `plugin/samples/` contains two reference projects (`HelloAction` as the template,
   `ScreenBrightness` covering P/Invoke, COM and slow I/O). For debugging, run
   `StarPie.exe --plugin-selftest <plugin.dll> [report path] [--skip-invoke]` to exercise the whole chain inside a
   temporary sandbox without touching your installed plugins, or `StarPie.exe --plugin-paths` to inspect the
@@ -410,8 +412,7 @@ StarPie/
 │   ├── ConfigManager.cs             # Config persistence, import/export & autostart
 │   ├── IconHelper.cs                # Built-in / program / custom icon resolution
 │   └── WinPieGestures.csproj        # .NET 8 WPF project configuration
-├── StarPie.Plugin.Abstractions/     # Plugin SDK contract (the only StarPie assembly a plugin may reference)
-├── samples/                         # Sample plugins (reference template + P/Invoke / COM / slow I/O stress cases)
+├── plugin/                          # Plugin documentation, archived design notes, and sample projects
 ├── releases/                        # Historical versions & release archive
 ├── attachments/                     # README screenshots, GIFs & pending demo assets
 ├── tests/                           # pywinauto GUI automation tests

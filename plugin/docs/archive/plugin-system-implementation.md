@@ -3,7 +3,7 @@
 > 本文档面向三读者：**维护宿主的开发者**（看结构与职责边界）、**社区插件作者**（看接口与用法）、
 > **未来的 AI Agent**（看为什么这么设计、哪些坑已经踩过）。
 >
-> 配套文档：`PLUGIN_SYSTEM_DESIGN.md`（设计大纲）、`PLUGIN_SYSTEM_PERFORMANCE_AND_API.md`（性能实测与接口清单）。
+> 配套文档：`plugin-system-design.md`（历史设计大纲，见同目录）、`../plugin-system-api-and-performance.md`（性能实测与接口清单）。
 
 ---
 
@@ -17,7 +17,7 @@
 >
 > 因此正文里所有 `<...>\plugins\` 一律读作 `<...>\plugin-data\`（唯一例外是插件日志 `logs\plugins\`）。
 > 安装流程也新增了「只读来源区 → 候选列表 → 用户点安装」这条路径，且复制策略按清单来源分叉。
-> 权威定义见 `AGENTS.md` 第 3.7 节与 `WinPieGestures/Plugin/PluginPaths.cs`。
+> 权威定义见 `AGENTS.md` 第 4 节与 `WinPieGestures/Plugin/PluginPaths.cs`。
 
 ---
 

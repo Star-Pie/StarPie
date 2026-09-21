@@ -1,6 +1,6 @@
 # StarPie 插件系统架构与动作执行路径
 
-> **本分支采用本方案**（2026-09-17 与上游 `dev-plugin` 同步后并入）：本文档描述的是「统一调用运行时 + 路径模块 + 活动调用租约 + 异步停用状态机」重构，即本分支的**现行实现**。此前曾判定它与 `AGENTS.md` §3.7 的顶层类型认领机制在 `PluginHost` 上不可共存，并据此删除了新增模块 `PluginRuntime` / `PluginPathModules`（915 行）；同步上游后确认**二者可以共存** —— `PluginHost` 既经 `PluginRuntime` 登记并分流 `action-execution` / `interaction-event` / `wheel-structure` 三条路径，也经 `PluginActionClaimRegistry` 做顶层类型认领，两个模块已恢复并在用。插件系统的通用规范见 `AGENTS.md` §3.7，运行时重构要点见 §4。
+> **本分支采用本方案**（2026-09-17 与上游 `dev-plugin` 同步后并入）：本文档描述的是「统一调用运行时 + 路径模块 + 活动调用租约 + 异步停用状态机」重构，即本分支的**现行实现**。此前曾判定它与 `AGENTS.md` §4 的顶层类型认领机制在 `PluginHost` 上不可共存，并据此删除了新增模块 `PluginRuntime` / `PluginPathModules`（915 行）；同步上游后确认**二者可以共存** —— `PluginHost` 既经 `PluginRuntime` 登记并分流 `action-execution` / `interaction-event` / `wheel-structure` 三条路径，也经 `PluginActionClaimRegistry` 做顶层类型认领，两个模块已恢复并在用。插件系统的通用规范见 `AGENTS.md` §4，运行时重构要点见 §4。
 >
 > 文档状态：宿主公共基础设施与动作执行路径已基本完成；交互事件路径保留兼容骨架，轮盘结构路径暂为安全占位。
 >
@@ -114,7 +114,7 @@ flowchart TD
 
 #### 1. SDK 契约层
 
-目录：`StarPie.Plugin.Abstractions/`
+目录：`plugin/sdk/StarPie.Plugin.Abstractions/`
 
 负责定义：
 
@@ -145,10 +145,106 @@ flowchart TD
 
 #### 3. 插件实现层
 
-目录：`samples/` 以及第三方插件项目。
+目录：`plugin/samples/` 以及第三方插件项目。
 
 插件只引用 SDK，实现业务接口，不引用 `StarPie.dll`。
 
+### 核心模块职责
+
+下面按当前源码的职责边界归类，不按文件行数或历史提交阶段划分。主程序其它模块只应通过 `PluginHost` 进入插件系统；表中的内部类不是插件作者可以直接引用的公共 API。
+
+#### A. 识别与准入层：决定“这个插件能不能进入系统”
+
+| 模块 | 当前职责 |
+|---|---|
+| `PluginPaths.cs` | 统一解析只读候选区、可写宿主区、`registry.json`、`health.json`、日志和插件私有数据路径；处理便携模式、旧目录迁移、插件 ID 与路径安全规则。 |
+| `PluginManifestReader.cs` | 读取 `plugin.json` 或程序集元数据；校验 manifest schema、SDK 主版本、宿主版本范围、目标框架、平台、入口程序集、能力和保留 ID 规则。 |
+| `PluginScanner.cs` | 不执行插件代码地读取 PE / .NET 元数据，识别 TFM、架构、入口类型、清单来源、文件大小和哈希；用于候选扫描、安装前检查和加载前复查。 |
+| `PluginScanResult.cs` | 承载静态识别结果和结构化失败原因，为插件页、安装确认页和自检提供统一的标题、详情和修复建议。 |
+| `SimpleVersion.cs` | 提供宿主版本、插件版本和 TFM 兼容判断所需的轻量解析与比较。 |
+
+这一层的共同约束是：**扫描阶段不加载程序集、不调用 `Initialize()`，一枚坏 DLL 不应拖垮插件页或主程序启动。**
+
+#### B. 加载与运行时生命周期层：决定“如何运行和如何卸载”
+
+| 模块 | 当前职责 |
+|---|---|
+| `PluginLoadContext.cs` | 为每个插件创建可回收的 `AssemblyLoadContext`；优先共享宿主提供的 SDK 和宿主拥有的程序集，其余依赖从插件目录解析。 |
+| `PluginInstance.cs` | 表示一个插件 ID 的宿主包装对象，管理入口实例、加载上下文、状态、加载锁、活动调用计数、停用、健康度和卸载。加载时会重新静态识别、校验类型身份、创建 `PluginContext`、调用 `Initialize()` 并提交注册事务。 |
+| `PluginRuntime.cs` | 运行时组合根，装配路径注册表、激活协调器和调用协调器，并向动作、交互事件和轮盘结构路径提供统一生命周期入口。 |
+| `PluginActivationCoordinator` | 根据插件 ID 查找 `PluginInstance`，检查启用、隔离、不兼容和需重启状态，按需完成惰性加载。 |
+| `PluginCallCoordinator` | 为插件回调取得和释放活动调用租约，统一处理停用中的调用、停止门禁和等待宽限期。 |
+| `PluginInvoker.cs` | 在租约和调用协调器之上执行动作，负责 `Sequential` / `Background` 调度、取消、超时、异常归一化、结果解释和失败健康度更新。 |
+
+插件作者不需要接触 ALC、租约、停止状态或协调器；只需要让 `ExecuteAsync()` 返回覆盖真实工作的 `Task`，并在 `Shutdown()` 中释放自己创建的资源。
+
+#### C. 注册与动作执行层：插件和轮盘之间的唯一接缝
+
+| 模块 | 当前职责 |
+|---|---|
+| `PluginCatalog.cs` | 保存成功提交的动作、图标和词条注册；通过 `PluginRegistrationSession` 实现“暂存 → 冲突检查 → 原子提交 / 丢弃”；停用时按插件 ID 撤销全部贡献。 |
+| `PluginContext.cs` | 实现 SDK 的 `IPluginContext`；提供动作、图标、词条注册表，以及日志、设置、事件和宿主服务的装配。注册时检查动作 ID、参数字段、枚举选项和 SVG 等契约。 |
+| `PluginPathModules.cs` | 提供动作执行、交互事件和轮盘结构三条路径模块。当前动作执行路径已完整使用；交互事件保留兼容接缝；轮盘结构仍是安全占位。 |
+| `PluginActionBinding.cs` | 将设置页的 `Type="Plugin"`、`PluginActionRef` 和动作列表绑定起来；按插件分组展示当前已安装且可用的动作。 |
+| `PluginParameterValidator.cs` | 对 `Required`、`MaxLength`、`Min`、`Max`、正则和枚举等宿主声明约束做统一校验。保存和执行共用同一入口。 |
+| `PluginParameterForm.cs` | 根据 `ParameterField` 声明生成宿主统一风格的参数控件，不允许插件提供自定义 XAML。 |
+| `PluginActionClaimRegistry.cs` | 从登记表中的官方 `ClaimedTypes` 快照建立历史顶层类型到官方插件动作的兼容路由；社区插件不能进入这张认领表。 |
+| `ActionParameterProjection.cs` | 将旧 `ActionItem` 的裸字段投影为认领插件需要的参数字典，支持历史配置通过插件路径继续执行。 |
+| `PluginHostServices.cs` | 实现 `IPluginContext` 的宿主服务，包括日志、设置、通知、剪贴板、启动程序、命令、Shell、窗口、截屏、系统预设和事件服务；带真实后果的服务在运行时执行能力门禁。 |
+
+当前动作执行的核心路径是：
+
+```text
+ActionExecutor
+    ↓ 仅通过 PluginHost 进入插件系统
+PluginRuntime
+    ↓ ActionExecutionPathModule
+PluginActionRequest
+    ↓ PluginId + ContributionId / 官方历史类型认领
+PluginActivationCoordinator
+    ↓ 必要时惰性加载 PluginInstance
+PluginCatalog
+    ↓ FullId 查询 IActionContribution
+PluginParameterValidator
+    ↓ 宿主约束 + 插件 Validate
+PluginInvoker
+    ↓ 租约、调度、超时和结果治理
+IActionContribution.ExecuteAsync()
+```
+
+#### D. 持久化、分发和诊断外围层
+
+| 模块 | 当前职责 |
+|---|---|
+| `PluginRegistryStore.cs` | 原子读写 `registry.json` 和 `health.json`；串行化登记更新、记录启用状态、来源、哈希、能力确认、类型认领和健康度；损坏时备份后重建。 |
+| `PluginSettings.cs` | 管理每个插件私有的 `settings.json`，与主程序 `config.json` 分离。 |
+| `PluginLogger.cs` | 写入按插件分文件的日志，执行限流、旧日志清理，并将重要警告和错误镜像到主日志。 |
+| `OfficialPluginClient.cs` | 从官方 catalog 刷新模块、下载和解压官方包，校验包大小、包哈希、模块清单和程序集哈希，并以 `OfficialCatalog` 来源安装。 |
+| `PluginCandidate.cs` / `PluginListItem.cs` | 表示候选插件和插件管理页项目，向 UI 提供版本、来源、状态、错误和可执行管理操作。 |
+| `PluginInstallConfirmation.cs` / `PluginImpactAnalyzer.cs` | 生成安装能力确认信息，并分析停用、更新或卸载会影响哪些已配置动作。 |
+| `PluginSelfTest.cs` | 执行 `--plugin-selftest` 无界面端到端自检；使用临时沙箱验证识别、安装、注册、参数、调用租约、停用、卸载和清理。 |
+
+#### E. 主程序接缝
+
+插件系统通过以下既有模块接入 StarPie：
+
+| 文件 | 当前接缝 |
+|---|---|
+| `ActionExecutor.cs` | 识别内建动作、官方历史类型认领和普通 `Type="Plugin"` 动作；插件分支只调用 `PluginHost`，不直接接触插件对象。 |
+| `ActionItem.cs` | 持久化 `PluginActionRef`、插件参数 `ExtensionData` 和未知字段，保证普通插件动作可以安全写入主配置。 |
+| `App.xaml.cs` | 在启动和退出阶段装配插件系统；支持 `--plugin-paths`、`--plugin-selftest`，退出时统一停用插件。 |
+| `ConfigManager.cs` / `AppConfig.cs` | 保存插件系统偏好和动作槽位引用；插件登记与健康度仍由独立的 `registry.json` / `health.json` 管理。 |
+| `I18n.cs` | 接收插件注册的外部词条，并支持运行时语言切换。 |
+| `SettingsWindow.xaml(.cs)` | 提供插件管理、安装确认、动作选择和参数表单 UI；只展示已安装、已启用且可用的插件动作。 |
+
+#### F. 示例插件
+
+| 示例 | 重点 |
+|---|---|
+| `plugin/samples/HelloAction/` | 最小可用模板：入口、多个动作、参数表单、图标、多语言、事件订阅、宿主服务和幂等 `Shutdown()`。 |
+| `plugin/samples/ScreenBrightness/` | 进阶示例：P/Invoke、COM、耗时 IO、后台动作、硬件不可用时的降级和参数校验。 |
+
+---
 ---
 
 ## 4. 为什么需要 `StarPie.Plugin.Abstractions`
@@ -1202,7 +1298,7 @@ public async Task<ActionResult> ExecuteAsync(
 ## 24. 相关源码入口
 
 ```text
-StarPie.Plugin.Abstractions/
+plugin/sdk/StarPie.Plugin.Abstractions/
 ├── IStarPiePlugin.cs
 ├── IPluginContext.cs
 ├── Actions.cs
@@ -1232,7 +1328,7 @@ WinPieGestures/Plugin/
 建议阅读顺序：
 
 ```text
-StarPie.Plugin.Abstractions/IStarPiePlugin.cs
+plugin/sdk/StarPie.Plugin.Abstractions/IStarPiePlugin.cs
 → IPluginContext.cs
 → Actions.cs
 → WinPieGestures/Plugin/PluginHost.cs

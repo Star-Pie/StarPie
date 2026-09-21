@@ -107,19 +107,19 @@ g:\Users\2 Better\Desktop\design\
 │       ├── PluginLogger.cs            # 按插件分文件的日志
 │       ├── PluginContext.cs           # IPluginContext 实现 + 能力门禁 + 词条注册表
 │       └── PluginHostServices.cs      # 动作执行/窗口/剪贴板/通知等宿主服务实现
-├── StarPie.Plugin.Abstractions/   # ★ 插件 SDK 契约层（插件唯一允许引用的 StarPie 程序集）
-│   ├── IStarPiePlugin.cs          # 插件入口契约（Initialize / Shutdown）
-│   ├── IPluginContext.cs          # 插件可见的宿主能力集合
-│   ├── Actions.cs                 # ActionDescriptor / ParameterField / ActionResult
-│   ├── Registries.cs              # 动作、图标、词条注册表契约
-│   ├── Services.cs                # 宿主服务契约（窗口、剪贴板、通知、事件）
-│   ├── PluginManifest.cs          # plugin.json 清单模型
-│   ├── PluginMetadata.cs          # 程序集元数据兜底模型
-│   └── PluginApi.cs               # 契约常量（ApiVersion / 前缀 / 上限）
-├── samples/                       # ★ 社区插件示例（可直接构建为可分发的插件目录）
-│   ├── HelloAction/               # 参考模板，演示 SDK 全部可做之事（Text/Bool/Enum/Folder 参数）
-│   ├── ScreenBrightness/          # 压力测试样本：P/Invoke + COM 互操作 + 耗时 IO（Number/Bool 参数）
-│   └── FloatingBall/              # 常驻形态样本：插件自画 WPF 球窗 + 经 IHostWheelService 呼出宿主轮盘
+├── plugin/                       # ★ 插件开发资源（文档、归档与示例）
+│   ├── README.md                 # 插件开发统一入口
+│   ├── sdk/
+│   │   └── StarPie.Plugin.Abstractions/ # 插件 SDK 契约（主程序与插件共享）
+│   ├── docs/
+│   │   ├── plugin-development-quickstart.md      # 插件开发快速入门
+│   │   ├── plugin-system-api-and-performance.md  # 当前 API 与性能参考
+│   │   ├── plugin-system-architecture.md         # 插件系统现行架构与动作执行路径
+│   │   └── archive/                              # 历史设计与早期实现说明
+│   └── samples/
+│       ├── HelloAction/          # 社区参考模板
+│       ├── ScreenBrightness/     # P/Invoke + COM + 耗时 IO 压力测试样本
+│       └── FloatingBall/         # 常驻形态样本：插件自画 WPF 球窗 + 经 IHostWheelService 呼出宿主轮盘
 ├── releases/                      # 正式发行包构建归档目录
 │   └── vX.Y.Z/
 │       ├── Lightweight/           # 依赖运行时的轻量绿色包 (~2.5MB)
@@ -143,13 +143,6 @@ g:\Users\2 Better\Desktop\design\
 ├── installer/                     # Inno Setup 打包
 │   ├── StarPie.iss                # 安装脚本（语言文件在 Languages/）
 │   └── build-installer.ps1        # 打包入口 —— 版本号 6 处同步点之一（$Version 兜底值）
-├── docs/
-│   ├── plugin-system-architecture.md # 插件系统**现行实现**说明（统一调用运行时 + 路径模块 + 活动调用租约 + 异步停用状态机）
-│   ├── prototypes/                # 早期交互原型（v1.6.0 / v1.6.5，纯 HTML，仅供设计参考，不参与构建）
-│   └── issue100.txt               # 用户反馈原始记录（对应修复留档）
-├── PLUGIN_SYSTEM_DESIGN.md        # 插件系统设计大纲（设计草案，正文路径非现状，勿照抄）
-├── PLUGIN_SYSTEM_IMPLEMENTATION.md # 实现说明：结构与职责边界、接口用法、已踩过的坑
-├── PLUGIN_SYSTEM_PERFORMANCE_AND_API.md # 性能实测 · 完整接口清单 · 社区开发指南
 ├── PLUGIN_FIRST_ROADMAP.md        # 插件化边界规划（三问判据；定位是规划，不是现状描述）
 ├── AGENTS.md                      # 本架构与继承开发规范
 └── CHANGELOG.md                   # 完整版本演进与发布日志
@@ -227,11 +220,16 @@ g:\Users\2 Better\Desktop\design\
 
 ---
 
-### 3.7 插件系统 (`StarPie.Plugin.Abstractions` + `WinPieGestures/Plugin/`)
+## 4. 🧩 插件系统：契约、边界与运行时实现
+
+> 本节同时规定插件 SDK、安装与贡献契约、官方/社区插件边界，以及当前统一运行时、路径模块、活动调用租约和异步停用状态机。这里的规则是插件系统的统一工程约束。
+
+### 4.1 插件契约、边界与开发纪律
+
 - **三层分界，任何一层都不许越界**：
-  - **SDK 契约层** `StarPie.Plugin.Abstractions/`（独立程序集，插件唯一允许引用的 StarPie 程序集）。改动它等于改公共契约，只增不改；
+  - **SDK 契约层** `plugin/sdk/StarPie.Plugin.Abstractions/`（独立程序集，插件唯一允许引用的 StarPie 程序集）。改动它等于改公共契约，只增不改；
   - **宿主实现层** `WinPieGestures/Plugin/`（`PluginHost` 是主程序唯一的调用接缝）；
-  - **示例层** `samples/`（`HelloAction` 是社区参考模板，`ScreenBrightness` 是 P/Invoke + COM + 耗时 IO 的压力测试样本，`FloatingBall` 是常驻形态样本 —— 插件自己画窗口、自己从动作参数取外观、经宿主服务呼出轮盘）。
+  - **示例层** `plugin/samples/`（`HelloAction` 是社区参考模板，`ScreenBrightness` 是 P/Invoke + COM + 耗时 IO 的压力测试样本，`FloatingBall` 是常驻形态样本 —— 插件自己画窗口、自己从动作参数取外观、经宿主服务呼出轮盘）。
 - **插件工程的四条硬约束**（改错任一条都会导致加载失败或类型身份分裂）：
   1. `TargetFramework` 不得高于宿主（`net8.0-windows` / `net8.0-windows10.0.19041.0`），宿主直接读 `TargetFrameworkAttribute` 核对；
   2. `ProjectReference` 必须带 `<Private>false</Private>`，否则产物里会多出一份 `StarPie.Plugin.Abstractions.dll`，出现两份 `IStarPiePlugin` 类型身份，强转全部失败；
@@ -296,12 +294,11 @@ g:\Users\2 Better\Desktop\design\
 
 ---
 
-## 4. 🧩 插件系统运行时重构
+### 4.2 统一运行时、路径模块与生命周期
 
-> 本节是 2026-09-17 与 `devplugin` 侧同步后**已采用**的运行时形态；插件系统的通用规范
-> （两个插件目录、候选安装三条规则、顶层类型认领、宿主能力门禁、派发顺序等）见 **§3.7**。
+> 以下规则描述当前已采用的运行时形态；详细执行流程和类职责见 [`plugin/docs/plugin-system-architecture.md`](plugin/docs/plugin-system-architecture.md)。
 
-- **详细架构文档**：宿主分层、插件加载与原子注册、`PluginInstance` 包装、活动调用租约、异步停用和动作执行全链路统一维护在 [`docs/plugin-system-architecture.md`](docs/plugin-system-architecture.md)。
+- **详细架构文档**：宿主分层、插件加载与原子注册、`PluginInstance` 包装、活动调用租约、异步停用和动作执行全链路统一维护在 [`plugin/docs/plugin-system-architecture.md`](plugin/docs/plugin-system-architecture.md)。
 - **统一调用入口与路径模块**：`PluginHost` 仍是主程序唯一接缝，其后由 `PluginRuntime` 登记并分流 `action-execution` / `interaction-event` / `wheel-structure` 路径。路径公共接口只统一生命周期通知与异常隔离，具体请求和结果必须保持强类型；严禁退化成 `Invoke(path, object)` 或中央巨型 `switch`。新增路径应注册新的 `PluginPathModule`，不得复制一套插件状态、停用和卸载逻辑。
 - **激活机制公用、加载策略归路径所有**：`PluginActivationCoordinator` 只负责查找实例、检查启用/隔离/兼容状态、合并并发加载和执行 `PluginInstance.Load`，绝不擅自修改用户的 `Entry.Enabled` 偏好。动作执行允许对“已启用但未加载”的插件惰性加载；交互事件不得因广播而加载插件；轮盘结构将来只允许按明确 Provider 引用有条件加载并配合缓存回退。用户停用、更新与卸载必须先把 `Entry.Enabled=false` 落盘，再开始撤销与卸载；插件系统总开关和应用退出只停止当前运行时，不得清空插件自身的启用偏好。实例级加载锁内还要复核一次，防止停用与首次调用交错后重新拉起插件。
 - **动作路径拥有完整执行语义**：`ActionExecutionPathModule` 负责从 `ActionItem` 复制不可变 `PluginActionRequest`，再按“公用激活 → FullId 查询 → 同一 registration 参数校验 → `PluginInvoker` 调度”执行。设置页校验复用同一校验实现但不得触发惰性加载；动作解析和执行逻辑不得重新塞回 `PluginHost`。
@@ -311,6 +308,8 @@ g:\Users\2 Better\Desktop\design\
     - **修法用的是宿主本来就有的通道**：`ActionExecutor.ExecuteForTesting` 投 `EnqueueAction`（真实手势与轮盘走的都是它），并投 `Clone()` 快照而不是界面上那个活实例 —— 入队意味着执行发生在稍后的另一条线程上，而那一刻用户可能已经在继续改这个动作。没有新造线程池，顺带让「测试」与真实触发走同一条线程，「测试通过」这才对得上「轮盘上也会通过」。五个入口：扇区 / 焦点动作 / 手势映射 / 取消动作 / 子动作。
     - **它有静态护栏**：`scratch/check_test_button_thread.py`。这条约束编译器抓不到（`Execute` 与 `ExecuteForTesting` 都是合法调用），UI 回归套件也够不着（要复现得在沙箱里装一个真插件再点一次按钮，属 §5.4 那条「沙箱里没有已安装插件 ⇒ 渲染不出来」的盲区）。判据限定在**名字里带 `Test` 的 `_Click` 处理器**这个作用域，不是全仓禁 `Execute` —— `GestureController` 等真实触发路径按自己的方式调用是有意的。变异测试：把其中一个调用换回 `Execute` ⇒ 报 `SettingsWindow.xaml.cs:8496 FocusTestActionBtn_Click 里同步调用了 ActionExecutor.Execute(...)`。
 
+
+
 ---
 
 ## 5. 🔄 代码生成、编译与发布流水线
@@ -319,7 +318,7 @@ g:\Users\2 Better\Desktop\design\
 - **优先直接维护 `WinPieGestures/` 源码**：项目源码已完整解耦，可以直接在 `WinPieGestures` 中进行修改、扩展与调试。
 - **流水线工具 `scratch/Decompiler/Program.cs`**：当需要批量从基线生成或大范围重构时，同步维护 `Program.cs` 并通过 `dotnet run --project scratch/Decompiler` 生成源码。
 - **`PluginSelfTest.cs` 的段落号是结构契约，不是装饰。** 它承载 `[0]`…`[7]`（含 `[3b]`/`[3c]`/`[3d]`/`[3e]`/`[3f]`/`[3g]`/`[3h]`/`[3j]`）共十七段断言，而本文件是全仓**唯一**没有单测保护的执行体 —— 它自己就是验证手段。任何「整文件重写」或「解决冲突整体取一侧」都可能在无人察觉的情况下整段顶掉断言。
-  - **真实事故**：`refactor` 分支在旧基线上重写了本文件（2813 行 → 945 行），合并时整体取它，导致 `devplugin` 侧后加的 `[3j]`（宿主服务面与能力门禁，~200 行，含跨能力交叉断言）连同 `[3k]`/`[3m]` 一起消失。此后 `AGENTS.md` §3.7、`PluginCapabilityLabels` 类注释、`PluginHostServices.RunPreset` 注释**仍在引用 `[3j]`**，也就是说后续所有「已由 `[3j]` 守」的结论全都没有依据。已于 2026-09-19 恢复（按现行服务名重写，非照抄）。
+  - **真实事故**：`refactor` 分支在旧基线上重写了本文件（2813 行 → 945 行），合并时整体取它，导致 `devplugin` 侧后加的 `[3j]`（宿主服务面与能力门禁，~200 行，含跨能力交叉断言）连同 `[3k]`/`[3m]` 一起消失。此后 `AGENTS.md` §4、`PluginCapabilityLabels` 类注释、`PluginHostServices.RunPreset` 注释**仍在引用 `[3j]`**，也就是说后续所有「已由 `[3j]` 守」的结论全都没有依据。已于 2026-09-19 恢复（按现行服务名重写，非照抄）。
   - **改本文件前后都要比对段落号集合**：`grep -o '\[[0-9][a-z]*\]' WinPieGestures/Plugin/PluginSelfTest.cs | sort -u`。少一段就得回答「它守的东西现在由谁守」，答不上来就是回归。这条纪律同样适用于其它「文档/注释在引用它」的断言集合（见技能 `merge-integrity-audit`）。
   - **新增断言要自证有效**：`[3j]` 恢复时用变异测试验过 —— 把 `PluginWindowService` 的 required 从 `WindowControl` 改成 `Process`，构建**仍 0 警告**（编译器抓不到），自检当场报 3 条 [FAIL]。一条从没红过的断言不算护栏。
   - **`[3f]` 守「插件管理页卡片文案」**（2026-09-19 加）。这一段的存在理由是**别的手段都够不着**：卡片在 `ListBox.ItemTemplate` 里，`DataTemplate` 命名域不同 ⇒ `Name` 无效（静态差集的「具名控件漏接 = 0」看不见）；而用例沙箱里**没有已安装插件** ⇒ 列表为空、模板从未实例化（台账也看不见）。所以「卡片翻没翻」只能靠**真的构建一次卡片**来断言：① 逐 `PluginRuntimeState` 成员驱动 `PluginListItem.DescribeState`，断言非空、**不是裸键名**、有图标，并单独判 `Active`/`Installed` 的两种处境文案不同；② 逐语言 `PluginListItem.Build`，英文卡片的**宿主部分**（先按**长度降序**摘掉插件自带数据）不许有方块字与全角标点；③ 详情里必须含 `pluginId`（否则「没有中文」可能只是「什么都没拼」）；④ 四语言卡片两两不同。段落刻意排在 `[4]` **之前** —— `--skip-invoke` 在 `[4]` 开头提前 return，排后面等于日常回归不执行。

@@ -50,6 +50,7 @@ def _exe_path():
 def _sample_plugin_dll():
     path = os.path.join(
         _project_root(),
+        "plugin",
         "samples",
         "HelloAction",
         "bin",
@@ -58,7 +59,7 @@ def _sample_plugin_dll():
         "StarPie.Plugin.HelloAction.dll",
     )
     if not os.path.exists(path):
-        pytest.skip("样例插件尚未构建（samples/HelloAction），跳过候选渲染断言")
+        pytest.skip("样例插件尚未构建（plugin/samples/HelloAction），跳过候选渲染断言")
     return path
 
 
