@@ -56,7 +56,7 @@
 
   <ItemGroup>
     <!-- Private=false 是「避免类型身份分裂」的关键，请勿删除。 -->
-    <ProjectReference Include="..\..\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj">
+    <ProjectReference Include="..\..\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
@@ -76,3 +76,4 @@
   </ItemGroup>
 
 </Project>
+

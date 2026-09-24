@@ -55,6 +55,16 @@
 - 官方历史类型认领；
 - 热重载、更新、卸载和 ALC 回收；
 - 锁、健康度、安全模式和自检。
+配套的可视化架构图：[《StarPie 插件系统架构图》](docs/plugin-system-architecture-map.md)
+
+这份文档适合在阅读架构正文时对照查看，重点展示：
+
+- `PluginHost`、`PluginRuntime`、`PluginInstance`、`PluginCatalog` 和 `PluginContext` 的层级关系；
+- 宿主启动、插件安装、首次加载、实例封装和原子注册流程；
+- `IPluginContext` 服务边界、动作执行路径、调用租约与停用流程；
+- 三条插件调用路径以及最终的宿主、运行时、SDK 和主程序职责边界。
+
+架构正文负责解释设计和实现细节；架构图文档负责提供全局关系图和关键流程图，两者应配套阅读。
 
 ---
 
@@ -226,3 +236,4 @@ StarPie.exe --plugin-selftest <插件.dll> --skip-invoke
 - 示例工程路径、项目引用或构建命令变化时，同步更新本 README；
 - 历史方案移入 `docs/archive/`，不要继续与当前文档并列展示；
 - 主仓库 README 只链接本页，不重复维护具体文档列表。
+
