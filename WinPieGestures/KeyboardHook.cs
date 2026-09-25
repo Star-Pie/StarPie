@@ -41,27 +41,50 @@ public class KeyboardHook : IDisposable
 		public uint lPrivate;
 	}
 
-	private struct KEYBDINPUT
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct MOUSEINPUT
 	{
-		public ushort wVk;
-
-		public ushort wScan;
-
+		public int dx;
+		public int dy;
+		public uint mouseData;
 		public uint dwFlags;
-
 		public uint time;
-
 		public nint dwExtraInfo;
 	}
 
-	[StructLayout(LayoutKind.Explicit)]
-	private struct InputUnion
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct KEYBDINPUT
 	{
-		[FieldOffset(0)]
-		public KEYBDINPUT ki;
+		public ushort wVk;
+		public ushort wScan;
+		public uint dwFlags;
+		public uint time;
+		public nint dwExtraInfo;
 	}
 
-	private struct INPUT
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct HARDWAREINPUT
+	{
+		public uint uMsg;
+		public ushort wParamL;
+		public ushort wParamH;
+	}
+
+	[StructLayout(LayoutKind.Explicit)]
+	internal struct InputUnion
+	{
+		[FieldOffset(0)]
+		public MOUSEINPUT mi;
+
+		[FieldOffset(0)]
+		public KEYBDINPUT ki;
+
+		[FieldOffset(0)]
+		public HARDWAREINPUT hi;
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct INPUT
 	{
 		public uint type;
 
@@ -131,6 +154,7 @@ public class KeyboardHook : IDisposable
 
 	public void StartExclusiveRecording()
 	{
+		KeyboardRemapController.Current.NotifyRecorderActive();
 		lock (_exclusiveDownModifiers)
 		{
 			_exclusiveDownModifiers.Clear();
@@ -531,6 +555,11 @@ public class KeyboardHook : IDisposable
 			if (IsPaused)
 			{
 				return CallNextHookEx(_hookId, nCode, wParam, lParam);
+			}
+
+			if (KeyboardRemapController.Current.TryProcessHookEvent(vkCode, (int)num, kbd.flags, kbd.time))
+			{
+				return 1;
 			}
 
 			GlobalKeyEventArgs e = new GlobalKeyEventArgs(vkCode, currentModifiers);

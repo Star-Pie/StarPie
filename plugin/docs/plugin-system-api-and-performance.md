@@ -133,6 +133,9 @@ IPluginContext
 ├── System          系统预设
 ├── Info            宿主环境信息
 ├── Notify          非侵入式通知
+├── Wheel           呼出配置轮盘（SDK 1.5 起）
+├── SettingsPage    插件级参数页声明（SDK 1.6 起）
+├── KeyboardRemap   受控键盘空间重映射（SDK 1.7 起）
 ├── Events          宿主事件订阅
 └── Dispatcher      UI 线程调度
 ```

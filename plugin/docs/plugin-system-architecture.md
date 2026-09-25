@@ -340,7 +340,8 @@ PluginRuntime
 ├── PluginCallCoordinator
 ├── ActionExecutionPathModule
 ├── InteractionEventPathModule
-└── WheelStructurePathModule
+├── WheelStructurePathModule
+└── KeyboardRemapPathModule
 ```
 
 ### `PluginPathRegistry`
@@ -351,6 +352,7 @@ PluginRuntime
 action-execution
 interaction-event
 wheel-structure
+keyboard-remap
 ```
 
 路径公共接口只统一：
@@ -1291,7 +1293,33 @@ public async Task<ActionResult> ExecuteAsync(
 | `PluginInvoker` | Sequential/Background、超时、结果和健康度 |
 | `InteractionEventPathModule` | 当前旧事件订阅与未来统一事件路径 |
 | `WheelStructurePathModule` | 未来声明式轮盘结构路径，目前为空实现 |
+| `KeyboardRemapPathModule` | 键盘重映射路径模块，负责停用时自动撤销会话与按键释放 |
 | `PluginSelfTest` | 临时沙箱中的端到端识别、安装、调用、租约、停用和卸载测试 |
+
+---
+
+## 23.1 键盘空间重映射架构 (SDK 1.7)
+
+### 1. 架构目标与职责分工
+SDK 1.7 引入了受控的进程级键盘空间重映射服务，专为工业 CAD/DCC 工具（如 SolidWorks、Blender 等无小键盘笔记本环境）提供单手盲操小键盘映射。
+- **SDK 契约层**：
+  - `PluginCapability.InputRemapping` (`1 << 12`)：独立能力位；
+  - `ParameterFieldType.KeyMap` (`9`)：动作与插件级参数字段类型；
+  - `IHostKeyboardRemapService`：提供 `Activate`, `Deactivate`, `Toggle`, `GetStatus`；
+  - `KeyboardRemapEntry`, `KeyboardRemapOptions`（含 `TargetProcessName` 与版本化 `KeyMap` 协议串）, `KeyboardRemapStatus`, `KeyboardRemapResult`。
+- **宿主控制器与底层钩子**：
+  - `KeyboardRemapController`：常驻单例，复用主程序全局 `KeyboardHook`（严禁创建第二键盘钩子）；
+  - **热路径无损规范**：`TryProcessHookEvent` 执行常量时间查表（预分配 256 项结构体数组），以热路径零堆分配（目标 0 B）与单事件耗时目标 < 0.05 ms 为契约指标，不投递 Dispatcher，无任何磁盘或网络 IO；
+  - **全链路自愈与故障安全机制**：
+    1. **焦点切换自愈**：目标前台进程失焦瞬间，立即自动撤销活动会话并物理释放所有按下的合成键，且保证新进程收到的首个物理按键原样放行；前台身份未知（PID 0）时严格 Fail-closed 撤销并放行；
+    2. **长按 Escape 自愈**：持续长按 Escape 超过 1.5 秒无条件触发紧急撤销，脱离卡键（强制常开，不可关闭）；
+    3. **自动重复按键正确计数**：首次按下递增目标引用计数，自动重复 KeyDown 仅转发硬件扫描码合成事件而不重复递增计数，松开单次即平稳释放；
+    4. **快捷键录制独占优先**：触发快捷键录制框时优先撤销重映射；
+    5. **合成键防回环**：所有合成事件打上 `KeyboardHook.StarPieExtraInfo`，在钩子入口直接旁路放行；
+    6. **宿主退出与插件停用**：应用退出或插件停用（`KeyboardRemapPathModule.OnPluginStopping`）时自动收尾。
+- **可视化参数编辑与协议隔离**：
+  - `KeyMapEditorWindow`：遵循 StarPie 深浅主题的高对比度网格编辑器，提供一键恢复默认空间预设（Q/W/E/A/S/D/Z/X/C/R → Num7..Num0）、增删行、按键去重校验与版本化（`v1|...`）编解码；
+  - `PluginParameterForm`：`KeyMap` 字段显示多语言可读摘要（未配置 / 已配置 N 项），普通文本框只读防误改，由配置按钮唤起可视化编辑器。
 
 ---
 

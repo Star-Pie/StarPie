@@ -89,7 +89,7 @@ internal static class ActionTypeCatalog
         AddClaimed(items, "ShellTool", "⚡ ", "ActionTypeShellToolShort");
         AddClaimed(items, "System", "⚙️ ", "ActionTypeSystemShort");
 
-        if (PluginActionBinding.BuildPluginActionItems().Count > 0)
+        if (ShouldShowPluginActionType())
         {
             items.Add(new ActionTypeItem
             {
@@ -131,7 +131,7 @@ internal static class ActionTypeCatalog
         AddClaimed(items, "ShellTool", "⚡ ", "ActionTypeShellToolShort");
         AddClaimed(items, "System", "⚙️ ", "ActionTypeSystemShort");
 
-        if (PluginActionBinding.BuildPluginActionItems().Count > 0)
+        if (ShouldShowPluginActionType())
         {
             items.Add(new ActionTypeItem
             {
@@ -168,7 +168,32 @@ internal static class ActionTypeCatalog
         AddClaimedOption(items, "ShellTool", "ActionTypeShellToolShort");
         AddClaimedOption(items, "System", "ActionTypeSystemShort");
 
+        if (ShouldShowPluginActionType())
+        {
+            items.Add(new ActionTypeOption
+            {
+                Tag = PluginActionBinding.TypeName,
+                DisplayText = I18n.T("ActionTypePluginShort"),
+            });
+        }
+
         return items;
+    }
+
+    /// <summary>判断是否应当在动作类型列表中展示「插件动作」选项（当存在已注册动作、已安装插件或登记簿记录时）。</summary>
+    public static bool ShouldShowPluginActionType()
+    {
+        try
+        {
+            if (PluginActionBinding.BuildPluginActionItems().Count > 0) return true;
+            if (PluginHost.InstalledCount > 0) return true;
+            if (PluginRegistryStore.SnapshotEntries().Count > 0) return true;
+            if (PluginHost.Candidates.Count > 0) return true;
+        }
+        catch
+        {
+        }
+        return false;
     }
 
     /// <summary>选择窗口管理聚合项时使用的第一个可用具体动作。</summary>

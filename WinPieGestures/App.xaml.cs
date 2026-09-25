@@ -410,6 +410,14 @@ public partial class App : Application
 			return;
 		}
 		MainMouseHook.IsPaused = !MainMouseHook.IsPaused;
+		if (MainKeyboardHook != null)
+		{
+			MainKeyboardHook.IsPaused = MainMouseHook.IsPaused;
+		}
+		if (MainMouseHook.IsPaused)
+		{
+			KeyboardRemapController.Current.OnHostPaused();
+		}
 		MainTrayController?.UpdatePauseState(MainMouseHook.IsPaused);
 	}
 
@@ -440,6 +448,7 @@ public partial class App : Application
 			return;
 		}
 		_isExiting = true;
+		KeyboardRemapController.Current.Shutdown();
 		MainTrayController?.Dispose();
 		Application.Current?.Shutdown();
 	}
@@ -604,6 +613,15 @@ public partial class App : Application
 		catch (Exception ex)
 		{
 			AppLogger.LogError("Plugin system shutdown failed", ex);
+		}
+
+		try
+		{
+			KeyboardRemapController.Current.Shutdown();
+		}
+		catch (Exception ex)
+		{
+			AppLogger.LogError("Keyboard remap controller shutdown failed", ex);
 		}
 
 		MainTrayController?.Dispose();

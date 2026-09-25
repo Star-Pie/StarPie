@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using StarPie.Plugin;
 
@@ -435,6 +436,79 @@ internal sealed class PluginParameterForm
 					{
 						box.Text = value ?? "";
 						UpdateSwatch(swatch, box.Text);
+					});
+			}
+
+			case ParameterFieldType.KeyMap:
+			{
+				var grid = new Grid();
+				grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+				grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+				string currentRawValue = "";
+
+				void UpdateDisplay(TextBox b, string raw)
+				{
+					if (string.IsNullOrWhiteSpace(raw))
+					{
+						b.Text = I18n.T("KeyMapFieldEmptySummary");
+						b.ToolTip = null;
+					}
+					else if (KeyMapCodec.TryDecode(raw, out var entries, out _) && entries != null && entries.Count > 0)
+					{
+						b.Text = string.Format(I18n.T("KeyMapFieldConfiguredSummary"), entries.Count);
+						b.ToolTip = raw;
+					}
+					else
+					{
+						b.Text = I18n.T("KeyMapFieldEmptySummary");
+						b.ToolTip = null;
+					}
+				}
+
+				var box = Styled(new TextBox
+				{
+					Height = 30,
+					FontSize = 11.5,
+					VerticalContentAlignment = VerticalAlignment.Center,
+					IsReadOnly = true,
+					Focusable = false,
+					Cursor = Cursors.Arrow,
+				});
+				Grid.SetColumn(box, 0);
+				grid.Children.Add(box);
+
+				var editBtn = new Button
+				{
+					Content = I18n.T("KeyMapEditorConfigureButton"),
+					Height = 30,
+					Padding = new Thickness(8, 0, 8, 0),
+					Margin = new Thickness(6, 0, 0, 0),
+					FontSize = 11.5,
+				};
+				ApplyButtonStyle(editBtn);
+				editBtn.Click += (_, _) =>
+				{
+					Window? ownerWindow = Window.GetWindow(_host);
+					var editor = new KeyMapEditorWindow(currentRawValue);
+					if (ownerWindow != null) editor.Owner = ownerWindow;
+					if (editor.ShowDialog() == true)
+					{
+						currentRawValue = editor.ResultKeyMap ?? "";
+						UpdateDisplay(box, currentRawValue);
+						Commit(field.Key, currentRawValue);
+					}
+				};
+				Grid.SetColumn(editBtn, 1);
+				grid.Children.Add(editBtn);
+
+				return (
+					grid,
+					() => currentRawValue,
+					value =>
+					{
+						currentRawValue = value ?? "";
+						UpdateDisplay(box, currentRawValue);
 					});
 			}
 

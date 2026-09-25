@@ -46,7 +46,9 @@ public partial class SubActionEditorWindow : Window
 						CommandTerminal = existingSubAction.CommandTerminal,
 						RunAsStandardUser = existingSubAction.RunAsStandardUser,
 						BrowserChoice = existingSubAction.BrowserChoice,
-						BrowserPath = existingSubAction.BrowserPath
+						BrowserPath = existingSubAction.BrowserPath,
+						PluginActionRef = existingSubAction.PluginActionRef,
+						ExtensionData = existingSubAction.ExtensionData != null ? new Dictionary<string, string>(existingSubAction.ExtensionData) : null
 					}
 				});
 			}

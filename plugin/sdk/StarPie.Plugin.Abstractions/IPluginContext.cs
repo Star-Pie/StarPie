@@ -89,6 +89,12 @@ public interface IPluginContext
     /// </summary>
     IHostWheelService Wheel { get; }
 
+    /// <summary>
+    /// 键盘重映射（由宿主管理的进程级按键重映射会话，SDK 1.7 起）。
+    /// 需要 <see cref="PluginCapability.InputRemapping"/> 能力。
+    /// </summary>
+    IHostKeyboardRemapService KeyboardRemap { get; }
+
     /// <summary>宿主环境信息。</summary>
     IHostInfo Info { get; }
 

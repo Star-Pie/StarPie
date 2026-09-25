@@ -703,6 +703,64 @@ internal sealed class PluginWheelService : PluginGatedService, IHostWheelService
 }
 
 /// <summary>
+/// 键盘重映射服务实现。门禁是 <see cref="PluginCapability.InputRemapping"/>。
+/// 挂接宿主管理的集中式键盘重映射控制器。
+/// </summary>
+internal sealed class PluginKeyboardRemapService : PluginGatedService, IHostKeyboardRemapService
+{
+    private readonly string _pluginId;
+
+    public PluginKeyboardRemapService(string pluginId, PluginCapability capabilities)
+        : base(pluginId, capabilities, PluginCapability.InputRemapping, nameof(IHostKeyboardRemapService))
+    {
+        _pluginId = pluginId;
+    }
+
+    public KeyboardRemapStatus GetStatus()
+    {
+        // 查询状态属于只读元数据，不受门禁约束
+        return KeyboardRemapController.Current.GetStatus();
+    }
+
+    public KeyboardRemapResult Activate(KeyboardRemapOptions options)
+    {
+        RequireCapability();
+        return GuardResult(nameof(Activate), () => KeyboardRemapController.Current.Activate(_pluginId, options));
+    }
+
+    public KeyboardRemapResult Activate(string targetProcessName, string keyMap) =>
+        Activate(new KeyboardRemapOptions { TargetProcessName = targetProcessName, KeyMap = keyMap });
+
+    public KeyboardRemapResult Deactivate()
+    {
+        RequireCapability();
+        return GuardResult(nameof(Deactivate), () => KeyboardRemapController.Current.Deactivate(_pluginId));
+    }
+
+    public KeyboardRemapResult Toggle(KeyboardRemapOptions options)
+    {
+        RequireCapability();
+        return GuardResult(nameof(Toggle), () => KeyboardRemapController.Current.Toggle(_pluginId, options));
+    }
+
+    public KeyboardRemapResult Toggle(string targetProcessName, string keyMap) =>
+        Toggle(new KeyboardRemapOptions { TargetProcessName = targetProcessName, KeyMap = keyMap });
+
+    private KeyboardRemapResult GuardResult(string operation, Func<KeyboardRemapResult> action)
+    {
+        try
+        {
+            return action();
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogError($"[plugin:{_pluginId}] IHostKeyboardRemapService.{operation} 执行失败", ex);
+            return KeyboardRemapResult.Fail($"内部错误: {ex.Message}");
+        }
+    }
+}
+
+/// <summary>
 /// 宿主事件订阅实现。
 /// <para>
 /// <b>所有订阅都必须返回可释放 token</b>，因为订阅链是「宿主静态事件 → 插件实例」，

@@ -8172,7 +8172,19 @@ public partial class SettingsWindow : Window
 		}
 		else
 		{
-			targetList = allTypes;
+			targetList = new List<ActionTypeItem>(allTypes);
+		}
+
+		// 关键防护：如果当前动作或传入 Tag 本身是插件动作类型，确保下拉数据源必然存在「插件动作」选项，
+		// 严禁因插件临时停用或未加载而从下拉源中剔除，避免 ComboBox 选中丢失并错误回退到 Hotkey！
+		if (string.Equals(currentTag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase) &&
+		    !targetList.Any(t => string.Equals(t.Tag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase)))
+		{
+			targetList.Add(new ActionTypeItem
+			{
+				Tag = PluginActionBinding.TypeName,
+				DisplayText = "🔌 " + I18n.T("ActionTypePluginShort"),
+			});
 		}
 
 		if (!force && FocusActionTypeComboBox.ItemsSource is List<ActionTypeItem> currentList &&
@@ -8206,88 +8218,99 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	internal static void SwitchFocusActionType(ActionItem item, string newType)
+	{
+		if (string.Equals(item.Type, newType, StringComparison.OrdinalIgnoreCase))
+		{
+			return;
+		}
+
+		if (newType == PluginActionBinding.TypeName)
+		{
+			item.Type = PluginActionBinding.TypeName;
+			if (ActionNameDefaults.IsAutoFilled(item.Name))
+			{
+				item.Name = I18n.T("ActionTypePluginShort");
+			}
+		}
+		else if (newType == "WindowManager")
+		{
+			bool wasWindowType = item.Type == "Tile" || item.Type == "ToggleTopmost" || item.Type == "MoveMonitor" || item.Type == "WindowOpacity" || item.Type == "SwitchWindow";
+			if (!wasWindowType)
+			{
+				item.Type = "Tile";
+				item.Parameter = "2L";
+				if (ActionNameDefaults.IsAutoFilled(item.Name))
+				{
+					item.Name = "平铺: " + WindowTiler.LayoutDisplayName("2L");
+				}
+				if (string.IsNullOrEmpty(item.IconKey))
+				{
+					item.IconKey = "Tile";
+				}
+			}
+		}
+		else
+		{
+			// 从插件动作切回内置类型时，保留已配好的插件引用与扩展配置（ExtensionData.keyMap），
+			// 避免“插件动作 → 快捷键 → 插件动作”往返导致配置丢失。
+			item.Type = newType;
+		}
+
+		if ((newType == "Folder" || newType == "OpenFolder") && string.IsNullOrEmpty(item.IconKey))
+		{
+			item.IconKey = "Folder";
+		}
+		else if ((newType == "WebUrl" || newType == "Url") && string.IsNullOrEmpty(item.IconKey))
+		{
+			item.IconKey = "Globe";
+		}
+		else if (newType == "Ocr" || newType == "ScreenOcr")
+		{
+			item.Type = "Ocr";
+			if (ActionNameDefaults.IsAutoFilled(item.Name))
+			{
+				item.Name = "截屏识字";
+			}
+			if (string.IsNullOrEmpty(item.IconKey))
+			{
+				item.IconKey = "Scan";
+			}
+		}
+		else if (newType == "ShellTool")
+		{
+			item.Type = "ShellTool";
+			if (string.IsNullOrEmpty(item.Parameter) || (!item.Parameter.Contains('.') && ShellActionPickerWindow.ShellTools?.Any(t => t.Id == item.Parameter) != true))
+			{
+				item.Parameter = "Windows.CopyAsPath";
+				item.Name = "复制文件/文件夹路径";
+				item.IconKey = "Copy";
+			}
+			else
+			{
+				var tool = ShellActionPickerWindow.ShellTools?.FirstOrDefault(t => t.Id == item.Parameter || string.Equals(t.Verb, item.Parameter, StringComparison.OrdinalIgnoreCase));
+				if (tool != null)
+				{
+					item.Name = tool.Name;
+					item.IconKey = tool.IconKey;
+				}
+			}
+		}
+	}
+
 	private void FocusActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 	{
 		if (_isUpdatingUi || _isUpdatingFocusUi || !_isUiInitialized || _isUiInitializing) return;
 		if (FocusActionTypeComboBox == null) return;
 		ActionItem? item = GetCurrentFocusActionItem();
-		if (item != null && FocusActionTypeComboBox.SelectedValue is string newType)
+		if (item != null && FocusActionTypeComboBox.SelectedValue is string newType && !string.IsNullOrWhiteSpace(newType))
 		{
-			if (newType == PluginActionBinding.TypeName)
+			if (string.Equals(item.Type, newType, StringComparison.OrdinalIgnoreCase))
 			{
-				// 只切类型，**刻意不清插件引用**：用户在内置类型与插件动作之间来回切换时，
-				// 已配好的插件动作不应被清掉（改选具体动作是子下拉的事）。
-				// 引用为空只表示「还没选过」，由子下拉的空状态去引导。
-				item.Type = PluginActionBinding.TypeName;
-				if (ActionNameDefaults.IsAutoFilled(item.Name))
-				{
-					item.Name = I18n.T("ActionTypePluginShort");
-				}
-			}
-			else if (newType == "WindowManager")
-			{
-				bool wasWindowType = item.Type == "Tile" || item.Type == "ToggleTopmost" || item.Type == "MoveMonitor" || item.Type == "WindowOpacity" || item.Type == "SwitchWindow";
-				if (!wasWindowType)
-				{
-					item.Type = "Tile";
-					item.Parameter = "2L";
-					if (ActionNameDefaults.IsAutoFilled(item.Name))
-					{
-						item.Name = "平铺: " + WindowTiler.LayoutDisplayName("2L");
-					}
-					if (string.IsNullOrEmpty(item.IconKey))
-					{
-						item.IconKey = "Tile";
-					}
-				}
-			}
-			else
-			{
-				// 从插件动作切回内置类型时，必须清掉插件引用，
-				// 否则会留下「内置类型 + 悬挂插件引用」的混合状态。
-				PluginActionBinding.Clear(item);
-				item.Type = newType;
+				return;
 			}
 
-			if ((newType == "Folder" || newType == "OpenFolder") && string.IsNullOrEmpty(item.IconKey))
-			{
-				item.IconKey = "Folder";
-			}
-			else if ((newType == "WebUrl" || newType == "Url") && string.IsNullOrEmpty(item.IconKey))
-			{
-				item.IconKey = "Globe";
-			}
-			else if (newType == "Ocr" || newType == "ScreenOcr")
-			{
-				item.Type = "Ocr";
-				if (ActionNameDefaults.IsAutoFilled(item.Name))
-				{
-					item.Name = "截屏识字";
-				}
-				if (string.IsNullOrEmpty(item.IconKey))
-				{
-					item.IconKey = "Scan";
-				}
-			}
-			else if (newType == "ShellTool")
-			{
-				item.Type = "ShellTool";
-				if (string.IsNullOrEmpty(item.Parameter) || (!item.Parameter.Contains('.') && ShellActionPickerWindow.ShellTools?.Any(t => t.Id == item.Parameter) != true))
-				{
-					item.Parameter = "Windows.CopyAsPath";
-					item.Name = "复制文件/文件夹路径";
-					item.IconKey = "Copy";
-				}
-				else
-				{
-					var tool = ShellActionPickerWindow.ShellTools?.FirstOrDefault(t => t.Id == item.Parameter || string.Equals(t.Verb, item.Parameter, StringComparison.OrdinalIgnoreCase));
-					if (tool != null)
-					{
-						item.Name = tool.Name;
-						item.IconKey = tool.IconKey;
-					}
-				}
-			}
+			SwitchFocusActionType(item, newType);
 			UpdateFocusEditorUi();
 			RefreshSlots();
 			RenderMappingsWheelPreview();

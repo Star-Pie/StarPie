@@ -66,6 +66,9 @@ internal static class PluginCapabilityLabels
 
         // 轮盘上跑的全是用户自己配的动作，措辞要点破两件事：会「接管点击」，且「按下即执行配置」。
         (PluginCapability.Wheel, "PluginCapabilityWheel"),
+
+        // 托管式键盘重映射：由宿主统一调度进程级按键重定向
+        (PluginCapability.InputRemapping, "PluginCapabilityInputRemapping"),
     };
 
     /// <summary>把一组能力位拼成确认页上的多行文本；没有任何能力时返回「（无）」（同样走词条）。</summary>

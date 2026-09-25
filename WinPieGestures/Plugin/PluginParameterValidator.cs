@@ -149,6 +149,16 @@ internal static class PluginParameterValidator
 					}
 					break;
 				}
+
+				case ParameterFieldType.KeyMap:
+				{
+					string? err = KeyMapValidator.Validate(value);
+					if (!string.IsNullOrEmpty(err))
+					{
+						issues.Add(NewIssue(field, label, err));
+					}
+					break;
+				}
 			}
 
 			// ------------------------------------------------------------------ 正则

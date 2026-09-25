@@ -542,3 +542,101 @@ public interface IHostWheelService
     /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.Wheel"/>。</exception>
     bool DismissWheel();
 }
+
+/// <summary>键盘映射单项配置。</summary>
+public sealed class KeyboardRemapEntry
+{
+    /// <summary>源按键名，如 "Q", "W", "Space" 等。</summary>
+    public string FromKey { get; init; } = "";
+
+    /// <summary>目标按键名，如 "Num7", "Num8" 等。</summary>
+    public string ToKey { get; init; } = "";
+}
+
+/// <summary>键盘映射会话启动配置选项。</summary>
+public sealed class KeyboardRemapOptions
+{
+    /// <summary>目标前台进程名（不含 .exe），大小写不敏感。必须与激活时的当前前台进程一致。</summary>
+    public string TargetProcessName { get; init; } = "";
+
+    /// <summary>
+    /// 版本化键盘映射配置字符串（例如 "v1|Q:Num7,W:Num8"），直接承接 ParameterFieldType.KeyMap 参数。
+    /// 由宿主统一执行规范化版本校验、解码与约束检查，插件无需自行解析。
+    /// </summary>
+    public string KeyMap { get; init; } = "";
+}
+
+/// <summary>键盘映射会话状态。</summary>
+public sealed class KeyboardRemapStatus
+{
+    /// <summary>当前会话是否处于激活状态。</summary>
+    public bool IsActive { get; init; }
+
+    /// <summary>当前持有会话的插件 ID；无会话时为空。</summary>
+    public string ActivePluginId { get; init; } = "";
+
+    /// <summary>会话绑定的目标进程名；无会话时为空。</summary>
+    public string TargetProcessName { get; init; } = "";
+
+    /// <summary>映射条目数。</summary>
+    public int MappingCount { get; init; }
+
+    /// <summary>会话激活时间（UTC）。</summary>
+    public DateTime? ActivatedAtUtc { get; init; }
+}
+
+/// <summary>键盘映射操作返回结果。</summary>
+public sealed class KeyboardRemapResult
+{
+    public bool Success { get; init; }
+    public string? Message { get; init; }
+
+    public static KeyboardRemapResult Ok(string? message = null) =>
+        new() { Success = true, Message = message };
+
+    public static KeyboardRemapResult Fail(string message) =>
+        new() { Success = false, Message = message };
+}
+
+/// <summary>
+/// 宿主管理的进程级键盘重映射服务（SDK 1.7 起）。
+/// <para>
+/// 允许插件为指定的前台进程请求激活一次性键盘重映射会话。
+/// 全局由宿主唯一的低级键盘钩子高效分发，保证不重复挂钩、失焦时安全释放、长按 Escape 强制紧急防卡键。
+/// </para>
+/// <para>
+/// 需要 <see cref="PluginCapability.InputRemapping"/> 能力，否则抛 <see cref="PluginCapabilityDeniedException"/>。
+/// </para>
+/// </summary>
+public interface IHostKeyboardRemapService
+{
+    /// <summary>获取当前键盘映射会话状态。</summary>
+    KeyboardRemapStatus GetStatus();
+
+    /// <summary>请求激活进程级键盘重映射会话。</summary>
+    /// <param name="options">会话配置。</param>
+    /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.InputRemapping"/>。</exception>
+    KeyboardRemapResult Activate(KeyboardRemapOptions options);
+
+    /// <summary>请求激活进程级键盘重映射会话（直接传入目标进程名与版本化 KeyMap 字符串）。</summary>
+    /// <param name="targetProcessName">目标前台进程名。</param>
+    /// <param name="keyMap">版本化键盘映射字符串（由 ParameterFieldType.KeyMap 产生）。</param>
+    /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.InputRemapping"/>。</exception>
+    KeyboardRemapResult Activate(string targetProcessName, string keyMap);
+
+    /// <summary>撤销由当前插件激活的键盘重映射会话。</summary>
+    /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.InputRemapping"/>。</exception>
+    KeyboardRemapResult Deactivate();
+
+    /// <summary>切换键盘映射会话状态：已激活则撤销，未激活则尝试激活。</summary>
+    /// <param name="options">激活时使用的配置。</param>
+    /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.InputRemapping"/>。</exception>
+    KeyboardRemapResult Toggle(KeyboardRemapOptions options);
+
+    /// <summary>切换键盘映射会话状态（直接传入目标进程名与版本化 KeyMap 字符串）。</summary>
+    /// <param name="targetProcessName">目标前台进程名。</param>
+    /// <param name="keyMap">版本化键盘映射字符串（由 ParameterFieldType.KeyMap 产生）。</param>
+    /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.InputRemapping"/>。</exception>
+    KeyboardRemapResult Toggle(string targetProcessName, string keyMap);
+}
+

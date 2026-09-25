@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using StarPie.Plugin;
 
@@ -108,6 +109,7 @@ internal static class PluginSelfTest
                          PluginPathIds.ActionExecution,
                          PluginPathIds.InteractionEvent,
                          PluginPathIds.WheelStructure,
+                         PluginPathIds.KeyboardRemap,
                      })
             {
                 if (!supportedPaths.Contains(requiredPath, StringComparer.OrdinalIgnoreCase))
@@ -696,6 +698,7 @@ internal static class PluginSelfTest
             var deniedCaptureService = new PluginScreenCaptureService(gateProbePluginId, PluginCapability.None);
             var deniedSystemService = new PluginSystemService(gateProbePluginId, PluginCapability.None);
             var deniedWheelService = new PluginWheelService(gateProbePluginId, PluginCapability.None);
+            var deniedRemapService = new PluginKeyboardRemapService(gateProbePluginId, PluginCapability.None);
 
             // ② 未声明所需能力：必须拒绝。
             //
@@ -820,6 +823,45 @@ internal static class PluginSelfTest
                     $"未声明 Wheel 的插件调用 Wheel.DismissWheel 没有被正确拒绝：{wheelDismissGateDetail}");
             }
 
+            (bool remapActivateDenied, string remapActivateGateDetail) =
+                ProbeRemapCapabilityGate(() => deniedRemapService.Activate(new KeyboardRemapOptions()), PluginCapability.InputRemapping);
+
+            if (remapActivateDenied)
+            {
+                Line($"  KeyboardRemap.Activate：{remapActivateGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"未声明 InputRemapping 的插件调用 KeyboardRemap.Activate 没有被正确拒绝：{remapActivateGateDetail}");
+            }
+
+            (bool remapDeactivateDenied, string remapDeactivateGateDetail) =
+                ProbeRemapCapabilityGate(() => deniedRemapService.Deactivate(), PluginCapability.InputRemapping);
+
+            if (remapDeactivateDenied)
+            {
+                Line($"  KeyboardRemap.Deactivate：{remapDeactivateGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"未声明 InputRemapping 的插件调用 KeyboardRemap.Deactivate 没有被正确拒绝：{remapDeactivateGateDetail}");
+            }
+
+            (bool remapToggleDenied, string remapToggleGateDetail) =
+                ProbeRemapCapabilityGate(() => deniedRemapService.Toggle(new KeyboardRemapOptions()), PluginCapability.InputRemapping);
+
+            if (remapToggleDenied)
+            {
+                Line($"  KeyboardRemap.Toggle：{remapToggleGateDetail} ✓");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"未声明 InputRemapping 的插件调用 KeyboardRemap.Toggle 没有被正确拒绝：{remapToggleGateDetail}");
+            }
+
             // ③ 声明了所需能力：同一个调用必须放行。
             //
             // 少了这一半，把门禁写成「永远拒绝」也能通过上面全部断言 ——
@@ -920,6 +962,21 @@ internal static class PluginSelfTest
                     $"执行的都是用户配置的动作，「会起进程」不等于「可以呼轮盘」。{wheelCrossDetail}");
             }
 
+            var processOnlyRemapService = new PluginKeyboardRemapService(gateProbePluginId, PluginCapability.Process);
+
+            (bool remapCrossDenied, string remapCrossDetail) =
+                ProbeRemapCapabilityGate(() => processOnlyRemapService.Activate(new KeyboardRemapOptions()), PluginCapability.InputRemapping);
+
+            if (remapCrossDenied)
+            {
+                Line($"  跨能力：只声明 Process 调用键盘重映射服务仍被拒绝 ✓（{remapCrossDetail}）");
+            }
+            else
+            {
+                Fail("能力门禁",
+                    $"只声明了 Process 的插件调用 KeyboardRemap.Activate 竟然被放行。{remapCrossDetail}");
+            }
+
             // ③c 窗口服务声明了对应能力：同样必须放行。
             var allowedWindowService = new PluginWindowService(
                 gateProbePluginId, PluginCapability.WindowControl);
@@ -1004,6 +1061,32 @@ internal static class PluginSelfTest
             catch (Exception gateError)
             {
                 Fail("能力门禁", $"已声明 Wheel 的调用抛出异常：{gateError}");
+            }
+
+            var allowedRemapService = new PluginKeyboardRemapService(
+                gateProbePluginId, PluginCapability.InputRemapping);
+
+            try
+            {
+                KeyboardRemapStatus status = allowedRemapService.GetStatus();
+                KeyboardRemapResult deactResult = allowedRemapService.Deactivate();
+
+                if (!deactResult.Success)
+                {
+                    Fail("能力门禁", "已声明 InputRemapping 时 Deactivate 空会话失败");
+                }
+                else
+                {
+                    Line("  已声明 InputRemapping：放行 ✓（无活动会话时安全撤销，未改写按键）");
+                }
+            }
+            catch (PluginCapabilityDeniedException denied)
+            {
+                Fail("能力门禁", $"已声明 InputRemapping 却被拒绝（{denied.Capability}）—— 门禁判据写错了");
+            }
+            catch (Exception gateError)
+            {
+                Fail("能力门禁", $"已声明 InputRemapping 的调用抛出异常：{gateError}");
             }
 
             // ④ 能力位本身的形状：两两不重复。
@@ -1220,6 +1303,9 @@ internal static class PluginSelfTest
                         ? $"  系统预设清单：{presets.Count} 项，与宿主表逐项同源 ✓"
                         : $"  系统预设清单：{presets.Count} 项，与宿主表不一致（见上面的 [FAIL]）");
                 }
+
+                KeyboardRemapStatus ungateStatus = deniedRemapService.GetStatus();
+                Line($"  键盘映射状态：IsActive={ungateStatus.IsActive} ✓（未声明能力也能读，属于无副作用元数据）");
             }
             catch (PluginCapabilityDeniedException deniedMeta)
             {
@@ -1245,6 +1331,89 @@ internal static class PluginSelfTest
             {
                 Line($"  SDK 契约版本：{PluginApi.ApiVersion} ✓（与主次版本号一致）");
             }
+
+            // ⑧ 键盘空间映射编解码器与校验器
+            IReadOnlyList<KeyboardRemapEntry> spatialPreset = KeyMapCodec.GetDefaultSpatialPreset();
+            if (spatialPreset.Count != 10)
+            {
+                Fail("键盘映射预设", $"默认空间预设应包含严格 10 组映射，实际为 {spatialPreset.Count} 组");
+            }
+            string encoded = KeyMapCodec.Encode(spatialPreset);
+            if (!encoded.StartsWith("v1|", StringComparison.Ordinal))
+            {
+                Fail("键盘映射协议版本", $"版本化 KeyMap 编码应以 \"v1|\" 开头，实际为: {encoded}");
+            }
+            if (!KeyMapCodec.TryDecode(encoded, out var decoded, out string? decodeErr) || decoded == null || decoded.Count != 10)
+            {
+                Fail("键盘映射编解码", $"KeyMap 解码失败: {decodeErr}");
+            }
+            if (!string.Equals(encoded, KeyMapCodec.Encode(decoded), StringComparison.Ordinal))
+            {
+                Fail("键盘映射编解码", "KeyMap 序列化与反序列化往返不一致");
+            }
+            // 严格版本检查：缺少 "v1|" 或非法版本前缀必须被拦截
+            if (KeyMapCodec.TryDecode("Q:Num7,W:Num8", out _, out _) || KeyMapValidator.Validate("Q:Num7,W:Num8") == null)
+            {
+                Fail("键盘映射协议版本", "缺少版本前缀 \"v1|\" 的未版本化字符串未被拒绝");
+            }
+            if (KeyMapCodec.TryDecode("v2|Q:Num7", out _, out _) || KeyMapValidator.Validate("v2|Q:Num7") == null)
+            {
+                Fail("键盘映射协议版本", "非当前版本协议前缀未被拒绝");
+            }
+            string? presetValidError = KeyMapValidator.Validate(spatialPreset);
+            if (presetValidError != null)
+            {
+                Fail("键盘映射校验", $"默认空间预设校验未通过: {presetValidError}");
+            }
+            if (KeyMapValidator.Validate(new[] { new KeyboardRemapEntry { FromKey = "Q", ToKey = "Num7" }, new KeyboardRemapEntry { FromKey = "Q", ToKey = "Num8" } }) == null)
+            {
+                Fail("键盘映射校验", "重复源键未被拒绝");
+            }
+            if (KeyMapValidator.Validate(new[] { new KeyboardRemapEntry { FromKey = "Control", ToKey = "Num1" } }) == null)
+            {
+                Fail("键盘映射校验", "修饰键作为源键未被拒绝");
+            }
+            if (KeyMapValidator.Validate(new[] { new KeyboardRemapEntry { FromKey = "Escape", ToKey = "Num1" } }) == null)
+            {
+                Fail("键盘映射校验", "Escape 作为源键未被拒绝");
+            }
+            if (KeyMapValidator.Validate("v1|invalid_no_colon") == null)
+            {
+                Fail("键盘映射严格校验", "缺少分隔符的非法字符串未被拒绝");
+            }
+            if (KeyMapValidator.Validate("v1|Q:UnknownKey123") == null)
+            {
+                Fail("键盘映射严格校验", "包含未知键名的非法字符串未被拒绝");
+            }
+            if (KeyMapValidator.Validate("") != null || KeyMapValidator.Validate("   ") != null)
+            {
+                Fail("键盘映射严格校验", "合法空配置串应通过校验");
+            }
+
+            // 验证硬件扫描码注入结构体内存形状与标志位规范
+            var inputDown = KeyboardRemapController.FormatKeyboardInput(0x47, 0, false);
+            if (inputDown.type != KeyboardRemapController.INPUT_KEYBOARD ||
+                inputDown.U.ki.wVk != 0 ||
+                inputDown.U.ki.wScan != 0x47 ||
+                (inputDown.U.ki.dwFlags & KeyboardRemapController.KEYEVENTF_SCANCODE) == 0 ||
+                (inputDown.U.ki.dwFlags & KeyboardRemapController.KEYEVENTF_KEYUP) != 0 ||
+                inputDown.U.ki.dwExtraInfo != KeyboardHook.StarPieExtraInfo)
+            {
+                Fail("扫描码输入结构", "FormatKeyboardInput 构造的硬件扫描码 KeyDown 结构体不符合规范（wVk!=0 或缺少 SCANCODE/StarPieExtraInfo 标志）");
+            }
+            var inputUp = KeyboardRemapController.FormatKeyboardInput(0x47, 0, true);
+            if ((inputUp.U.ki.dwFlags & KeyboardRemapController.KEYEVENTF_KEYUP) == 0)
+            {
+                Fail("扫描码输入结构", "FormatKeyboardInput 构造的 KeyUp 结构体缺少 KEYEVENTF_KEYUP 标志");
+            }
+
+            Line("  键盘映射编解码、严格校验与硬件扫描码结构：空间预设10组、往返一致、格式拦截、INPUT形状断言 ✓");
+
+            // ⑨ 10,000 次真实生产控制器状态转换自检（KeyDown/KeyUp 配对率 100%、失焦原子释放与首键放行）
+            RunRemapStateMachineSimulation(Line, Fail);
+
+            // ⑩ 回归自检：进程名规范化与 PID 安全门禁、编辑器画刷安全契约、停用插件动作保留与不可用提示
+            RunRegressionChecks(Line, Fail);
 
             // ---- 7 环境还原性检查 ----
             Line("");
@@ -2646,6 +2815,21 @@ internal static class PluginSelfTest
         }
     }
 
+    private static (bool Denied, string Detail) ProbeRemapCapabilityGate(
+        Func<KeyboardRemapResult> call,
+        PluginCapability expected)
+    {
+        try
+        {
+            KeyboardRemapResult accepted = call();
+            return (false, $"调用被直接放行（返回 {accepted.Success}）—— 门禁不存在");
+        }
+        catch (Exception ex)
+        {
+            return ClassifyGateOutcome(ex, expected);
+        }
+    }
+
     /// <summary>
     /// 把「应当被拒绝」的调用<b>实际抛出的异常</b>压成一行可读结论。
     /// <para>
@@ -2779,5 +2963,2232 @@ internal static class PluginSelfTest
         }
 
         return pass ? 0 : 1;
+    }
+
+    private static void RunRemapStateMachineSimulation(Action<string> line, Action<string, string> fail)
+    {
+        var controller = KeyboardRemapController.Current;
+
+        int sinkKeyDownCount = 0;
+        int sinkKeyUpCount = 0;
+        var heldInjectedScans = new HashSet<ushort>();
+
+        try
+        {
+            uint currentProcId = (uint)Process.GetCurrentProcess().Id;
+            string currentProcName = Process.GetCurrentProcess().ProcessName;
+            nint normalHwnd = (nint)12345;
+            nint otherHwnd = (nint)54321;
+            uint otherProcId = currentProcId + 9999;
+
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+
+            // =========================================================================
+            // 1. 确定性测试 A：长按自动重复键即刻释放断言
+            // 场景：Q Down, Q Down, Q Down, Q Up
+            // 必须在任何 Deactivate 之前直接断言，断言收到 3 Down 1 Up，heldInjectedScans 为 0，且会话依然激活
+            // =========================================================================
+            var detOptions = new KeyboardRemapOptions
+            {
+                TargetProcessName = currentProcName,
+                KeyMap = "v1|Q:Num7,W:Num7",
+            };
+            var actDet = controller.Activate("selftest-plugin", detOptions);
+            if (!actDet.Success)
+            {
+                fail("自动重复按键断言", $"测试激活失败: {actDet.Message}");
+                return;
+            }
+
+            var eventLog = new List<(ushort Scan, bool IsKeyUp)>();
+            controller.SetTestEventSink((scan, flags, isKeyUp) =>
+            {
+                eventLog.Add((scan, isKeyUp));
+                if (!isKeyUp)
+                {
+                    sinkKeyDownCount++;
+                    heldInjectedScans.Add(scan);
+                }
+                else
+                {
+                    sinkKeyUpCount++;
+                    heldInjectedScans.Remove(scan);
+                }
+            });
+
+            eventLog.Clear();
+            heldInjectedScans.Clear();
+
+            // 发送 1 次初次 Down，2 次重复 Down，1 次物理 Up
+            controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+            controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+            controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+            controller.TryProcessHookEvent((uint)'Q', 257, 0, 0);
+
+            int qDowns = eventLog.Count(e => !e.IsKeyUp);
+            int qUps = eventLog.Count(e => e.IsKeyUp);
+            if (qDowns != 3 || qUps != 1)
+            {
+                fail("自动重复按键断言", $"连续重复按键未产生预期配对: KeyDowns={qDowns} (期望3), KeyUps={qUps} (期望1)");
+            }
+            if (heldInjectedScans.Count != 0)
+            {
+                fail("自动重复按键断言", $"物理松开后测试下沉存在残留未释放键: {heldInjectedScans.Count}项 (长按自动重复状态机计数泄漏)");
+            }
+            if (!controller.GetStatus().IsActive)
+            {
+                fail("自动重复按键断言", "自检控制器在按键松开后不应提前退出会话");
+            }
+
+            // =========================================================================
+            // 2. 确定性测试 B：多源键映射至同一目标键
+            // 场景：Q Down, W Down, Q Up -> 目标键保持按下；W Up -> 目标键释放
+            // =========================================================================
+            eventLog.Clear();
+            heldInjectedScans.Clear();
+
+            controller.TryProcessHookEvent((uint)'Q', 256, 0, 0); // Q Down -> Num7 Down (held = 1)
+            if (heldInjectedScans.Count != 1) fail("共享目标键断言", "首次按下 Q 未能成功保持目标键");
+            controller.TryProcessHookEvent((uint)'W', 256, 0, 0); // W Down -> 目标键已在按下状态
+            controller.TryProcessHookEvent((uint)'Q', 257, 0, 0); // Q Up -> 仍有 W 持有，严禁提前触发 KeyUp！
+            if (heldInjectedScans.Count != 1 || eventLog.Any(e => e.IsKeyUp))
+            {
+                fail("共享目标键断言", "多个源键映射至同一目标时，释放其中一个物理键过早触发了目标键 KeyUp");
+            }
+            controller.TryProcessHookEvent((uint)'W', 257, 0, 0); // W Up -> 引用计数归零，此时触发 KeyUp
+            if (heldInjectedScans.Count != 0 || !eventLog.Any(e => e.IsKeyUp))
+            {
+                fail("共享目标键断言", "所有源键松开后目标键未能正常注入 KeyUp 释放");
+            }
+
+            // =========================================================================
+            // 3. 确定性测试 C：前台进程身份未知（fgPid == 0）必须立刻撤销会话且原样放行事件
+            // =========================================================================
+            eventLog.Clear();
+            controller.TryProcessHookEvent((uint)'Q', 256, 0, 0); // 先持有一个映射键
+            if (heldInjectedScans.Count != 1) fail("未知前台进程断言", "按键持有失败");
+            controller.SetTestForegroundProcess(0, 0); // 模拟前台窗口 PID 为 0
+            bool swallowedOnUnknownPid = controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+            if (swallowedOnUnknownPid)
+            {
+                fail("未知前台进程断言", "前台 PID 为 0 时按键事件应原样放行（返回 false），实际被拦截");
+            }
+            if (controller.GetStatus().IsActive)
+            {
+                fail("未知前台进程断言", "前台 PID 为 0 时会话应立刻被故障安全撤销");
+            }
+            if (heldInjectedScans.Count != 0)
+            {
+                fail("未知前台进程断言", "前台 PID 为 0 撤销会话时未释放持有的目标键");
+            }
+
+            // =========================================================================
+            // 4. 确定性测试 D：焦点切换后的孤儿松开必须撤销会话（前台校验先于孤儿检查）
+            // =========================================================================
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+            actDet = controller.Activate("selftest-plugin", detOptions);
+            if (!actDet.Success) fail("失焦孤儿键断言", $"激活失败: {actDet.Message}");
+            // 切换到外部前台进程
+            controller.SetTestForegroundProcess(otherHwnd, otherProcId);
+            // 收到一个从未按下的按键松开（孤儿 KeyUp）
+            bool orphanSwallowed = controller.TryProcessHookEvent((uint)'R', 257, 0, 0);
+            if (orphanSwallowed)
+            {
+                fail("失焦孤儿键断言", "失焦后的孤儿松开事件应原样放行");
+            }
+            if (controller.GetStatus().IsActive)
+            {
+                fail("失焦孤儿键断言", "失焦后的孤儿松开事件应立刻撤销会话");
+            }
+
+            // =========================================================================
+            // 5. 确定性测试 E：完整 6 大生命周期与异常触发自愈覆盖
+            // 在持键状态下分别触发，断言会话已关闭且 test sink 中持键数完全归零
+            // =========================================================================
+            string[] lifecycleNames = { "NotifyRecorderActive", "OnPluginStopping", "OnHostPaused", "Deactivate", "FocusLost", "EmergencyEscape" };
+            for (int lc = 0; lc < lifecycleNames.Length; lc++)
+            {
+                controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+                var res = controller.Activate("selftest-plugin", detOptions);
+                if (!res.Success)
+                {
+                    fail("生命周期覆盖", $"{lifecycleNames[lc]} 测试前激活失败: {res.Message}");
+                    break;
+                }
+
+                heldInjectedScans.Clear();
+                eventLog.Clear();
+                // 按下 Q 键使目标键处于持有状态
+                controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+                if (heldInjectedScans.Count != 1)
+                {
+                    fail("生命周期覆盖", $"{lifecycleNames[lc]} 按键未能成功进入持有状态");
+                }
+
+                switch (lc)
+                {
+                    case 0: // NotifyRecorderActive
+                        controller.NotifyRecorderActive();
+                        break;
+                    case 1: // OnPluginStopping
+                        controller.OnPluginStopping("selftest-plugin");
+                        break;
+                    case 2: // OnHostPaused
+                        controller.OnHostPaused();
+                        break;
+                    case 3: // Explicit Deactivate
+                        controller.Deactivate("selftest-plugin");
+                        break;
+                    case 4: // FocusLost
+                        controller.SetTestForegroundProcess(otherHwnd, otherProcId);
+                        controller.TryProcessHookEvent((uint)'E', 256, 0, 0);
+                        break;
+                    case 5: // EmergencyEscape (>1.5s)
+                        controller.TryProcessHookEvent(27, 256, 0, 0); // Escape Down
+                        controller.SetEscapeDownTicksForTest(Stopwatch.GetTimestamp() - (long)(Stopwatch.Frequency * 1.6));
+                        controller.TriggerEscapeTimerTickForTest();
+                        break;
+                }
+
+                if (controller.GetStatus().IsActive)
+                {
+                    fail("生命周期覆盖", $"{lifecycleNames[lc]} 触发后会话仍处于激活状态");
+                }
+                if (heldInjectedScans.Count != 0)
+                {
+                    fail("生命周期覆盖", $"{lifecycleNames[lc]} 触发后下沉仍有未释放按键残留: {heldInjectedScans.Count}项");
+                }
+            }
+
+            // =========================================================================
+            // 6. 10,000 次随机状态机压测
+            // =========================================================================
+            int firstKeyAfterFocusLostPassedCount = 0;
+            int focusLostScenariosCount = 0;
+            int repeatEventsCount = 0;
+
+            sinkKeyDownCount = 0;
+            sinkKeyUpCount = 0;
+            heldInjectedScans.Clear();
+
+            controller.SetTestEventSink((scan, flags, isKeyUp) =>
+            {
+                if (!isKeyUp)
+                {
+                    sinkKeyDownCount++;
+                    heldInjectedScans.Add(scan);
+                }
+                else
+                {
+                    sinkKeyUpCount++;
+                    heldInjectedScans.Remove(scan);
+                }
+            });
+
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+
+            var options = new KeyboardRemapOptions
+            {
+                TargetProcessName = currentProcName,
+                KeyMap = KeyMapCodec.Encode(KeyMapCodec.GetDefaultSpatialPreset()),
+            };
+
+            var actRes = controller.Activate("selftest-plugin", options);
+            if (!actRes.Success)
+            {
+                fail("按键状态机", $"生产 KeyboardRemapController 激活失败: {actRes.Message}");
+                return;
+            }
+
+            uint[] sampleKeys = { (uint)'Q', (uint)'W', (uint)'E', (uint)'A', (uint)'S', (uint)'D', (uint)'Z', (uint)'X', (uint)'C', (uint)'R' };
+            var rng = new Random(42);
+
+            for (int i = 0; i < 10000; i++)
+            {
+                if (!controller.GetStatus().IsActive)
+                {
+                    controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+                    var re = controller.Activate("selftest-plugin", options);
+                    if (!re.Success)
+                    {
+                        fail("按键状态机", $"重新激活失败: {re.Message}");
+                        break;
+                    }
+                }
+
+                int scenario = rng.Next(8);
+                uint key = sampleKeys[rng.Next(sampleKeys.Length)];
+
+                switch (scenario)
+                {
+                    case 0: // 单键正常按下与松开
+                    {
+                        bool swallowedDown = controller.TryProcessHookEvent(key, 256, 0, 0); // WM_KEYDOWN
+                        bool swallowedUp = controller.TryProcessHookEvent(key, 257, 0, 0);   // WM_KEYUP
+                        if (!swallowedDown || !swallowedUp)
+                        {
+                            fail("按键状态机", $"映射键 {key} 未被正常拦截");
+                        }
+                        break;
+                    }
+
+                    case 1: // 长按重复输入 KeyDown，随后松开
+                    {
+                        controller.TryProcessHookEvent(key, 256, 0, 0);
+                        controller.TryProcessHookEvent(key, 256, 0, 0);
+                        controller.TryProcessHookEvent(key, 256, 0, 0);
+                        repeatEventsCount += 2;
+                        controller.TryProcessHookEvent(key, 257, 0, 0);
+                        break;
+                    }
+
+                    case 2: // 多键重叠按下与交叉松开（确保两个不同的物理键）
+                    {
+                        int idx1 = rng.Next(sampleKeys.Length);
+                        int idx2 = (idx1 + 1 + rng.Next(sampleKeys.Length - 1)) % sampleKeys.Length;
+                        uint k1 = sampleKeys[idx1];
+                        uint k2 = sampleKeys[idx2];
+                        controller.TryProcessHookEvent(k1, 256, 0, 0);
+                        controller.TryProcessHookEvent(k2, 256, 0, 0);
+                        controller.TryProcessHookEvent(k1, 257, 0, 0);
+                        controller.TryProcessHookEvent(k2, 257, 0, 0);
+                        break;
+                    }
+
+                    case 3: // 焦点切换导致会话撤销
+                    {
+                        controller.TryProcessHookEvent(key, 256, 0, 0);
+                        controller.SetTestForegroundProcess(otherHwnd, otherProcId);
+                        focusLostScenariosCount++;
+
+                        bool handledInNewProcess = controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+                        if (!handledInNewProcess)
+                        {
+                            firstKeyAfterFocusLostPassedCount++;
+                        }
+                        controller.TryProcessHookEvent((uint)'Q', 257, 0, 0);
+
+                        if (controller.GetStatus().IsActive)
+                        {
+                            fail("按键状态机", "焦点丢失后会话未自动撤销");
+                        }
+                        break;
+                    }
+
+                    case 4: // 宿主暂停手势与重映射测试
+                    {
+                        controller.TryProcessHookEvent(key, 256, 0, 0);
+                        controller.OnHostPaused();
+                        if (controller.GetStatus().IsActive)
+                        {
+                            fail("按键状态机", "宿主暂停手势后会话未撤销");
+                        }
+                        break;
+                    }
+
+                    case 5: // 主动停用测试
+                    {
+                        controller.TryProcessHookEvent(key, 256, 0, 0);
+                        controller.Deactivate("selftest-plugin");
+                        if (controller.GetStatus().IsActive)
+                        {
+                            fail("按键状态机", "Deactivate 后会话未关闭");
+                        }
+                        break;
+                    }
+
+                    case 6: // 未映射按键测试
+                    {
+                        bool unmappedHandled = controller.TryProcessHookEvent(0x20, 256, 0, 0);
+                        if (unmappedHandled)
+                        {
+                            fail("按键状态机", "未映射按键不应被拦截");
+                        }
+                        break;
+                    }
+
+                    case 7: // 孤儿 KeyUp 测试
+                    {
+                        int beforeKeyUps = sinkKeyUpCount;
+                        bool orphanHandled = controller.TryProcessHookEvent(key, 257, 0, 0);
+                        if (orphanHandled || sinkKeyUpCount != beforeKeyUps)
+                        {
+                            fail("按键状态机", "孤儿 KeyUp 未被放行或错误触发了注入");
+                        }
+                        break;
+                    }
+                }
+            }
+
+            bool allPaired = (sinkKeyDownCount - repeatEventsCount == sinkKeyUpCount) && (heldInjectedScans.Count == 0);
+            bool allFocusLossPassed = (firstKeyAfterFocusLostPassedCount == focusLostScenariosCount) && (focusLostScenariosCount > 0);
+
+            if (!allPaired)
+            {
+                fail("按键状态机", $"生产控制器真实状态机按键配对失败: KeyDowns={sinkKeyDownCount}, RepeatKeyDowns={repeatEventsCount}, KeyUps={sinkKeyUpCount}, 残存未释放键数={heldInjectedScans.Count}");
+            }
+            else if (!allFocusLossPassed)
+            {
+                fail("按键状态机", $"焦点丢失首键放行失败: {firstKeyAfterFocusLostPassedCount}/{focusLostScenariosCount}");
+            }
+            else
+            {
+                line($"  真实控制器状态转换与全生命周期自检：即刻释放/共享目标/未知前台/失焦孤儿/6大生命周期全部通过；10,000次随机状态机 KeyDown/KeyUp 配对率 100% ({sinkKeyDownCount - repeatEventsCount}/{sinkKeyUpCount})，长按重复转发 {repeatEventsCount} 次，残存卡键 0 项，失焦首键放行 100% ({firstKeyAfterFocusLostPassedCount}/{focusLostScenariosCount}) ✓");
+            }
+        }
+        finally
+        {
+            controller.Deactivate("selftest-plugin");
+            controller.ClearTestForegroundProcess();
+            controller.SetTestEventSink(null);
+        }
+    }
+
+    private static void RunRegressionChecks(Action<string> line, Action<string, string> fail)
+    {
+        // -------------------------------------------------------------------------
+        // 回归 1：宿主重映射入口进程名规范化（带/不带 .exe / 路径）与严格 PID 安全门禁
+        // -------------------------------------------------------------------------
+        if (KeyboardRemapController.NormalizeProcessName("starpie.exe") != "starpie")
+        {
+            fail("进程名规范化", "带 .exe 后缀的进程名未被正确规范化为裸进程名");
+        }
+        if (KeyboardRemapController.NormalizeProcessName("StarPie") != "StarPie")
+        {
+            fail("进程名规范化", "无扩展名进程名在规范化时发生非预期改变");
+        }
+        if (KeyboardRemapController.NormalizeProcessName(@"C:\Program Files\StarPie\starpie.exe") != "starpie")
+        {
+            fail("进程名规范化", "带完整路径与 .exe 的进程名未被提取规范化为裸文件名");
+        }
+        if (KeyboardRemapController.NormalizeProcessName("   ") != "" || KeyboardRemapController.NormalizeProcessName(null) != "")
+        {
+            fail("进程名规范化", "空字符串或 null 进程名规范化应返回空串");
+        }
+
+        var controller = KeyboardRemapController.Current;
+        uint currentProcId = (uint)Process.GetCurrentProcess().Id;
+        string currentProcName = Process.GetCurrentProcess().ProcessName;
+        nint normalHwnd = (nint)12345;
+
+        try
+        {
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+
+            // 场景 A：插件传入带 .exe 的进程名（例如 "StarPie.exe"），前台为裸进程名，必须成功匹配激活
+            var optWithExe = new KeyboardRemapOptions
+            {
+                TargetProcessName = currentProcName + ".exe",
+                KeyMap = "v1|Q:Num7",
+            };
+            var resWithExe = controller.Activate("regression-plugin", optWithExe);
+            if (!resWithExe.Success)
+            {
+                fail("进程名规范化", $"传入带 .exe 进程名激活失败: {resWithExe.Message}");
+            }
+            controller.Deactivate("regression-plugin");
+
+            // 场景 B：严格 PID 安全门禁断言 —— 即使进程名一致，若前台 PID 为 0 或不匹配，严禁激活/工作
+            controller.SetTestForegroundProcess(0, 0);
+            var resZeroPid = controller.Activate("regression-plugin", optWithExe);
+            if (resZeroPid.Success)
+            {
+                fail("前台PID门禁", "前台 PID 为 0 时仍激活成功，违反 fail-closed 门禁要求");
+                controller.Deactivate("regression-plugin");
+            }
+
+            // 场景 C：焦点切换导致 PID 不匹配时，按键原样放行且会话立刻撤销
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+            var resOk = controller.Activate("regression-plugin", optWithExe);
+            if (resOk.Success)
+            {
+                controller.SetTestForegroundProcess(normalHwnd, currentProcId + 8888);
+                bool swallowed = controller.TryProcessHookEvent((uint)'Q', 256, 0, 0);
+                if (swallowed || controller.GetStatus().IsActive)
+                {
+                    fail("前台PID门禁", "发生进程 PID 不一致时，按键未被原样放行或会话未被及时撤销");
+                }
+            }
+        }
+        finally
+        {
+            controller.Deactivate("regression-plugin");
+            controller.ClearTestForegroundProcess();
+            controller.SetTestEventSink(null);
+        }
+
+        // -------------------------------------------------------------------------
+        // 回归 2：KeyMap 编辑器画刷安全、打开异常捕获与主题初始化契约
+        // -------------------------------------------------------------------------
+        var dummyElement = new System.Windows.FrameworkElement();
+        AppThemeManager.ApplyTheme(dummyElement, "Light");
+        if (dummyElement.Resources["CardBorderBrush"] == null)
+        {
+            fail("主题画刷定义", "AppThemeManager 浅色主题未正确注入 CardBorderBrush");
+        }
+        AppThemeManager.ApplyTheme(dummyElement, "Dark");
+        if (dummyElement.Resources["CardBorderBrush"] == null)
+        {
+            fail("主题画刷定义", "AppThemeManager 深色主题未正确注入 CardBorderBrush");
+        }
+
+        RunOnSta(() =>
+        {
+            try
+            {
+                var editor = new KeyMapEditorWindow("KeyQ=Numpad7;KeyW=Numpad8");
+                if (editor == null)
+                {
+                    fail("KeyMap编辑器窗口初始化", "KeyMapEditorWindow 构造失败");
+                    return;
+                }
+
+                string[] requiredBrushes = new[]
+                {
+                    "BorderSubtleBrush",
+                    "CardBorderBrush",
+                    "InputBorderBrush",
+                    "CardBackgroundBrush",
+                    "InputBackgroundBrush",
+                    "TextPrimaryBrush",
+                    "TextSecondaryBrush",
+                    "TextMutedBrush",
+                    "WindowBackgroundBrush",
+                    "AccentPrimaryBrush",
+                    "ButtonHoverBgBrush",
+                    "ButtonDefaultBgBrush",
+                    "ButtonDefaultBorderBrush",
+                    "ButtonDefaultFgBrush"
+                };
+
+                foreach (var brushKey in requiredBrushes)
+                {
+                    try
+                    {
+                        var brush = editor.FindResource(brushKey);
+                        if (brush == null)
+                        {
+                            fail("KeyMap编辑器画刷解析", $"FindResource 无法解析画刷资源: {brushKey}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        fail("KeyMap编辑器画刷解析", $"FindResource('{brushKey}') 抛出异常（原缺失画刷回归）: {ex.Message}");
+                    }
+                }
+
+                // 验证深浅色主题切换后画刷均能正常解析
+                foreach (var theme in new[] { "Light", "Dark" })
+                {
+                    AppThemeManager.ApplyTheme(editor, theme);
+                    foreach (var brushKey in requiredBrushes)
+                    {
+                        try
+                        {
+                            var brush = editor.FindResource(brushKey);
+                            if (brush == null)
+                            {
+                                fail("KeyMap编辑器画刷解析", $"主题 {theme} 下 FindResource 无法解析画刷资源: {brushKey}");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            fail("KeyMap编辑器画刷解析", $"主题 {theme} 下 FindResource('{brushKey}') 抛出异常: {ex.Message}");
+                        }
+                    }
+                }
+
+                // 证明：当画刷缺失时，查找结果不是有效 Brush（为 UnsetValue），原代码的 (Brush) 强转必然导致打开异常
+                var missingRes = editor.FindResource("MissingBrush_ShouldNotBeFound");
+                if (missingRes is System.Windows.Media.Brush)
+                {
+                    fail("KeyMap编辑器画刷异常捕获", "缺失画刷不应被解析为有效 Brush 对象");
+                }
+                bool castFailed = false;
+                try
+                {
+                    _ = (System.Windows.Media.Brush)missingRes;
+                }
+                catch (InvalidCastException)
+                {
+                    castFailed = true;
+                }
+                if (!castFailed)
+                {
+                    fail("KeyMap编辑器画刷异常捕获", "缺失画刷强转 (Brush) 未能捕获类型转换异常");
+                }
+
+                // 验证单键录制控件、规范按键名及友好显示（. vs Num .，OemPeriod vs NumDecimal）
+                if (editor.SourceKeyRecorder == null || editor.TargetKeyRecorder == null)
+                {
+                    fail("KeyMap单键录制控件集成", "KeyMapEditorWindow 未正确初始化 SourceKeyRecorder 或 TargetKeyRecorder");
+                }
+                else
+                {
+                    editor.SourceKeyRecorder.SetKey(".");
+                    if (editor.SourceKeyRecorder.SelectedKey != "OemPeriod")
+                    {
+                        fail("KeyMap普通句点规范化", $"输入 '.' 规范键名应为 'OemPeriod'，实际为 '{editor.SourceKeyRecorder.SelectedKey}'");
+                    }
+                    if (KeyMapCodec.GetFriendlyKeyDisplayName("OemPeriod") != ".")
+                    {
+                        fail("KeyMap普通句点友好显示", $"OemPeriod 友好显示应为 '.'，实际为 '{KeyMapCodec.GetFriendlyKeyDisplayName("OemPeriod")}'");
+                    }
+
+                    editor.TargetKeyRecorder.SetKey("Num.");
+                    if (editor.TargetKeyRecorder.SelectedKey != "NumDecimal")
+                    {
+                        fail("KeyMap小键盘句点规范化", $"输入 'Num.' 规范键名应为 'NumDecimal'，实际为 '{editor.TargetKeyRecorder.SelectedKey}'");
+                    }
+                    if (KeyMapCodec.GetFriendlyKeyDisplayName("NumDecimal") != "Num .")
+                    {
+                        fail("KeyMap小键盘句点友好显示", $"NumDecimal 友好显示应为 'Num .'，实际为 '{KeyMapCodec.GetFriendlyKeyDisplayName("NumDecimal")}'");
+                    }
+
+                    var conv = new KeyDisplayNameConverter();
+                    string? convPeriod = conv.Convert("OemPeriod", typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture) as string;
+                    if (convPeriod != ". (OemPeriod)")
+                    {
+                        fail("KeyMap表格转换器格式", $"OemPeriod 呈现格式应为 '. (OemPeriod)'，实际为 '{convPeriod}'");
+                    }
+                    string? convNumDec = conv.Convert("NumDecimal", typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture) as string;
+                    if (convNumDec != "Num . (NumDecimal)")
+                    {
+                        fail("KeyMap表格转换器格式", $"NumDecimal 呈现格式应为 'Num . (NumDecimal)'，实际为 '{convNumDec}'");
+                    }
+
+                    var testEntries = new[] { new KeyboardRemapEntry { FromKey = "OemPeriod", ToKey = "NumDecimal" } };
+                    string encodedPair = KeyMapCodec.Encode(testEntries);
+                    if (encodedPair != "v1|OemPeriod:NumDecimal")
+                    {
+                        fail("KeyMap句点与小键盘编解码", $"OemPeriod:NumDecimal 序列化不符: {encodedPair}");
+                    }
+                    if (!KeyMapCodec.TryDecode(encodedPair, out var decList, out _) || decList == null || decList.Count != 1 || decList[0].FromKey != "OemPeriod" || decList[0].ToKey != "NumDecimal")
+                    {
+                        fail("KeyMap句点与小键盘编解码", "OemPeriod:NumDecimal 反序列化失败");
+                    }
+
+                    if (!KeyMapValidator.IsModifierVk(16) || !KeyMapValidator.IsModifierVk(17) || !KeyMapValidator.IsModifierVk(18) || !KeyMapValidator.IsModifierVk(91))
+                    {
+                        fail("KeyMap修饰键判定", "Shift/Ctrl/Alt/Win 等修饰键未被 IsModifierVk 识别");
+                    }
+                    if (KeyMapValidator.IsModifierVk(0xBE) || KeyMapValidator.IsModifierVk(0x6E))
+                    {
+                        fail("KeyMap修饰键判定", "OemPeriod 或 NumDecimal 不应被判定为修饰键");
+                    }
+
+                    editor.SourceKeyRecorder.StartRecording();
+                    if (!editor.SourceKeyRecorder.IsRecording)
+                    {
+                        fail("KeyMap单键录制控件状态", "StartRecording 后 IsRecording 应为 true");
+                    }
+                    editor.SourceKeyRecorder.CancelRecording();
+                    if (editor.SourceKeyRecorder.IsRecording)
+                    {
+                        fail("KeyMap单键录制控件状态", "CancelRecording 后 IsRecording 应为 false");
+                    }
+
+                    // 回归检验：SingleKeyRecorderBox 构造函数不设置本地 Template，可通过 OverrideMetadata 或模板 ApplyTemplate 实例化子元素
+                    var standaloneRecorder = new SingleKeyRecorderBox();
+                    standaloneRecorder.ApplyTemplate();
+                    if (standaloneRecorder.DisplayTextBlock == null || standaloneRecorder.ClearButton == null)
+                    {
+                        fail("KeyMap单键录制控件模板自包含", "SingleKeyRecorderBox.ApplyTemplate() 未能正确生成 PART_DisplayText 或 PART_ClearButton");
+                    }
+
+                    editor.SourceRecorder.ApplyTemplate();
+                    if (editor.SourceRecorder.DisplayTextBlock == null || editor.SourceRecorder.ClearButton == null)
+                    {
+                        fail("KeyMap窗口内录制框模板应用", "KeyMapEditorWindow 内 SourceRecorder.ApplyTemplate() 未能生成 PART_DisplayText 或 PART_ClearButton");
+                    }
+
+                    // 回归检验：KeyDisplayNameConverter.ConvertBack 绝不抛出异常，并正确提取括号内的规范键名
+                    try
+                    {
+                        object? backPeriod = conv.ConvertBack(". (OemPeriod)", typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture);
+                        if (backPeriod as string != "OemPeriod")
+                        {
+                            fail("KeyMap转换器逆向解析", $"'. (OemPeriod)' 逆向解析应为 'OemPeriod'，实际为 '{backPeriod}'");
+                        }
+                        object? backNumDec = conv.ConvertBack("Num . (NumDecimal)", typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture);
+                        if (backNumDec as string != "NumDecimal")
+                        {
+                            fail("KeyMap转换器逆向解析", $"'Num . (NumDecimal)' 逆向解析应为 'NumDecimal'，实际为 '{backNumDec}'");
+                        }
+                        object? backEmpty = conv.ConvertBack("", typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture);
+                        if (backEmpty as string != "")
+                        {
+                            fail("KeyMap转换器逆向解析空值", $"空字符串逆向解析应为空，实际为 '{backEmpty}'");
+                        }
+                        object? backNull = conv.ConvertBack(null!, typeof(string), null!, System.Globalization.CultureInfo.InvariantCulture);
+                        if (backNull as string != "")
+                        {
+                            fail("KeyMap转换器逆向解析null", $"null 逆向解析应为空，实际为 '{backNull}'");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        fail("KeyMap转换器逆向解析异常", $"KeyDisplayNameConverter.ConvertBack 抛出异常: {ex.Message}");
+                    }
+
+                    // 回归检验：MappingsDataGrid 及其列为只读，避免单元格行内编辑
+                    if (!editor.MappingsDataGrid.IsReadOnly || !editor.ColSource.IsReadOnly || !editor.ColTarget.IsReadOnly)
+                    {
+                        fail("KeyMap表格只读属性", "MappingsDataGrid 及其文本列必须设置 IsReadOnly=True");
+                    }
+
+                    // 回归检验：录制完整源键与目标键后，保存/提交时自动纳入规则（无需手动点击添加映射）
+                    editor.SourceRecorder.SetKey("F");
+                    editor.TargetRecorder.SetKey(".");
+                    if (!editor.TryCommitPendingMapping(out string? commitErr) || !string.IsNullOrEmpty(commitErr))
+                    {
+                        fail("KeyMap未点添加直接保存", $"录制完整源键与目标键后提交失败: {commitErr}");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "F" && e.ToKey == "OemPeriod"))
+                    {
+                        fail("KeyMap未点添加直接保存", "录制完整的规则未被自动纳入映射表");
+                    }
+                    if (!string.IsNullOrEmpty(editor.SourceRecorder.SelectedKey) || !string.IsNullOrEmpty(editor.TargetRecorder.SelectedKey))
+                    {
+                        fail("KeyMap未点添加直接保存", "自动纳入规则后录键框未被清空");
+                    }
+
+                    // 回归检验：只录了一半时给出明确提示，不静默丢弃也不允许保存
+                    editor.SourceRecorder.SetKey("G");
+                    editor.TargetRecorder.ClearKey();
+                    if (editor.TryCommitPendingMapping(out string? halfTargetErr) || string.IsNullOrEmpty(halfTargetErr))
+                    {
+                        fail("KeyMap仅录制源键拦截", "仅录制源键时应拦截并返回明确错误提示");
+                    }
+                    if (editor.Entries.Any(e => e.FromKey == "G"))
+                    {
+                        fail("KeyMap仅录制源键拦截", "半录入的规则不应进入映射表");
+                    }
+
+                    editor.SourceRecorder.ClearKey();
+                    editor.TargetRecorder.SetKey("Num5");
+                    if (editor.TryCommitPendingMapping(out string? halfSourceErr) || string.IsNullOrEmpty(halfSourceErr))
+                    {
+                        fail("KeyMap仅录制目标键拦截", "仅录制目标键时应拦截并返回明确错误提示");
+                    }
+
+                    // 回归检验：选中行切换为“更新映射”，取消选中恢复“添加映射”
+                    editor.SourceRecorder.ClearKey();
+                    editor.TargetRecorder.ClearKey();
+                    if (editor.Entries.Count > 0)
+                    {
+                        editor.MappingsDataGrid.SelectedItem = editor.Entries[0];
+                        editor.UpdateAddButtonState();
+                        if (editor.AddBtn.Content as string != I18n.T("KeyMapEditorUpdateMapping"))
+                        {
+                            fail("KeyMap选中行更新文案", $"选中行后按钮文案应为 '更新映射'，实际为 '{editor.AddBtn.Content}'");
+                        }
+
+                        editor.MappingsDataGrid.SelectedItem = null;
+                        editor.UpdateAddButtonState();
+                        if (editor.AddBtn.Content as string != I18n.T("KeyMapEditorAddMapping"))
+                        {
+                            fail("KeyMap未选中行添加文案", $"未选中行按钮文案应为 '添加映射'，实际为 '{editor.AddBtn.Content}'");
+                        }
+                    }
+
+                    // 回归检验：选中 Q→Num7 后把源键改为 F，点击“更新映射”，结果应只剩 F→Num7，不得保留 Q→Num7
+                    editor.Entries.Clear();
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "Q", ToKey = "Num7" });
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "W", ToKey = "Num8" });
+                    var entryQ1 = editor.Entries[0];
+                    editor.MappingsDataGrid.SelectedItem = entryQ1;
+                    editor.UpdateAddButtonState();
+                    if (editor.SourceRecorder.SelectedKey != "Q" || editor.TargetRecorder.SelectedKey != "Num7")
+                    {
+                        fail("KeyMap行载入录键框", "选中行未正确将 Q 与 Num7 载入录键框");
+                    }
+                    if (editor.AddBtn.Content as string != I18n.T("KeyMapEditorUpdateMapping"))
+                    {
+                        fail("KeyMap编辑行按钮状态", "选中行后按钮文案应为 '更新映射'");
+                    }
+                    editor.SourceRecorder.SetKey("F");
+                    if (editor.TargetRecorder.SelectedKey != "Num7")
+                    {
+                        fail("KeyMap修改源键保留目标键", $"修改源键为 F 后目标键应保持 Num7，实际为 '{editor.TargetRecorder.SelectedKey}'");
+                    }
+                    if (!editor.TryCommitPendingMapping(out string? updateErr) || !string.IsNullOrEmpty(updateErr))
+                    {
+                        fail("KeyMap更新映射提交", $"点击更新映射提交失败: {updateErr}");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "F" && e.ToKey == "Num7"))
+                    {
+                        fail("KeyMap更新源键结果", "映射列表中未包含更新后的 F→Num7");
+                    }
+                    if (editor.Entries.Any(e => e.FromKey == "Q"))
+                    {
+                        fail("KeyMap更新源键旧键残留", "映射列表中不应保留被修改的原键 Q (Q→Num7)");
+                    }
+                    if (editor.Entries.Count != 2)
+                    {
+                        fail("KeyMap更新源键列表项数", $"更新后列表项数应保持为 2，实际为 {editor.Entries.Count}");
+                    }
+
+                    // 回归检验：选中 Q→Num7 后把源键改为 F，直接点击“保存”（无点击添加/更新），结果应只剩 F→Num7，不得保留 Q→Num7
+                    editor.Entries.Clear();
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "Q", ToKey = "Num7" });
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "W", ToKey = "Num8" });
+                    var entryQ2 = editor.Entries[0];
+                    editor.MappingsDataGrid.SelectedItem = entryQ2;
+                    editor.SourceRecorder.SetKey("F");
+                    if (!editor.TryCommitPendingMapping(out string? directSaveErr) || !string.IsNullOrEmpty(directSaveErr))
+                    {
+                        fail("KeyMap直接保存提交", $"修改源键后直接保存提交失败: {directSaveErr}");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "F" && e.ToKey == "Num7"))
+                    {
+                        fail("KeyMap直接保存结果", "映射列表中未包含更新后的 F→Num7");
+                    }
+                    if (editor.Entries.Any(e => e.FromKey == "Q"))
+                    {
+                        fail("KeyMap直接保存旧键残留", "修改源键后直接保存不应保留被修改的原键 Q (Q→Num7)");
+                    }
+                    if (editor.Entries.Count != 2)
+                    {
+                        fail("KeyMap直接保存列表项数", $"直接保存后列表项数应保持为 2，实际为 {editor.Entries.Count}");
+                    }
+
+                    // -------------------------------------------------------------
+                    // 回归：KeyMapEditor 图形区增强（动态键生成、按键区分、多对一高亮、动态清理、缩放钳位）
+                    // -------------------------------------------------------------
+
+                    // ① 新增 F ➔ . 能在两侧生成动态图形键
+                    editor.Entries.Clear();
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "F", ToKey = "OemPeriod" });
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    if (!editor.PhysicalButtons.ContainsKey("F") || editor.OtherSources.Children.Count != 1)
+                    {
+                        fail("KeyMap动态源键生成", "新增 F ➔ . 未能在左侧 OtherSourcesPanel 生成动态按键 F");
+                    }
+                    if (!editor.TargetButtons.ContainsKey("OemPeriod") || editor.OtherTargets.Children.Count != 1)
+                    {
+                        fail("KeyMap动态目标键生成", "新增 F ➔ . 未能在右侧 OtherTargetsPanel 生成动态按键 OemPeriod");
+                    }
+                    var fBtn = editor.PhysicalButtons["F"];
+                    var periodBtn = editor.TargetButtons["OemPeriod"];
+                    if ((fBtn.Content as string) != "F" || (fBtn.ToolTip as string) != "F")
+                    {
+                        fail("KeyMap动态键属性", $"动态按键 F 显示或 Tooltip 不符: Content='{fBtn.Content}', ToolTip='{fBtn.ToolTip}'");
+                    }
+                    if ((periodBtn.Content as string) != "." || (periodBtn.ToolTip as string) != "OemPeriod")
+                    {
+                        fail("KeyMap动态句点键属性", $"动态按键 OemPeriod 显示或 Tooltip 不符: Content='{periodBtn.Content}', ToolTip='{periodBtn.ToolTip}'");
+                    }
+
+                    // ② 小键盘 Num . 与普通 . 正确区分
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "G", ToKey = "NumDecimal" });
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    if (!editor.TargetButtons.ContainsKey("NumDecimal") || editor.OtherTargets.Children.Count != 2)
+                    {
+                        fail("KeyMap小键盘句点动态键", "未能正确生成 NumDecimal 动态按键");
+                    }
+                    var numDecBtn = editor.TargetButtons["NumDecimal"];
+                    if ((numDecBtn.Content as string) != "Num ." || (numDecBtn.ToolTip as string) != "NumDecimal")
+                    {
+                        fail("KeyMap小键盘句点友好名与区分", $"NumDecimal 显示应为 'Num .' 且 Tooltip 为 'NumDecimal'，实际: Content='{numDecBtn.Content}', ToolTip='{numDecBtn.ToolTip}'");
+                    }
+                    if ((periodBtn.Content as string) != "." || (numDecBtn.Content as string) != "Num .")
+                    {
+                        fail("KeyMap句点与小键盘句点区分", "OemPeriod 与 NumDecimal 动态键显示名混淆");
+                    }
+
+                    // ③ Q、T 映射到 Num7 时点击 Num7 正确高亮两根关联
+                    editor.Entries.Clear();
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "Q", ToKey = "Num7" });
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "T", ToKey = "Num7" });
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    // 点击目标键 Num7
+                    editor.HandleTargetKeyClick("Num7");
+
+                    if (editor.ActiveDiagramRelationships.Count != 2)
+                    {
+                        fail("KeyMap多对一关联识别", $"点击 Num7 应识别到 2 项映射关联，实际: {editor.ActiveDiagramRelationships.Count}");
+                    }
+                    if (!editor.ActiveDiagramRelationships.Any(r => r.FromKey == "Q" && r.ToKey == "Num7") ||
+                        !editor.ActiveDiagramRelationships.Any(r => r.FromKey == "T" && r.ToKey == "Num7"))
+                    {
+                        fail("KeyMap多对一关联内容", "活跃映射关联未能同时包含 Q➔Num7 与 T➔Num7");
+                    }
+                    if (editor.MappingsDataGrid.SelectedItem != null)
+                    {
+                        fail("KeyMap多对一不擅自选中", "点击具有多对一映射的目标键时，不得在数据列表中擅自选中某一项");
+                    }
+                    if (editor.SourceRecorder.SelectedKey != "")
+                    {
+                        fail("KeyMap多对一源键录制框置空", $"多对一映射时源键录制框不应擅自填充单一源键，实际: '{editor.SourceRecorder.SelectedKey}'");
+                    }
+                    if (editor.TargetRecorder.SelectedKey != "Num7")
+                    {
+                        fail("KeyMap目标键点击填充", $"点击 Num7 后目标键录制框应填充 'Num7'，实际: '{editor.TargetRecorder.SelectedKey}'");
+                    }
+
+                    // 多对一关联提示词条与多语言回归（杜绝硬编码）
+                    LanguageCode prevHintLang = I18n.CurrentLanguage;
+                    try
+                    {
+                        I18n.CurrentLanguage = LanguageCode.ZhCn;
+                        editor.HandleTargetKeyClick("Num7");
+                        if (editor.MappingHintTextBlock.Text != "2 项映射 ➔ Num7")
+                        {
+                            fail("KeyMap多对一提示简中", $"简中多对一提示应为 '2 项映射 ➔ Num7'，实际: '{editor.MappingHintTextBlock.Text}'");
+                        }
+
+                        I18n.CurrentLanguage = LanguageCode.ZhTw;
+                        editor.HandleTargetKeyClick("Num7");
+                        if (editor.MappingHintTextBlock.Text != "2 項對應 ➔ Num7")
+                        {
+                            fail("KeyMap多对一提示繁中", $"繁中多对一提示应为 '2 項對應 ➔ Num7'，实际: '{editor.MappingHintTextBlock.Text}'");
+                        }
+
+                        I18n.CurrentLanguage = LanguageCode.En;
+                        editor.HandleTargetKeyClick("Num7");
+                        if (editor.MappingHintTextBlock.Text != "2 mappings ➔ Num7")
+                        {
+                            fail("KeyMap多对一提示英文", $"英文多对一提示应为 '2 mappings ➔ Num7'，实际: '{editor.MappingHintTextBlock.Text}'");
+                        }
+
+                        I18n.CurrentLanguage = LanguageCode.Ja;
+                        editor.HandleTargetKeyClick("Num7");
+                        if (editor.MappingHintTextBlock.Text != "2 件のマッピング ➔ Num7")
+                        {
+                            fail("KeyMap多对一提示日文", $"日文多对一提示应为 '2 件のマッピング ➔ Num7'，实际: '{editor.MappingHintTextBlock.Text}'");
+                        }
+                    }
+                    finally
+                    {
+                        I18n.CurrentLanguage = prevHintLang;
+                    }
+
+                    // 多对一查看→保存不变回归
+                    if (!editor.IsDiagramInspectionOnly)
+                    {
+                        fail("KeyMap多对一查看仅查看标记", "点击多对一目标键后 _isDiagramInspectionOnly 应标记为 true");
+                    }
+                    bool multiSaveOk = editor.TryCommitPendingMapping(out string? multiSaveErr);
+                    if (!multiSaveOk || !string.IsNullOrEmpty(multiSaveErr))
+                    {
+                        fail("KeyMap多对一查看保存成功", $"点击多对一目标键后直接点保存应原样保存成功，实际失败: {multiSaveErr}");
+                    }
+                    if (editor.Entries.Count != 2 ||
+                        !editor.Entries.Any(e => e.FromKey == "Q" && e.ToKey == "Num7") ||
+                        !editor.Entries.Any(e => e.FromKey == "T" && e.ToKey == "Num7"))
+                    {
+                        fail("KeyMap多对一查看保存内容不变", "点击多对一目标键后保存未能原样保留原有映射");
+                    }
+
+                    // 未映射键查看→保存不变回归
+                    // A. 未映射源键查看 (Z 当前未映射)
+                    editor.HandleSourceKeyClick("Z");
+                    if (!editor.IsDiagramInspectionOnly)
+                    {
+                        fail("KeyMap未映射源键查看标记", "点击未映射源键后 _isDiagramInspectionOnly 应为 true");
+                    }
+                    bool unmappedSrcSaveOk = editor.TryCommitPendingMapping(out string? unmappedSrcErr);
+                    if (!unmappedSrcSaveOk || !string.IsNullOrEmpty(unmappedSrcErr))
+                    {
+                        fail("KeyMap未映射源键保存成功", $"点击未映射源键后保存应原样保存成功，实际失败: {unmappedSrcErr}");
+                    }
+                    if (editor.Entries.Count != 2 || editor.Entries.Any(e => e.FromKey == "Z"))
+                    {
+                        fail("KeyMap未映射源键保存无篡改", "未映射源键查看后保存意外新增了映射");
+                    }
+
+                    // B. 未映射目标键查看 (Num0 当前未映射)
+                    editor.HandleTargetKeyClick("Num0");
+                    if (!editor.IsDiagramInspectionOnly)
+                    {
+                        fail("KeyMap未映射目标键查看标记", "点击未映射目标键后 _isDiagramInspectionOnly 应为 true");
+                    }
+                    bool unmappedTgtSaveOk = editor.TryCommitPendingMapping(out string? unmappedTgtErr);
+                    if (!unmappedTgtSaveOk || !string.IsNullOrEmpty(unmappedTgtErr))
+                    {
+                        fail("KeyMap未映射目标键保存成功", $"点击未映射目标键后保存应原样保存成功，实际失败: {unmappedTgtErr}");
+                    }
+                    if (editor.Entries.Count != 2 || editor.Entries.Any(e => e.ToKey == "Num0"))
+                    {
+                        fail("KeyMap未映射目标键保存无篡改", "未映射目标键查看后保存意外新增了映射");
+                    }
+
+                    // 明确编辑→保存生效回归
+                    // A. 明确选择双键添加新映射 (Z➔Num0)
+                    editor.SourceRecorder.SetKey("Z");
+                    editor.TargetRecorder.SetKey("Num0");
+                    bool explicitAddOk = editor.TryCommitPendingMapping(out string? explicitAddErr);
+                    if (!explicitAddOk || !string.IsNullOrEmpty(explicitAddErr))
+                    {
+                        fail("KeyMap明确添加保存成功", $"明确选择源键与目标键后保存应成功，实际失败: {explicitAddErr}");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "Z" && e.ToKey == "Num0"))
+                    {
+                        fail("KeyMap明确添加生效", "明确选择源键与目标键后保存未能写入 _entries");
+                    }
+
+                    // B. 明确修改既有映射源键 (选中 Q➔Num7 后将源键改为 F)
+                    editor.HandleSourceKeyClick("Q");
+                    editor.SourceRecorder.SetKey("F");
+                    bool explicitEditOk = editor.TryCommitPendingMapping(out string? explicitEditErr);
+                    if (!explicitEditOk || !string.IsNullOrEmpty(explicitEditErr))
+                    {
+                        fail("KeyMap明确修改保存成功", $"修改既有映射源键后保存应成功，实际失败: {explicitEditErr}");
+                    }
+                    if (editor.Entries.Any(e => e.FromKey == "Q"))
+                    {
+                        fail("KeyMap旧映射移除", "源键改为 F 后，旧映射 Q➔Num7 仍残留于 _entries 中");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "F" && e.ToKey == "Num7"))
+                    {
+                        fail("KeyMap新映射生效", "源键改为 F 后，新映射 F➔Num7 未能在 _entries 中生效");
+                    }
+
+                    // ④ 修改或删除后孤立动态键消失
+                    // 当前 _entries 包含动态源键 T。现将 T 移除，添加 W➔Num7 (固定物理键)
+                    editor.Entries.Remove(editor.Entries.First(e => e.FromKey == "T"));
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "W", ToKey = "Num7" });
+                    // 也清理刚刚测试添加的 F 与 Z
+                    editor.Entries.Remove(editor.Entries.First(e => e.FromKey == "F"));
+                    editor.Entries.Remove(editor.Entries.First(e => e.FromKey == "Z"));
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    if (editor.PhysicalButtons.ContainsKey("T") || editor.OtherSources.Children.Count != 0)
+                    {
+                        fail("KeyMap修改后孤立动态键清理", "动态源键 T 被移除后，OtherSourcesPanel 仍残留孤立动态按键");
+                    }
+                    if (editor.OtherSourcesContainer.Visibility != System.Windows.Visibility.Collapsed)
+                    {
+                        fail("KeyMap动态源键容器折叠", "无动态源键时 OtherSourcesContainer 应保持 Collapsed");
+                    }
+
+                    // 进一步清空所有映射，验证目标键动态容器也完全清空折叠
+                    editor.Entries.Clear();
+                    editor.SyncDynamicVisualKeys();
+                    if (editor.OtherTargets.Children.Count != 0 || editor.OtherTargetsContainer.Visibility != System.Windows.Visibility.Collapsed)
+                    {
+                        fail("KeyMap清空后动态目标键清理", "清空映射后 OtherTargetsPanel 与容器未能正确清空与折叠");
+                    }
+
+                    // ⑤ 画布缩放范围钳位 60%–200%
+                    editor.ApplyZoom(0.2); // 极端缩小
+                    if (Math.Abs(editor.CurrentZoom - 0.6) > 0.001)
+                    {
+                        fail("KeyMap缩放最小钳位", $"尝试缩放至 20% 时应被钳位在 60% (0.6)，实际为 {editor.CurrentZoom}");
+                    }
+                    editor.ApplyZoom(5.0); // 极端放大
+                    if (Math.Abs(editor.CurrentZoom - 2.0) > 0.001)
+                    {
+                        fail("KeyMap缩放最大钳位", $"尝试缩放至 500% 时应被钳位在 200% (2.0)，实际为 {editor.CurrentZoom}");
+                    }
+                    editor.ApplyZoom(1.25); // 合法范围
+                    if (Math.Abs(editor.CurrentZoom - 1.25) > 0.001)
+                    {
+                        fail("KeyMap合法缩放设置", $"设置 125% (1.25) 缩放未生效，实际为 {editor.CurrentZoom}");
+                    }
+                    editor.FitCanvas(); // 适应画布
+                    if (editor.CurrentZoom < 0.6 || editor.CurrentZoom > 1.2)
+                    {
+                        fail("KeyMap适应画布缩放范围", $"适应画布后缩放倍率应在 [0.6, 1.2] 内，实际为 {editor.CurrentZoom}");
+                    }
+
+                    // ⑥ 允许上限 64 项合法映射与最小窗口尺寸下的 Fit 边界与绝对防裁切几何容纳验证
+                    var sixtyFourKeys = new List<string>();
+                    for (int i = 1; i <= 24; i++) sixtyFourKeys.Add($"F{i}"); // 24 个功能键
+                    for (char c = 'A'; c <= 'Z'; c++) sixtyFourKeys.Add(c.ToString()); // 26 个字母键
+                    for (int i = 0; i <= 9; i++) sixtyFourKeys.Add(i.ToString()); // 10 个数字键
+                    sixtyFourKeys.Add(".");
+                    sixtyFourKeys.Add(",");
+                    sixtyFourKeys.Add("-");
+                    sixtyFourKeys.Add("="); // 4 个常用符号键，合计正好 64 个互不重复合法源键
+
+                    editor.Entries.Clear();
+                    for (int i = 0; i < sixtyFourKeys.Count; i++)
+                    {
+                        editor.Entries.Add(new KeyboardRemapEntry
+                        {
+                            FromKey = sixtyFourKeys[i],
+                            ToKey = $"Num{i % 10}"
+                        });
+                    }
+
+                    // 验证这 64 项映射完全合法并符合上限规范
+                    string? validationErr = KeyMapValidator.Validate(editor.Entries);
+                    if (!string.IsNullOrEmpty(validationErr))
+                    {
+                        fail("KeyMap64项合法性校验", $"64 项映射规则应完全合法，实际校验失败: {validationErr}");
+                    }
+
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    // 最小窗口尺寸下的视口几何 (窗口 MinWidth=660, MinHeight=520, Row 1 MinHeight=190 -> 视口约 600x136)
+                    editor.Viewport.Width = 600;
+                    editor.Viewport.Height = 136;
+                    editor.FitCanvas();
+
+                    if (editor.CurrentZoom >= 0.6)
+                    {
+                        fail("KeyMap64项Fit突破下限", $"64 项动态键时 Fit 缩放倍率应突破普通手动 60% 下限以容纳全部键位，实际为 {editor.CurrentZoom}");
+                    }
+                    if (editor.CurrentZoom < 0.01)
+                    {
+                        fail("KeyMapFit极限保护", $"Fit 缩放倍率不应低于安全保底 0.01，实际为 {editor.CurrentZoom}");
+                    }
+
+                    double fitContentW = Math.Max(editor.LayoutGrid.DesiredSize.Width, editor.LayoutGrid.ActualWidth);
+                    double fitContentH = Math.Max(editor.LayoutGrid.DesiredSize.Height, editor.LayoutGrid.ActualHeight);
+                    double scaledContentW = fitContentW * editor.CurrentZoom;
+                    double scaledContentH = fitContentH * editor.CurrentZoom;
+
+                    // 核心几何断言：内容绝对落在视口内部，杜绝任何裁切
+                    double contentLeft = editor.TranslateX;
+                    double contentTop = editor.TranslateY;
+                    double contentRight = contentLeft + scaledContentW;
+                    double contentBottom = contentTop + scaledContentH;
+
+                    if (contentLeft < -0.01 || contentTop < -0.01 ||
+                        contentRight > editor.Viewport.Width + 0.01 ||
+                        contentBottom > editor.Viewport.Height + 0.01)
+                    {
+                        fail("KeyMap画布几何真正容纳",
+                            $"Fit 后内容边界 ([{contentLeft:F1}, {contentTop:F1}] 到 [{contentRight:F1}, {contentBottom:F1}]) " +
+                            $"超出视口几何尺寸 (0, 0 到 {editor.Viewport.Width:F1}, {editor.Viewport.Height:F1}) 发生裁切");
+                    }
+
+                    // ⑦ 验证普通手动缩放规则仍严格保持 [0.6, 2.0]
+                    editor.ApplyZoom(0.3);
+                    if (Math.Abs(editor.CurrentZoom - 0.6) > 0.001)
+                    {
+                        fail("KeyMap普通手动缩放下限保持", $"手动缩放应钳位在 0.6 下限，实际为 {editor.CurrentZoom}");
+                    }
+                    editor.ApplyZoom(2.5);
+                    if (Math.Abs(editor.CurrentZoom - 2.0) > 0.001)
+                    {
+                        fail("KeyMap普通手动缩放上限保持", $"手动缩放应钳位在 2.0 上限，实际为 {editor.CurrentZoom}");
+                    }
+
+                    // ⑧ 小窗模式 (905x765) 与最小尺寸 (660x520) 真实布局与可见边界严密无界面回归
+                    editor.Viewport.ClearValue(System.Windows.FrameworkElement.WidthProperty);
+                    editor.Viewport.ClearValue(System.Windows.FrameworkElement.HeightProperty);
+                    editor.Entries.Clear();
+                    foreach (var entry in KeyMapCodec.GetDefaultSpatialPreset())
+                    {
+                        editor.Entries.Add(new KeyboardRemapEntry { FromKey = entry.FromKey, ToKey = entry.ToKey });
+                    }
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    var rootVisual = (System.Windows.FrameworkElement)editor.Content;
+                    rootVisual.Measure(new Size(905, 765));
+                    rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                    rootVisual.UpdateLayout();
+                    editor.FitCanvas();
+                    rootVisual.UpdateLayout();
+
+                    Action<System.Windows.FrameworkElement, string> assertInViewport = (elem, name) =>
+                    {
+                        System.Windows.Media.GeneralTransform xf = elem.TransformToAncestor(editor.Viewport);
+                        Rect b = xf.TransformBounds(new Rect(0, 0, elem.ActualWidth, elem.ActualHeight));
+                        double vpH = editor.Viewport.ActualHeight;
+                        double vpW = editor.Viewport.ActualWidth;
+                        if (b.Top < -0.01 || b.Bottom > vpH + 0.01 || b.Left < -0.01 || b.Right > vpW + 0.01)
+                        {
+                            fail($"KeyMap按键视口完全容纳_{name}",
+                                $"{name} 边界 ([{b.Left:F1}, {b.Top:F1}] 到 [{b.Right:F1}, {b.Bottom:F1}]) 超出视口 ([0, 0] 到 [{vpW:F1}, {vpH:F1}]) 导致裁切");
+                        }
+                    };
+
+                    // A. 初始默认预设下在 905x765 小窗：Num0 必须完全在视口内可见
+                    assertInViewport(editor.Key_Num0, "小窗默认预设_Num0");
+
+                    // B. 用户通过录入区依次添加 F➔Num7, T➔Num8, Tab➔Num9, V➔Num4
+                    // 验证每次添加后自动触发适应画布，Num0 与所有新增源键均始终完整落在视口内
+                    string[] newSourceKeys = { "F", "T", "Tab", "V" };
+                    string[] newTargetKeys = { "Num7", "Num8", "Num9", "Num4" };
+                    for (int i = 0; i < newSourceKeys.Length; i++)
+                    {
+                        editor.SourceRecorder.SetKey(newSourceKeys[i]);
+                        editor.TargetRecorder.SetKey(newTargetKeys[i]);
+                        editor.AddButton_Click(editor.AddBtn, new System.Windows.RoutedEventArgs());
+                        rootVisual.Measure(new Size(905, 765));
+                        rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                        rootVisual.UpdateLayout();
+
+                        assertInViewport(editor.Key_Num0, $"添加_{newSourceKeys[i]}_后_Num0");
+                        foreach (System.Windows.FrameworkElement dynBtn in editor.OtherSources.Children)
+                        {
+                            assertInViewport(dynBtn, $"添加_{newSourceKeys[i]}_后源键_{(dynBtn as Button)?.Content}");
+                        }
+                    }
+
+                    // C. 进一步增加动态目标键 (1➔F1, 2➔F2)
+                    editor.SourceRecorder.SetKey("1");
+                    editor.TargetRecorder.SetKey("F1");
+                    editor.AddButton_Click(editor.AddBtn, new System.Windows.RoutedEventArgs());
+                    editor.SourceRecorder.SetKey("2");
+                    editor.TargetRecorder.SetKey("F2");
+                    editor.AddButton_Click(editor.AddBtn, new System.Windows.RoutedEventArgs());
+                    rootVisual.Measure(new Size(905, 765));
+                    rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                    rootVisual.UpdateLayout();
+
+                    assertInViewport(editor.Key_Num0, "添加动态目标键后_Num0");
+                    foreach (System.Windows.FrameworkElement dynSrc in editor.OtherSources.Children)
+                    {
+                        assertInViewport(dynSrc, $"双侧动态键后源键_{(dynSrc as Button)?.Content}");
+                    }
+                    foreach (System.Windows.FrameworkElement dynTgt in editor.OtherTargets.Children)
+                    {
+                        assertInViewport(dynTgt, $"双侧动态键后目标键_{(dynTgt as Button)?.Content}");
+                    }
+
+                    // D. 删除单条动态映射 (删除 2➔F2)
+                    var entryToRemove = editor.Entries.FirstOrDefault(e => e.FromKey == "2");
+                    if (entryToRemove != null)
+                    {
+                        editor.DeleteRow_Click(new Button { DataContext = entryToRemove }, new System.Windows.RoutedEventArgs());
+                        rootVisual.Measure(new Size(905, 765));
+                        rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                        rootVisual.UpdateLayout();
+
+                        if (editor.Entries.Any(e => e.FromKey == "2"))
+                        {
+                            fail("KeyMap删除动态映射生效", "调用 DeleteRow_Click 后条目仍残留于 Entries");
+                        }
+                        assertInViewport(editor.Key_Num0, "删除动态条目后_Num0");
+                    }
+
+                    // E. 手动缩放交互保持：用户手动缩放到 150% 时，新增条目不得擅自破坏用户的缩放状态
+                    editor.ApplyZoom(1.5);
+                    double manualZoom = editor.CurrentZoom;
+                    editor.SourceRecorder.SetKey("3");
+                    editor.TargetRecorder.SetKey("F3");
+                    editor.AddButton_Click(editor.AddBtn, new System.Windows.RoutedEventArgs());
+                    rootVisual.Measure(new Size(905, 765));
+                    rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                    rootVisual.UpdateLayout();
+
+                    if (Math.Abs(editor.CurrentZoom - manualZoom) > 0.001)
+                    {
+                        fail("KeyMap手动缩放状态保持", $"用户手动缩放至 {manualZoom} 后，添加映射应保持用户倍率，实际被重置为 {editor.CurrentZoom}");
+                    }
+
+                    // F. 点击“适应画布”按钮：重置交互标记，并重新适配容纳全部键位
+                    editor.FitCanvasButton_Click(editor.FitCanvasButton, new System.Windows.RoutedEventArgs());
+                    rootVisual.Measure(new Size(905, 765));
+                    rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                    rootVisual.UpdateLayout();
+
+                    assertInViewport(editor.Key_Num0, "手动点击适应画布后_Num0");
+                    foreach (System.Windows.FrameworkElement dynSrc in editor.OtherSources.Children)
+                    {
+                        assertInViewport(dynSrc, $"手动点击适应画布后源键_{(dynSrc as Button)?.Content}");
+                    }
+                    foreach (System.Windows.FrameworkElement dynTgt in editor.OtherTargets.Children)
+                    {
+                        assertInViewport(dynTgt, $"手动点击适应画布后目标键_{(dynTgt as Button)?.Content}");
+                    }
+
+                    // G. 最小窗口尺寸 (660x520) 下的极限无裁切容纳断言
+                    rootVisual.Measure(new Size(660, 520));
+                    rootVisual.Arrange(new Rect(0, 0, 660, 520));
+                    rootVisual.UpdateLayout();
+                    editor.FitCanvasButton_Click(editor.FitCanvasButton, new System.Windows.RoutedEventArgs());
+                    rootVisual.UpdateLayout();
+
+                    assertInViewport(editor.Key_Num0, "最小窗口660x520_Num0");
+                    foreach (System.Windows.FrameworkElement dynSrc in editor.OtherSources.Children)
+                    {
+                        assertInViewport(dynSrc, $"最小窗口660x520源键_{(dynSrc as Button)?.Content}");
+                    }
+                    foreach (System.Windows.FrameworkElement dynTgt in editor.OtherTargets.Children)
+                    {
+                        assertInViewport(dynTgt, $"最小窗口660x520目标键_{(dynTgt as Button)?.Content}");
+                    }
+
+                    // H. 清空与预设恢复动作自动适配
+                    editor.ClearButton_Click(editor.ClearButton, new System.Windows.RoutedEventArgs());
+                    rootVisual.Measure(new Size(905, 765));
+                    rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                    rootVisual.UpdateLayout();
+                    if (editor.Entries.Count != 0 || editor.OtherSources.Children.Count != 0 || editor.OtherTargets.Children.Count != 0)
+                    {
+                        fail("KeyMap清空动作生效", "ClearButton_Click 后 Entries 或动态按键未完全清空");
+                    }
+
+                    editor.PresetButton_Click(editor.PresetButton, new System.Windows.RoutedEventArgs());
+                    rootVisual.Measure(new Size(905, 765));
+                    rootVisual.Arrange(new Rect(0, 0, 905, 765));
+                    rootVisual.UpdateLayout();
+                    if (editor.Entries.Count != 10)
+                    {
+                        fail("KeyMap预设恢复条目数", $"PresetButton_Click 后条目数应恢复为 10，实际为 {editor.Entries.Count}");
+                    }
+                    assertInViewport(editor.Key_Num0, "预设恢复后_Num0");
+
+                    // ⑨ KeyMap 画布『点源键 ➔ 点目标键』直接配对交互完整无界面回归
+                    // A. 直接点对点配置与4语系待配对提示
+                    editor.Entries.Clear();
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    // 点击源键 Q，进入清晰等待目标键状态
+                    editor.HandleSourceKeyClick("Q");
+                    if (editor.PendingPairSourceKey != "Q")
+                    {
+                        fail("KeyMap待选源键标记", $"点击源键 Q 后 PendingPairSourceKey 应为 'Q'，实际为 '{editor.PendingPairSourceKey}'");
+                    }
+                    if (editor.SourceRecorder.SelectedKey != "Q")
+                    {
+                        fail("KeyMap待配对源键录制同步", $"点击源键 Q 后 SourceRecorder 应为 'Q'，实际为 '{editor.SourceRecorder.SelectedKey}'");
+                    }
+                    if (editor.Entries.Count != 0)
+                    {
+                        fail("KeyMap待配对不改动映射", "仅点击源键 Q 时不得修改或新增映射条目");
+                    }
+
+                    // 4 语系提示多语言（未映射源键等待目标键）
+                    LanguageCode prevPairLang = I18n.CurrentLanguage;
+                    try
+                    {
+                        I18n.CurrentLanguage = LanguageCode.ZhCn;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (请选择目标键)")
+                            fail("KeyMap待选目标提示简中", $"简中待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+
+                        I18n.CurrentLanguage = LanguageCode.ZhTw;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (請選擇目標鍵)")
+                            fail("KeyMap待选目标提示繁中", $"繁中待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+
+                        I18n.CurrentLanguage = LanguageCode.En;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (Click target key to pair)")
+                            fail("KeyMap待选目标提示英文", $"英文待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+
+                        I18n.CurrentLanguage = LanguageCode.Ja;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (目標キーを選択してください)")
+                            fail("KeyMap待选目标提示日文", $"日文待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+                    }
+                    finally
+                    {
+                        I18n.CurrentLanguage = prevPairLang;
+                    }
+
+                    // 点击目标键 Num7：立即在内存建立映射 Q ➔ Num7
+                    editor.HandleTargetKeyClick("Num7");
+                    if (editor.PendingPairSourceKey != null)
+                    {
+                        fail("KeyMap配对完成清除标记", "配对完成后 PendingPairSourceKey 应重置为 null");
+                    }
+                    if (editor.Entries.Count != 1 || editor.Entries[0].FromKey != "Q" || editor.Entries[0].ToKey != "Num7")
+                    {
+                        fail("KeyMap点对点配置生效", "点击 Num7 后内存映射列表未能正确新增 Q ➔ Num7");
+                    }
+                    if (editor.MappingHintTextBlock.Text != "Q ➔ Num7")
+                    {
+                        fail("KeyMap配对成功提示", $"配对成功后提示文案应为 'Q ➔ Num7'，实际为 '{editor.MappingHintTextBlock.Text}'");
+                    }
+                    if (editor.ActiveDiagramRelationships.Count != 1)
+                    {
+                        fail("KeyMap配对关联线高亮", $"配对成功后关联关系数应为 1，实际为 {editor.ActiveDiagramRelationships.Count}");
+                    }
+
+                    // B. 已有源键换目标时只替换该源键映射，并验证已有映射时的 4 语系提示
+                    try
+                    {
+                        I18n.CurrentLanguage = LanguageCode.ZhCn;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (请选择目标键，当前: Num7)")
+                            fail("KeyMap已有映射待选提示简中", $"简中待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+
+                        I18n.CurrentLanguage = LanguageCode.ZhTw;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (請選擇目標鍵，目前: Num7)")
+                            fail("KeyMap已有映射待选提示繁中", $"繁中待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+
+                        I18n.CurrentLanguage = LanguageCode.En;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (Click target key to change, current: Num7)")
+                            fail("KeyMap已有映射待选提示英文", $"英文待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+
+                        I18n.CurrentLanguage = LanguageCode.Ja;
+                        editor.HandleSourceKeyClick("Q");
+                        if (editor.MappingHintTextBlock.Text != "Q ➔ ? (目標キーを選択して変更、現在: Num7)")
+                            fail("KeyMap已有映射待选提示日文", $"日文待选提示错误: '{editor.MappingHintTextBlock.Text}'");
+                    }
+                    finally
+                    {
+                        I18n.CurrentLanguage = prevPairLang;
+                    }
+
+                    // 为已有映射源键 Q 点击新目标 Num9：替换 Q ➔ Num9
+                    editor.HandleTargetKeyClick("Num9");
+                    if (editor.Entries.Count != 1 || editor.Entries[0].FromKey != "Q" || editor.Entries[0].ToKey != "Num9")
+                    {
+                        fail("KeyMap已有源键替换目标", "已有源键选择新目标时未能只替换该源键映射");
+                    }
+
+                    // C. 允许多个源键指向同一目标键（多对一配置）
+                    editor.HandleSourceKeyClick("W");
+                    editor.HandleTargetKeyClick("Num9");
+                    if (editor.Entries.Count != 2 ||
+                        !editor.Entries.Any(e => e.FromKey == "Q" && e.ToKey == "Num9") ||
+                        !editor.Entries.Any(e => e.FromKey == "W" && e.ToKey == "Num9"))
+                    {
+                        fail("KeyMap多对一配置", "不同源键 Q 和 W 未能成功同时指向同一目标键 Num9");
+                    }
+
+                    // D. 点相同目标不得产生重复项
+                    editor.HandleSourceKeyClick("Q");
+                    editor.HandleTargetKeyClick("Num9");
+                    if (editor.Entries.Count != 2 || editor.Entries.Count(e => e.FromKey == "Q") != 1)
+                    {
+                        fail("KeyMap相同目标防重复", "对已有映射源键重复点击同一目标产生了重复映射项");
+                    }
+
+                    // E. 未先选择源键时，单击目标键保持现有“查看关联”行为，绝不新增或修改映射
+                    editor.HandleTargetKeyClick("Num9");
+                    if (editor.PendingPairSourceKey != null)
+                    {
+                        fail("KeyMap未选源键查关联标记", "未选源键点击目标键时不应进入配对状态");
+                    }
+                    if (editor.Entries.Count != 2)
+                    {
+                        fail("KeyMap未选源键查关联无增改", "未先选择源键单点目标键意外篡改了条目数");
+                    }
+                    if (editor.ActiveDiagramRelationships.Count != 2)
+                    {
+                        fail("KeyMap未选源键查关联关系数", $"单点 Num9 应查看所有关联（2项），实际为 {editor.ActiveDiagramRelationships.Count}");
+                    }
+                    bool inspectSaveOk = editor.TryCommitPendingMapping(out string? inspectSaveErr);
+                    if (!inspectSaveOk || !string.IsNullOrEmpty(inspectSaveErr))
+                    {
+                        fail("KeyMap查关联后直接保存成功", $"单点目标键后直接保存应成功，实际错误: {inspectSaveErr}");
+                    }
+                    if (editor.Entries.Count != 2)
+                    {
+                        fail("KeyMap查关联后直接保存无改动", "单点目标键后直接保存意外修改了映射");
+                    }
+
+                    // F. 只点源键后直接保存，绝不意外改动或报错
+                    editor.HandleSourceKeyClick("E");
+                    if (editor.PendingPairSourceKey != "E")
+                    {
+                        fail("KeyMap只点源键待配对标记", "HandleSourceKeyClick('E') 未进入待选目标状态");
+                    }
+                    bool srcOnlySaveOk = editor.TryCommitPendingMapping(out string? srcOnlySaveErr);
+                    if (!srcOnlySaveOk || !string.IsNullOrEmpty(srcOnlySaveErr))
+                    {
+                        fail("KeyMap只点源键直接保存成功", $"只点源键直接保存应安全成功放行，实际错误: {srcOnlySaveErr}");
+                    }
+                    if (editor.Entries.Count != 2 || editor.Entries.Any(e => e.FromKey == "E"))
+                    {
+                        fail("KeyMap只点源键直接保存无意外改动", "只点源键直接保存意外添加了半成品条目");
+                    }
+
+                    // G. 核心防回归：切换源键不会删错行（点另一个源键应切换待选源键，绝不误改其他行）
+                    // 场景：已有 Q➔Num9, W➔Num9。用户先点 A (未映射)，再改主意点 D (未映射)，再点 Num6
+                    editor.HandleSourceKeyClick("A");
+                    if (editor.PendingPairSourceKey != "A") fail("KeyMap切换源键1", "先点 A 未置待选");
+                    editor.HandleSourceKeyClick("D");
+                    if (editor.PendingPairSourceKey != "D") fail("KeyMap切换源键2", "改点 D 未切换待选源键");
+                    if (editor.Entries.Count != 2 || editor.Entries.Any(e => e.FromKey == "A"))
+                    {
+                        fail("KeyMap切换源键未配对行无残留", "切换源键过程中产生了非法残留项");
+                    }
+                    editor.HandleTargetKeyClick("Num6");
+                    if (editor.Entries.Count != 3 || !editor.Entries.Any(e => e.FromKey == "D" && e.ToKey == "Num6"))
+                    {
+                        fail("KeyMap切换源键后配对成功", "切换到 D 后配对 Num6 未能生效");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "Q" && e.ToKey == "Num9") ||
+                        !editor.Entries.Any(e => e.FromKey == "W" && e.ToKey == "Num9"))
+                    {
+                        fail("KeyMap切换源键不删错行_未映射切已映射", "切换源键导致已有的 Q➔Num9 或 W➔Num9 丢失");
+                    }
+
+                    // 场景：在已有映射的源键间连续切换，再配对目标键，确保原条目绝不误删
+                    editor.HandleSourceKeyClick("Q");
+                    editor.HandleSourceKeyClick("W");
+                    editor.HandleSourceKeyClick("D"); // 最终留在 D
+                    editor.HandleTargetKeyClick("Num4"); // 将 D 换为 Num4
+                    if (editor.Entries.Count != 3)
+                    {
+                        fail("KeyMap连续切换源键条目数", $"连续切换已有源键后条目数应为 3，实际为 {editor.Entries.Count}");
+                    }
+                    if (!editor.Entries.Any(e => e.FromKey == "Q" && e.ToKey == "Num9") ||
+                        !editor.Entries.Any(e => e.FromKey == "W" && e.ToKey == "Num9") ||
+                        !editor.Entries.Any(e => e.FromKey == "D" && e.ToKey == "Num4"))
+                    {
+                        fail("KeyMap连续切换源键不删错行", "在已有源键间切换导致其他已有行被意外删除或覆盖");
+                    }
+
+                    // H. 取消、列表选中、录键框编辑、清空、恢复预设等操作妥善结束待配对状态
+                    editor.HandleSourceKeyClick("Q");
+                    editor.MappingsDataGrid.SelectedItem = editor.Entries[2];
+                    if (editor.PendingPairSourceKey != null)
+                    {
+                        fail("KeyMap列表选中结束待配对", "列表选中行后待配对状态未结束");
+                    }
+
+                    editor.HandleSourceKeyClick("Q");
+                    editor.SourceRecorder.StartRecording();
+                    if (editor.PendingPairSourceKey != null)
+                    {
+                        fail("KeyMap录键框录制结束待配对", "录键框开始录制后待配对状态未结束");
+                    }
+                    editor.SourceRecorder.CancelRecording();
+
+                    editor.HandleSourceKeyClick("Q");
+                    editor.ClearButton_Click(editor.ClearButton, new System.Windows.RoutedEventArgs());
+                    if (editor.PendingPairSourceKey != null || editor.Entries.Count != 0)
+                    {
+                        fail("KeyMap清空结束待配对", "点击清空后待配对状态未结束或映射未清空");
+                    }
+
+                    editor.HandleSourceKeyClick("Q");
+                    editor.PresetButton_Click(editor.PresetButton, new System.Windows.RoutedEventArgs());
+                    if (editor.PendingPairSourceKey != null || editor.Entries.Count != 10)
+                    {
+                        fail("KeyMap预设恢复结束待配对", "点击预设恢复后待配对状态未结束或条目数不对");
+                    }
+
+                    // I. 画布动态键直接点对点配置
+                    editor.Entries.Clear();
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "F", ToKey = "F1" });
+                    editor.Entries.Add(new KeyboardRemapEntry { FromKey = "T", ToKey = "F2" });
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    if (!editor.PhysicalButtons.ContainsKey("F") || !editor.TargetButtons.ContainsKey("F2"))
+                    {
+                        fail("KeyMap动态按键存在性", "动态源键 F 或动态目标键 F2 未在画布中生成");
+                    }
+
+                    // 点动态源键 F -> 点动态目标键 F2
+                    editor.HandleSourceKeyClick("F");
+                    if (editor.PendingPairSourceKey != "F") fail("KeyMap动态源键点击标记", "点动态源键 F 未进入待配对状态");
+                    editor.HandleTargetKeyClick("F2");
+                    if (editor.Entries.First(e => e.FromKey == "F").ToKey != "F2")
+                    {
+                        fail("KeyMap动态键点对点配置", "动态源键 F ➔ 动态目标键 F2 配对未成功");
+                    }
+
+                    // J. 校验失败显示错误并保留原数据
+                    // 构造达到 64 上限的条目集合，再尝试点对点添加第 65 项
+                    editor.Entries.Clear();
+                    for (int i = 0; i < sixtyFourKeys.Count; i++)
+                    {
+                        editor.Entries.Add(new KeyboardRemapEntry
+                        {
+                            FromKey = sixtyFourKeys[i],
+                            ToKey = $"Num{i % 10}"
+                        });
+                    }
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    // 此时已有 64 项，尝试用未映射的 "Tab" 配对 "Num0"（将超出 64 上限）
+                    editor.HandleSourceKeyClick("Tab");
+                    editor.HandleTargetKeyClick("Num0");
+                    if (editor.Entries.Count != 64)
+                    {
+                        fail("KeyMap校验失败条目数保持", $"校验失败时条目数应保持 64，实际为 {editor.Entries.Count}");
+                    }
+                    if (string.IsNullOrEmpty(editor.StatusText.Text))
+                    {
+                        fail("KeyMap校验失败错误提示", "校验失败时 StatusText 应显示错误提示，实际为空");
+                    }
+                    if (editor.Entries.Any(e => e.FromKey == "Tab"))
+                    {
+                        fail("KeyMap校验失败不残留条目", "校验失败项不应写入 Entries");
+                    }
+
+                    // K. 引导文字居中完整换行、适度加宽与小窗80%缩放无遮挡回归断言
+                    // 1. 验证控件属性：换行开启、居中对齐、中间列加宽
+                    if (editor.MappingHintTextBlock.TextWrapping != System.Windows.TextWrapping.Wrap)
+                    {
+                        fail("KeyMap提示换行配置", "MappingHintTextBlock.TextWrapping 应为 Wrap");
+                    }
+                    if (editor.MappingHintTextBlock.TextAlignment != System.Windows.TextAlignment.Center)
+                    {
+                        fail("KeyMap提示居中对齐配置", "MappingHintTextBlock.TextAlignment 应为 Center");
+                    }
+                    double centerColWidth = editor.LayoutGrid.ColumnDefinitions[1].Width.Value;
+                    if (centerColWidth < 140)
+                    {
+                        fail("KeyMap中间列宽度加宽", $"中间列宽度应适度加宽至 >= 140px，实际为: {centerColWidth}");
+                    }
+
+                    // 2. 在小窗尺寸 (905x765) 与最小尺寸 (660x520) 以及约 80% 缩放比例下，
+                    // 遍历 4 种语言文案及较长动态键名称，严密断言提示文字绝不与左右两侧键区产生几何遮挡或重叠
+                    editor.Entries.Clear();
+                    foreach (var entry in KeyMapCodec.GetDefaultSpatialPreset())
+                    {
+                        editor.Entries.Add(new KeyboardRemapEntry { FromKey = entry.FromKey, ToKey = entry.ToKey });
+                    }
+                    editor.SyncDynamicVisualKeys();
+                    editor.RefreshVisualHighlights();
+
+                    var testWindowSizes = new[] { new Size(905, 765), new Size(660, 520) };
+                    var testZooms = new[] { 1.0, 0.8 };
+                    var testLanguages = new[] { LanguageCode.ZhCn, LanguageCode.ZhTw, LanguageCode.En, LanguageCode.Ja };
+
+                    LanguageCode savedLang = I18n.CurrentLanguage;
+                    try
+                    {
+                        foreach (var winSize in testWindowSizes)
+                        {
+                            rootVisual.Measure(winSize);
+                            rootVisual.Arrange(new Rect(0, 0, winSize.Width, winSize.Height));
+                            rootVisual.UpdateLayout();
+                            editor.FitCanvas();
+                            rootVisual.UpdateLayout();
+
+                            foreach (var zoom in testZooms)
+                            {
+                                editor.ApplyZoom(zoom);
+                                rootVisual.UpdateLayout();
+
+                                foreach (var lang in testLanguages)
+                                {
+                                    I18n.CurrentLanguage = lang;
+                                    editor.HandleSourceKeyClick("Q");
+                                    rootVisual.UpdateLayout();
+
+                                    var gridObj = editor.LayoutGrid;
+                                    var hintObj = editor.MappingHintTextBlock;
+
+                                    // 计算左侧所有按键的最大 Right 边界，以及右侧所有按键的最小 Left 边界（在 LayoutGrid 坐标系内）
+                                    double maxLeftKeyRight = double.MinValue;
+                                    foreach (var btn in editor.PhysicalButtons.Values)
+                                    {
+                                        if (btn.Visibility != System.Windows.Visibility.Visible) continue;
+                                        System.Windows.Media.GeneralTransform xf = btn.TransformToAncestor(gridObj);
+                                        Rect b = xf.TransformBounds(new Rect(0, 0, btn.ActualWidth, btn.ActualHeight));
+                                        if (b.Right > maxLeftKeyRight) maxLeftKeyRight = b.Right;
+                                    }
+
+                                    double minRightKeyLeft = double.MaxValue;
+                                    foreach (var btn in editor.TargetButtons.Values)
+                                    {
+                                        if (btn.Visibility != System.Windows.Visibility.Visible) continue;
+                                        System.Windows.Media.GeneralTransform xf = btn.TransformToAncestor(gridObj);
+                                        Rect b = xf.TransformBounds(new Rect(0, 0, btn.ActualWidth, btn.ActualHeight));
+                                        if (b.Left < minRightKeyLeft) minRightKeyLeft = b.Left;
+                                    }
+
+                                    System.Windows.Media.GeneralTransform xfHint = hintObj.TransformToAncestor(gridObj);
+                                    Rect bHint = xfHint.TransformBounds(new Rect(0, 0, hintObj.ActualWidth, hintObj.ActualHeight));
+
+                                    // 核心防遮挡断言：提示文字左边界不得侵入左侧键区，右边界不得侵入右侧键区
+                                    if (bHint.Left < maxLeftKeyRight - 0.01)
+                                    {
+                                        fail("KeyMap提示遮挡左侧键区",
+                                            $"[尺寸 {winSize.Width}x{winSize.Height}, 缩放 {zoom:P0}, 语言 {lang}] 提示文字左边界 {bHint.Left:F1} 侵入左侧键区 (最右 {maxLeftKeyRight:F1}) 发生遮挡: '{hintObj.Text}'");
+                                    }
+                                    if (bHint.Right > minRightKeyLeft + 0.01)
+                                    {
+                                        fail("KeyMap提示遮挡右侧键区",
+                                            $"[尺寸 {winSize.Width}x{winSize.Height}, 缩放 {zoom:P0}, 语言 {lang}] 提示文字右边界 {bHint.Right:F1} 侵入右侧键区 (最左 {minRightKeyLeft:F1}) 发生遮挡: '{hintObj.Text}'");
+                                    }
+                                }
+
+                                // 测试较长动态按键名称 (BrowserBack ➔ VolumeUp)
+                                editor.MappingHintTextBlock.Text = I18n.TF("KeyMapWaitingForTargetKeyWithCurrent", "BrowserBack", "VolumeUp");
+                                rootVisual.UpdateLayout();
+                                System.Windows.Media.GeneralTransform xfLongHint = editor.MappingHintTextBlock.TransformToAncestor(editor.LayoutGrid);
+                                Rect bLongHint = xfLongHint.TransformBounds(new Rect(0, 0, editor.MappingHintTextBlock.ActualWidth, editor.MappingHintTextBlock.ActualHeight));
+
+                                double dynMaxLeftRight = double.MinValue;
+                                foreach (var btn in editor.PhysicalButtons.Values)
+                                {
+                                    if (btn.Visibility != System.Windows.Visibility.Visible) continue;
+                                    System.Windows.Media.GeneralTransform xf = btn.TransformToAncestor(editor.LayoutGrid);
+                                    Rect b = xf.TransformBounds(new Rect(0, 0, btn.ActualWidth, btn.ActualHeight));
+                                    if (b.Right > dynMaxLeftRight) dynMaxLeftRight = b.Right;
+                                }
+
+                                double dynMinRightLeft = double.MaxValue;
+                                foreach (var btn in editor.TargetButtons.Values)
+                                {
+                                    if (btn.Visibility != System.Windows.Visibility.Visible) continue;
+                                    System.Windows.Media.GeneralTransform xf = btn.TransformToAncestor(editor.LayoutGrid);
+                                    Rect b = xf.TransformBounds(new Rect(0, 0, btn.ActualWidth, btn.ActualHeight));
+                                    if (b.Left < dynMinRightLeft) dynMinRightLeft = b.Left;
+                                }
+
+                                if (bLongHint.Left < dynMaxLeftRight - 0.01 || bLongHint.Right > dynMinRightLeft + 0.01)
+                                {
+                                    fail("KeyMap长按键名提示遮挡",
+                                        $"[尺寸 {winSize.Width}x{winSize.Height}, 缩放 {zoom:P0}] 较长动态按键名称提示 ([{bLongHint.Left:F1}, {bLongHint.Right:F1}]) 侵入按键区 ([左最右 {dynMaxLeftRight:F1}, 右最左 {dynMinRightLeft:F1}]): '{editor.MappingHintTextBlock.Text}'");
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        I18n.CurrentLanguage = savedLang;
+                    }
+
+                    // 3. 验证手动缩放和平移不破坏连线且不重置视图
+                    editor.ApplyZoom(0.8);
+                    if (Math.Abs(editor.CurrentZoom - 0.8) > 0.001)
+                    {
+                        fail("KeyMap手动缩放保持80", $"手动缩放至 0.8 应保持，实际为 {editor.CurrentZoom}");
+                    }
+                    editor.HandleTargetKeyClick("Num7"); // 配对 Q➔Num7
+                    if (editor.ActiveDiagramRelationships.Count != 1)
+                    {
+                        fail("KeyMap手动缩放下关联关系数", $"缩放下配对后关联关系数应为 1，实际为 {editor.ActiveDiagramRelationships.Count}");
+                    }
+                    if (Math.Abs(editor.CurrentZoom - 0.8) > 0.001)
+                    {
+                        fail("KeyMap缩放后配对不擅自重置视图", $"配对后缩放比例应保持 0.8，实际被重置为 {editor.CurrentZoom}");
+                    }
+                }
+
+                editor.Close();
+            }
+            catch (Exception ex)
+            {
+                fail("KeyMap编辑器打开异常", $"打开 KeyMapEditorWindow 时抛出异常: {ex.Message}");
+            }
+        });
+
+        // -------------------------------------------------------------------------
+        // 回归 3：停用插件动作保留、类型下拉显示与不可用提示
+        // -------------------------------------------------------------------------
+        try
+        {
+            PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
+            {
+                Id = "mock.disabled.plugin",
+                Enabled = false,
+                InstallPath = "mock.disabled.plugin",
+            });
+
+            if (!ActionTypeCatalog.ShouldShowPluginActionType())
+            {
+                fail("动作类型目录", "当登记簿中存在（即使已停用）插件时，ShouldShowPluginActionType 应返回 true");
+            }
+
+            var aggregatedTypes = ActionTypeCatalog.BuildAggregatedActionTypes();
+            if (!aggregatedTypes.Any(t => string.Equals(t.Tag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase)))
+            {
+                fail("动作类型目录", "BuildAggregatedActionTypes 未包含 PluginActionBinding.TypeName 选项");
+            }
+
+            var localizedTypes = ActionTypeCatalog.BuildLocalizedActionTypes();
+            if (!localizedTypes.Any(t => string.Equals(t.Tag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase)))
+            {
+                fail("动作类型目录", "BuildLocalizedActionTypes 未包含 PluginActionBinding.TypeName 选项");
+            }
+
+            var optionTypes = ActionTypeCatalog.BuildActionTypeOptions();
+            if (!optionTypes.Any(t => string.Equals(t.Tag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase)))
+            {
+                fail("动作类型目录", "BuildActionTypeOptions 未包含 PluginActionBinding.TypeName 选项");
+            }
+        }
+        finally
+        {
+            PluginRegistryStore.RemoveEntry("mock.disabled.plugin");
+        }
+
+        var mockDisabledAction = new ActionItem
+        {
+            Type = PluginActionBinding.TypeName,
+            PluginActionRef = new PluginActionRef
+            {
+                PluginId = "mock.disabled.plugin",
+                ContributionId = "mockAction",
+            },
+            Name = "未启用的插件动作",
+        };
+
+        if (!PluginActionBinding.IsReferenceBroken(mockDisabledAction))
+        {
+            fail("插件引用失效判定", "不存在/已停用的插件动作引用未被正确识别为失效 (IsReferenceBroken)");
+        }
+        if (mockDisabledAction.PluginActionRef?.FullId != "mock.disabled.plugin.mockAction")
+        {
+            fail("插件动作引用持久性", "失效检测时不应修改或清除 PluginActionRef 原始引用");
+        }
+
+        var unavailableText = PluginActionPanelText.Unavailable(mockDisabledAction.PluginActionRef.FullId);
+        if (string.IsNullOrWhiteSpace(unavailableText.Title) ||
+            string.IsNullOrWhiteSpace(unavailableText.Detail) ||
+            string.IsNullOrWhiteSpace(unavailableText.Hint) ||
+            !unavailableText.Detail.Contains("mock.disabled.plugin.mockAction"))
+        {
+            fail("不可用提示文案", "PluginActionPanelText.Unavailable 未生成包含贡献点全 ID 与有效提示的文案");
+        }
+
+        // -------------------------------------------------------------------------
+        // 回归 4：真实往返路径保护（插件动作 → 快捷键 → 插件动作）
+        // 验证 SlotViewModel.Type 与 SettingsWindow 主扇区类型切换路径绝不丢失 PluginActionRef 与 ExtensionData.keyMap
+        // -------------------------------------------------------------------------
+        // 路径 A：SlotViewModel.Type 真实往返
+        var slotAction = new ActionItem
+        {
+            Type = PluginActionBinding.TypeName,
+            Name = "CAD 数字键盘层",
+            PluginActionRef = new PluginActionRef
+            {
+                PluginId = "starpie.plugin.keypadlayer",
+                ContributionId = "keypadLayer",
+            },
+            ExtensionData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["keyMap"] = "KeyQ=Numpad7;KeyW=Numpad8",
+                ["targetProcess"] = "acad.exe"
+            }
+        };
+
+        var slotVm = new SlotViewModel(0, 8, "上方", slotAction);
+        // 执行真实往返：插件动作 → 快捷键 → 插件动作
+        slotVm.Type = "Hotkey";
+        slotVm.Type = PluginActionBinding.TypeName;
+
+        if (slotAction.PluginActionRef == null || slotAction.PluginActionRef.FullId != "starpie.plugin.keypadlayer.keypadLayer")
+        {
+            fail("SlotViewModel类型往返", "SlotViewModel.Type 从'Plugin'切换为'Hotkey'再切回'Plugin'后，PluginActionRef 丢失");
+        }
+        if (slotAction.ExtensionData == null ||
+            !slotAction.ExtensionData.TryGetValue("keyMap", out var slotMap) ||
+            slotMap != "KeyQ=Numpad7;KeyW=Numpad8")
+        {
+            fail("SlotViewModel类型往返", "SlotViewModel.Type 从'Plugin'切换为'Hotkey'再切回'Plugin'后，ExtensionData.keyMap 丢失");
+        }
+
+        // 路径 B：SettingsWindow 主扇区类型切换路径真实往返
+        var settingsAction = new ActionItem
+        {
+            Type = PluginActionBinding.TypeName,
+            Name = "CAD 数字键盘层",
+            PluginActionRef = new PluginActionRef
+            {
+                PluginId = "starpie.plugin.keypadlayer",
+                ContributionId = "keypadLayer",
+            },
+            ExtensionData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["keyMap"] = "KeyQ=Numpad7;KeyW=Numpad8",
+                ["targetProcess"] = "acad.exe"
+            }
+        };
+
+        // 执行真实往返：主扇区类型切换路径从'Plugin' → 'Hotkey' → 'Plugin'
+        SettingsWindow.SwitchFocusActionType(settingsAction, "Hotkey");
+        SettingsWindow.SwitchFocusActionType(settingsAction, PluginActionBinding.TypeName);
+
+        if (settingsAction.PluginActionRef == null || settingsAction.PluginActionRef.FullId != "starpie.plugin.keypadlayer.keypadLayer")
+        {
+            fail("SettingsWindow主扇区类型往返", "SettingsWindow主扇区类型切换路径从'Plugin'切换为'Hotkey'再切回'Plugin'后，PluginActionRef 丢失");
+        }
+        if (settingsAction.ExtensionData == null ||
+            !settingsAction.ExtensionData.TryGetValue("keyMap", out var settingsMap) ||
+            settingsMap != "KeyQ=Numpad7;KeyW=Numpad8")
+        {
+            fail("SettingsWindow主扇区类型往返", "SettingsWindow主扇区类型切换路径从'Plugin'切换为'Hotkey'再切回'Plugin'后，ExtensionData.keyMap 丢失");
+        }
+
+        // -------------------------------------------------------------------------
+        // 回归 5：Win32 INPUT 结构原生对齐尺寸与注入失败安全路径（无真实按键注入）
+        // -------------------------------------------------------------------------
+        int expectedInputSize = IntPtr.Size == 8 ? 40 : 28;
+        int expectedUnionSize = IntPtr.Size == 8 ? 32 : 24;
+
+        int remapInputSize = Marshal.SizeOf<KeyboardRemapController.INPUT>();
+        int remapUnionSize = Marshal.SizeOf<KeyboardRemapController.InputUnion>();
+        int hookInputSize = Marshal.SizeOf<KeyboardHook.INPUT>();
+        int hookUnionSize = Marshal.SizeOf<KeyboardHook.InputUnion>();
+
+        if (remapInputSize != expectedInputSize)
+        {
+            fail("INPUT结构尺寸", $"KeyboardRemapController.INPUT 尺寸应为 {expectedInputSize} 字节，实际为 {remapInputSize} 字节");
+        }
+        if (remapUnionSize != expectedUnionSize)
+        {
+            fail("InputUnion结构尺寸", $"KeyboardRemapController.InputUnion 尺寸应为 {expectedUnionSize} 字节，实际为 {remapUnionSize} 字节");
+        }
+        if (hookInputSize != expectedInputSize)
+        {
+            fail("INPUT结构尺寸", $"KeyboardHook.INPUT 尺寸应为 {expectedInputSize} 字节，实际为 {hookInputSize} 字节");
+        }
+        if (hookUnionSize != expectedUnionSize)
+        {
+            fail("InputUnion结构尺寸", $"KeyboardHook.InputUnion 尺寸应为 {expectedUnionSize} 字节，实际为 {hookUnionSize} 字节");
+        }
+
+        // 验证 SendInput 格式化构造
+        var formattedInput = KeyboardRemapController.FormatKeyboardInput(0x10, 0, isKeyUp: false);
+        if (formattedInput.type != KeyboardRemapController.INPUT_KEYBOARD ||
+            formattedInput.U.ki.wVk != 0 ||
+            formattedInput.U.ki.wScan != 0x10 ||
+            (formattedInput.U.ki.dwFlags & KeyboardRemapController.KEYEVENTF_SCANCODE) == 0 ||
+            formattedInput.U.ki.dwExtraInfo != KeyboardHook.StarPieExtraInfo)
+        {
+            fail("INPUT格式化", "FormatKeyboardInput 未正确构造硬件扫描码注入结构体");
+        }
+
+        // 验证注入失败路径：不得吞没物理按键，且诊断计数与错误码正确更新（使用 mock 拦截，无真实按键注入）
+        try
+        {
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+            var optFailTest = new KeyboardRemapOptions
+            {
+                TargetProcessName = currentProcName,
+                KeyMap = "v1|Q:Num7",
+            };
+            var resFailTest = controller.Activate("test-injection-fail-plugin", optFailTest);
+            if (!resFailTest.Success)
+            {
+                fail("注入失败回归", $"激活测试映射失败: {resFailTest.Message}");
+            }
+
+            controller.ResetInjectionDiagnostics();
+            // 模拟 SendInput 失败（返回 false，不调用系统 SendInput，无真实按键注入）
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => false);
+
+            // 1. 物理 KeyDown 阶段：注入失败，必须放行物理源按键（返回 false），且不可吞没
+            bool swallowedDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (swallowedDown)
+            {
+                fail("注入失败放行", "SendInput 注入失败时，宿主不得吞没物理按键，必须返回 false 放行！");
+            }
+
+            var (succAfterFail, failAfterFail, errAfterFail) = controller.GetInjectionDiagnostics();
+            if (failAfterFail != 1 || succAfterFail != 0)
+            {
+                fail("注入失败诊断统计", $"注入失败后 FailureCount 应为 1，SuccessCount 应为 0，实际: fail={failAfterFail}, succ={succAfterFail}");
+            }
+            if (errAfterFail != 87)
+            {
+                fail("注入失败诊断错误码", $"注入失败后 LastWin32Error 应为 87 (ERROR_INVALID_PARAMETER)，实际为 {errAfterFail}");
+            }
+
+            // 2. 物理 KeyUp 阶段：由于 KeyDown 注入失败已回滚状态，物理 KeyUp 同样必须放行
+            bool swallowedUp = controller.TryProcessHookEvent((uint)'Q', 257 /* WM_KEYUP */, 0, 0);
+            if (swallowedUp)
+            {
+                fail("注入失败KeyUp放行", "KeyDown 注入失败后物理 KeyUp 必须原样放行，不得吞没！");
+            }
+
+            // 3. 正常注入路径（通过测试下沉拦截，无真实按键注入）：注入成功应返回 true 并累加 SuccessCount
+            controller.SetTestInjectionFailureMock(null);
+            controller.ResetInjectionDiagnostics();
+            int sinkEvents = 0;
+            controller.SetTestEventSink((scan, flags, isKeyUp) => { sinkEvents++; });
+
+            bool okDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (!okDown)
+            {
+                fail("注入成功路径", "正常注入时应返回 true（吞没物理按键）");
+            }
+            var (succOk, failOk, _) = controller.GetInjectionDiagnostics();
+            if (succOk != 1 || failOk != 0 || sinkEvents != 1)
+            {
+                fail("注入成功诊断统计", $"正常注入后 SuccessCount 应为 1 (实际 {succOk}), sinkEvents={sinkEvents}");
+            }
+
+            bool okUp = controller.TryProcessHookEvent((uint)'Q', 257 /* WM_KEYUP */, 0, 0);
+            if (!okUp)
+            {
+                fail("注入成功路径", "正常松开注入时应返回 true（吞没物理按键松开）");
+            }
+
+            // 4. 验证诊断报告格式
+            string reportText = controller.GetDiagnosticsReport();
+            if (string.IsNullOrEmpty(reportText) || !reportText.Contains("Success=") || !reportText.Contains("Failure="))
+            {
+                fail("注入诊断报告", $"GetDiagnosticsReport() 输出格式不符合预期: {reportText}");
+            }
+        }
+        finally
+        {
+            controller.Deactivate("test-injection-fail-plugin");
+            controller.SetTestInjectionFailureMock(null);
+            controller.SetTestEventSink(null);
+            controller.ClearTestForegroundProcess();
+            controller.ResetInjectionDiagnostics();
+        }
+
+        // -------------------------------------------------------------------------
+        // 回归 6：键盘映射失败路径的三种关键事件序列状态机安全断言
+        // ① 目标 KeyDown 成功而 KeyUp 注入失败时，不能清掉唯一的待释放记录后声称避免卡键；
+        // ② 首次注入失败后，同一次物理长按的重复事件和 KeyUp 必须保持原键放行，不能中途切换成映射；
+        // ③ 映射已开始后重复注入失败，不能放行不成对的原字母 KeyDown。
+        // -------------------------------------------------------------------------
+        try
+        {
+            controller.SetTestForegroundProcess(normalHwnd, currentProcId);
+            var optSeq = new KeyboardRemapOptions
+            {
+                TargetProcessName = currentProcName,
+                KeyMap = "v1|Q:Num7",
+            };
+            var resSeq = controller.Activate("test-seq-plugin", optSeq);
+            if (!resSeq.Success)
+            {
+                fail("序列状态机回归", $"激活测试映射失败: {resSeq.Message}");
+            }
+
+            // =====================================================================
+            // 序列 ①：目标 KeyDown 成功而 KeyUp 注入失败时，不能清掉唯一的待释放记录
+            // =====================================================================
+            controller.ResetInjectionDiagnostics();
+            controller.SetTestEventSink((scan, flags, isKeyUp) => { });
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => true); // KeyDown 成功
+            bool seq1Down = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (!seq1Down)
+            {
+                fail("序列①-KeyDown", "目标 KeyDown 注入成功时应返回 true（吞没物理源按键）");
+            }
+            if (controller.GetTargetHoldCount(0x67 /* Num7 */) != 1)
+            {
+                fail("序列①-待释放记录", $"首次按下成功后目标键 hold count 应为 1，实际为 {controller.GetTargetHoldCount(0x67)}");
+            }
+
+            // KeyUp 注入失败（mock 返回 false）
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => !isKeyUp);
+            bool seq1Up = controller.TryProcessHookEvent((uint)'Q', 257 /* WM_KEYUP */, 0, 0);
+            if (!seq1Up)
+            {
+                fail("序列①-KeyUp吞没", "目标 KeyDown 已成功映射而 KeyUp 注入失败时，绝不能放行不成对的原字母 KeyUp，必须返回 true！");
+            }
+            if (controller.GetTargetHoldCount(0x67 /* Num7 */) != 1)
+            {
+                fail("序列①-待释放记录丢失", $"KeyUp 注入失败后，待释放记录被清空 (count={controller.GetTargetHoldCount(0x67)})，未能保留为 1 供后续清理释放！");
+            }
+
+            // 当会话停用时，ReleaseAllHeldTargetKeys 必须依然能补发该目标键的释放
+            int seq1DeactReleases = 0;
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => true); // 允许释放成功
+            controller.SetTestEventSink((scan, flags, isKeyUp) => { if (isKeyUp) seq1DeactReleases++; });
+            controller.Deactivate("test-seq-plugin");
+            if (seq1DeactReleases != 1)
+            {
+                fail("序列①-停用补发释放", $"停用时应为未成功松开的目标键补发释放，实际补发次数: {seq1DeactReleases}");
+            }
+            controller.SetTestEventSink((scan, flags, isKeyUp) => { });
+
+            // =====================================================================
+            // 序列 ②：首次注入失败后，同一次物理长按的重复事件和 KeyUp 必须保持原键放行，不能中途切换成映射
+            // =====================================================================
+            resSeq = controller.Activate("test-seq-plugin", optSeq);
+            if (!resSeq.Success)
+            {
+                fail("序列状态机回归", $"激活测试映射失败: {resSeq.Message}");
+            }
+            controller.ResetInjectionDiagnostics();
+
+            // 1. 首次按下 Q：注入失败（mock 返回 false）
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => false);
+            bool seq2FirstDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (seq2FirstDown)
+            {
+                fail("序列②-首次Down放行", "首次注入失败时必须返回 false 放行物理源按键！");
+            }
+
+            // 2. 模拟底层临时故障恢复（mock 恢复为 true）
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => true);
+
+            // 3. 同一次物理长按中产生的自动重复事件（auto-repeat KeyDown）
+            bool seq2RepeatDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (seq2RepeatDown)
+            {
+                fail("序列②-重复Down保持放行", "首次注入失败后，同一次物理长按的重复事件必须保持原键放行（返回 false），不能中途切换成映射！");
+            }
+
+            // 4. 同一次物理长按松开（KeyUp）
+            bool seq2Up = controller.TryProcessHookEvent((uint)'Q', 257 /* WM_KEYUP */, 0, 0);
+            if (seq2Up)
+            {
+                fail("序列②-KeyUp保持放行", "首次注入失败后，同一次物理长按的 KeyUp 必须保持原键放行（返回 false），不能被吞没！");
+            }
+
+            // 5. 新一轮独立的物理按键（全新 KeyDown）：直通状态应已解除，应正常进入映射
+            bool seq2NewDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (!seq2NewDown)
+            {
+                fail("序列②-新按键恢复映射", "同一次长按结束后，新一次物理按键应恢复正常映射并吞没物理键（返回 true）！");
+            }
+            controller.TryProcessHookEvent((uint)'Q', 257 /* WM_KEYUP */, 0, 0);
+            controller.Deactivate("test-seq-plugin");
+
+            // =====================================================================
+            // 序列 ③：映射已开始后重复注入失败，不能放行不成对的原字母 KeyDown
+            // =====================================================================
+            resSeq = controller.Activate("test-seq-plugin", optSeq);
+            if (!resSeq.Success)
+            {
+                fail("序列状态机回归", $"激活测试映射失败: {resSeq.Message}");
+            }
+            controller.ResetInjectionDiagnostics();
+
+            // 1. 首次按下 Q：注入成功
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => true);
+            bool seq3FirstDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (!seq3FirstDown)
+            {
+                fail("序列③-首次Down", "首次按下注入成功应返回 true（吞没物理源按键）");
+            }
+
+            // 2. 长按中途重复注入失败（mock 设为 false）
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => false);
+            bool seq3RepeatDown = controller.TryProcessHookEvent((uint)'Q', 256 /* WM_KEYDOWN */, 0, 0);
+            if (!seq3RepeatDown)
+            {
+                fail("序列③-重复Down不能放行", "映射已开始后重复注入失败，绝不能放行不成对的原字母 KeyDown，必须返回 true 吞没！");
+            }
+
+            // 3. 恢复 mock 并松开
+            controller.SetTestInjectionFailureMock((scan, flags, isKeyUp) => true);
+            bool seq3Up = controller.TryProcessHookEvent((uint)'Q', 257 /* WM_KEYUP */, 0, 0);
+            if (!seq3Up)
+            {
+                fail("序列③-KeyUp", "正常松开应返回 true");
+            }
+        }
+        finally
+        {
+            controller.Deactivate("test-seq-plugin");
+            controller.SetTestInjectionFailureMock(null);
+            controller.SetTestEventSink(null);
+            controller.ClearTestForegroundProcess();
+            controller.ResetInjectionDiagnostics();
+        }
+
+        // =====================================================================
+        // SDK 次版本门禁与最低宿主版本门禁回归测试（旧宿主拒绝、新宿主接受）
+        // =====================================================================
+        // 1. ApiVersion 次版本高于宿主时必须明确拒绝 (ApiVersionMismatch)
+        var manifestHigherMinor = new PluginManifest
+        {
+            SchemaVersion = 1,
+            Id = "test.compat.higherminor",
+            Name = "Test Higher Minor",
+            Author = "Test Author",
+            Description = "Test Description",
+            License = "MIT",
+            Version = "1.0.0",
+            ApiVersion = $"{PluginApi.ApiVersionMajor}.{PluginApi.ApiVersionMinor + 1}",
+            MinHostVersion = "1.0.0",
+            Assembly = "Test.dll",
+        };
+        if (PluginManifestReader.Validate(manifestHigherMinor, out var failHigherMinor, out string errHigherMinor))
+        {
+            fail("SDK次版本门禁", $"ApiVersion 次版本高于宿主 ({manifestHigherMinor.ApiVersion} > {PluginApi.ApiVersion}) 应当被拒绝，却被放行！");
+        }
+        else if (failHigherMinor != PluginScanFailure.ApiVersionMismatch)
+        {
+            fail("SDK次版本门禁", $"ApiVersion 次版本高于宿主应当报告 ApiVersionMismatch，实际为 {failHigherMinor}: {errHigherMinor}");
+        }
+
+        // 2. ApiVersion 次版本等于或低于宿主时通过
+        var manifestCurrentMinor = new PluginManifest
+        {
+            SchemaVersion = 1,
+            Id = "test.compat.currentminor",
+            Name = "Test Current Minor",
+            Author = "Test Author",
+            Description = "Test Description",
+            License = "MIT",
+            Version = "1.0.0",
+            ApiVersion = PluginApi.ApiVersion,
+            MinHostVersion = "1.0.0",
+            Assembly = "Test.dll",
+        };
+        if (!PluginManifestReader.Validate(manifestCurrentMinor, out var failCurrentMinor, out string errCurrentMinor))
+        {
+            fail("SDK次版本门禁", $"当前 ApiVersion ({PluginApi.ApiVersion}) 校验应当通过，实际失败 ({failCurrentMinor}): {errCurrentMinor}");
+        }
+
+        var manifestLowerMinor = new PluginManifest
+        {
+            SchemaVersion = 1,
+            Id = "test.compat.lowerminor",
+            Name = "Test Lower Minor",
+            Author = "Test Author",
+            Description = "Test Description",
+            License = "MIT",
+            Version = "1.0.0",
+            ApiVersion = $"{PluginApi.ApiVersionMajor}.0",
+            MinHostVersion = "1.0.0",
+            Assembly = "Test.dll",
+        };
+        if (!PluginManifestReader.Validate(manifestLowerMinor, out var failLowerMinor, out string errLowerMinor))
+        {
+            fail("SDK次版本门禁", $"低次版本 ApiVersion ({manifestLowerMinor.ApiVersion}) 向下兼容应当通过，实际失败 ({failLowerMinor}): {errLowerMinor}");
+        }
+
+        // 3. SimpleVersion.SatisfiesMinimum 与宿主版本断言：旧宿主 1.8.0-beta.2 拒绝 1.8.1-beta.1，新宿主 1.8.1-beta.1 接受 1.8.1-beta.1
+        if (!SimpleVersion.TryParse("1.8.0-beta.2", out var oldHostVer) ||
+            !SimpleVersion.TryParse("1.8.1-beta.1", out var newHostVer) ||
+            !SimpleVersion.TryParse("1.8.1-beta.1", out var pluginMinVer))
+        {
+            fail("版本门禁", "解析测试版本号失败");
+        }
+        else
+        {
+            // 旧宿主 1.8.0-beta.2 对比插件要求的 minHostVersion 1.8.1-beta.1：必须拒绝！
+            bool oldHostSatisfies = SimpleVersion.SatisfiesMinimum(oldHostVer, pluginMinVer);
+            if (oldHostSatisfies)
+            {
+                fail("版本门禁", "旧宿主 1.8.0-beta.2 不满足插件最低版本 1.8.1-beta.1，但 SatisfiesMinimum 错误返回 true！");
+            }
+
+            // 新宿主 1.8.1-beta.1 对比插件要求的 minHostVersion 1.8.1-beta.1：必须接受！
+            bool newHostSatisfies = SimpleVersion.SatisfiesMinimum(newHostVer, pluginMinVer);
+            if (!newHostSatisfies)
+            {
+                fail("版本门禁", "新宿主 1.8.1-beta.1 满足插件最低版本 1.8.1-beta.1，但 SatisfiesMinimum 错误返回 false！");
+            }
+        }
+
+        line("  回归自检：带/不带 .exe 进程名规范化与 PID 安全门禁、SDK 次版本与最低宿主版本门禁（旧宿主拒绝、新宿主接受）、编辑器画刷安全契约与打开检查、单键录制控件与标点句点区分、停用插件类型下拉与不可用提示、主扇区类型往返保持、Win32 INPUT 原生尺寸与三类失败序列状态机全部通过 ✓");
+    }
+
+    private static void RunOnSta(Action action)
+    {
+        if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+        {
+            action();
+        }
+        else
+        {
+            Exception? error = null;
+            var thread = new Thread(() =>
+            {
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    error = ex;
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+            if (error != null)
+            {
+                throw new InvalidOperationException($"STA 线程执行失败: {error.Message}", error);
+            }
+        }
     }
 }
