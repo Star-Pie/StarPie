@@ -227,6 +227,41 @@
           </Setter.Value>
         </Setter>
       </Style>
+      <Style x:Key="{x:Type local:SingleKeyRecorderBox}" TargetType="{x:Type local:SingleKeyRecorderBox}">
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type local:SingleKeyRecorderBox}">
+              <Border Name="PART_Border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" Padding="8,2" SnapsToDevicePixels="True">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Name="PART_DisplayText" Grid.Column="0" VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                  <Button Name="PART_ClearButton" Grid.Column="1" Content="✕" Width="16" Height="16" Margin="4,0,0,0" Padding="0" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" ToolTip="清空按键" />
+                </Grid>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter TargetName="PART_Border" Value="{DynamicResource AccentPrimaryBrush}" Property="Border.BorderBrush" />
+                </Trigger>
+                <Trigger Property="UIElement.IsFocused" Value="True">
+                  <Setter TargetName="PART_Border" Value="{DynamicResource AccentPrimaryBrush}" Property="Border.BorderBrush" />
+                  <Setter TargetName="PART_Border" Property="Border.BorderThickness" Value="1.5" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter TargetName="PART_Border" Property="UIElement.Opacity" Value="0.5" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
     </ResourceDictionary>
   </Application.Resources>
 </Application>

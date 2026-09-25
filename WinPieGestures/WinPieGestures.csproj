@@ -14,9 +14,9 @@
     <Product>StarPie</Product>
     <Company>StarPie Studio</Company>
     <Description>StarPie - 现代化高颜值 Windows 鼠标轮盘笔势与效率管理系统</Description>
-    <Version>1.8.0-beta.2</Version>
-    <AssemblyVersion>1.8.0.0</AssemblyVersion>
-    <FileVersion>1.8.0.0</FileVersion>
+    <Version>1.8.1-beta.1</Version>
+    <AssemblyVersion>1.8.1.0</AssemblyVersion>
+    <FileVersion>1.8.1.0</FileVersion>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
     <!-- 编译器告警抑制：消除 Win32 Interop 结构体未显式赋值 (CS0649)、历史反编译遗留字段 (CS0169)、非核心 UI 可空引用分析 (CS8600/CS8601/CS8602/CS8604/CS8618/CS8625)、异步非阻塞缓存保存 (CS4014) 以及 WPF 混合 WinForms 时关于 app.manifest 高 DPI 分析器的误报 (WFAC010)，保障 Release 构建严格 0 错误 0 警告 -->

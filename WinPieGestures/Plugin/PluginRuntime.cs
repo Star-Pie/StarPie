@@ -13,6 +13,7 @@ internal static class PluginPathIds
     public const string ActionExecution = "action-execution";
     public const string InteractionEvent = "interaction-event";
     public const string WheelStructure = "wheel-structure";
+    public const string KeyboardRemap = "keyboard-remap";
 }
 
 /// <summary>
@@ -32,6 +33,17 @@ internal abstract class PluginPathModule
 
     public virtual void OnPluginStopped(string pluginId)
     {
+    }
+}
+
+/// <summary>键盘重映射调用路径宿主模块，处理插件停用时的会话撤销与按键释放。</summary>
+internal sealed class KeyboardRemapPathModule : PluginPathModule
+{
+    public override string PathId => PluginPathIds.KeyboardRemap;
+
+    public override void OnPluginStopping(string pluginId)
+    {
+        KeyboardRemapController.Current.OnPluginStopping(pluginId);
     }
 }
 
@@ -383,6 +395,7 @@ internal sealed class PluginRuntime
         _paths.Register(Actions);
         _paths.Register(Interactions);
         _paths.Register(WheelStructures);
+        _paths.Register(new KeyboardRemapPathModule());
     }
 
     public ActionExecutionPathModule Actions { get; }

@@ -95,7 +95,7 @@ internal static class PluginScanner
 
         if (File.Exists(manifestPath))
         {
-            if (!PluginManifestReader.TryLoad(manifestPath, out manifest, out PluginScanFailure mf, out string me))
+            if (!PluginManifestReader.TryLoad(manifestPath, out manifest, out PluginScanFailure mf, out string me, allowReservedIdPrefix))
             {
                 return Fail(result, mf, me);
             }
@@ -532,10 +532,11 @@ internal static class PluginScanner
         string hostAbstractionsVersion = typeof(IStarPiePlugin).Assembly.GetName().Version?.ToString() ?? "";
         if (!string.IsNullOrEmpty(facts.ReferencedAbstractionsVersion)
             && SimpleVersion.TryParse(facts.ReferencedAbstractionsVersion, out SimpleVersion referenced)
-            && referenced.Major != PluginApi.ApiVersionMajor)
+            && (referenced.Major != PluginApi.ApiVersionMajor ||
+                (referenced.Major == PluginApi.ApiVersionMajor && referenced.Minor > PluginApi.ApiVersionMinor)))
         {
             Fail(result, PluginScanFailure.ApiVersionMismatch,
-                $"程序集引用的 SDK 契约主版本为 {referenced.Major}.x，宿主提供 {hostAbstractionsVersion}。");
+                $"程序集引用的 SDK 契约版本为 {referenced.Major}.{referenced.Minor}，宿主最高支持 {PluginApi.ApiVersionMajor}.{PluginApi.ApiVersionMinor}。");
             return false;
         }
 

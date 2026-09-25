@@ -7204,7 +7204,7 @@ public partial class SettingsWindow : Window
 	}
 
 	/// <summary>按插件的字段声明重建参数表单。</summary>
-	private void BuildFocusPluginParameterForm(PluginActionRegistration registration)
+	internal void BuildFocusPluginParameterForm(PluginActionRegistration registration)
 	{
 		if (FocusPluginParamsPanel == null) return;
 
@@ -7214,22 +7214,9 @@ public partial class SettingsWindow : Window
 		bool hasFields = !form.IsEmpty;
 		FocusPluginParamsPanel.Visibility = hasFields ? Visibility.Visible : Visibility.Collapsed;
 
-		if (FocusPluginParamsHintText != null)
+		if (!hasFields && FocusPluginParamsHintText != null)
 		{
-			if (hasFields)
-			{
-				// 布尔项不计入必填提示：它未填即视为 false，不存在「留空被拦」的问题，
-				// 把它算进去会让用户以为有个开关必须先动一下才能保存。
-				int requiredCount = registration.Parameters.Count(
-					p => p.Required && p.Type != StarPie.Plugin.ParameterFieldType.Bool);
-
-				FocusPluginParamsHintText.Text = PluginActionPanelText.ParamsHint(requiredCount);
-				FocusPluginParamsHintText.Visibility = Visibility.Visible;
-			}
-			else
-			{
-				FocusPluginParamsHintText.Visibility = Visibility.Collapsed;
-			}
+			FocusPluginParamsHintText.Visibility = Visibility.Collapsed;
 		}
 
 		RefreshFocusPluginValidation();
@@ -7240,43 +7227,109 @@ public partial class SettingsWindow : Window
 	/// <para>
 	/// 走 <see cref="PluginHost.ValidateActionParameters"/> —— 与用户真正触发轮盘时同一个入口，
 	/// 因此界面上显示的结论与触发时的判断必然一致，不会出现
-	/// 「这里看着没问题、一触发就说参数不合法」。
+	/// 「这里看着没问题、一触发说参数不合法」。
 	/// </para>
 	/// </summary>
-	private void RefreshFocusPluginValidation()
+	internal void RefreshFocusPluginValidation()
 	{
 		if (FocusPluginValidationText == null) return;
 
 		try
 		{
+			ActionItem? currentItem = GetCurrentFocusActionItem();
 			PluginActionValidation validation =
-				PluginHost.ValidateActionParameters(GetCurrentFocusActionItem());
+				PluginHost.ValidateActionParameters(currentItem);
 
-			// 字段级错误交给表单就地标红，此处只给「字段之外的结论」+ 未通过字段的计数，
-			// 免得同一条信息在界面上出现两遍。
-			_focusPluginParameterForm?.ShowIssues(validation.DeclaredIssues);
-
-			string? message = validation.PluginMessage;
-			if (message == null && validation.DeclaredIssues.Count > 0)
-			{
-				message = PluginActionPanelText.IssuesCount(validation.DeclaredIssues.Count);
-			}
-
-			if (string.IsNullOrWhiteSpace(message))
-			{
-				FocusPluginValidationText.Text = "";
-				FocusPluginValidationText.Visibility = Visibility.Collapsed;
-			}
-			else
-			{
-				FocusPluginValidationText.Text = "⛔ " + message;
-				FocusPluginValidationText.Visibility = Visibility.Visible;
-			}
+			UpdateFocusPluginValidationUi(
+				validation,
+				currentItem,
+				_focusPluginParameterForm,
+				FocusPluginValidationText,
+				FocusPluginParamsHintText);
 		}
 		catch (Exception ex)
 		{
 			AppLogger.LogError("[plugin] 刷新插件参数校验结论时异常", ex);
 			FocusPluginValidationText.Visibility = Visibility.Collapsed;
+			if (FocusPluginParamsHintText != null)
+			{
+				FocusPluginParamsHintText.Visibility = Visibility.Collapsed;
+			}
+		}
+	}
+
+	/// <summary>
+	/// 根据校验结果与当前动作状态，统一更新校验结论红字、字段标红及参数必填提示行（橙字）。
+	/// </summary>
+	internal static void UpdateFocusPluginValidationUi(
+		PluginActionValidation validation,
+		ActionItem? currentItem,
+		PluginParameterForm? form,
+		TextBlock? validationText,
+		TextBlock? hintText)
+	{
+		if (validationText == null) return;
+
+		// 1. 字段级错误交给表单就地标红，此处只给「字段之外的结论」+ 未通过字段的计数，
+		// 免得同一条信息在界面上出现两遍。
+		form?.ShowIssues(validation.DeclaredIssues);
+
+		string? message = validation.PluginMessage;
+		if (message == null && validation.DeclaredIssues.Count > 0)
+		{
+			message = PluginActionPanelText.IssuesCount(validation.DeclaredIssues.Count);
+		}
+
+		if (string.IsNullOrWhiteSpace(message))
+		{
+			validationText.Text = "";
+			validationText.Visibility = Visibility.Collapsed;
+		}
+		else
+		{
+			validationText.Text = "⛔ " + message;
+			validationText.Visibility = Visibility.Visible;
+		}
+
+		// 2. 必填提示行（橙字）：
+		// - 已配置且校验通过（validation.IsValid == true）时严格隐藏；
+		// - 只有当存在尚未填写/留空的必填参数时，才展示橙色警告；
+		// - 非法映射等错误由红字校验结论呈现，避免误报「留空」。
+		if (hintText != null)
+		{
+			if (validation.IsValid)
+			{
+				hintText.Text = "";
+				hintText.Visibility = Visibility.Collapsed;
+			}
+			else if (currentItem != null &&
+			         currentItem.Type == PluginActionBinding.TypeName &&
+			         currentItem.PluginActionRef != null &&
+			         PluginHost.TryGetAction(currentItem.PluginActionRef.FullId, out PluginActionRegistration registration))
+			{
+				int missingRequiredCount = registration.Parameters.Count(p =>
+					p.Required &&
+					p.Type != StarPie.Plugin.ParameterFieldType.Bool &&
+					(currentItem.ExtensionData == null ||
+					 !currentItem.ExtensionData.TryGetValue(p.Key, out string? val) ||
+					 string.IsNullOrWhiteSpace(val)));
+
+				if (missingRequiredCount > 0)
+				{
+					hintText.Text = PluginActionPanelText.ParamsHint(missingRequiredCount);
+					hintText.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					hintText.Text = "";
+					hintText.Visibility = Visibility.Collapsed;
+				}
+			}
+			else
+			{
+				hintText.Text = "";
+				hintText.Visibility = Visibility.Collapsed;
+			}
 		}
 	}
 
@@ -8172,7 +8225,19 @@ public partial class SettingsWindow : Window
 		}
 		else
 		{
-			targetList = allTypes;
+			targetList = new List<ActionTypeItem>(allTypes);
+		}
+
+		// 关键防护：如果当前动作或传入 Tag 本身是插件动作类型，确保下拉数据源必然存在「插件动作」选项，
+		// 严禁因插件临时停用或未加载而从下拉源中剔除，避免 ComboBox 选中丢失并错误回退到 Hotkey！
+		if (string.Equals(currentTag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase) &&
+		    !targetList.Any(t => string.Equals(t.Tag, PluginActionBinding.TypeName, StringComparison.OrdinalIgnoreCase)))
+		{
+			targetList.Add(new ActionTypeItem
+			{
+				Tag = PluginActionBinding.TypeName,
+				DisplayText = "🔌 " + I18n.T("ActionTypePluginShort"),
+			});
 		}
 
 		if (!force && FocusActionTypeComboBox.ItemsSource is List<ActionTypeItem> currentList &&
@@ -8206,88 +8271,99 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	internal static void SwitchFocusActionType(ActionItem item, string newType)
+	{
+		if (string.Equals(item.Type, newType, StringComparison.OrdinalIgnoreCase))
+		{
+			return;
+		}
+
+		if (newType == PluginActionBinding.TypeName)
+		{
+			item.Type = PluginActionBinding.TypeName;
+			if (ActionNameDefaults.IsAutoFilled(item.Name))
+			{
+				item.Name = I18n.T("ActionTypePluginShort");
+			}
+		}
+		else if (newType == "WindowManager")
+		{
+			bool wasWindowType = item.Type == "Tile" || item.Type == "ToggleTopmost" || item.Type == "MoveMonitor" || item.Type == "WindowOpacity" || item.Type == "SwitchWindow";
+			if (!wasWindowType)
+			{
+				item.Type = "Tile";
+				item.Parameter = "2L";
+				if (ActionNameDefaults.IsAutoFilled(item.Name))
+				{
+					item.Name = "平铺: " + WindowTiler.LayoutDisplayName("2L");
+				}
+				if (string.IsNullOrEmpty(item.IconKey))
+				{
+					item.IconKey = "Tile";
+				}
+			}
+		}
+		else
+		{
+			// 从插件动作切回内置类型时，保留已配好的插件引用与扩展配置（ExtensionData.keyMap），
+			// 避免“插件动作 → 快捷键 → 插件动作”往返导致配置丢失。
+			item.Type = newType;
+		}
+
+		if ((newType == "Folder" || newType == "OpenFolder") && string.IsNullOrEmpty(item.IconKey))
+		{
+			item.IconKey = "Folder";
+		}
+		else if ((newType == "WebUrl" || newType == "Url") && string.IsNullOrEmpty(item.IconKey))
+		{
+			item.IconKey = "Globe";
+		}
+		else if (newType == "Ocr" || newType == "ScreenOcr")
+		{
+			item.Type = "Ocr";
+			if (ActionNameDefaults.IsAutoFilled(item.Name))
+			{
+				item.Name = "截屏识字";
+			}
+			if (string.IsNullOrEmpty(item.IconKey))
+			{
+				item.IconKey = "Scan";
+			}
+		}
+		else if (newType == "ShellTool")
+		{
+			item.Type = "ShellTool";
+			if (string.IsNullOrEmpty(item.Parameter) || (!item.Parameter.Contains('.') && ShellActionPickerWindow.ShellTools?.Any(t => t.Id == item.Parameter) != true))
+			{
+				item.Parameter = "Windows.CopyAsPath";
+				item.Name = "复制文件/文件夹路径";
+				item.IconKey = "Copy";
+			}
+			else
+			{
+				var tool = ShellActionPickerWindow.ShellTools?.FirstOrDefault(t => t.Id == item.Parameter || string.Equals(t.Verb, item.Parameter, StringComparison.OrdinalIgnoreCase));
+				if (tool != null)
+				{
+					item.Name = tool.Name;
+					item.IconKey = tool.IconKey;
+				}
+			}
+		}
+	}
+
 	private void FocusActionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 	{
 		if (_isUpdatingUi || _isUpdatingFocusUi || !_isUiInitialized || _isUiInitializing) return;
 		if (FocusActionTypeComboBox == null) return;
 		ActionItem? item = GetCurrentFocusActionItem();
-		if (item != null && FocusActionTypeComboBox.SelectedValue is string newType)
+		if (item != null && FocusActionTypeComboBox.SelectedValue is string newType && !string.IsNullOrWhiteSpace(newType))
 		{
-			if (newType == PluginActionBinding.TypeName)
+			if (string.Equals(item.Type, newType, StringComparison.OrdinalIgnoreCase))
 			{
-				// 只切类型，**刻意不清插件引用**：用户在内置类型与插件动作之间来回切换时，
-				// 已配好的插件动作不应被清掉（改选具体动作是子下拉的事）。
-				// 引用为空只表示「还没选过」，由子下拉的空状态去引导。
-				item.Type = PluginActionBinding.TypeName;
-				if (ActionNameDefaults.IsAutoFilled(item.Name))
-				{
-					item.Name = I18n.T("ActionTypePluginShort");
-				}
-			}
-			else if (newType == "WindowManager")
-			{
-				bool wasWindowType = item.Type == "Tile" || item.Type == "ToggleTopmost" || item.Type == "MoveMonitor" || item.Type == "WindowOpacity" || item.Type == "SwitchWindow";
-				if (!wasWindowType)
-				{
-					item.Type = "Tile";
-					item.Parameter = "2L";
-					if (ActionNameDefaults.IsAutoFilled(item.Name))
-					{
-						item.Name = "平铺: " + WindowTiler.LayoutDisplayName("2L");
-					}
-					if (string.IsNullOrEmpty(item.IconKey))
-					{
-						item.IconKey = "Tile";
-					}
-				}
-			}
-			else
-			{
-				// 从插件动作切回内置类型时，必须清掉插件引用，
-				// 否则会留下「内置类型 + 悬挂插件引用」的混合状态。
-				PluginActionBinding.Clear(item);
-				item.Type = newType;
+				return;
 			}
 
-			if ((newType == "Folder" || newType == "OpenFolder") && string.IsNullOrEmpty(item.IconKey))
-			{
-				item.IconKey = "Folder";
-			}
-			else if ((newType == "WebUrl" || newType == "Url") && string.IsNullOrEmpty(item.IconKey))
-			{
-				item.IconKey = "Globe";
-			}
-			else if (newType == "Ocr" || newType == "ScreenOcr")
-			{
-				item.Type = "Ocr";
-				if (ActionNameDefaults.IsAutoFilled(item.Name))
-				{
-					item.Name = "截屏识字";
-				}
-				if (string.IsNullOrEmpty(item.IconKey))
-				{
-					item.IconKey = "Scan";
-				}
-			}
-			else if (newType == "ShellTool")
-			{
-				item.Type = "ShellTool";
-				if (string.IsNullOrEmpty(item.Parameter) || (!item.Parameter.Contains('.') && ShellActionPickerWindow.ShellTools?.Any(t => t.Id == item.Parameter) != true))
-				{
-					item.Parameter = "Windows.CopyAsPath";
-					item.Name = "复制文件/文件夹路径";
-					item.IconKey = "Copy";
-				}
-				else
-				{
-					var tool = ShellActionPickerWindow.ShellTools?.FirstOrDefault(t => t.Id == item.Parameter || string.Equals(t.Verb, item.Parameter, StringComparison.OrdinalIgnoreCase));
-					if (tool != null)
-					{
-						item.Name = tool.Name;
-						item.IconKey = tool.IconKey;
-					}
-				}
-			}
+			SwitchFocusActionType(item, newType);
 			UpdateFocusEditorUi();
 			RefreshSlots();
 			RenderMappingsWheelPreview();

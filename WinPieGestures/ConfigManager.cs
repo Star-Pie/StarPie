@@ -1151,6 +1151,16 @@ public static class ConfigManager
 	{
 		try
 		{
+			if (DisableAutoStartSync || IsTestInstanceMode())
+			{
+				if (CurrentConfig != null)
+				{
+					CurrentConfig.AutoStartAsAdmin = asAdmin;
+					SaveConfig();
+				}
+				return;
+			}
+
 			string exePath = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
 			if (enable)
 			{
@@ -1280,10 +1290,44 @@ public static class ConfigManager
 		}
 	}
 
+	/// <summary>显式禁用开机自启同步，用于测试环境与沙箱运行</summary>
+	public static bool DisableAutoStartSync { get; set; }
+
+	/// <summary>检测当前进程是否运行在测试实例、自检或多开模式下</summary>
+	public static bool IsTestInstanceMode()
+	{
+		try
+		{
+			string cmdLine = Environment.CommandLine ?? string.Empty;
+			if (cmdLine.Contains("--test-instance", StringComparison.OrdinalIgnoreCase) ||
+			    cmdLine.Contains("--plugin-selftest", StringComparison.OrdinalIgnoreCase) ||
+			    cmdLine.Contains("--allow-multiple", StringComparison.OrdinalIgnoreCase))
+			{
+				return true;
+			}
+
+			string[] args = Environment.GetCommandLineArgs();
+			return args.Any(a =>
+				string.Equals(a, "--test-instance", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(a, "--plugin-selftest", StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(a, "--allow-multiple", StringComparison.OrdinalIgnoreCase));
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
 	public static void EnsureAutoStartRegistryUpToDate()
 	{
 		try
 		{
+			// 测试实例或自检模式下，严禁触碰任何真实系统的开机启动项与 HKCU 注册表，防止污染日常环境
+			if (DisableAutoStartSync || IsTestInstanceMode())
+			{
+				return;
+			}
+
 			// 若当前进程本身就是通过自启动参数呼起，说明任务与注册表均已正确就绪，直接跳过耗时的外置进程核验
 			if (Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--autostart", StringComparison.OrdinalIgnoreCase)))
 			{

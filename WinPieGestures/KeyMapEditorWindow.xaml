@@ -1,0 +1,375 @@
+<Window x:Class="WinPieGestures.KeyMapEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:WinPieGestures"
+        Title="键盘空间重映射编辑器"
+        Icon="app_icon.ico"
+        Width="740" Height="620"
+        MinWidth="660" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+  <Window.Resources>
+    <ResourceDictionary>
+      <local:KeyDisplayNameConverter x:Key="KeyDisplayNameConverter" />
+      <SolidColorBrush x:Key="BorderSubtleBrush" Color="#E2E8F0" />
+      <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0" />
+      <SolidColorBrush x:Key="InputBorderBrush" Color="#CBD5E1" />
+      <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="#0F172A" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="#475569" />
+      <SolidColorBrush x:Key="TextMutedBrush" Color="#64748B" />
+      <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F8FAFC" />
+      <SolidColorBrush x:Key="AccentPrimaryBrush" Color="#2563EB" />
+      <SolidColorBrush x:Key="ButtonHoverBgBrush" Color="#1D4ED8" />
+      <SolidColorBrush x:Key="ButtonDefaultBgBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="ButtonDefaultBorderBrush" Color="#CBD5E1" />
+      <SolidColorBrush x:Key="ButtonDefaultFgBrush" Color="#334155" />
+      <Style x:Key="DlgBtnStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBgBrush}" />
+                  <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="bd" Property="Background" Value="{DynamicResource ItemHoverBrush}" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+      <Style x:Key="DlgPrimaryBtnStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource DlgBtnStyle}">
+        <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="bd" Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="bd" Property="Opacity" Value="0.88" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <Style x:Key="VisualKeyStyle" TargetType="{x:Type Button}">
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="42" />
+        <Setter Property="Margin" Value="3" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1.5" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="kBd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="kBd" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <Style x:Key="{x:Type local:SingleKeyRecorderBox}" TargetType="{x:Type local:SingleKeyRecorderBox}">
+        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type local:SingleKeyRecorderBox}">
+              <Border Name="PART_Border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" Padding="8,2" SnapsToDevicePixels="True">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Name="PART_DisplayText" Grid.Column="0" VerticalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                  <Button Name="PART_ClearButton" Grid.Column="1" Content="✕" Width="16" Height="16" Margin="4,0,0,0" Padding="0" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Background="#00FFFFFF" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center" ToolTip="清空按键" />
+                </Grid>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter TargetName="PART_Border" Value="{DynamicResource AccentPrimaryBrush}" Property="Border.BorderBrush" />
+                </Trigger>
+                <Trigger Property="UIElement.IsFocused" Value="True">
+                  <Setter TargetName="PART_Border" Value="{DynamicResource AccentPrimaryBrush}" Property="Border.BorderBrush" />
+                  <Setter TargetName="PART_Border" Property="Border.BorderThickness" Value="1.5" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter TargetName="PART_Border" Property="UIElement.Opacity" Value="0.5" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+    </ResourceDictionary>
+  </Window.Resources>
+
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="1.2*" MinHeight="190" />
+      <RowDefinition Height="8" />
+      <RowDefinition Height="*" MinHeight="160" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- Top Action / Preset Bar -->
+    <Grid Grid.Row="0" Margin="0,0,0,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Orientation="Vertical">
+        <TextBlock Name="TitleTextBlock" Text="键盘空间重映射编辑器" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Name="SubtitleTextBlock" Text="左手物理按键空间映射至数字小键盘合成键；支持可视化点击联动与列表编辑。" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button Name="PresetButton" Content="恢复空间数字预设 (QWE→789)" Style="{StaticResource DlgBtnStyle}" Margin="0,0,8,0" Click="PresetButton_Click" />
+        <Button Name="ClearButton" Content="清空" Style="{StaticResource DlgBtnStyle}" Click="ClearButton_Click" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Visual Keyboard Layout & Diagram Representation -->
+    <Border Grid.Row="1" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" ClipToBounds="True">
+      <Grid>
+        <Grid.RowDefinitions>
+          <!-- Toolbar row: Title, Hint, Zoom Controls -->
+          <RowDefinition Height="Auto" />
+          <!-- Canvas Viewport row -->
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Diagram Toolbar -->
+        <Grid Grid.Row="0" Margin="2,0,2,8">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Name="DiagramHeaderTextBlock" Text="映射关系图谱" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Name="DiagramHintTextBlock" Text="（点击查看关联，Ctrl+滚轮缩放，拖动平移）" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="6,0,0,0" VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Zoom & Pan Controls -->
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Name="ZoomOutButton" Content="−" Width="26" Height="24" Padding="0" Style="{StaticResource DlgBtnStyle}" Margin="0,0,4,0" Click="ZoomOutButton_Click" ToolTip="缩小 (Ctrl + 滚轮向下)" />
+            <TextBlock Name="ZoomPercentTextBlock" Text="100%" Width="44" TextAlignment="Center" VerticalAlignment="Center" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button Name="ZoomInButton" Content="+" Width="26" Height="24" Padding="0" Style="{StaticResource DlgBtnStyle}" Margin="4,0,8,0" Click="ZoomInButton_Click" ToolTip="放大 (Ctrl + 滚轮向上)" />
+            <Button Name="FitCanvasButton" Content="适应画布" Height="24" Padding="8,0" Style="{StaticResource DlgBtnStyle}" Click="FitCanvasButton_Click" />
+          </StackPanel>
+        </Grid>
+
+        <!-- Diagram Viewport (Clips content, handles wheel zoom and mouse drag) -->
+        <Border Name="DiagramViewport" Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="6" ClipToBounds="True" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}"
+                MouseWheel="DiagramViewport_MouseWheel"
+                MouseDown="DiagramViewport_MouseDown"
+                MouseMove="DiagramViewport_MouseMove"
+                MouseUp="DiagramViewport_MouseUp"
+                MouseLeave="DiagramViewport_MouseLeave"
+                SizeChanged="DiagramViewport_SizeChanged">
+          <Canvas Name="DiagramCanvasRoot" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <UIElement.RenderTransform>
+              <TransformGroup>
+                <ScaleTransform x:Name="DiagramScaleTransform" ScaleX="1.0" ScaleY="1.0" />
+                <TranslateTransform x:Name="DiagramTranslateTransform" X="0" Y="0" />
+              </TransformGroup>
+            </UIElement.RenderTransform>
+
+            <!-- Layout of Physical Keys, Indicator/Arrow, and Numpad Keys -->
+            <Grid Name="DiagramLayoutGrid" Margin="16,10">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" MinWidth="240" />
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="Auto" MinWidth="220" />
+              </Grid.ColumnDefinitions>
+
+              <!-- Left-Hand Physical Key Area + Dynamic Other Source Keys -->
+              <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                <TextBlock Name="PhysicalHeader" Text="主键盘左手区域 (物理源按键)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_Q" Content="Q" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="Q" />
+                  <Button Name="Key_W" Content="W" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="W" />
+                  <Button Name="Key_E" Content="E" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="E" />
+                  <Button Name="Key_R" Content="R" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="R" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_A" Content="A" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="A" />
+                  <Button Name="Key_S" Content="S" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="S" />
+                  <Button Name="Key_D" Content="D" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="D" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_Z" Content="Z" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="Z" />
+                  <Button Name="Key_X" Content="X" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="X" />
+                  <Button Name="Key_C" Content="C" Style="{StaticResource VisualKeyStyle}" Click="VisualKey_Click" Tag="C" />
+                </StackPanel>
+
+                <!-- Dynamic Other Source Keys Container -->
+                <StackPanel Name="OtherSourcesContainer" Margin="0,8,0,0" Visibility="Collapsed" HorizontalAlignment="Center">
+                  <TextBlock Name="OtherSourcesHeader" Text="其他源按键" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,0,0,4" />
+                  <WrapPanel Name="OtherSourcesPanel" Width="240" MaxWidth="240" HorizontalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+
+              <!-- Center Mapping Indicator / Arrow -->
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="160">
+                <TextBlock Text="➔" FontSize="22" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Center" />
+                <TextBlock Name="SelectedMappingHint" Text="空间映射" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                           HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="160" Margin="4,4,4,0" />
+              </StackPanel>
+
+              <!-- Numpad Target Key Area + Dynamic Other Target Keys -->
+              <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                <TextBlock Name="TargetHeader" Text="数字小键盘区域 (目标合成键)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,6" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_Num7" Content="Num7" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num7" />
+                  <Button Name="Key_Num8" Content="Num8" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num8" />
+                  <Button Name="Key_Num9" Content="Num9" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num9" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_Num4" Content="Num4" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num4" />
+                  <Button Name="Key_Num5" Content="Num5" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num5" />
+                  <Button Name="Key_Num6" Content="Num6" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num6" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_Num1" Content="Num1" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num1" />
+                  <Button Name="Key_Num2" Content="Num2" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num2" />
+                  <Button Name="Key_Num3" Content="Num3" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num3" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                  <Button Name="Key_Num0" Content="Num0" Width="144" Style="{StaticResource VisualKeyStyle}" Click="VisualTarget_Click" Tag="Num0" />
+                </StackPanel>
+
+                <!-- Dynamic Other Target Keys Container -->
+                <StackPanel Name="OtherTargetsContainer" Margin="0,8,0,0" Visibility="Collapsed" HorizontalAlignment="Center">
+                  <TextBlock Name="OtherTargetsHeader" Text="其他目标按键" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,0,0,4" />
+                  <WrapPanel Name="OtherTargetsPanel" Width="220" MaxWidth="220" HorizontalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+
+              <!-- Connection Canvas (Overlaid on DiagramLayoutGrid, spanning all columns) -->
+              <Canvas Name="ConnectionCanvas" Grid.ColumnSpan="3" IsHitTestVisible="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+            </Grid>
+          </Canvas>
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- Resizable Splitter between Diagram and List -->
+    <GridSplitter Grid.Row="2" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                  Background="Transparent" Cursor="SizeNS" ShowsPreview="False">
+      <GridSplitter.Template>
+        <ControlTemplate TargetType="{x:Type GridSplitter}">
+          <Border Background="Transparent" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+            <Border Height="2" Background="{DynamicResource CardBorderBrush}" VerticalAlignment="Center" CornerRadius="1" Margin="2,0" />
+          </Border>
+        </ControlTemplate>
+      </GridSplitter.Template>
+    </GridSplitter>
+
+    <!-- Mapping Data List -->
+    <Border Grid.Row="3" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8">
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DataGrid Name="MappingsDataGrid" AutoGenerateColumns="False" CanUserAddRows="False"
+                  IsReadOnly="True"
+                  Background="Transparent" BorderThickness="0" HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource CardBorderBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
+                  SelectionMode="Single" SelectionUnit="FullRow"
+                  SelectionChanged="MappingsDataGrid_SelectionChanged">
+          <DataGrid.Columns>
+            <DataGridTextColumn x:Name="ColSource" Header="源按键 (物理键)" IsReadOnly="True" Binding="{Binding FromKey, Converter={StaticResource KeyDisplayNameConverter}}" Width="2*" />
+            <DataGridTextColumn x:Name="ColTarget" Header="目标按键 (合成键)" IsReadOnly="True" Binding="{Binding ToKey, Converter={StaticResource KeyDisplayNameConverter}}" Width="2*" />
+            <DataGridTemplateColumn x:Name="ColAction" Header="操作" Width="80">
+              <DataGridTemplateColumn.CellTemplate>
+                <DataTemplate>
+                  <Button Content="{Binding DeleteButtonLabel, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" Style="{StaticResource DlgBtnStyle}" Height="24" Padding="8,0" Click="DeleteRow_Click" />
+                </DataTemplate>
+              </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+          </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- New Mapping Entry Bar -->
+        <StackPanel Grid.Row="1" Margin="0,8,0,0">
+          <TextBlock Name="ListEditHintTextBlock" Text="提示：列表为只读视图。选中行可载入下方录键框修改，完成后点击“更新映射”或直接“保存”。" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="2,0,0,4" TextWrapping="Wrap" />
+          <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <local:SingleKeyRecorderBox x:Name="SourceKeyRecorder" Height="28" IsSourceKey="True" />
+              <TextBlock Grid.Column="1" Text="➔" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="10,0" />
+              <local:SingleKeyRecorderBox x:Name="TargetKeyRecorder" Grid.Column="2" Height="28" IsSourceKey="False" />
+              <Button Name="AddButton" Grid.Column="3" Content="添加映射" Style="{StaticResource DlgBtnStyle}" Margin="10,0,0,0" Click="AddButton_Click" />
+            </Grid>
+          </Border>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Bottom Action Bar -->
+    <Grid Grid.Row="4" Margin="0,12,0,0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Name="StatusTextBlock" Text="" FontSize="12" Foreground="Tomato" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+
+      <Button Name="CancelButton" Grid.Column="1" Content="取消" Width="84" Height="32" Margin="0,0,10,0" Click="CancelButton_Click" Style="{StaticResource DlgBtnStyle}" IsCancel="True" />
+      <Button Name="SaveButton" Grid.Column="2" Content="保存" Width="88" Height="32" Click="SaveButton_Click" Style="{StaticResource DlgPrimaryBtnStyle}" IsDefault="True" />
+    </Grid>
+  </Grid>
+</Window>

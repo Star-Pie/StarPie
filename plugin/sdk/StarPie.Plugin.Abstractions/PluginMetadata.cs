@@ -100,6 +100,15 @@ public enum PluginCapability
     /// </para>
     /// </summary>
     Wheel = 1 << 11,
+
+    /// <summary>
+    /// 声明进程级键盘按键映射能力（SDK 1.7 起）。
+    /// <para>
+    /// 允许插件在用户授权后请求宿主开启/关闭进程级键盘重映射会话（<see cref="IHostKeyboardRemapService"/>）。
+    /// 钩子由宿主集中管理，插件不得自行挂设全局输入钩子。
+    /// </para>
+    /// </summary>
+    InputRemapping = 1 << 12,
 }
 
 /// <summary>宿主持有的插件元数据。由宿主从 manifest 解析后经 <see cref="IPluginContext.Me"/> 提供给插件。</summary>

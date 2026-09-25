@@ -218,10 +218,11 @@ internal static class PluginManifestReader
             error = $"apiVersion=\"{manifest.ApiVersion}\" 不是合法版本号。";
             return false;
         }
-        if (apiVersion.Major != PluginApi.ApiVersionMajor)
+        if (apiVersion.Major != PluginApi.ApiVersionMajor ||
+            (apiVersion.Major == PluginApi.ApiVersionMajor && apiVersion.Minor > PluginApi.ApiVersionMinor))
         {
             failure = PluginScanFailure.ApiVersionMismatch;
-            error = $"插件依赖 SDK 契约 {apiVersion.Major}.x，当前 StarPie 提供 {PluginApi.ApiVersionMajor}.x。";
+            error = $"插件依赖 SDK 契约 {apiVersion.Major}.{apiVersion.Minor}，当前 StarPie 最高支持 {PluginApi.ApiVersionMajor}.{PluginApi.ApiVersionMinor}。";
             return false;
         }
 

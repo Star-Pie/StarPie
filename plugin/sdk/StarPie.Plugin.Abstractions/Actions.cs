@@ -32,6 +32,7 @@ public enum ParameterFieldType
     Enum = 6,
     Hotkey = 7,
     Color = 8,
+    KeyMap = 9,
 }
 
 /// <summary><see cref="ParameterFieldType.Enum"/> 的可选项。</summary>

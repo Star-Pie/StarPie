@@ -47,6 +47,7 @@ internal sealed class PluginContext : IPluginContext
         ScreenCapture = new PluginScreenCaptureService(metadata.Id, metadata.Capabilities);
         System = new PluginSystemService(metadata.Id, metadata.Capabilities);
         Wheel = new PluginWheelService(metadata.Id, metadata.Capabilities);
+        KeyboardRemap = new PluginKeyboardRemapService(metadata.Id, metadata.Capabilities);
 
         Info = new PluginHostInfo(metadata.Capabilities);
         Notify = new PluginNotificationService(metadata.Id);
@@ -88,6 +89,9 @@ internal sealed class PluginContext : IPluginContext
 
     /// <summary>轮盘呼出（粘滞会话，供悬浮球这类常驻形态使用）。</summary>
     public IHostWheelService Wheel { get; }
+
+    /// <summary>键盘重映射服务（SDK 1.7 起）。</summary>
+    public IHostKeyboardRemapService KeyboardRemap { get; }
 
     public IHostInfo Info { get; }
 

@@ -446,6 +446,13 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 					Action.Parameter = "Windows.CopyAsPath";
 				}
 			}
+			if (value == PluginActionBinding.TypeName)
+			{
+				if (ActionNameDefaults.IsAutoFilled(Name))
+				{
+					Name = I18n.T("ActionTypePluginShort");
+				}
+			}
 			OnPropertyChanged("Type");
 			OnPropertyChanged("IsHotkeyType");
 			OnPropertyChanged("IsLaunchType");
@@ -457,6 +464,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 			OnPropertyChanged("IsTileType");
 			OnPropertyChanged("IsOcrType");
 			OnPropertyChanged("IsShellToolType");
+			OnPropertyChanged("IsPluginType");
 		}
 	}
 
@@ -722,6 +730,8 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 	public bool IsOcrType => Type == "Ocr" || Type == "ScreenOcr";
 
 	public bool IsShellToolType => Type == "ShellTool";
+
+	public bool IsPluginType => Type == PluginActionBinding.TypeName;
 
 	public int SubActionCount => Action.SubActions?.Count ?? 0;
 
