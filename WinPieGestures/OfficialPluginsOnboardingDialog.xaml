@@ -100,7 +100,7 @@
           <TextBlock Name="SecurityHeaderTextBlock" Text="🛡️ 安全与权限说明" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5" />
           <TextBlock Name="SecuritySourceTextBlock" Text="• 官方来源：https://github.com/Star-Pie/StarPie-Official-Plugins" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
           <TextBlock Name="SecurityPermsTextBlock" Text="• 所需权限：进程启动（Process）、按键模拟（InputSimulation）" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
-          <TextBlock Name="SecurityDescTextBlock" Text="• 插件将在进程内以 StarPie 当前权限运行，并在安装前严格校验 SHA-256 签名与文件哈希。在此确认前，不会发起任何网络请求。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="15" />
+          <TextBlock Name="SecurityDescTextBlock" Text="• 插件将在进程内以 StarPie 当前权限运行，并在安装前严格校验 SHA-256 文件哈希。在此确认前，不会发起任何网络请求。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="15" />
         </StackPanel>
       </Border>
 

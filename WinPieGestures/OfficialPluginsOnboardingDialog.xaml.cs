@@ -61,6 +61,20 @@ public partial class OfficialPluginsOnboardingDialog : Window
         foreach (OfficialPluginTargetInfo target in OfficialPluginOnboarding.TargetPlugins)
         {
             bool isInstalled = OfficialPluginOnboarding.IsPluginInstalled(target.Id);
+            bool isEnabled = false;
+            if (isInstalled)
+            {
+                PluginInstance? inst = PluginHost.Find(target.Id);
+                if (inst != null)
+                {
+                    isEnabled = inst.Entry.Enabled;
+                }
+                else
+                {
+                    PluginRegistryEntry? entry = PluginRegistryStore.FindEntry(target.Id);
+                    isEnabled = entry?.Enabled ?? false;
+                }
+            }
 
             var rowGrid = new Grid { Margin = new Thickness(0, 3, 0, 3) };
             rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -106,25 +120,43 @@ public partial class OfficialPluginsOnboardingDialog : Window
             Grid.SetColumn(infoStack, 0);
             rowGrid.Children.Add(infoStack);
 
-            // 状态徽标
+            // 状态徽标：区分待安装、已启用、已停用
             var badgeBorder = new Border
             {
                 CornerRadius = new CornerRadius(4),
                 Padding = new Thickness(6, 2, 6, 2),
                 VerticalAlignment = VerticalAlignment.Center,
-                Background = isInstalled
-                    ? new SolidColorBrush(Color.FromArgb(32, 16, 185, 129))
-                    : (Brush)FindResource("SubtleCardBrush")
+                Background = !isInstalled
+                    ? (Brush)FindResource("SubtleCardBrush")
+                    : (isEnabled
+                        ? new SolidColorBrush(Color.FromArgb(32, 16, 185, 129))
+                        : new SolidColorBrush(Color.FromArgb(32, 245, 158, 11)))
             };
+
+            string badgeText;
+            Brush badgeFg;
+            if (!isInstalled)
+            {
+                badgeText = I18n.T("OfficialPluginsStateToInstall");
+                badgeFg = (Brush)FindResource("TextSecondaryBrush");
+            }
+            else if (isEnabled)
+            {
+                badgeText = I18n.T("OfficialPluginsStateInstalled");
+                badgeFg = new SolidColorBrush(Color.FromRgb(16, 185, 129));
+            }
+            else
+            {
+                badgeText = I18n.T("OfficialPluginsStateInstalledDisabled");
+                badgeFg = new SolidColorBrush(Color.FromRgb(245, 158, 11));
+            }
 
             badgeBorder.Child = new TextBlock
             {
-                Text = isInstalled ? I18n.T("OfficialPluginsStateInstalled") : I18n.T("OfficialPluginsStateToInstall"),
+                Text = badgeText,
                 FontSize = 10,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = isInstalled
-                    ? new SolidColorBrush(Color.FromRgb(16, 185, 129))
-                    : (Brush)FindResource("TextSecondaryBrush")
+                Foreground = badgeFg
             };
 
             Grid.SetColumn(badgeBorder, 1);
@@ -185,7 +217,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
 
             PopulatePluginItems();
 
-            if (report.AllSucceeded)
+            if (report.AllSuccessfullyActive)
             {
                 InstallProgressBar.Value = 100;
                 StatusTextBlock.Text = I18n.T("OfficialPluginsOnboardingAllSucceeded");
@@ -194,12 +226,34 @@ public partial class OfficialPluginsOnboardingDialog : Window
                 RetryButton.Visibility = Visibility.Collapsed;
                 DoneButton.Visibility = Visibility.Visible;
             }
+            else if (report.FailureCount == 0 && report.OriginallyInstalledDisabledPluginIds.Count > 0)
+            {
+                // 无安装失败，但有原本被用户停用的插件：保持停用，明确说明，绝不谎报全部启用
+                InstallProgressBar.Value = 100;
+                StatusTextBlock.Text = I18n.TF("OfficialPluginsOnboardingSummaryWithDisabled", report.SuccessCount, report.OriginallyInstalledDisabledPluginIds.Count);
+                InstallButton.Visibility = Visibility.Collapsed;
+                LaterButton.Visibility = Visibility.Collapsed;
+                RetryButton.Visibility = Visibility.Collapsed;
+                DoneButton.Visibility = Visibility.Visible;
+            }
             else
             {
+                // 存在失败项或启用失败项：给出可操作的重试与启用指引，绝不谎报全部启用
                 int totalHandled = report.SuccessCount + report.FailureCount;
                 InstallProgressBar.Value = totalHandled > 0 ? (double)report.SuccessCount / totalHandled * 100.0 : 0;
-                string errDetails = string.Join("; ", report.FailedPlugins.Select(kv => $"{kv.Key}: {kv.Value}"));
-                StatusTextBlock.Text = I18n.TF("OfficialPluginsOnboardingPartialFailed", report.SuccessCount, report.FailureCount, errDetails);
+
+                var guidanceList = new List<string>();
+                foreach (var kv in report.InstalledButEnableFailedPlugins)
+                {
+                    guidanceList.Add(kv.Value);
+                }
+                foreach (var kv in report.FailedPlugins)
+                {
+                    guidanceList.Add(kv.Value);
+                }
+                string details = string.Join("\n", guidanceList);
+
+                StatusTextBlock.Text = I18n.TF("OfficialPluginsOnboardingPartialFailed", report.SuccessCount, report.FailureCount, details);
 
                 InstallButton.Visibility = Visibility.Collapsed;
                 LaterButton.Visibility = Visibility.Collapsed;

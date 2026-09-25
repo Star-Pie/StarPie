@@ -7641,15 +7641,7 @@ public partial class SettingsWindow : Window
 		}
 
 		RenderOfficialPluginsStatus();
-
-		if (_officialPluginCatalog == null && !_officialPluginsLoading)
-		{
-			_ = RefreshOfficialPluginsAsync();
-		}
-		else
-		{
-			RenderOfficialPluginItems();
-		}
+		RenderOfficialPluginItems();
 
 		RefreshPluginCandidatesUi();
 		UpdateOnboardingBannerVisibility();
@@ -20602,6 +20594,12 @@ public partial class SettingsWindow : Window
 	{
 		if (_isOnboardingPromptActive || _resourcesReleased || !_isUiInitialized) return;
 
+		// 确保首次引导检查发生在 PluginHost.Initialize 完成、PluginPaths.Configure 生效之后
+		if (!PluginHost.IsInitialized)
+		{
+			PluginHost.Initialize();
+		}
+
 		if (!OfficialPluginOnboarding.ShouldPrompt(out _))
 		{
 			UpdateOnboardingBannerVisibility();
@@ -20666,6 +20664,11 @@ public partial class SettingsWindow : Window
 
 	private void OnboardingBannerInstallButton_Click(object sender, RoutedEventArgs e)
 	{
+		if (!PluginHost.IsInitialized)
+		{
+			PluginHost.Initialize();
+		}
+
 		if (!EnsurePluginSystemReady()) return;
 
 		try

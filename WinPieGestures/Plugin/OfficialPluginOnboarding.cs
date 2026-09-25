@@ -33,17 +33,63 @@ internal sealed class OfficialPluginBatchProgress
 }
 
 /// <summary>
+/// 官方核心插件在批量安装过程中的状态分类。
+/// </summary>
+internal enum OfficialPluginStatusKind
+{
+    /// <summary>原本安装但被用户停用（保持原状，绝不擅自启用）</summary>
+    OriginallyInstalledDisabled,
+
+    /// <summary>原本已安装且处于启用状态</summary>
+    AlreadyInstalledAndEnabled,
+
+    /// <summary>本次新安装且已成功启用</summary>
+    NewlyInstalledAndEnabled,
+
+    /// <summary>本次安装成功但启用失败（如依赖缺失、加载异常）</summary>
+    InstalledButEnableFailed,
+
+    /// <summary>安装失败（网络、校验、哈希或用户拒绝权限授权）</summary>
+    InstallFailed
+}
+
+/// <summary>
+/// 单个官方核心插件的处理结果明细。
+/// </summary>
+internal sealed class OfficialPluginItemResult
+{
+    public string PluginId { get; init; } = "";
+    public string PluginName { get; init; } = "";
+    public OfficialPluginStatusKind Status { get; set; }
+    public string? ErrorOrGuidance { get; set; }
+}
+
+/// <summary>
 /// 官方核心插件批量安装报告。
 /// </summary>
 internal sealed class OfficialPluginBatchInstallReport
 {
-    public bool AllSucceeded => FailureCount == 0;
+    /// <summary>
+    /// 是否 5 项官方核心插件均处于活跃且启用状态（无失败、无启用失败、无原本停用）。
+    /// </summary>
+    public bool AllSuccessfullyActive =>
+        FailedPlugins.Count == 0 &&
+        InstalledButEnableFailedPlugins.Count == 0 &&
+        OriginallyInstalledDisabledPluginIds.Count == 0 &&
+        (SucceededPluginIds.Count + AlreadyInstalledAndEnabledPluginIds.Count) == OfficialPluginOnboarding.TargetPluginIds.Length;
+
+    public bool AllSucceeded => FailedPlugins.Count == 0 && InstalledButEnableFailedPlugins.Count == 0;
     public int SuccessCount => SucceededPluginIds.Count;
     public int SkippedCount => SkippedPluginIds.Count;
-    public int FailureCount => FailedPlugins.Count;
+    public int FailureCount => FailedPlugins.Count + InstalledButEnableFailedPlugins.Count;
+
     public List<string> SucceededPluginIds { get; init; } = new();
     public List<string> SkippedPluginIds { get; init; } = new();
+    public List<string> OriginallyInstalledDisabledPluginIds { get; init; } = new();
+    public List<string> AlreadyInstalledAndEnabledPluginIds { get; init; } = new();
+    public Dictionary<string, string> InstalledButEnableFailedPlugins { get; init; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, string> FailedPlugins { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public Dictionary<string, OfficialPluginItemResult> ItemResults { get; init; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>
@@ -110,19 +156,16 @@ internal static class OfficialPluginOnboarding
         }
     };
 
-    /// <summary>
-    /// 预告公示的基线权限。如果 catalog 中模块要求超出此范围的权限，必须暂停请求用户确认。
-    /// </summary>
-    public static readonly HashSet<string> AllowedBaselineCapabilities = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Process",
-        "InputSimulation"
-    };
-
     private static int _isInstalling;
+
+    public static OfficialPluginTargetInfo? GetTargetInfo(string pluginId)
+    {
+        return TargetPlugins.FirstOrDefault(t => string.Equals(t.Id, pluginId, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
     /// 判断是否应该弹出一次性引导安装弹窗。
+    /// 确保首次引导检查发生在 PluginHost.Initialize 完成、PluginPaths.Configure 生效之后。
     /// </summary>
     public static bool ShouldPrompt(out List<string> missingPluginIds)
     {
@@ -134,8 +177,14 @@ internal static class OfficialPluginOnboarding
             return false;
         }
 
+        // 确保首次引导检查发生在 PluginHost.Initialize 完成、PluginPaths.Configure 生效之后
+        if (!PluginHost.IsInitialized)
+        {
+            PluginHost.Initialize();
+        }
+
         // 2. 插件系统总开关关闭或处于安全模式时严禁弹窗及擅自开启
-        if (!PluginHost.IsEnabled || !ConfigManager.CurrentConfig.Plugins.EnablePluginSystem)
+        if (!PluginHost.IsEnabled || ConfigManager.CurrentConfig?.Plugins?.EnablePluginSystem != true)
         {
             return false;
         }
@@ -168,6 +217,11 @@ internal static class OfficialPluginOnboarding
     /// </summary>
     public static List<string> GetMissingPluginIds()
     {
+        if (!PluginHost.IsInitialized)
+        {
+            PluginHost.Initialize();
+        }
+
         var missing = new List<string>();
         foreach (string id in TargetPluginIds)
         {
@@ -185,6 +239,10 @@ internal static class OfficialPluginOnboarding
     public static bool IsPluginInstalled(string pluginId)
     {
         if (string.IsNullOrWhiteSpace(pluginId)) return false;
+        if (!PluginHost.IsInitialized)
+        {
+            PluginHost.Initialize();
+        }
         return PluginHost.Find(pluginId) != null || PluginRegistryStore.FindEntry(pluginId) != null;
     }
 
@@ -209,15 +267,16 @@ internal static class OfficialPluginOnboarding
 
     /// <summary>
     /// 执行官方核心插件的批量下载与安装。
-    /// 仅安装缺失项；已安装项跳过（不覆盖、不升级、不改动禁用状态）。
-    /// 支持测试注入 catalogFetcher、moduleInstaller 和 extraCapabilityPrompter。
+    /// 仅安装缺失项；已安装项跳过（不覆盖、不升级、不改动禁用状态，绝不擅自启用用户原本停用的插件）。
+    /// 按每个插件分别比对预告权限、catalog 权限和下载后 plugin.json 的实际权限；超出已告知范围必须再次确认，拒绝则不安装该项。
     /// </summary>
     public static async Task<OfficialPluginBatchInstallReport> InstallMissingPluginsAsync(
         Func<CancellationToken, Task<OfficialPluginCatalog>>? catalogFetcher = null,
         Func<OfficialPluginModule, CancellationToken, Task<OfficialPluginInstallResult>>? moduleInstaller = null,
         Func<string, List<string>, Task<bool>>? extraCapabilityPrompter = null,
         IProgress<OfficialPluginBatchProgress>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        Func<OfficialPluginModule, Func<string, List<string>, Task<bool>>?, IReadOnlyCollection<string>?, CancellationToken, Task<OfficialPluginInstallResult>>? detailedModuleInstaller = null)
     {
         // 重入防护
         if (Interlocked.CompareExchange(ref _isInstalling, 1, 0) != 0)
@@ -229,12 +288,56 @@ internal static class OfficialPluginOnboarding
 
         try
         {
+            if (!PluginHost.IsInitialized)
+            {
+                PluginHost.Initialize();
+            }
+
             List<string> missingIds = GetMissingPluginIds();
+
+            // 区分已有插件的状态：原本已启用 vs 原本安装但被用户停用（绝不擅自启用）
             foreach (string id in TargetPluginIds)
             {
                 if (!missingIds.Contains(id, StringComparer.OrdinalIgnoreCase))
                 {
                     report.SkippedPluginIds.Add(id);
+                    var targetInfo = GetTargetInfo(id);
+                    string name = targetInfo != null ? I18n.T(targetInfo.NameKey) : id;
+
+                    bool isEnabled = false;
+                    PluginInstance? inst = PluginHost.Find(id);
+                    if (inst != null)
+                    {
+                        isEnabled = inst.Entry.Enabled;
+                    }
+                    else
+                    {
+                        PluginRegistryEntry? entry = PluginRegistryStore.FindEntry(id);
+                        isEnabled = entry?.Enabled ?? false;
+                    }
+
+                    if (isEnabled)
+                    {
+                        report.AlreadyInstalledAndEnabledPluginIds.Add(id);
+                        report.ItemResults[id] = new OfficialPluginItemResult
+                        {
+                            PluginId = id,
+                            PluginName = name,
+                            Status = OfficialPluginStatusKind.AlreadyInstalledAndEnabled,
+                            ErrorOrGuidance = null
+                        };
+                    }
+                    else
+                    {
+                        report.OriginallyInstalledDisabledPluginIds.Add(id);
+                        report.ItemResults[id] = new OfficialPluginItemResult
+                        {
+                            PluginId = id,
+                            PluginName = name,
+                            Status = OfficialPluginStatusKind.OriginallyInstalledDisabled,
+                            ErrorOrGuidance = I18n.TF("OfficialPluginsOnboardingOriginallyDisabledNotice", name)
+                        };
+                    }
                 }
             }
 
@@ -244,7 +347,9 @@ internal static class OfficialPluginOnboarding
                 {
                     TotalCount = 0,
                     CompletedCount = 0,
-                    Message = I18n.T("OfficialPluginsOnboardingAllSucceeded")
+                    Message = report.OriginallyInstalledDisabledPluginIds.Count > 0
+                        ? I18n.TF("OfficialPluginsOnboardingSummaryWithDisabled", report.AlreadyInstalledAndEnabledPluginIds.Count, report.OriginallyInstalledDisabledPluginIds.Count)
+                        : I18n.T("OfficialPluginsOnboardingAllSucceeded")
                 });
                 return report;
             }
@@ -268,7 +373,6 @@ internal static class OfficialPluginOnboarding
             var moduleMap = catalog.Modules.ToDictionary(m => m.Id, StringComparer.OrdinalIgnoreCase);
 
             // 2. 逐一安装缺失项
-            moduleInstaller ??= OfficialPluginClient.InstallAsync;
             int total = missingIds.Count;
             int completed = 0;
 
@@ -276,46 +380,73 @@ internal static class OfficialPluginOnboarding
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                var targetInfo = GetTargetInfo(id);
+                string pluginName = targetInfo != null ? I18n.T(targetInfo.NameKey) : id;
+
                 if (!moduleMap.TryGetValue(id, out OfficialPluginModule? module) || module == null)
                 {
-                    report.FailedPlugins[id] = $"官方 catalog 中未找到插件 {id}。";
+                    string err = $"官方 catalog 中未找到插件 {id}。";
+                    report.FailedPlugins[id] = err;
+                    report.ItemResults[id] = new OfficialPluginItemResult
+                    {
+                        PluginId = id,
+                        PluginName = pluginName,
+                        Status = OfficialPluginStatusKind.InstallFailed,
+                        ErrorOrGuidance = err
+                    };
                     completed++;
                     progress?.Report(new OfficialPluginBatchProgress
                     {
                         TotalCount = total,
                         CompletedCount = completed,
                         CurrentPluginId = id,
-                        Message = report.FailedPlugins[id]
+                        Message = err
                     });
                     continue;
                 }
 
-                // 权限检查：是否超出了预告基线权限 (Process, InputSimulation)
-                var extraCapabilities = (module.Capabilities ?? new List<string>())
-                    .Where(cap => !AllowedBaselineCapabilities.Contains(cap))
+                // 阶段 1：按每个插件分别比对预告权限与 catalog 权限
+                var informedCapabilities = new HashSet<string>(
+                    targetInfo?.DisclosedCapabilities ?? Array.Empty<string>(),
+                    StringComparer.OrdinalIgnoreCase);
+
+                var catalogExtra = (module.Capabilities ?? new List<string>())
+                    .Where(cap => !informedCapabilities.Contains(cap))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
 
-                if (extraCapabilities.Count > 0)
+                if (catalogExtra.Count > 0)
                 {
                     bool allowed = false;
                     if (extraCapabilityPrompter != null)
                     {
-                        allowed = await extraCapabilityPrompter(module.Name, extraCapabilities).ConfigureAwait(false);
+                        allowed = await extraCapabilityPrompter(module.Name, catalogExtra).ConfigureAwait(false);
                     }
 
                     if (!allowed)
                     {
-                        report.FailedPlugins[id] = $"未授权超出基线的额外权限：{string.Join(", ", extraCapabilities)}。";
+                        string err = I18n.TF("OfficialPluginsOnboardingPermissionRejectedCatalog", string.Join(", ", catalogExtra));
+                        report.FailedPlugins[id] = err;
+                        report.ItemResults[id] = new OfficialPluginItemResult
+                        {
+                            PluginId = id,
+                            PluginName = module.Name,
+                            Status = OfficialPluginStatusKind.InstallFailed,
+                            ErrorOrGuidance = err
+                        };
                         completed++;
                         progress?.Report(new OfficialPluginBatchProgress
                         {
                             TotalCount = total,
                             CompletedCount = completed,
                             CurrentPluginId = id,
-                            Message = report.FailedPlugins[id]
+                            Message = err
                         });
                         continue;
                     }
+
+                    // 用户同意了 catalog 额外权限，纳入该插件的已告知范围
+                    foreach (string c in catalogExtra) informedCapabilities.Add(c);
                 }
 
                 progress?.Report(new OfficialPluginBatchProgress
@@ -326,21 +457,76 @@ internal static class OfficialPluginOnboarding
                     Message = I18n.TF("OfficialPluginsOnboardingStatusInstallingItem", completed + 1, total, module.Name)
                 });
 
+                // 阶段 2：执行下载与安装（比对实际 plugin.json 权限）
                 try
                 {
-                    OfficialPluginInstallResult installResult = await moduleInstaller(module, cancellationToken).ConfigureAwait(false);
-                    if (installResult.Success)
+                    OfficialPluginInstallResult installResult;
+                    if (detailedModuleInstaller != null)
                     {
-                        report.SucceededPluginIds.Add(id);
+                        installResult = await detailedModuleInstaller(module, extraCapabilityPrompter, informedCapabilities, cancellationToken).ConfigureAwait(false);
+                    }
+                    else if (moduleInstaller != null)
+                    {
+                        installResult = await moduleInstaller(module, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        report.FailedPlugins[id] = string.IsNullOrWhiteSpace(installResult.Error) ? "安装失败" : installResult.Error;
+                        installResult = await OfficialPluginClient.InstallAsync(module, extraCapabilityPrompter, informedCapabilities, cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (installResult.Success)
+                    {
+                        if (installResult.Enabled)
+                        {
+                            report.SucceededPluginIds.Add(id);
+                            report.ItemResults[id] = new OfficialPluginItemResult
+                            {
+                                PluginId = id,
+                                PluginName = module.Name,
+                                Status = OfficialPluginStatusKind.NewlyInstalledAndEnabled,
+                                ErrorOrGuidance = null
+                            };
+                        }
+                        else
+                        {
+                            // 安装成功但启用失败：不得谎报全部启用，给出可操作的重试与启用指引
+                            string guidance = I18n.TF("OfficialPluginsOnboardingEnableFailedGuidance", module.Name);
+                            report.InstalledButEnableFailedPlugins[id] = guidance;
+                            report.ItemResults[id] = new OfficialPluginItemResult
+                            {
+                                PluginId = id,
+                                PluginName = module.Name,
+                                Status = OfficialPluginStatusKind.InstalledButEnableFailed,
+                                ErrorOrGuidance = guidance
+                            };
+                        }
+                    }
+                    else
+                    {
+                        string guidance = string.IsNullOrWhiteSpace(installResult.Error)
+                            ? I18n.TF("OfficialPluginsOnboardingInstallFailedGuidance", module.Name, "未知错误")
+                            : installResult.Error;
+                        report.FailedPlugins[id] = guidance;
+                        report.ItemResults[id] = new OfficialPluginItemResult
+                        {
+                            PluginId = id,
+                            PluginName = module.Name,
+                            Status = OfficialPluginStatusKind.InstallFailed,
+                            ErrorOrGuidance = guidance
+                        };
                     }
                 }
                 catch (Exception ex)
                 {
-                    report.FailedPlugins[id] = ex.Message;
+                    string guidance = I18n.TF("OfficialPluginsOnboardingInstallFailedGuidance", module.Name, ex.Message);
+                    report.FailedPlugins[id] = guidance;
+                    report.ItemResults[id] = new OfficialPluginItemResult
+                    {
+                        PluginId = id,
+                        PluginName = module.Name,
+                        Status = OfficialPluginStatusKind.InstallFailed,
+                        ErrorOrGuidance = guidance
+                    };
                 }
 
                 completed++;
@@ -349,9 +535,9 @@ internal static class OfficialPluginOnboarding
                     TotalCount = total,
                     CompletedCount = completed,
                     CurrentPluginId = id,
-                    Message = report.FailedPlugins.TryGetValue(id, out string? err)
-                        ? $"[{module.Name}] {err}"
-                        : $"[{module.Name}] 安装成功"
+                    Message = report.ItemResults.TryGetValue(id, out var itemRes) && itemRes.Status == OfficialPluginStatusKind.NewlyInstalledAndEnabled
+                        ? $"[{module.Name}] 安装并启用成功"
+                        : $"[{module.Name}] {report.ItemResults[id].ErrorOrGuidance}"
                 });
             }
 

@@ -119,8 +119,15 @@ internal static class OfficialPluginClient
         throw new InvalidDataException("官方插件仓库尚未发布可用模块 catalog。");
     }
 
+    public static Task<OfficialPluginInstallResult> InstallAsync(
+        OfficialPluginModule module,
+        CancellationToken cancellationToken = default)
+        => InstallAsync(module, extraCapabilityPrompter: null, approvedCapabilities: null, cancellationToken);
+
     public static async Task<OfficialPluginInstallResult> InstallAsync(
         OfficialPluginModule module,
+        Func<string, List<string>, Task<bool>>? extraCapabilityPrompter,
+        IReadOnlyCollection<string>? approvedCapabilities,
         CancellationToken cancellationToken = default)
     {
         if (module == null) return new OfficialPluginInstallResult { Error = "官方插件条目为空。" };
@@ -167,6 +174,35 @@ internal static class OfficialPluginClient
                     PluginId = module.Id,
                     Error = $"包内插件版本与 catalog 不一致：{scan.Manifest.Version}。",
                 };
+            }
+
+            // 按每个插件分别比对下载后 plugin.json 的实际权限与已告知范围
+            if (approvedCapabilities != null)
+            {
+                var manifestCaps = scan.Manifest.Capabilities ?? new List<string>();
+                var unapprovedActual = manifestCaps
+                    .Where(c => !approvedCapabilities.Contains(c, StringComparer.OrdinalIgnoreCase))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (unapprovedActual.Count > 0)
+                {
+                    bool allowed = false;
+                    if (extraCapabilityPrompter != null)
+                    {
+                        allowed = await extraCapabilityPrompter(module.Name, unapprovedActual).ConfigureAwait(false);
+                    }
+
+                    if (!allowed)
+                    {
+                        return new OfficialPluginInstallResult
+                        {
+                            Success = false,
+                            PluginId = module.Id,
+                            Error = "用户拒绝了实际包声明的额外权限：" + string.Join(", ", unapprovedActual),
+                        };
+                    }
+                }
             }
 
             PluginInstallResult result = await PluginHost.CommitInstallAsync(scan, new PluginInstallOptions

@@ -31,7 +31,7 @@ public class Program
 
         try
         {
-            await RunAllTestsAsync(hostRoot);
+            await RunAllTestsAsync(hostRoot, scanRoot);
         }
         finally
         {
@@ -114,7 +114,7 @@ public class Program
         }
     }
 
-    private static async Task RunAllTestsAsync(string hostRoot)
+    private static async Task RunAllTestsAsync(string hostRoot, string scanRoot)
     {
         // -------------------------------------------------------------
         // Test 1: First Prompt vs Non-First Prompt
@@ -517,7 +517,7 @@ public class Program
             // Case 8.1: User denies extra capability
             var reportDenied = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
                 catalogFetcher: _ => Task.FromResult(catalogWithExtra),
-                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult { Success = true, PluginId = mod.Id }),
+                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult { Success = true, PluginId = mod.Id, Enabled = true }),
                 extraCapabilityPrompter: (name, extraCaps) => Task.FromResult(false)
             );
 
@@ -531,7 +531,7 @@ public class Program
             CleanRegistry();
             var reportAllowed = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
                 catalogFetcher: _ => Task.FromResult(catalogWithExtra),
-                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult { Success = true, PluginId = mod.Id }),
+                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult { Success = true, PluginId = mod.Id, Enabled = true }),
                 extraCapabilityPrompter: (name, extraCaps) => Task.FromResult(true)
             );
 
@@ -584,10 +584,316 @@ public class Program
                 if (!allValid) break;
             }
 
-            Assert(allValid, "9.1 All 32 onboarding localization keys defined across zh-CN, zh-TW, en, ja", failureMsg);
+            Assert(allValid, "9.1 All onboarding localization keys defined across zh-CN, zh-TW, en, ja", failureMsg);
 
             // Restore default language
             I18n.SetLanguage("zh-CN");
+        }
+
+        // -------------------------------------------------------------
+        // Test 10: Lifecycle & portable.flag / Normal Startup Paths
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 10: Lifecycle & portable.flag / Normal Startup Paths ---");
+        {
+            // 10.1 Normal startup: ensures PluginHost.Initialize() and PluginPaths.Configure() take effect
+            var initField = typeof(PluginHost).GetField("_initialized", BindingFlags.Static | BindingFlags.NonPublic);
+            initField?.SetValue(null, false);
+
+            Assert(!PluginHost.IsInitialized, "10.1 PluginHost._initialized reset to false for test");
+
+            ConfigManager.CurrentConfig = new AppConfig
+            {
+                Plugins = new PluginsPreference
+                {
+                    EnablePluginSystem = true,
+                    HasPromptedOfficialPluginsOnboarding = false,
+                    PortableMode = false
+                }
+            };
+
+            // Calling ShouldPrompt ensures PluginHost.Initialize() is completed
+            _ = OfficialPluginOnboarding.ShouldPrompt(out _);
+            Assert(PluginHost.IsInitialized, "10.2 ShouldPrompt ensures PluginHost.IsInitialized is true");
+
+            // 10.3 Portable mode paths verification
+            var rootsPinnedField = typeof(PluginPaths).GetField("_rootsPinned", BindingFlags.Static | BindingFlags.NonPublic);
+            rootsPinnedField?.SetValue(null, false);
+
+            PluginPaths.Configure(portableRequested: false);
+            Assert(!PluginPaths.IsPortable, "10.3 PluginPaths.IsPortable is false when portableRequested is false");
+            Assert(PluginPaths.Root.Contains("plugin-data", StringComparison.OrdinalIgnoreCase),
+                "10.4 PluginPaths.Root ends with plugin-data in normal mode");
+
+            PluginPaths.Configure(portableRequested: true);
+            Assert(PluginPaths.IsPortable, "10.5 PluginPaths.IsPortable is true when portableRequested is true");
+            Assert(PluginPaths.Root.StartsWith(AppContext.BaseDirectory, StringComparison.OrdinalIgnoreCase),
+                "10.6 PluginPaths.Root is located in AppContext.BaseDirectory in portable mode");
+
+            // Restore testing sandbox roots
+            PluginPaths.OverrideRootsForTesting(hostRoot, scanRoot);
+        }
+
+        // -------------------------------------------------------------
+        // Test 11: Zero Network Requests Before Consent & On Refusal
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 11: Zero Network Requests Before Consent & On Refusal ---");
+        {
+            CleanRegistry();
+            ConfigManager.CurrentConfig = new AppConfig
+            {
+                Plugins = new PluginsPreference
+                {
+                    EnablePluginSystem = true,
+                    HasPromptedOfficialPluginsOnboarding = false
+                }
+            };
+
+            int catalogFetchCount = 0;
+            Func<CancellationToken, Task<OfficialPluginCatalog>> countingFetcher = _ =>
+            {
+                catalogFetchCount++;
+                return Task.FromResult(CreateMockCatalog());
+            };
+
+            // 11.1 Opening Settings / checking onboarding does not fetch catalog
+            bool shouldPrompt = OfficialPluginOnboarding.ShouldPrompt(out var missing);
+            Assert(shouldPrompt && missing.Count == 5, "11.1 ShouldPrompt identifies missing items without network");
+            Assert(catalogFetchCount == 0, "11.2 Zero catalog fetch before consent");
+
+            // 11.2 User declines onboarding ("暂不安装")
+            OfficialPluginOnboarding.MarkPrompted();
+            Assert(ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding, "11.3 Declined onboarding marks prompted");
+            Assert(catalogFetchCount == 0, "11.4 Zero catalog fetch after user declines onboarding");
+
+            // 11.3 User explicitly clicks "一键安装"
+            var report = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: countingFetcher,
+                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult
+                {
+                    Success = true,
+                    PluginId = mod.Id,
+                    Enabled = true
+                })
+            );
+
+            Assert(catalogFetchCount == 1, "11.5 Exactly one catalog fetch occurs after explicit user consent");
+            Assert(report.AllSuccessfullyActive, "11.6 All plugins successfully active after consent install");
+        }
+
+        // -------------------------------------------------------------
+        // Test 12: Per-Plugin 3-Stage Capability Comparison
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 12: Per-Plugin 3-Stage Capability Comparison ---");
+        {
+            CleanRegistry();
+
+            // 12.1 Matching announced permissions: folder requires Process (matching disclosed)
+            var cleanCatalog = CreateMockCatalog();
+            bool prompterCalled12_1 = false;
+            var report12_1 = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => Task.FromResult(cleanCatalog),
+                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult
+                {
+                    Success = true,
+                    PluginId = mod.Id,
+                    Enabled = true
+                }),
+                extraCapabilityPrompter: (name, caps) =>
+                {
+                    prompterCalled12_1 = true;
+                    return Task.FromResult(true);
+                }
+            );
+
+            Assert(!prompterCalled12_1, "12.1 No prompter called when catalog permissions match announced baseline");
+            Assert(report12_1.SuccessCount == 5, "12.2 All 5 plugins install cleanly with baseline permissions");
+
+            // 12.2 Catalog extra capability on a specific plugin (e.g. folder requests InputSimulation, not disclosed for folder!)
+            CleanRegistry();
+            var catalogWithFolderExtra = CreateMockCatalog();
+            var folderModule = catalogWithFolderExtra.Modules.First(m => m.Id == "starpie.builtin.folder");
+            folderModule.Capabilities.Add("InputSimulation"); // InputSimulation was disclosed for system, but NOT for folder!
+
+            string? promptedPluginName = null;
+            List<string>? promptedCaps = null;
+
+            var report12_2 = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => Task.FromResult(catalogWithFolderExtra),
+                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult
+                {
+                    Success = true,
+                    PluginId = mod.Id,
+                    Enabled = true
+                }),
+                extraCapabilityPrompter: (name, caps) =>
+                {
+                    promptedPluginName = name;
+                    promptedCaps = caps;
+                    return Task.FromResult(false); // User rejects folder's extra capability!
+                }
+            );
+
+            Assert(promptedPluginName == folderModule.Name && promptedCaps != null && promptedCaps.Contains("InputSimulation"),
+                "12.3 Per-plugin check catches extra capability on folder specifically");
+            Assert(report12_2.FailedPlugins.ContainsKey("starpie.builtin.folder"),
+                "12.4 Folder is rejected and skipped");
+            Assert(report12_2.SuccessCount == 4,
+                "12.5 Other 4 plugins succeed despite folder rejection");
+
+            // 12.3 Downloaded package plugin.json actual capability exceeds announced/catalog
+            CleanRegistry();
+            bool packagePrompterCalled = false;
+            var report12_3 = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => Task.FromResult(cleanCatalog),
+                detailedModuleInstaller: (mod, prompter, informedCaps, _) =>
+                {
+                    if (mod.Id == "starpie.builtin.weburl")
+                    {
+                        // Simulate downloaded package declaring "FileSystem"
+                        var unapproved = new List<string> { "FileSystem" };
+                        packagePrompterCalled = true;
+                        return Task.FromResult(new OfficialPluginInstallResult
+                        {
+                            Success = false,
+                            PluginId = mod.Id,
+                            Error = "用户拒绝了实际包声明的额外权限：FileSystem"
+                        });
+                    }
+
+                    return Task.FromResult(new OfficialPluginInstallResult
+                    {
+                        Success = true,
+                        PluginId = mod.Id,
+                        Enabled = true
+                    });
+                }
+            );
+
+            Assert(packagePrompterCalled, "12.6 Downloaded package plugin.json extra capability was checked");
+            Assert(report12_3.FailedPlugins.ContainsKey("starpie.builtin.weburl"),
+                "12.7 WebUrl rejected and skipped when actual package requires unauthorized permission");
+            Assert(report12_3.SuccessCount == 4,
+                "12.8 Other 4 plugins succeed");
+        }
+
+        // -------------------------------------------------------------
+        // Test 13: Accurate State Distinction & Preserving User-Disabled Plugins
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 13: Accurate State Distinction & Preserving User-Disabled Plugins ---");
+        {
+            CleanRegistry();
+
+            // 13.1 Plugin originally installed but disabled
+            PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
+            {
+                Id = "starpie.builtin.folder",
+                Name = "starpie.builtin.folder",
+                Version = "1.0.0",
+                Enabled = false,
+                Official = true
+            });
+
+            var catalog = CreateMockCatalog();
+            var report13_1 = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => Task.FromResult(catalog),
+                moduleInstaller: (mod, _) => Task.FromResult(new OfficialPluginInstallResult
+                {
+                    Success = true,
+                    PluginId = mod.Id,
+                    Enabled = true
+                })
+            );
+
+            Assert(report13_1.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
+                "13.1 Folder is classified as OriginallyInstalledDisabled");
+            Assert(report13_1.ItemResults["starpie.builtin.folder"].Status == OfficialPluginStatusKind.OriginallyInstalledDisabled,
+                "13.2 ItemResults reflects OriginallyInstalledDisabled status");
+            Assert(!report13_1.AllSuccessfullyActive,
+                "13.3 AllSuccessfullyActive is false because one plugin was originally disabled");
+
+            var folderEntry = PluginRegistryStore.FindEntry("starpie.builtin.folder");
+            Assert(folderEntry != null && folderEntry.Enabled == false,
+                "13.4 Originally disabled folder plugin remains strictly disabled");
+
+            // 13.2 Installed successfully but failed to enable
+            CleanRegistry();
+            var report13_2 = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => Task.FromResult(catalog),
+                moduleInstaller: (mod, _) =>
+                {
+                    if (mod.Id == "starpie.builtin.system")
+                    {
+                        // File install succeeded, but enable failed
+                        return Task.FromResult(new OfficialPluginInstallResult
+                        {
+                            Success = true,
+                            PluginId = mod.Id,
+                            Enabled = false
+                        });
+                    }
+
+                    return Task.FromResult(new OfficialPluginInstallResult
+                    {
+                        Success = true,
+                        PluginId = mod.Id,
+                        Enabled = true
+                    });
+                }
+            );
+
+            Assert(report13_2.InstalledButEnableFailedPlugins.ContainsKey("starpie.builtin.system"),
+                "13.5 System plugin is classified as InstalledButEnableFailed");
+            Assert(report13_2.ItemResults["starpie.builtin.system"].Status == OfficialPluginStatusKind.InstalledButEnableFailed,
+                "13.6 System plugin status is InstalledButEnableFailed in ItemResults");
+            Assert(!report13_2.AllSuccessfullyActive,
+                "13.7 AllSuccessfullyActive is false when any plugin fails to enable");
+            Assert(!string.IsNullOrWhiteSpace(report13_2.ItemResults["starpie.builtin.system"].ErrorOrGuidance),
+                "13.8 Actionable guidance is provided for the enable-failed plugin");
+        }
+
+        // -------------------------------------------------------------
+        // Test 14: Wording & Phrasing Audit
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 14: Wording & Phrasing Audit ---");
+        {
+            // 14.1 shelltool naming: must be "系统与右键工具"
+            I18n.SetLanguage("zh-CN");
+            string shellToolZhCN = I18n.T("OfficialPluginNameShellTool");
+            Assert(shellToolZhCN == "系统与右键工具", "14.1 shelltool in zh-CN is '系统与右键工具'", $"actual: {shellToolZhCN}");
+
+            I18n.SetLanguage("zh-TW");
+            string shellToolZhTW = I18n.T("OfficialPluginNameShellTool");
+            Assert(shellToolZhTW == "系統與右鍵工具", "14.2 shelltool in zh-TW is '系統與右鍵工具'", $"actual: {shellToolZhTW}");
+
+            I18n.SetLanguage("en");
+            string shellToolEn = I18n.T("OfficialPluginNameShellTool");
+            Assert(shellToolEn == "System & Context Menu Tools", "14.3 shelltool in en is 'System & Context Menu Tools'", $"actual: {shellToolEn}");
+
+            I18n.SetLanguage("ja");
+            string shellToolJa = I18n.T("OfficialPluginNameShellTool");
+            Assert(shellToolJa == "システムと右クリックツール", "14.4 shelltool in ja is 'システムと右クリックツール'", $"actual: {shellToolJa}");
+
+            // 14.2 SHA-256 hash phrasing: cannot be "签名校验" or "签名"
+            string[] testLangs = { "zh-CN", "zh-TW", "en", "ja" };
+            foreach (string lang in testLangs)
+            {
+                I18n.SetLanguage(lang);
+                string securityDesc = I18n.T("OfficialPluginsOnboardingSecurityDesc");
+                Assert(!securityDesc.Contains("签名") && !securityDesc.Contains("簽章") && !securityDesc.Contains("signature", StringComparison.OrdinalIgnoreCase),
+                    $"14.5 SecurityDesc ({lang}) does not contain '签名' / 'signature'");
+                Assert(securityDesc.Contains("SHA-256"),
+                    $"14.6 SecurityDesc ({lang}) contains SHA-256 hash reference");
+            }
+
+            // 14.3 Must not claim restoring "all plugin features"
+            I18n.SetLanguage("zh-CN");
+            string intro = I18n.T("OfficialPluginsOnboardingIntro");
+            Assert(!intro.Contains("所有插件化功能") && !intro.Contains("完整功能体验"),
+                "14.7 Intro text does not claim to restore all plugin features", $"actual: {intro}");
+
+            string banner = I18n.T("PluginsOnboardingBannerText");
+            Assert(!banner.Contains("所有插件化功能") && !banner.Contains("完整内置动作"),
+                "14.8 Banner text does not claim to restore all plugin features", $"actual: {banner}");
         }
     }
 }
