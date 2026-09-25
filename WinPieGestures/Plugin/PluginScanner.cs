@@ -95,7 +95,7 @@ internal static class PluginScanner
 
         if (File.Exists(manifestPath))
         {
-            if (!PluginManifestReader.TryLoad(manifestPath, out manifest, out PluginScanFailure mf, out string me))
+            if (!PluginManifestReader.TryLoad(manifestPath, out manifest, out PluginScanFailure mf, out string me, allowReservedIdPrefix))
             {
                 return Fail(result, mf, me);
             }
