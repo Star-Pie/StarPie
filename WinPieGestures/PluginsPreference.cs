@@ -59,4 +59,10 @@ public class PluginsPreference
 
     /// <summary>是否在列表里显示识别不通过的插件（关闭则只显示可用的）。</summary>
     public bool ShowIncompatiblePlugins { get; set; } = true;
+
+    /// <summary>
+    /// 是否已提示过官方核心插件一键引导安装（1.8.0+）。
+    /// 用户在设置页首次交互式进入时弹出引导；一旦弹出过（不论用户同意或暂不安装）即置为 true，后续升级不重复提示。
+    /// </summary>
+    public bool HasPromptedOfficialPluginsOnboarding { get; set; }
 }

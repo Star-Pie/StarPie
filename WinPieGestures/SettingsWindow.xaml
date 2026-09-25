@@ -3784,6 +3784,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
 
@@ -3821,8 +3822,26 @@
             </Grid>
           </Border>
 
+          <!-- 官方核心插件未装全引导/重试横幅 -->
+          <Border Grid.Row="2" Name="OfficialPluginsOnboardingBanner" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="💡" FontSize="12.5" VerticalAlignment="Center" Margin="0,0,6,0" />
+                  <TextBlock Name="OnboardingBannerTitleText" Text="官方核心插件未全部安装" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Name="OnboardingBannerSubheaderText" Text="尚有官方核心插件未安装。安装后可使用打开文件夹、启动程序、网页跳转等完整内置动作。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Name="OnboardingBannerInstallButton" Grid.Column="1" Content="⬇️ 一键安装缺失项" Style="{StaticResource PrimaryButtonStyle}" Height="30" Padding="12,0" FontSize="11.5" VerticalAlignment="Center" Click="OnboardingBannerInstallButton_Click" />
+            </Grid>
+          </Border>
+
           <!-- 官方插件在线目录 -->
-          <Border Grid.Row="2" Name="OfficialPluginsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+          <Border Grid.Row="3" Name="OfficialPluginsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
             <StackPanel>
               <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
@@ -3877,7 +3896,7 @@
           </Border>
 
           <!-- 只读扫描目录里的待安装候选 -->
-          <Border Grid.Row="3" Name="PluginCandidatesPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
+          <Border Grid.Row="4" Name="PluginCandidatesPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
             <StackPanel>
               <Grid Margin="0,0,0,8">
                 <Grid.ColumnDefinitions>
@@ -3944,7 +3963,7 @@
           </Border>
 
           <!-- 插件列表 -->
-          <Grid Grid.Row="4" Background="Transparent" PreviewMouseWheel="PluginListContainer_PreviewMouseWheel">
+          <Grid Grid.Row="5" Background="Transparent" PreviewMouseWheel="PluginListContainer_PreviewMouseWheel">
             <ListBox Name="PluginListBox" Background="Transparent" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="PluginListContainer_PreviewMouseWheel">
               <ListBox.Template>
                 <ControlTemplate TargetType="ListBox">

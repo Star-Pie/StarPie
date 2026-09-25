@@ -1607,7 +1607,7 @@ internal static class PluginHost
             .Select(claim => claim.ToWire())
             .ToList();
 
-    private static void NotifyPluginSetChanged()
+    internal static void NotifyPluginSetChanged()
     {
         PluginActionClaimRegistry.Rebuild(PluginRegistryStore.SnapshotEntries());
         try

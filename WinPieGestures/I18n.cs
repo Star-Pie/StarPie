@@ -2223,6 +2223,42 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("Tab4_Ms_174b4_P3", "• 🪜 【多层超额优雅回退】：当程序方案层数多于全局方案时（如程序 3 层、全局 2 层），超额层的未配置槽位自动回退继承全局方案第 1 层动作，杜绝越界与空指针异常；", "• 🪜 【多層超額優雅回退】：當程式方案層數多於全域方案時（如程式 3 層、全域 2 層），超額層的未配置槽位自動回退繼承全域方案第 1 層動作，杜絕越界與空指標例外；", "• 🪜 [Graceful Overflow Fallback]: When an app profile has more layers than the global profile (e.g. 3 vs 2), excess unconfigured slots fallback gracefully to Layer 1 of the global profile;", "• 🪜 【超過階層のフォールバック】：アプリ個別設定の階層数がグローバル設定より多い場合（例: 個別3層、全体2層）、超過した未設定スロットはグローバルの第1層へ安全にフォールバック；");
 		Add("Tab4_Ms_174b4_P4", "• ⚡ 【实时运行态切层同步】：桌面划动手势与滚轮切层时，继承动作跟随层级切换毫秒级即时重新评估与渲染。", "• ⚡ 【即時執行態切層同步】：桌面劃動手勢與滾輪切層時，繼承動作跟隨層級切換毫秒級即時重新評估與渲染。", "• ⚡ [Real-time Runtime Layer Sync]: During desktop gesture flicks or wheel-switching layers, inherited actions re-evaluate and render in milliseconds.", "• ⚡ 【実行時のリアルタイム階層同期】：ジェスチャーやホイール操作で階层を切り替える際、継承アクションをミリ秒単位で即座に再評価・レンダリング。");
 
+		// --- 官方核心插件一键引导安装 (1.8.0+) ---
+		Add("OfficialPluginNameFolder", "打开文件夹", "開啟資料夾", "Open Folder", "フォルダーを開く");
+		Add("OfficialPluginDescFolder", "打开指定目录或文件管理器", "開啟指定目錄或檔案總管", "Open specified folder or file manager", "指定フォルダーまたはファイルマネージャーを開く");
+		Add("OfficialPluginNameWebUrl", "打开网页", "開啟網頁", "Open Web URL", "Web ページを開く");
+		Add("OfficialPluginDescWebUrl", "使用默认浏览器打开指定网页链接", "使用預設瀏覽器開啟指定網頁連結", "Open URL using default browser", "既定のブラウザーで指定の Web ページを開く");
+		Add("OfficialPluginNameLaunch", "启动程序", "啟動程式", "Launch Program", "プログラム起動");
+		Add("OfficialPluginDescLaunch", "运行指定应用程序、文件或快捷方式", "執行指定應用程式、檔案或捷徑", "Launch specified app, file, or shortcut", "指定アプリ、ファイル、ショートカットを起動");
+		Add("OfficialPluginNameSystem", "系统控制", "系統控制", "System Control", "システム制御");
+		Add("OfficialPluginDescSystem", "锁屏、睡眠、关机、音量调节与窗口管理", "鎖定螢幕、睡眠、關機、音量調節與視窗管理", "Lock screen, sleep, shutdown, audio volume, and window control", "画面ロック、スリープ、シャットダウン、音量調整、ウィンドウ管理");
+		Add("OfficialPluginNameShellTool", "命令行工具", "命令列工具", "Shell Tool", "コマンドラインツール");
+		Add("OfficialPluginDescShellTool", "执行终端命令或自动化命令脚本", "執行終端命令或自動化命令指令碼", "Execute terminal commands or automation scripts", "ターミナルコマンドまたは自動化スクリプトを実行");
+
+		Add("OfficialPluginsOnboardingTitle", "安装官方核心插件", "安裝官方核心外掛", "Install Official Core Plugins", "公式コアプラグインの導入");
+		Add("OfficialPluginsOnboardingIntro", "StarPie 采用轻量化分发，核心动作已插件化并托管于官方仓库。首次进入设置建议一键安装以下 5 项官方核心插件，即可获得完整功能体验：", "StarPie 採用輕量化發佈，核心動作已外掛化並託管於官方倉庫。首次進入設定建議一鍵安裝以下 5 項官方核心外掛，即可獲得完整功能體驗：", "StarPie uses lightweight distribution with core actions modularized as official plugins. On first opening Settings, we recommend installing these 5 core plugins for the complete experience:", "StarPie は軽量配布を採用しており、コアアクションは公式プラグインとして提供されています。初回設定時に以下の 5 つの公式コアプラグインを一括インストールすることをお勧めします：");
+		Add("OfficialPluginsOnboardingSecurityHeader", "安全与权限说明", "安全與權限說明", "Security & Permissions Notice", "セキュリティと権限について");
+		Add("OfficialPluginsOnboardingSecuritySource", "官方来源：https://github.com/Star-Pie/StarPie-Official-Plugins", "官方來源：https://github.com/Star-Pie/StarPie-Official-Plugins", "Official Source: https://github.com/Star-Pie/StarPie-Official-Plugins", "公式配布元：https://github.com/Star-Pie/StarPie-Official-Plugins");
+		Add("OfficialPluginsOnboardingSecurityPerms", "所需权限：进程启动（Process）、按键模拟（InputSimulation）", "所需權限：行程啟動（Process）、按鍵模擬（InputSimulation）", "Required Permissions: Process Execution (Process), Keystroke Simulation (InputSimulation)", "必要な権限：プロセス起動（Process）、キー入力シミュレーション（InputSimulation）");
+		Add("OfficialPluginsOnboardingSecurityDesc", "插件将在进程内以 StarPie 当前权限运行，并在安装前严格校验 SHA-256 签名与文件哈希。在此确认前，不会发起任何网络请求。", "外掛將在行程內以 StarPie 目前權限執行，並在安裝前嚴格校驗 SHA-256 簽章與檔案雜湊。在此確認前，不會發起任何網路請求。", "Plugins run in-process with StarPie's current privileges and pass SHA-256 integrity verification before install. Zero network requests are made before this confirmation.", "プラグインは StarPie の現在の権限でプロセス内実行され、インストール前に SHA-256 による整合性検証が行われます。この確認前には一切のネットワーク通信は行われません。");
+		Add("OfficialPluginsOnboardingInstallBtn", "⬇️ 一键安装并启用", "⬇️ 一鍵安裝並啟用", "⬇️ Install & Enable All", "⬇️ 一括インストールして有効化");
+		Add("OfficialPluginsOnboardingLaterBtn", "暂不安装", "暫不安裝", "Not Now", "後で");
+		Add("OfficialPluginsOnboardingRetryBtn", "🔄 重试缺失项", "🔄 重試缺失項", "🔄 Retry Missing Items", "🔄 未完了の項目を再試行");
+		Add("OfficialPluginsOnboardingDoneBtn", "完成", "完成", "Done", "完了");
+		Add("OfficialPluginsOnboardingHint", "稍后也可在设置「插件与扩展」中随时安装", "稍後也可在設定「外掛與擴充」中隨時安裝", "You can also install them anytime later in Settings > Plugins", "後から設定の「プラグインと拡張」でいつでも導入できます");
+		Add("OfficialPluginsOnboardingStatusReady", "点击下方按钮即可一键下载并启用缺失的官方核心插件。", "點擊下方按鈕即可一鍵下載並啟用缺失的官方核心外掛。", "Click below to download and enable missing official core plugins in one click.", "下のボタンをクリックすると、不足している公式コアプラグインを一括導入できます。");
+		Add("OfficialPluginsOnboardingStatusFetchingCatalog", "正在获取官方插件目录...", "正在取得官方外掛目錄...", "Fetching official plugin catalog...", "公式プラグインカタログを取得しています...");
+		Add("OfficialPluginsOnboardingStatusInstallingItem", "正在下载并安装 ({0}/{1})：{2}...", "正在下載並安裝 ({0}/{1})：{2}...", "Downloading and installing ({0}/{1}): {2}...", "ダウンロードとインストール中 ({0}/{1})：{2}...");
+		Add("OfficialPluginsOnboardingAllSucceeded", "✅ 官方核心插件已全部安装并启用！", "✅ 官方核心外掛已全部安裝並啟用！", "✅ All official core plugins have been installed and enabled!", "✅ すべての公式コアプラグインがインストールされ有効化されました！");
+		Add("OfficialPluginsOnboardingPartialFailed", "安装完成 {0} 项，失败 {1} 项。详情：{2}", "安裝完成 {0} 項，失敗 {1} 項。詳情：{2}", "Completed {0} item(s), failed {1} item(s). Details: {2}", "{0} 件完了、{1} 件失敗。詳細：{2}");
+		Add("OfficialPluginsOnboardingExtraCapPromptTitle", "官方插件额外权限确认", "官方外掛額外權限確認", "Official Plugin Extra Permission Confirmation", "公式プラグインの追加権限確認");
+		Add("OfficialPluginsOnboardingExtraCapPrompt", "插件「{0}」请求了超出预告范围的权限：\n\n{1}\n\n是否允许安装该插件？", "外掛「{0}」請求了超出預告範圍的權限：\n\n{1}\n\n是否允許安裝該外掛？", "Plugin \"{0}\" requests permissions beyond the pre-disclosed scope:\n\n{1}\n\nAllow installing this plugin?", "プラグイン「{0}」は事前通知範囲外の権限を要求しています：\n\n{1}\n\nこのプラグインのインストールを許可しますか？");
+		Add("OfficialPluginsStateToInstall", "待安装", "待安裝", "To Install", "未導入");
+		Add("OfficialPluginsStateInstalled", "已安装", "已安裝", "Installed", "導入済み");
+		Add("PluginsOnboardingBannerTitle", "官方核心插件未全部安装", "官方核心外掛未全部安裝", "Official Core Plugins Incomplete", "公式コアプラグインが未完了です");
+		Add("PluginsOnboardingBannerText", "尚有 {0} 项官方核心插件未安装。安装后可使用打开文件夹、启动程序、网页跳转等完整内置动作。", "尚有 {0} 項官方核心外掛未安裝。安裝後可使用開啟資料夾、啟動程式、網頁跳轉等完整內建動作。", "{0} official core plugin(s) are not installed. Install them to restore full built-in actions like Open Folder, Launch App, and Web URL.", "公式コアプラグインが {0} 件未導入です。インストールするとフォルダーを開く、アプリ起動、Web ページなどの組み込み機能が使用可能になります。");
+		Add("PluginsOnboardingBannerButton", "⬇️ 一键安装缺失项", "⬇️ 一鍵安裝缺失項", "⬇️ Install Missing Plugins", "⬇️ 不足プラグインを一括導入");
+
 		Translations = dictionary;
 	}
 }
