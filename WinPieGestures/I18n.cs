@@ -768,12 +768,14 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("LayoutTargetSlot", "🎯 扇区独立定制", "🎯 扇區獨立自訂", "Slot Custom", "個別カスタマイズ");
 		Add("EnableSlotCustomLayout", "⚡ 启用该扇区独立个性化排版", "⚡ 啟用該扇區獨立個性化排版", "Enable custom styling for this slot", "このセクターの個別スタイルを有効化");
 		Add("ResetToGlobalLayout", "🔄 恢复继承全局默认", "🔄 恢復繼承全域預設", "Reset to Global Default", "グローバル設定に戻す");
+		Add("ResetSlotLayout", "🔄 恢复继承全局默认", "🔄 恢復繼承全域預設", "Reset to Global Default", "グローバル設定に戻す");
 		Add("SectorTextColor", "轮盘文字颜色:", "輪盤文字顏色:", "Sector Text Color:", "ホイール文字色:");
 		Add("CoreTextOptions", "中心文字", "中心文字", "Center Text & Selection Options", "中央テキストと選択時表示");
 		Add("CoreFontFamily", "中心文字字体:", "中心文字字型:", "Center Font Family:", "中央フォント:");
 		Add("SettingsUiScale", "🔍 界面缩放", "🔍 介面縮放", "🔍 UI Scale", "🔍 表示拡大率");
 		Add("SettingsUiScaleTip", "调节设置控制台界面整体缩放比例 (80% ~ 200%)，高分屏下可放大文字与控件。窗口尺寸保持不变，内容变大后由页面滚动承接；也可随时使用 Ctrl + / Ctrl - 调节，Ctrl 0 复位。", "調整設定控制台介面整體縮放比例 (80% ~ 200%)，高解析度螢幕下可放大文字與控件。視窗尺寸保持不變，內容變大後由頁面捲動承接；亦可隨時使用 Ctrl + / Ctrl - 調整，Ctrl 0 復位。", "Scale the whole settings console between 80% and 200% for better readability on high-resolution screens. The window size stays untouched - enlarged content simply scrolls. Ctrl + / Ctrl - adjusts it anytime, and Ctrl 0 resets.", "設定画面全体の表示拡大率を 80%〜200% で調整できます。高解像度画面での文字・控件の視認性向上に。ウィンドウサイズは変更されず、拡大した内容はスクロールして表示します。Ctrl + / Ctrl - ですぐに調整、Ctrl 0 でリセット。");
 		Add("CoreFontSize", "中心文字大小:", "中心文字大小:", "Center Font Size:", "中央フォントサイズ:");
+		Add("CoreFontSizeTitle", "中心文字大小:", "中心文字大小:", "Center Font Size:", "中央フォントサイズ:");
 		Add("CoreTextColorAuto", "自动适应配色主题", "自動適應配色主題", "Auto Contrast", "配色テーマに自動追従");
 		Add("CoreTextColor", "中心文字颜色:", "中心文字顏色:", "Center Text Color:", "中央文字色:");
 		Add("ClickSectorHint", "💡 提示：在右侧画布中点击任意扇区可直接选中", "💡 提示：在右側畫布中點選任意扇區可直接選取", "Tip: Click any sector on the canvas to select", "ヒント: キャンバス上の扇形をクリックして直接選択");

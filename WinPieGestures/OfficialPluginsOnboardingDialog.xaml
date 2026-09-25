@@ -120,7 +120,7 @@
         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
           <Button Name="LaterButton" Content="暂不安装" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Click="LaterButton_Click" />
           <Button Name="InstallButton" Content="⬇️ 一键安装并启用" Style="{StaticResource DialogPrimaryButtonStyle}" Click="InstallButton_Click" />
-          <Button Name="RetryButton" Content="🔄 重试缺失项" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Visibility="Collapsed" Click="RetryButton_Click" />
+          <Button Name="RetryButton" Content="🔄 重试未完成项" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Visibility="Collapsed" Click="RetryButton_Click" />
           <Button Name="DoneButton" Content="完成" Style="{StaticResource DialogPrimaryButtonStyle}" Visibility="Collapsed" Click="DoneButton_Click" />
         </StackPanel>
       </Grid>

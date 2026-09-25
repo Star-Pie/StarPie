@@ -128,12 +128,13 @@ internal static class OfficialPluginClient
         OfficialPluginModule module,
         Func<string, List<string>, Task<bool>>? extraCapabilityPrompter,
         IReadOnlyCollection<string>? approvedCapabilities,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool? forceEnable = null)
     {
         if (module == null) return new OfficialPluginInstallResult { Error = "官方插件条目为空。" };
 
         PluginInstance? previous = PluginHost.Find(module.Id);
-        bool enableAfterInstall = previous?.Entry.Enabled ?? true;
+        bool enableAfterInstall = forceEnable ?? (previous?.Entry.Enabled ?? true);
         bool preloadAfterInstall = previous?.Entry.Preload ?? false;
 
         string tempRoot = Path.Combine(Path.GetTempPath(), "StarPie-OfficialPlugin-" + Guid.NewGuid().ToString("N"));
