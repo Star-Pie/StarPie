@@ -2251,7 +2251,18 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("OfficialPluginsOnboardingStatusReady", "点击下方按钮即可一键下载并启用缺失的官方核心插件。", "點擊下方按鈕即可一鍵下載並啟用缺失的官方核心外掛。", "Click below to download and enable missing official core plugins in one click.", "下のボタンをクリックすると、不足している公式コアプラグインを一括導入できます。");
 		Add("OfficialPluginsOnboardingStatusFetchingCatalog", "正在获取官方插件目录...", "正在取得官方外掛目錄...", "Fetching official plugin catalog...", "公式プラグインカタログを取得しています...");
 		Add("OfficialPluginsOnboardingStatusInstallingItem", "正在下载并安装 ({0}/{1})：{2}...", "正在下載並安裝 ({0}/{1})：{2}...", "Downloading and installing ({0}/{1}): {2}...", "ダウンロードとインストール中 ({0}/{1})：{2}...");
+		Add("OfficialPluginsOnboardingStatusEnablingItem", "正在启用 ({0}/{1})：{2}...", "正在啟用 ({0}/{1})：{2}...", "Enabling ({0}/{1}): {2}...", "有効化中 ({0}/{1})：{2}...");
 		Add("OfficialPluginsOnboardingStatusCancelling", "正在取消安装，请稍候...", "正在取消安裝，請稍候...", "Cancelling installation, please wait...", "インストールをキャンセルしています。お待ちください...");
+		Add("OfficialPluginsOnboardingStatusCancelled", "安装已取消。", "安裝已取消。", "Installation cancelled.", "インストールがキャンセルされました。");
+		Add("OfficialPluginsOnboardingStatusItemEnableSuccess", "[{0}] 启用成功", "[{0}] 啟用成功", "[{0}] enabled successfully", "[{0}] 有効化に成功しました");
+		Add("OfficialPluginsOnboardingStatusItemEnableFailed", "[{0}] 启用失败：{1}", "[{0}] 啟用失敗：{1}", "[{0}] enable failed: {1}", "[{0}] 有効化に失敗しました：{1}");
+		Add("OfficialPluginsOnboardingStatusItemInstallSuccess", "[{0}] 安装并启用成功", "[{0}] 安裝並啟用成功", "[{0}] installed and enabled successfully", "[{0}] インストールと有効化に成功しました");
+		Add("OfficialPluginsOnboardingStatusItemDetail", "[{0}] {1}", "[{0}] {1}", "[{0}] {1}", "[{0}] {1}");
+		Add("OfficialPluginsOnboardingUnknownReason", "未知原因", "未知原因", "Unknown reason", "不明な原因");
+		Add("OfficialPluginsOnboardingUnknownError", "未知错误", "未知錯誤", "Unknown error", "不明なエラー");
+		Add("OfficialPluginsOnboardingCatalogItemNotFound", "官方目录中未找到插件 {0}。", "官方目錄中未找到外掛 {0}。", "Plugin {0} was not found in the official catalog.", "公式カタログにプラグイン {0} が見つかりませんでした。");
+		Add("OfficialPluginsOnboardingAlreadyRunning", "已有官方插件批量安装正在进行中，请勿重复操作。", "已有官方外掛批量安裝正在進行中，請勿重複操作。", "Official plugin batch installation is already in progress.", "公式プラグインの一括インストールが既に進行中です。");
+		Add("OfficialPluginsOnboardingCatalogEmpty", "获取到的官方插件目录为空或解析失败。", "取得的官方外掛目錄為空或解析失敗。", "The fetched official plugin catalog is empty or failed to parse.", "取得した公式プラグインカタログが空であるか、解析に失敗しました。");
 		Add("OfficialPluginsOnboardingAllSucceeded", "✅ 5 项官方核心插件已全部安装并启用！", "✅ 5 項官方核心外掛已全部安裝並啟用！", "✅ All 5 official core plugins have been installed and enabled!", "✅ 5 つの公式コアプラグインがすべてインストールされ有効化されました！");
 		Add("OfficialPluginsOnboardingPartialFailed", "安装完成 {0} 项，失败 {1} 项。详情：{2}", "安裝完成 {0} 項，失敗 {1} 項。詳情：{2}", "Completed {0} item(s), failed {1} item(s). Details: {2}", "{0} 件完了、{1} 件失敗。詳細：{2}");
 		Add("OfficialPluginsOnboardingSummaryWithDisabled", "已成功启用 {0} 项官方核心插件，另有 {1} 项原本被停用的插件已尊重您的设置保持停用。", "已成功啟用 {0} 項官方核心外掛，另有 {1} 項原本被停用的外掛已尊重您的設定保持停用。", "Successfully enabled {0} official core plugin(s); {1} previously disabled plugin(s) were kept disabled per your preferences.", "{0} 件の公式コアプラグインを有効化しました（以前無効化されていた {1} 件は設定を尊重して無効のまま保持）。");

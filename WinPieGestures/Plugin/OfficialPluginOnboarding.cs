@@ -378,7 +378,7 @@ internal static class OfficialPluginOnboarding
         // 重入防护
         if (Interlocked.CompareExchange(ref _isInstalling, 1, 0) != 0)
         {
-            throw new InvalidOperationException("已有官方插件批量安装正在进行中，请勿重复操作。");
+            throw new InvalidOperationException(I18n.T("OfficialPluginsOnboardingAlreadyRunning"));
         }
 
         var report = new OfficialPluginBatchInstallReport();
@@ -489,7 +489,7 @@ internal static class OfficialPluginOnboarding
                     TotalCount = totalToProcess,
                     CompletedCount = completed,
                     CurrentPluginId = id,
-                    Message = I18n.TF("OfficialPluginsOnboardingStatusInstallingItem", completed + 1, totalToProcess, pluginName)
+                    Message = I18n.TF("OfficialPluginsOnboardingStatusEnablingItem", completed + 1, totalToProcess, pluginName)
                 });
 
                 bool enabled = enabler(id, out string enableError);
@@ -506,7 +506,7 @@ internal static class OfficialPluginOnboarding
                 }
                 else
                 {
-                    string reason = string.IsNullOrWhiteSpace(enableError) ? "未知原因" : enableError;
+                    string reason = string.IsNullOrWhiteSpace(enableError) ? I18n.T("OfficialPluginsOnboardingUnknownReason") : enableError;
                     string guidance = I18n.TF("OfficialPluginsOnboardingEnableFailedGuidanceWithReason", pluginName, reason);
                     report.InstalledButEnableFailedPlugins[id] = guidance;
                     report.ItemResults[id] = new OfficialPluginItemResult
@@ -525,8 +525,8 @@ internal static class OfficialPluginOnboarding
                     CompletedCount = completed,
                     CurrentPluginId = id,
                     Message = enabled
-                        ? $"[{pluginName}] 启用成功"
-                        : $"[{pluginName}] 启用失败：{report.InstalledButEnableFailedPlugins[id]}"
+                        ? I18n.TF("OfficialPluginsOnboardingStatusItemEnableSuccess", pluginName)
+                        : I18n.TF("OfficialPluginsOnboardingStatusItemEnableFailed", pluginName, report.InstalledButEnableFailedPlugins[id])
                 });
             }
 
@@ -550,7 +550,7 @@ internal static class OfficialPluginOnboarding
 
                 if (catalog?.Modules == null)
                 {
-                    throw new InvalidOperationException("获取到的官方插件 catalog 为空或解析失败。");
+                    throw new InvalidOperationException(I18n.T("OfficialPluginsOnboardingCatalogEmpty"));
                 }
 
                 var moduleMap = catalog.Modules.ToDictionary(m => m.Id, StringComparer.OrdinalIgnoreCase);
@@ -564,7 +564,7 @@ internal static class OfficialPluginOnboarding
 
                     if (!moduleMap.TryGetValue(id, out OfficialPluginModule? module) || module == null)
                     {
-                        string err = $"官方 catalog 中未找到插件 {id}。";
+                        string err = I18n.TF("OfficialPluginsOnboardingCatalogItemNotFound", id);
                         report.FailedPlugins[id] = err;
                         report.ItemResults[id] = new OfficialPluginItemResult
                         {
@@ -689,8 +689,9 @@ internal static class OfficialPluginOnboarding
                         }
                         else
                         {
+                            string fallbackReason = I18n.T("OfficialPluginsOnboardingUnknownError");
                             string guidance = string.IsNullOrWhiteSpace(installResult.Error)
-                                ? I18n.TF("OfficialPluginsOnboardingInstallFailedGuidance", module.Name, "未知错误")
+                                ? I18n.TF("OfficialPluginsOnboardingInstallFailedGuidance", module.Name, fallbackReason)
                                 : installResult.Error;
                             report.FailedPlugins[id] = guidance;
                             report.ItemResults[id] = new OfficialPluginItemResult
@@ -722,8 +723,8 @@ internal static class OfficialPluginOnboarding
                         CompletedCount = completed,
                         CurrentPluginId = id,
                         Message = report.ItemResults.TryGetValue(id, out var itemRes) && itemRes.Status == OfficialPluginStatusKind.NewlyInstalledAndEnabled
-                            ? $"[{module.Name}] 安装并启用成功"
-                            : $"[{module.Name}] {report.ItemResults[id].ErrorOrGuidance}"
+                            ? I18n.TF("OfficialPluginsOnboardingStatusItemInstallSuccess", module.Name)
+                            : I18n.TF("OfficialPluginsOnboardingStatusItemDetail", module.Name, report.ItemResults[id].ErrorOrGuidance ?? "")
                     });
                 }
             }

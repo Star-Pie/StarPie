@@ -343,7 +343,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
             AppLogger.LogInfo("[plugin] 官方插件安装已取消。");
             if (IsLoaded && !_isCancellingAndClosing)
             {
-                StatusTextBlock.Text = "安装已取消。";
+                StatusTextBlock.Text = I18n.T("OfficialPluginsOnboardingStatusCancelled");
                 InstallButton.Visibility = Visibility.Collapsed;
                 RetryButton.Visibility = Visibility.Visible;
                 RetryButton.IsEnabled = true;

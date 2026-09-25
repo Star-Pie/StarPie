@@ -559,9 +559,20 @@ public class Program
                 "OfficialPluginsOnboardingRetryBtn", "OfficialPluginsOnboardingDoneBtn",
                 "OfficialPluginsOnboardingHint", "OfficialPluginsOnboardingStatusReady",
                 "OfficialPluginsOnboardingStatusFetchingCatalog", "OfficialPluginsOnboardingStatusInstallingItem",
+                "OfficialPluginsOnboardingStatusEnablingItem", "OfficialPluginsOnboardingStatusCancelling",
+                "OfficialPluginsOnboardingStatusCancelled", "OfficialPluginsOnboardingStatusItemEnableSuccess",
+                "OfficialPluginsOnboardingStatusItemEnableFailed", "OfficialPluginsOnboardingStatusItemInstallSuccess",
+                "OfficialPluginsOnboardingStatusItemDetail", "OfficialPluginsOnboardingUnknownReason",
+                "OfficialPluginsOnboardingUnknownError", "OfficialPluginsOnboardingCatalogItemNotFound",
+                "OfficialPluginsOnboardingAlreadyRunning", "OfficialPluginsOnboardingCatalogEmpty",
                 "OfficialPluginsOnboardingAllSucceeded", "OfficialPluginsOnboardingPartialFailed",
+                "OfficialPluginsOnboardingSummaryWithDisabled", "OfficialPluginsOnboardingEnableFailedGuidance",
+                "OfficialPluginsOnboardingEnableFailedGuidanceWithReason", "OfficialPluginsOnboardingInstallFailedGuidance",
+                "OfficialPluginsOnboardingOriginallyDisabledNotice", "OfficialPluginsOnboardingPermissionRejectedCatalog",
+                "OfficialPluginsOnboardingPermissionRejectedPackage", "OfficialPluginsOnboardingExtraCapPackagePrompt",
                 "OfficialPluginsOnboardingExtraCapPromptTitle", "OfficialPluginsOnboardingExtraCapPrompt",
-                "OfficialPluginsStateToInstall", "PluginsOnboardingBannerTitle",
+                "OfficialPluginsStateToInstall", "OfficialPluginsStateInstalled",
+                "OfficialPluginsStateInstalledDisabled", "PluginsOnboardingBannerTitle",
                 "PluginsOnboardingBannerText", "PluginsOnboardingBannerButton"
             };
 
@@ -582,9 +593,17 @@ public class Program
                     }
                 }
                 if (!allValid) break;
+
+                // 验证新增词条带占位符的格式化行为
+                string enablingStr = I18n.TF("OfficialPluginsOnboardingStatusEnablingItem", 1, 5, "TestPlugin");
+                Assert(!string.IsNullOrWhiteSpace(enablingStr) && !enablingStr.Contains("{0}") && !enablingStr.Contains("{1}") && !enablingStr.Contains("{2}"),
+                    $"9.2 StatusEnablingItem formatted properly in {lang}");
+                string cancelledStr = I18n.T("OfficialPluginsOnboardingStatusCancelled");
+                Assert(!string.IsNullOrWhiteSpace(cancelledStr) && cancelledStr != "OfficialPluginsOnboardingStatusCancelled",
+                    $"9.3 StatusCancelled translated properly in {lang}");
             }
 
-            Assert(allValid, "9.1 All onboarding localization keys defined across zh-CN, zh-TW, en, ja", failureMsg);
+            Assert(allValid, "9.1 All 54 onboarding localization keys defined across zh-CN, zh-TW, en, ja", failureMsg);
 
             // Restore default language
             I18n.SetLanguage("zh-CN");
@@ -977,42 +996,55 @@ public class Program
             // 3. 用户点击「重试未完成项」- 分支 2A：真实 PluginHost.Enable 失败分支
             //    - 严格验证：本地重试不得依赖网络（catalogFetcher 若被调用直接抛异常）
             //    - 严格验证：不得调用 moduleInstaller 进行下载覆盖或升级
+            //    - 严格验证：提示文案必须显示“正在启用”，绝不得显示“正在下载并安装”
             //    - 严格验证：走真实 PluginHost.Enable 分支，捕获真实启用失败原因
             //    - 严格验证：保留用户主动停用的插件
+            var pass2aMessages = new System.Collections.Concurrent.ConcurrentQueue<string>();
             var reportPass2A = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
                 catalogFetcher: _ => throw new InvalidOperationException("网络不应被调用！本地重试严禁访问网络目录。"),
                 moduleInstaller: (_, _) => throw new InvalidOperationException("安装器不应被调用！本地重试严禁下载或覆盖插件。"),
+                progress: new Progress<OfficialPluginBatchProgress>(p => pass2aMessages.Enqueue(p.Message)),
                 localEnabler: null, // 使用真实 PluginHost.Enable，无 DLL 必然返回真实失败
                 preExistingDisabledPluginIds: preExistingDisabled
             );
+            await Task.Delay(50);
+
+            // 回归断言：本地重试提示必须为“正在启用”，不得包含“下载”或“download”
+            bool pass2aHasDownload = pass2aMessages.Any(m => m.Contains("下载") || m.Contains("下載") || m.Contains("download", StringComparison.OrdinalIgnoreCase) || m.Contains("ダウンロード"));
+            Assert(!pass2aHasDownload, "15.8 Local retry messages in Pass 2A do NOT contain '下载' / 'download'");
+            bool pass2aHasEnabling = pass2aMessages.Any(m => m.Contains("正在启用"));
+            Assert(pass2aHasEnabling, "15.9 Local retry message in Pass 2A contains '正在启用'");
 
             Assert(reportPass2A.InstalledButEnableFailedPlugins.ContainsKey("starpie.builtin.system"),
-                "15.8 System plugin remains in InstalledButEnableFailed in Pass 2A");
+                "15.10 System plugin remains in InstalledButEnableFailed in Pass 2A");
             string failureGuidance = reportPass2A.InstalledButEnableFailedPlugins["starpie.builtin.system"];
             Assert(!string.IsNullOrWhiteSpace(failureGuidance),
-                "15.9 Detailed guidance is reported for local enablement failure in Pass 2A");
+                "15.11 Detailed guidance is reported for local enablement failure in Pass 2A");
             Assert(failureGuidance.Contains("启用失败："),
-                "15.10 Guidance contains specific failure reason prefix", $"actual: {failureGuidance}");
+                "15.12 Guidance contains specific failure reason prefix", $"actual: {failureGuidance}");
             Assert(reportPass2A.FailureCount == 1,
-                "15.11 Pass 2A failure count is 1");
+                "15.13 Pass 2A failure count is 1");
             Assert(reportPass2A.SucceededPluginIds.Count == 0,
-                "15.12 Pass 2A succeeded count is 0");
+                "15.14 Pass 2A succeeded count is 0");
             Assert(reportPass2A.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
-                "15.13 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2A");
+                "15.15 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2A");
             Assert(reportPass2A.AlreadyInstalledAndEnabledPluginIds.Count == 3,
-                "15.14 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
+                "15.16 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
 
             var folderAfterPass2A = PluginRegistryStore.FindEntry("starpie.builtin.folder");
             Assert(folderAfterPass2A != null && folderAfterPass2A.Enabled == false,
-                "15.15 Folder remains strictly disabled after Pass 2A");
+                "15.17 Folder remains strictly disabled after Pass 2A");
 
             // 4. 用户点击「重试未完成项」- 分支 2B：本地启用成功分支
             //    - 严格验证：离线环境重试成功，完全不依赖网络与安装器
+            //    - 严格验证：提示文案包含“正在启用”，绝不包含“下载”，成功时显示“启用成功”
             //    - 严格验证：成功后状态正确更新为 NewlyInstalledAndEnabled
             //    - 严格验证：用户原先停用的插件依然严格保留停用
+            var pass2bMessages = new System.Collections.Concurrent.ConcurrentQueue<string>();
             var reportPass2B = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
                 catalogFetcher: _ => throw new InvalidOperationException("网络不应被调用！本地重试严禁访问网络目录。"),
                 moduleInstaller: (_, _) => throw new InvalidOperationException("安装器不应被调用！本地重试严禁下载或覆盖插件。"),
+                progress: new Progress<OfficialPluginBatchProgress>(p => pass2bMessages.Enqueue(p.Message)),
                 localEnabler: (string id, out string err) =>
                 {
                     err = "";
@@ -1028,29 +1060,72 @@ public class Program
                 },
                 preExistingDisabledPluginIds: preExistingDisabled
             );
+            await Task.Delay(50);
+
+            bool pass2bHasDownload = pass2bMessages.Any(m => m.Contains("下载") || m.Contains("下載") || m.Contains("download", StringComparison.OrdinalIgnoreCase) || m.Contains("ダウンロード"));
+            Assert(!pass2bHasDownload, "15.18 Local retry messages in Pass 2B do NOT contain '下载' / 'download'");
+            bool pass2bHasEnabling = pass2bMessages.Any(m => m.Contains("正在启用"));
+            Assert(pass2bHasEnabling, "15.19 Local retry message in Pass 2B contains '正在启用'");
+            bool pass2bHasSuccess = pass2bMessages.Any(m => m.Contains("启用成功"));
+            Assert(pass2bHasSuccess, "15.20 Local retry message in Pass 2B contains '启用成功'");
 
             Assert(reportPass2B.SucceededPluginIds.Contains("starpie.builtin.system"),
-                "15.16 System plugin succeeded locally in Pass 2B");
+                "15.21 System plugin succeeded locally in Pass 2B");
             Assert(reportPass2B.FailureCount == 0,
-                "15.17 FailureCount is 0 after successful local retry");
+                "15.22 FailureCount is 0 after successful local retry");
             Assert(reportPass2B.InstalledButEnableFailedPlugins.Count == 0,
-                "15.18 InstalledButEnableFailedPlugins is empty after successful local retry");
+                "15.23 InstalledButEnableFailedPlugins is empty after successful local retry");
             Assert(reportPass2B.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
-                "15.19 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2B");
+                "15.24 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2B");
             Assert(reportPass2B.AlreadyInstalledAndEnabledPluginIds.Count == 3,
-                "15.20 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
+                "15.25 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
 
             int totalActive = reportPass2B.SucceededPluginIds.Count + reportPass2B.AlreadyInstalledAndEnabledPluginIds.Count;
             Assert(totalActive == 4,
-                "15.21 Total active official plugins is 4 (3 previous + 1 retried)");
+                "15.26 Total active official plugins is 4 (3 previous + 1 retried)");
 
             var folderAfterPass2B = PluginRegistryStore.FindEntry("starpie.builtin.folder");
             Assert(folderAfterPass2B != null && folderAfterPass2B.Enabled == false,
-                "15.22 Folder plugin remains strictly disabled after retry, never mistakenly enabled");
+                "15.27 Folder plugin remains strictly disabled after retry, never mistakenly enabled");
 
             var systemAfterPass2B = PluginRegistryStore.FindEntry("starpie.builtin.system");
             Assert(systemAfterPass2B != null && systemAfterPass2B.Enabled == true,
-                "15.23 System plugin is now active and enabled in registry");
+                "15.28 System plugin is now active and enabled in registry");
+
+            // 5. 跨语言验证：en 和 ja 下本地重试提示不含 download / ダウンロード，并包含对应语言 Enabling / 有効化中
+            var systemForEn = PluginRegistryStore.FindEntry("starpie.builtin.system");
+            if (systemForEn != null) { systemForEn.Enabled = false; PluginRegistryStore.UpsertEntry(systemForEn); }
+
+            I18n.SetLanguage("en");
+            var pass2cMessagesEn = new System.Collections.Concurrent.ConcurrentQueue<string>();
+            await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => throw new InvalidOperationException("Offline"),
+                moduleInstaller: (_, _) => throw new InvalidOperationException("Offline"),
+                progress: new Progress<OfficialPluginBatchProgress>(p => pass2cMessagesEn.Enqueue(p.Message)),
+                localEnabler: (string id, out string err) => { err = ""; return true; },
+                preExistingDisabledPluginIds: preExistingDisabled
+            );
+            await Task.Delay(50);
+            Assert(pass2cMessagesEn.Any(m => m.Contains("Enabling")), "15.29 English retry message contains 'Enabling'");
+            Assert(!pass2cMessagesEn.Any(m => m.Contains("download", StringComparison.OrdinalIgnoreCase)), "15.30 English retry message does not contain 'download'");
+
+            var systemForJa = PluginRegistryStore.FindEntry("starpie.builtin.system");
+            if (systemForJa != null) { systemForJa.Enabled = false; PluginRegistryStore.UpsertEntry(systemForJa); }
+
+            I18n.SetLanguage("ja");
+            var pass2cMessagesJa = new System.Collections.Concurrent.ConcurrentQueue<string>();
+            await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => throw new InvalidOperationException("Offline"),
+                moduleInstaller: (_, _) => throw new InvalidOperationException("Offline"),
+                progress: new Progress<OfficialPluginBatchProgress>(p => pass2cMessagesJa.Enqueue(p.Message)),
+                localEnabler: (string id, out string err) => { err = ""; return true; },
+                preExistingDisabledPluginIds: preExistingDisabled
+            );
+            await Task.Delay(50);
+            Assert(pass2cMessagesJa.Any(m => m.Contains("有効化中")), "15.31 Japanese retry message contains '有効化中'");
+            Assert(!pass2cMessagesJa.Any(m => m.Contains("ダウンロード") || m.Contains("download", StringComparison.OrdinalIgnoreCase)), "15.32 Japanese retry message does not contain 'ダウンロード'");
+
+            I18n.SetLanguage("zh-CN");
         }
 
         // -------------------------------------------------------------
