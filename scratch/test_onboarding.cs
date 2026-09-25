@@ -1363,42 +1363,43 @@ public class Program
                 Assert(testDialog != null, "18.2 OfficialPluginsOnboardingDialog constructs cleanly without brush cast exception");
                 Assert(!testDialog!.HasBeenDisplayed, "18.3 Newly constructed dialog has HasBeenDisplayed == false");
 
-                // 18.4 模拟弹窗在未实际展示时因异常或退出而关闭（OnClosing 被触发）
-                // 新代码保障：因为未成功渲染展示，绝对不得消耗一次性提示状态
                 var closingMethod = typeof(OfficialPluginsOnboardingDialog).GetMethod("OnClosing", BindingFlags.Instance | BindingFlags.NonPublic);
+                var contentRenderedMethod = typeof(OfficialPluginsOnboardingDialog).GetMethod("OnContentRendered", BindingFlags.Instance | BindingFlags.NonPublic);
                 var cancelArgs = new CancelEventArgs();
+
+                // 18.4 模拟仅触发 Loaded（可能发生于元素布局装载阶段，尚未完成视觉首帧 ContentRendered）
+                // 若此时发生异常或窗口被强行关闭，由于尚未真正对用户呈现，绝对不得消耗首次提示！
+                testDialog.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.FrameworkElement.LoadedEvent));
+
+                Assert(!testDialog.HasBeenDisplayed,
+                    "18.4 Loaded event alone must NOT set HasBeenDisplayed = true (must wait for ContentRendered)");
+
                 closingMethod?.Invoke(testDialog, new object[] { cancelArgs });
 
                 Assert(!ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
-                    "18.4 Closing an un-displayed dialog does NOT mark HasPromptedOfficialPluginsOnboarding = true");
+                    "18.5 Closing after Loaded but before ContentRendered must NOT consume prompt state");
 
-                // 18.5 旧代码逻辑缺陷对比：旧代码中 OnClosing 无条件调用 MarkPrompted
-                // 若按旧逻辑执行，将导致提示被错误吞没
-                OfficialPluginOnboarding.MarkPrompted();
-                Assert(ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
-                    "18.5 Contrast check: old unconditional OnClosing logic would mistakenly consume prompt");
+                // 18.6 模拟 ContentRendered 成功触发（首帧渲染完毕，正式展示给用户）
+                contentRenderedMethod?.Invoke(testDialog, new object[] { EventArgs.Empty });
 
-                // 重置为未提示状态
-                ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding = false;
+                Assert(testDialog.HasBeenDisplayed,
+                    "18.6 OnContentRendered marks HasBeenDisplayed = true");
 
-                // 18.6 验证真实成功展示且用户关闭时，正确消耗提示状态
-                var displayedField = typeof(OfficialPluginsOnboardingDialog).GetField("_hasBeenDisplayed", BindingFlags.Instance | BindingFlags.NonPublic);
-                displayedField?.SetValue(testDialog, true);
-
+                // 18.7 用户在已展示窗口上操作并关闭，正确消耗提示状态
                 closingMethod?.Invoke(testDialog, new object[] { cancelArgs });
 
                 Assert(ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
-                    "18.6 Displayed dialog correctly consumes prompt upon user closing");
+                    "18.7 Displayed and rendered dialog correctly consumes prompt upon closing");
             });
 
-            // 18.7 横幅按钮打不开弹窗时的错误提示多语言完整性
+            // 18.8 横幅按钮打不开弹窗时的错误提示多语言完整性
             string[] testLangs = { "zh-CN", "zh-TW", "en", "ja" };
             foreach (string lang in testLangs)
             {
                 I18n.SetLanguage(lang);
                 string errText = I18n.TF("PluginsOnboardingOpenDialogFailed", "SampleErrorDetail");
                 Assert(!string.IsNullOrWhiteSpace(errText) && !errText.Contains("{0}") && errText.Contains("SampleErrorDetail"),
-                    $"18.7 PluginsOnboardingOpenDialogFailed properly localized in {lang}");
+                    $"18.8 PluginsOnboardingOpenDialogFailed properly localized in {lang}");
             }
             I18n.SetLanguage("zh-CN");
         }

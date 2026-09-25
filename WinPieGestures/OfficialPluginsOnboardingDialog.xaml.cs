@@ -31,8 +31,6 @@ public partial class OfficialPluginsOnboardingDialog : Window
         AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig?.AppTheme ?? "System");
         _preExistingDisabledIds = new HashSet<string>(OfficialPluginOnboarding.GetOriginallyDisabledPluginIds(), StringComparer.OrdinalIgnoreCase);
 
-        Loaded += (s, e) => _hasBeenDisplayed = true;
-
         ApplyLocalization();
         PopulatePluginItems();
 
