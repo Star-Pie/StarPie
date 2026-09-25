@@ -1,6 +1,22 @@
-import re, sys, subprocess, pathlib
+"""
+StarPie 国际化词条完整性静态护栏。
+用于检查：
+1. 词条定义语法（兼容历史遗留的 legacy 字典语法与扁平 Add 语法）；
+2. 简中文案非空、语言分支齐全度（ZhCn, ZhTw, En, Ja）；
+3. 代码实际引用键是否全部已定义（undef 必须为 0）；
+4. 相对基线的新增键及其占位符；
+5. 跨语言占位符集合一致性（少一个 {0} 或编号不一律报错）；
+6. 检查非字面量 TF 实参调用；
+7. SettingsWindow.xaml 具名控件泄漏复查；
+8. 官方插件首次引导（Onboarding）词条专项目录完整性及 4 语系覆盖与占位符一致性。
+"""
 
-# Windows 默认 GBK 控制台会把中文检查结果显示成乱码；统一为 UTF-8，便于本机和 CI 诊断。
+import os
+import pathlib
+import re
+import subprocess
+import sys
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 if hasattr(sys.stderr, "reconfigure"):
@@ -8,7 +24,12 @@ if hasattr(sys.stderr, "reconfigure"):
 
 root = pathlib.Path(__file__).resolve().parent.parent
 src = root / "WinPieGestures"
-i18n = (src / "I18n.cs").read_text(encoding="utf-8")
+i18n_path = src / "I18n.cs"
+if not i18n_path.exists():
+    print(f"Error: {i18n_path} not found")
+    sys.exit(1)
+
+i18n = i18n_path.read_text(encoding="utf-8")
 
 # 1) 解析词条定义
 #
@@ -123,7 +144,7 @@ for k in new_keys:
 # 4) 占位符一致性（对应 ui-i18n-bulk-wiring 坑 19 / 坑 20）
 #    ① 同一个键的 4 种语言，占位符集合必须完全一致：
 #       少一个 {0} 在 C# 里不报错也不抛异常，只是那一段信息静默消失。
-#    ② 占位符「实参本身有没有接 i18n」这件事**机器查不了**，本脚本刻意不假装能查：
+#    ② 占位符「实参本身有没有接 i18n」这件事机器查不了，本脚本刻意不假装能查：
 #       真正会出问题的形态是实参来自一个返回硬编码中文的方法（如 DescribeFailure()），
 #       而字面量实参含中文只是个几乎不成立的边角。这里只列「实参不是字面量」的调用点
 #       供人工顺着来源追，不做任何自动判定。
@@ -165,3 +186,91 @@ for name, text in named_cjk:
 print(f"\n插件页仍漏接的具名控件: {len(leaks)}")
 for n, t in leaks:
     print(f"  {n}: {t}")
+
+# 6) 官方插件首次引导功能词条专项检查
+ONBOARDING_REQUIRED_KEYS = [
+    "OfficialPluginsOnboardingTitle",
+    "OfficialPluginsOnboardingIntro",
+    "OfficialPluginsOnboardingSecurityHeader",
+    "OfficialPluginsOnboardingSecuritySource",
+    "OfficialPluginsOnboardingSecurityPerms",
+    "OfficialPluginsOnboardingSecurityDesc",
+    "OfficialPluginsOnboardingInstallBtn",
+    "OfficialPluginsOnboardingLaterBtn",
+    "OfficialPluginsOnboardingRetryBtn",
+    "OfficialPluginsOnboardingDoneBtn",
+    "OfficialPluginsOnboardingHint",
+    "OfficialPluginsOnboardingStatusReady",
+    "OfficialPluginsOnboardingStatusFetchingCatalog",
+    "OfficialPluginsOnboardingStatusInstallingItem",
+    "OfficialPluginsOnboardingStatusEnablingItem",
+    "OfficialPluginsOnboardingStatusCancelling",
+    "OfficialPluginsOnboardingStatusCancelled",
+    "OfficialPluginsOnboardingStatusItemEnableSuccess",
+    "OfficialPluginsOnboardingStatusItemEnableFailed",
+    "OfficialPluginsOnboardingStatusItemInstallSuccess",
+    "OfficialPluginsOnboardingStatusItemDetail",
+    "OfficialPluginsOnboardingUnknownReason",
+    "OfficialPluginsOnboardingUnknownError",
+    "OfficialPluginsOnboardingCatalogItemNotFound",
+    "OfficialPluginsOnboardingAlreadyRunning",
+    "OfficialPluginsOnboardingCatalogEmpty",
+    "OfficialPluginsOnboardingAllSucceeded",
+    "OfficialPluginsOnboardingPartialFailed",
+    "OfficialPluginsOnboardingSummaryWithDisabled",
+    "OfficialPluginsOnboardingEnableFailedGuidance",
+    "OfficialPluginsOnboardingEnableFailedGuidanceWithReason",
+    "OfficialPluginsOnboardingInstallFailedGuidance",
+    "OfficialPluginsOnboardingOriginallyDisabledNotice",
+    "OfficialPluginsOnboardingPermissionRejectedCatalog",
+    "OfficialPluginsOnboardingPermissionRejectedPackage",
+    "OfficialPluginsOnboardingExtraCapPackagePrompt",
+    "OfficialPluginsOnboardingExtraCapPromptTitle",
+    "OfficialPluginsOnboardingExtraCapPrompt",
+    "OfficialPluginsStateToInstall",
+    "OfficialPluginsStateInstalled",
+    "OfficialPluginsStateInstalledDisabled",
+    "PluginsOnboardingBannerTitle",
+    "PluginsOnboardingBannerText",
+    "PluginsOnboardingBannerButton",
+    "PluginsOnboardingOpenDialogFailed",
+    "OfficialPluginNameFolder",
+    "OfficialPluginDescFolder",
+    "OfficialPluginNameWebUrl",
+    "OfficialPluginDescWebUrl",
+    "OfficialPluginNameLaunch",
+    "OfficialPluginDescLaunch",
+    "OfficialPluginNameSystem",
+    "OfficialPluginDescSystem",
+    "OfficialPluginNameShellTool",
+    "OfficialPluginDescShellTool",
+]
+
+print(f"\n6) 官方插件首次引导词条专项检查 ({len(ONBOARDING_REQUIRED_KEYS)} 个键)...")
+onboarding_errors = []
+for req_key in ONBOARDING_REQUIRED_KEYS:
+    if req_key not in defs:
+        onboarding_errors.append(f"缺失键定义: {req_key}")
+        continue
+    key_langs = defs[req_key]
+    for lang in LANGS:
+        if lang not in key_langs or not key_langs[lang] or key_langs[lang] in ('""', "''"):
+            onboarding_errors.append(f"键 {req_key} 缺少语言 {lang} 的翻译或为空")
+    ph_sets = {l: tuple(sorted(set(re.findall(r"\{(\d+)\}", key_langs.get(l, ""))))) for l in LANGS if l in key_langs}
+    if len(set(ph_sets.values())) > 1:
+        onboarding_errors.append(f"键 {req_key} 占位符跨语言不一致: {ph_sets}")
+
+if onboarding_errors:
+    print(f"  ❌ 引导功能专项检查失败 ({len(onboarding_errors)} 个错误):")
+    for err in onboarding_errors:
+        print(f"    - {err}")
+else:
+    print(f"  ✅ 引导功能专项检查全部通过！所有 {len(ONBOARDING_REQUIRED_KEYS)} 个词条完整定义且 4 语系占位符一致。")
+
+# 7) 退出判定
+critical_errors = len(undef) + len(ph_mismatch) + len(missing) + len(onboarding_errors)
+if critical_errors > 0:
+    print(f"\n[FAIL] 存在 {critical_errors} 项全局 i18n 严重缺陷。")
+    sys.exit(1)
+else:
+    print("\n[PASS] 全局 i18n 检查与官方插件引导专项检查全部通过。")

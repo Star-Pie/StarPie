@@ -1,0 +1,129 @@
+<Window x:Class="WinPieGestures.OfficialPluginsOnboardingDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="StarPie - 官方核心插件"
+        Icon="app_icon.ico"
+        Width="520"
+        SizeToContent="Height"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        FontFamily="Segoe UI, Microsoft YaHei, PingFang SC"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+  <FrameworkElement.Resources>
+    <ResourceDictionary>
+      <Style x:Key="DialogButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="Padding" Value="14,0" />
+        <Setter Property="FrameworkElement.Cursor" Value="Hand" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter Value="{DynamicResource ButtonHoverBgBrush}" Property="Background" />
+                  <Setter Value="{DynamicResource AccentPrimaryBrush}" Property="BorderBrush" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter Value="{DynamicResource ItemHoverBrush}" Property="Background" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+      <Style x:Key="DialogPrimaryButtonStyle" TargetType="{x:Type Button}" BasedOn="{StaticResource DialogButtonStyle}">
+        <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type Button}">
+              <Border Name="border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="UIElement.IsMouseOver" Value="True">
+                  <Setter Value="{DynamicResource AccentHoverBrush}" Property="Background" />
+                  <Setter Value="{DynamicResource AccentHoverBrush}" Property="BorderBrush" />
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter Value="{DynamicResource AccentHoverBrush}" Property="Background" />
+                  <Setter Property="UIElement.Opacity" Value="0.9" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+    </ResourceDictionary>
+  </FrameworkElement.Resources>
+  <Border Padding="20" Background="{DynamicResource CardBackgroundBrush}" Margin="8" CornerRadius="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
+    <UIElement.Effect>
+      <DropShadowEffect BlurRadius="16" ShadowDepth="2" Color="#000000" Opacity="0.12" />
+    </UIElement.Effect>
+    <StackPanel>
+      <!-- 头部：标题与引导说明 -->
+      <StackPanel Margin="0,0,0,12">
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+          <TextBlock Text="🔌" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <TextBlock Name="TitleTextBlock" Text="安装官方核心插件" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock Name="IntroTextBlock" Text="StarPie 采用轻量化分发，核心动作已插件化并托管于官方仓库。首次进入设置建议一键安装以下 5 项官方核心插件，即可获得完整功能体验：" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="17" />
+      </StackPanel>
+
+      <!-- 5 项官方核心插件清单 -->
+      <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,12">
+        <StackPanel Name="PluginItemsPanel">
+          <!-- 插件项由代码动态生成或数据绑定 -->
+        </StackPanel>
+      </Border>
+
+      <!-- 安全与知情同意卡片 -->
+      <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
+        <StackPanel>
+          <TextBlock Name="SecurityHeaderTextBlock" Text="🛡️ 安全与权限说明" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5" />
+          <TextBlock Name="SecuritySourceTextBlock" Text="• 官方来源：https://github.com/Star-Pie/StarPie-Official-Plugins" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
+          <TextBlock Name="SecurityPermsTextBlock" Text="• 所需权限：进程启动（Process）、按键模拟（InputSimulation）" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
+          <TextBlock Name="SecurityDescTextBlock" Text="• 插件将在进程内以 StarPie 当前权限运行，并在安装前严格校验 SHA-256 文件哈希。在此确认前，不会发起任何网络请求。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="15" />
+        </StackPanel>
+      </Border>
+
+      <!-- 进度条与状态文字 -->
+      <StackPanel Name="ProgressArea" Margin="0,0,0,14" Visibility="Collapsed">
+        <ProgressBar Name="InstallProgressBar" Height="4" Minimum="0" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource SubtleCardBrush}" BorderThickness="0" Margin="0,0,0,6" />
+        <TextBlock Name="StatusTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <!-- 底部操作按钮 -->
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBlock Name="HintTextBlock" Grid.Column="0" Text="稍后也可在设置「插件与扩展」中随时安装" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button Name="LaterButton" Content="暂不安装" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Click="LaterButton_Click" />
+          <Button Name="InstallButton" Content="⬇️ 一键安装并启用" Style="{StaticResource DialogPrimaryButtonStyle}" Click="InstallButton_Click" />
+          <Button Name="RetryButton" Content="🔄 重试未完成项" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Visibility="Collapsed" Click="RetryButton_Click" />
+          <Button Name="DoneButton" Content="完成" Style="{StaticResource DialogPrimaryButtonStyle}" Visibility="Collapsed" Click="DoneButton_Click" />
+        </StackPanel>
+      </Grid>
+    </StackPanel>
+  </Border>
+</Window>

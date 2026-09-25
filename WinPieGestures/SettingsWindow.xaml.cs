@@ -3835,6 +3835,7 @@ public partial class SettingsWindow : Window
 		catch
 		{
 		}
+		_ = Dispatcher.BeginInvoke(new Action(TryPromptOfficialPluginsOnboarding), System.Windows.Threading.DispatcherPriority.Background);
 	}
 
 	private void NavTab_Checked(object sender, RoutedEventArgs e)
@@ -4219,6 +4220,7 @@ public partial class SettingsWindow : Window
 
 		// 官方插件的安装/启用/停用/卸载可能发生在后台目录同步线程，
 		// 动作类型下拉必须在同一 UI 线程即时重建，避免列表与实际派发路由不一致。
+		UpdateOnboardingBannerVisibility();
 		RefreshSlots();
 		RefreshGestureMappings();
 		UpdateFocusEditorUi();
@@ -7639,17 +7641,10 @@ public partial class SettingsWindow : Window
 		}
 
 		RenderOfficialPluginsStatus();
-
-		if (_officialPluginCatalog == null && !_officialPluginsLoading)
-		{
-			_ = RefreshOfficialPluginsAsync();
-		}
-		else
-		{
-			RenderOfficialPluginItems();
-		}
+		RenderOfficialPluginItems();
 
 		RefreshPluginCandidatesUi();
+		UpdateOnboardingBannerVisibility();
 	}
 
 	/// <summary>
@@ -20590,6 +20585,116 @@ public partial class SettingsWindow : Window
 		{
 			int pct = (int)Math.Round(PreviewScaleTransform.ScaleX * 100.0);
 			PreviewZoomLabel.Text = $"{pct}%";
+		}
+	}
+
+	private bool _isOnboardingPromptActive;
+
+	private void TryPromptOfficialPluginsOnboarding()
+	{
+		if (_isOnboardingPromptActive || _resourcesReleased || !_isUiInitialized) return;
+
+		// 确保首次引导检查发生在 PluginHost.Initialize 完成、PluginPaths.Configure 生效之后
+		if (!PluginHost.IsInitialized)
+		{
+			PluginHost.Initialize();
+		}
+
+		if (!OfficialPluginOnboarding.ShouldPrompt(out _))
+		{
+			UpdateOnboardingBannerVisibility();
+			return;
+		}
+
+		_isOnboardingPromptActive = true;
+		try
+		{
+			var dialog = new OfficialPluginsOnboardingDialog
+			{
+				Owner = this,
+				WindowStartupLocation = WindowStartupLocation.CenterOwner
+			};
+			dialog.ShowDialog();
+		}
+		catch (Exception ex)
+		{
+			AppLogger.LogWarn($"[plugin] 引导安装官方插件弹窗异常：{ex.Message}");
+		}
+		finally
+		{
+			_isOnboardingPromptActive = false;
+			UpdateOnboardingBannerVisibility();
+			HandlePluginAvailabilityChanged();
+			RenderOfficialPluginItems();
+		}
+	}
+
+	private void UpdateOnboardingBannerVisibility()
+	{
+		if (OfficialPluginsOnboardingBanner == null) return;
+
+		if (!PluginHost.IsEnabled || ConfigManager.CurrentConfig?.Plugins?.EnablePluginSystem != true || PluginHost.IsSafeModeActive)
+		{
+			OfficialPluginsOnboardingBanner.Visibility = Visibility.Collapsed;
+			return;
+		}
+
+		List<string> missing = OfficialPluginOnboarding.GetMissingPluginIds();
+		if (missing.Count == 0)
+		{
+			OfficialPluginsOnboardingBanner.Visibility = Visibility.Collapsed;
+		}
+		else
+		{
+			OfficialPluginsOnboardingBanner.Visibility = Visibility.Visible;
+			if (OnboardingBannerTitleText != null)
+			{
+				OnboardingBannerTitleText.Text = I18n.T("PluginsOnboardingBannerTitle");
+			}
+			if (OnboardingBannerSubheaderText != null)
+			{
+				OnboardingBannerSubheaderText.Text = I18n.TF("PluginsOnboardingBannerText", missing.Count);
+			}
+			if (OnboardingBannerInstallButton != null)
+			{
+				OnboardingBannerInstallButton.Content = I18n.T("PluginsOnboardingBannerButton");
+			}
+		}
+	}
+
+	private void OnboardingBannerInstallButton_Click(object sender, RoutedEventArgs e)
+	{
+		if (!PluginHost.IsInitialized)
+		{
+			PluginHost.Initialize();
+		}
+
+		if (!EnsurePluginSystemReady()) return;
+
+		try
+		{
+			var dialog = new OfficialPluginsOnboardingDialog
+			{
+				Owner = this,
+				WindowStartupLocation = WindowStartupLocation.CenterOwner
+			};
+			dialog.ShowDialog();
+		}
+		catch (Exception ex)
+		{
+			AppLogger.LogWarn($"[plugin] 引导安装官方插件弹窗异常：{ex.Message}");
+			System.Windows.MessageBox.Show(
+				this,
+				I18n.TF("PluginsOnboardingOpenDialogFailed", ex.Message),
+				I18n.T("PluginsOfficialMsgTitle"),
+				MessageBoxButton.OK,
+				MessageBoxImage.Warning);
+		}
+		finally
+		{
+			UpdateOnboardingBannerVisibility();
+			HandlePluginAvailabilityChanged();
+			RenderOfficialPluginItems();
 		}
 	}
 }

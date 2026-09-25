@@ -43,5 +43,9 @@
     <None Include="tray_icon.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="test_onboarding" />
+  </ItemGroup>
+
 
 </Project>
