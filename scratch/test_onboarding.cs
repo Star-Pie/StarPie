@@ -974,64 +974,190 @@ public class Program
             Assert(folderAfterPass1 != null && folderAfterPass1.Enabled == false,
                 "15.7 Folder remains strictly disabled after Pass 1");
 
-            // 3. 用户点击「重试未完成项」（Pass 2）：
-            //    - 此时 system 必须被真正重试！
-            //    - folder 仍然严格保留为停用，绝不重试，绝不擅自启用！
-            //    - weburl, launch, shelltool 保持已启用状态 (AlreadyInstalledAndEnabled)
-            bool systemRetried = false;
-            var reportPass2 = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
-                catalogFetcher: _ => Task.FromResult(catalog),
-                moduleInstaller: (mod, _) =>
-                {
-                    if (mod.Id == "starpie.builtin.system")
-                    {
-                        systemRetried = true;
-                        // 重试时启用成功
-                        PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
-                        {
-                            Id = mod.Id,
-                            Name = mod.Name,
-                            Version = mod.Version,
-                            Enabled = true
-                        });
-                        return Task.FromResult(new OfficialPluginInstallResult
-                        {
-                            Success = true,
-                            PluginId = mod.Id,
-                            Enabled = true
-                        });
-                    }
+            // 3. 用户点击「重试未完成项」- 分支 2A：真实 PluginHost.Enable 失败分支
+            //    - 严格验证：本地重试不得依赖网络（catalogFetcher 若被调用直接抛异常）
+            //    - 严格验证：不得调用 moduleInstaller 进行下载覆盖或升级
+            //    - 严格验证：走真实 PluginHost.Enable 分支，捕获真实启用失败原因
+            //    - 严格验证：保留用户主动停用的插件
+            var reportPass2A = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => throw new InvalidOperationException("网络不应被调用！本地重试严禁访问网络目录。"),
+                moduleInstaller: (_, _) => throw new InvalidOperationException("安装器不应被调用！本地重试严禁下载或覆盖插件。"),
+                localEnabler: null, // 使用真实 PluginHost.Enable，无 DLL 必然返回真实失败
+                preExistingDisabledPluginIds: preExistingDisabled
+            );
 
-                    // 其它项不应再次调用 installer
-                    throw new InvalidOperationException($"不应重复安装已处理项：{mod.Id}");
+            Assert(reportPass2A.InstalledButEnableFailedPlugins.ContainsKey("starpie.builtin.system"),
+                "15.8 System plugin remains in InstalledButEnableFailed in Pass 2A");
+            string failureGuidance = reportPass2A.InstalledButEnableFailedPlugins["starpie.builtin.system"];
+            Assert(!string.IsNullOrWhiteSpace(failureGuidance),
+                "15.9 Detailed guidance is reported for local enablement failure in Pass 2A");
+            Assert(failureGuidance.Contains("启用失败："),
+                "15.10 Guidance contains specific failure reason prefix", $"actual: {failureGuidance}");
+            Assert(reportPass2A.FailureCount == 1,
+                "15.11 Pass 2A failure count is 1");
+            Assert(reportPass2A.SucceededPluginIds.Count == 0,
+                "15.12 Pass 2A succeeded count is 0");
+            Assert(reportPass2A.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
+                "15.13 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2A");
+            Assert(reportPass2A.AlreadyInstalledAndEnabledPluginIds.Count == 3,
+                "15.14 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
+
+            var folderAfterPass2A = PluginRegistryStore.FindEntry("starpie.builtin.folder");
+            Assert(folderAfterPass2A != null && folderAfterPass2A.Enabled == false,
+                "15.15 Folder remains strictly disabled after Pass 2A");
+
+            // 4. 用户点击「重试未完成项」- 分支 2B：本地启用成功分支
+            //    - 严格验证：离线环境重试成功，完全不依赖网络与安装器
+            //    - 严格验证：成功后状态正确更新为 NewlyInstalledAndEnabled
+            //    - 严格验证：用户原先停用的插件依然严格保留停用
+            var reportPass2B = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => throw new InvalidOperationException("网络不应被调用！本地重试严禁访问网络目录。"),
+                moduleInstaller: (_, _) => throw new InvalidOperationException("安装器不应被调用！本地重试严禁下载或覆盖插件。"),
+                localEnabler: (string id, out string err) =>
+                {
+                    err = "";
+                    var entry = PluginRegistryStore.FindEntry(id);
+                    if (entry != null)
+                    {
+                        entry.Enabled = true;
+                        PluginRegistryStore.UpsertEntry(entry);
+                        return true;
+                    }
+                    err = "找不到条目";
+                    return false;
                 },
                 preExistingDisabledPluginIds: preExistingDisabled
             );
 
-            Assert(systemRetried,
-                "15.8 System plugin was truly retried in Pass 2");
-            Assert(reportPass2.SucceededPluginIds.Contains("starpie.builtin.system"),
-                "15.9 System plugin succeeded in Pass 2");
-            Assert(reportPass2.FailureCount == 0,
-                "15.10 FailureCount is 0 after successful retry");
-            Assert(reportPass2.InstalledButEnableFailedPlugins.Count == 0,
-                "15.11 InstalledButEnableFailedPlugins is empty after retry");
-            Assert(reportPass2.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
-                "15.12 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2");
-            Assert(reportPass2.AlreadyInstalledAndEnabledPluginIds.Count == 3,
-                "15.13 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
+            Assert(reportPass2B.SucceededPluginIds.Contains("starpie.builtin.system"),
+                "15.16 System plugin succeeded locally in Pass 2B");
+            Assert(reportPass2B.FailureCount == 0,
+                "15.17 FailureCount is 0 after successful local retry");
+            Assert(reportPass2B.InstalledButEnableFailedPlugins.Count == 0,
+                "15.18 InstalledButEnableFailedPlugins is empty after successful local retry");
+            Assert(reportPass2B.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
+                "15.19 Folder is strictly preserved as OriginallyInstalledDisabled in Pass 2B");
+            Assert(reportPass2B.AlreadyInstalledAndEnabledPluginIds.Count == 3,
+                "15.20 AlreadyInstalledAndEnabled count is 3 (weburl, launch, shelltool)");
 
-            int totalActive = reportPass2.SucceededPluginIds.Count + reportPass2.AlreadyInstalledAndEnabledPluginIds.Count;
+            int totalActive = reportPass2B.SucceededPluginIds.Count + reportPass2B.AlreadyInstalledAndEnabledPluginIds.Count;
             Assert(totalActive == 4,
-                "15.14 Total active official plugins is 4 (3 previous + 1 retried)");
+                "15.21 Total active official plugins is 4 (3 previous + 1 retried)");
 
-            var folderAfterPass2 = PluginRegistryStore.FindEntry("starpie.builtin.folder");
-            Assert(folderAfterPass2 != null && folderAfterPass2.Enabled == false,
-                "15.15 Folder plugin remains strictly disabled after retry, never mistakenly enabled");
+            var folderAfterPass2B = PluginRegistryStore.FindEntry("starpie.builtin.folder");
+            Assert(folderAfterPass2B != null && folderAfterPass2B.Enabled == false,
+                "15.22 Folder plugin remains strictly disabled after retry, never mistakenly enabled");
 
-            var systemAfterPass2 = PluginRegistryStore.FindEntry("starpie.builtin.system");
-            Assert(systemAfterPass2 != null && systemAfterPass2.Enabled == true,
-                "15.16 System plugin is now active and enabled in registry");
+            var systemAfterPass2B = PluginRegistryStore.FindEntry("starpie.builtin.system");
+            Assert(systemAfterPass2B != null && systemAfterPass2B.Enabled == true,
+                "15.23 System plugin is now active and enabled in registry");
+        }
+
+        // -------------------------------------------------------------
+        // Test 16: Mixed Local Retry & Missing Install Without Overwrite
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 16: Mixed Local Retry & Missing Install Without Overwrite ---");
+        {
+            CleanRegistry();
+            var catalog = CreateMockCatalog();
+
+            // 前置状态：
+            // 1. weburl 已安装且已启用
+            PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
+            {
+                Id = "starpie.builtin.weburl",
+                Name = "starpie.builtin.weburl",
+                Version = "1.0.0",
+                Enabled = true
+            });
+
+            // 2. system 已在本地安装，但启用失败（未启用）
+            PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
+            {
+                Id = "starpie.builtin.system",
+                Name = "starpie.builtin.system",
+                Version = "1.0.0",
+                Enabled = false
+            });
+
+            // 3. folder 原本被用户停用
+            PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
+            {
+                Id = "starpie.builtin.folder",
+                Name = "starpie.builtin.folder",
+                Version = "1.0.0",
+                Enabled = false
+            });
+
+            // 4. launch, shelltool 尚未在本地安装（缺失）
+            var preExistingDisabled = new HashSet<string> { "starpie.builtin.folder" };
+
+            var installedModuleIds = new List<string>();
+            var reportMixed = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+                catalogFetcher: _ => Task.FromResult(catalog),
+                moduleInstaller: (mod, _) =>
+                {
+                    installedModuleIds.Add(mod.Id);
+                    PluginRegistryStore.UpsertEntry(new PluginRegistryEntry
+                    {
+                        Id = mod.Id,
+                        Name = mod.Name,
+                        Version = mod.Version,
+                        Enabled = true
+                    });
+                    return Task.FromResult(new OfficialPluginInstallResult
+                    {
+                        Success = true,
+                        PluginId = mod.Id,
+                        Enabled = true
+                    });
+                },
+                localEnabler: (string id, out string err) =>
+                {
+                    err = "";
+                    if (id == "starpie.builtin.system")
+                    {
+                        var entry = PluginRegistryStore.FindEntry(id);
+                        if (entry != null)
+                        {
+                            entry.Enabled = true;
+                            PluginRegistryStore.UpsertEntry(entry);
+                            return true;
+                        }
+                    }
+                    err = "无法启用";
+                    return false;
+                },
+                preExistingDisabledPluginIds: preExistingDisabled
+            );
+
+            // 验证：moduleInstaller 仅被调用来安装缺失的 launch 和 shelltool
+            Assert(!installedModuleIds.Contains("starpie.builtin.system"),
+                "16.1 Locally installed system plugin was never passed to moduleInstaller (no overwrite/re-download)");
+            Assert(!installedModuleIds.Contains("starpie.builtin.weburl"),
+                "16.2 Already enabled weburl plugin was never passed to moduleInstaller");
+            Assert(!installedModuleIds.Contains("starpie.builtin.folder"),
+                "16.3 Pre-existing disabled folder plugin was never passed to moduleInstaller");
+            Assert(installedModuleIds.Contains("starpie.builtin.launch") && installedModuleIds.Contains("starpie.builtin.shelltool"),
+                "16.4 Missing plugins launch and shelltool were installed via moduleInstaller");
+
+            // 验证结果汇总
+            Assert(reportMixed.SucceededPluginIds.Contains("starpie.builtin.system"),
+                "16.5 System plugin succeeded via localEnabler");
+            Assert(reportMixed.SucceededPluginIds.Contains("starpie.builtin.launch"),
+                "16.6 Launch plugin succeeded via moduleInstaller");
+            Assert(reportMixed.SucceededPluginIds.Contains("starpie.builtin.shelltool"),
+                "16.7 ShellTool plugin succeeded via moduleInstaller");
+            Assert(reportMixed.AlreadyInstalledAndEnabledPluginIds.Contains("starpie.builtin.weburl"),
+                "16.8 WebUrl plugin classified as AlreadyInstalledAndEnabled");
+            Assert(reportMixed.OriginallyInstalledDisabledPluginIds.Contains("starpie.builtin.folder"),
+                "16.9 Folder plugin classified as OriginallyInstalledDisabled");
+            Assert(reportMixed.FailureCount == 0,
+                "16.10 Mixed scenario failure count is 0");
+
+            var folderFinal = PluginRegistryStore.FindEntry("starpie.builtin.folder");
+            Assert(folderFinal != null && folderFinal.Enabled == false,
+                "16.11 Folder remains strictly disabled in mixed scenario");
         }
     }
 }

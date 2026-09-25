@@ -17,6 +17,8 @@ namespace WinPieGestures;
 public partial class OfficialPluginsOnboardingDialog : Window
 {
     private bool _isInstalling;
+    private Task? _activeInstallTask;
+    private bool _isCancellingAndClosing;
     private readonly HashSet<string> _preExistingDisabledIds;
     private CancellationTokenSource? _installCts;
 
@@ -36,20 +38,65 @@ public partial class OfficialPluginsOnboardingDialog : Window
     {
         if (_isInstalling)
         {
-            try
+            e.Cancel = true;
+            if (!_isCancellingAndClosing)
             {
-                _installCts?.Cancel();
+                _isCancellingAndClosing = true;
+                _ = CancelAndCloseAfterOperationAsync();
             }
-            catch (Exception ex)
-            {
-                AppLogger.LogWarn($"[plugin] 取消官方插件安装失败：{ex.Message}");
-            }
+            return;
         }
 
         I18n.LanguageChanged -= ApplyLocalization;
         // 无论用户是点击完成、暂不安装、还是点击右上角关闭，均标记为已提示，升级或下次打开不再弹窗
         OfficialPluginOnboarding.MarkPrompted();
         base.OnClosing(e);
+    }
+
+    private async Task CancelAndCloseAfterOperationAsync()
+    {
+        try
+        {
+            if (StatusTextBlock != null)
+            {
+                StatusTextBlock.Text = I18n.T("OfficialPluginsOnboardingStatusCancelling");
+            }
+
+            if (InstallButton != null) InstallButton.IsEnabled = false;
+            if (LaterButton != null) LaterButton.IsEnabled = false;
+            if (RetryButton != null) RetryButton.IsEnabled = false;
+            if (DoneButton != null) DoneButton.IsEnabled = false;
+
+            try
+            {
+                _installCts?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogWarn($"[plugin] 发起取消官方插件安装失败：{ex.Message}");
+            }
+
+            if (_activeInstallTask != null)
+            {
+                try
+                {
+                    await _activeInstallTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // 预期的取消异常
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.LogWarn($"[plugin] 等待安装任务取消完成时异常：{ex.Message}");
+                }
+            }
+        }
+        finally
+        {
+            _isInstalling = false;
+            Dispatcher.Invoke(Close);
+        }
     }
 
     private void ApplyLocalization()
@@ -185,12 +232,14 @@ public partial class OfficialPluginsOnboardingDialog : Window
 
     private async void InstallButton_Click(object sender, RoutedEventArgs e)
     {
-        await RunBatchInstallAsync();
+        _activeInstallTask = RunBatchInstallAsync();
+        await _activeInstallTask;
     }
 
     private async void RetryButton_Click(object sender, RoutedEventArgs e)
     {
-        await RunBatchInstallAsync();
+        _activeInstallTask = RunBatchInstallAsync();
+        await _activeInstallTask;
     }
 
     private async Task RunBatchInstallAsync()
@@ -214,7 +263,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
 
         var progressReporter = new Progress<OfficialPluginBatchProgress>(p =>
         {
-            if (!IsLoaded) return;
+            if (!IsLoaded || _isCancellingAndClosing) return;
             if (p.TotalCount > 0)
             {
                 InstallProgressBar.Value = (double)p.CompletedCount / p.TotalCount * 100.0;
@@ -229,7 +278,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
                 {
                     return await Dispatcher.InvokeAsync(() =>
                     {
-                        if (!IsLoaded) return false;
+                        if (!IsLoaded || _isCancellingAndClosing) return false;
                         string title = I18n.T("OfficialPluginsOnboardingExtraCapPromptTitle");
                         string msg = I18n.TF("OfficialPluginsOnboardingExtraCapPrompt", pluginName, string.Join(", ", extraCaps));
                         return MessageBox.Show(this, msg, title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
@@ -240,7 +289,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
                 preExistingDisabledPluginIds: _preExistingDisabledIds
             );
 
-            if (!IsLoaded) return;
+            if (!IsLoaded || _isCancellingAndClosing) return;
             PopulatePluginItems();
 
             if (report.AllSuccessfullyActive)
@@ -292,7 +341,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         catch (OperationCanceledException)
         {
             AppLogger.LogInfo("[plugin] 官方插件安装已取消。");
-            if (IsLoaded)
+            if (IsLoaded && !_isCancellingAndClosing)
             {
                 StatusTextBlock.Text = "安装已取消。";
                 InstallButton.Visibility = Visibility.Collapsed;
@@ -303,7 +352,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         }
         catch (Exception ex)
         {
-            if (IsLoaded)
+            if (IsLoaded && !_isCancellingAndClosing)
             {
                 StatusTextBlock.Text = ex.Message;
                 InstallButton.Visibility = Visibility.Collapsed;
