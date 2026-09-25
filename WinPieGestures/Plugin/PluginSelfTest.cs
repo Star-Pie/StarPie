@@ -2187,6 +2187,187 @@ internal static class PluginSelfTest
             I18n.CurrentLanguage = panelOriginalLanguage;
         }
 
+        // ⑥ 面板必填提示行（FocusPluginParamsHintText）与校验结论（FocusPluginValidationText）联动状态机：
+        //    - 有效配置时橙色必填警告必须 Collapsed，绝不误显；
+        //    - 缺失必填参数时橙色必填警告与红色结论均 Visible；
+        //    - 语法非法时仅展示红色错误，橙色留空警告保持 Collapsed；
+        //    - 动态编辑流转（missing -> valid -> illegal -> valid）即时且严格一致。
+        string? panelUiStateMachineError = null;
+        RunOnSta(() =>
+        {
+            var hintBlock = new System.Windows.Controls.TextBlock();
+            var valBlock = new System.Windows.Controls.TextBlock();
+
+            // 1. 已配置且有效（IsValid == true）
+            var validRemapAction = new ActionItem
+            {
+                Type = PluginActionBinding.TypeName,
+                Name = "按键映射",
+                PluginActionRef = new PluginActionRef
+                {
+                    PluginId = pluginId,
+                    ContributionId = "keypadLayer",
+                },
+                ExtensionData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["keyMap"] = "v1|Q:Num7,W:Num8,E:Num9,A:Num4,S:Num5,D:Num6,Z:Num1,X:Num2,C:Num3,R:Num0"
+                }
+            };
+
+            var validRes = PluginHost.ValidateActionParameters(validRemapAction);
+            if (!validRes.IsValid)
+            {
+                panelUiStateMachineError = $"[3g] 测试前置条件失败：有效映射应当校验通过，实际为: {validRes.Describe()}";
+                return;
+            }
+
+            SettingsWindow.UpdateFocusPluginValidationUi(validRes, validRemapAction, null, valBlock, hintBlock);
+
+            if (hintBlock.Visibility != System.Windows.Visibility.Collapsed)
+            {
+                panelUiStateMachineError = $"[3g] 必填提示隐藏门禁失败：当参数已配置且有效时，FocusPluginParamsHintText 必须隐藏 (Collapsed)，实际为 {hintBlock.Visibility}，文案为: '{hintBlock.Text}'";
+                return;
+            }
+            if (valBlock.Visibility != System.Windows.Visibility.Collapsed)
+            {
+                panelUiStateMachineError = $"[3g] 必填提示隐藏门禁失败：当参数已配置且有效时，FocusPluginValidationText 必须隐藏 (Collapsed)，实际为 {valBlock.Visibility}";
+                return;
+            }
+
+            // 2. 缺失必填参数（未填 / 留空，IsValid == false）
+            var missingAction = new ActionItem
+            {
+                Type = PluginActionBinding.TypeName,
+                Name = "按键映射",
+                PluginActionRef = new PluginActionRef
+                {
+                    PluginId = pluginId,
+                    ContributionId = "keypadLayer",
+                },
+                ExtensionData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            };
+
+            var missingRes = PluginHost.ValidateActionParameters(missingAction);
+            if (missingRes.IsValid)
+            {
+                panelUiStateMachineError = "[3g] 测试前置条件失败：缺失必填 keyMap 时校验应当拦截";
+                return;
+            }
+
+            SettingsWindow.UpdateFocusPluginValidationUi(missingRes, missingAction, null, valBlock, hintBlock);
+
+            if (hintBlock.Visibility != System.Windows.Visibility.Visible)
+            {
+                panelUiStateMachineError = $"[3g] 必填提示警告门禁失败：当必填参数缺失留空时，FocusPluginParamsHintText 必须显示橙色警告 (Visible)，实际为 {hintBlock.Visibility}";
+                return;
+            }
+            if (!hintBlock.Text.Contains('1'))
+            {
+                panelUiStateMachineError = $"[3g] 必填提示警告门禁失败：缺失必填参数提示文案未包含必填参数计数 1：'{hintBlock.Text}'";
+                return;
+            }
+            if (valBlock.Visibility != System.Windows.Visibility.Visible)
+            {
+                panelUiStateMachineError = $"[3g] 必填提示警告门禁失败：当必填参数缺失留空时，FocusPluginValidationText 必须显示错误 (Visible)，实际为 {valBlock.Visibility}";
+                return;
+            }
+
+            // 3. 非法映射参数（语法错误，IsValid == false，但非留空）
+            var illegalAction = new ActionItem
+            {
+                Type = PluginActionBinding.TypeName,
+                Name = "按键映射",
+                PluginActionRef = new PluginActionRef
+                {
+                    PluginId = pluginId,
+                    ContributionId = "keypadLayer",
+                },
+                ExtensionData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["keyMap"] = "v1|InvalidSyntaxNoSeparator"
+                }
+            };
+
+            var illegalRes = PluginHost.ValidateActionParameters(illegalAction);
+            if (illegalRes.IsValid)
+            {
+                panelUiStateMachineError = "[3g] 测试前置条件失败：非法映射配置应当校验拦截";
+                return;
+            }
+
+            SettingsWindow.UpdateFocusPluginValidationUi(illegalRes, illegalAction, null, valBlock, hintBlock);
+
+            if (hintBlock.Visibility != System.Windows.Visibility.Collapsed)
+            {
+                panelUiStateMachineError = $"[3g] 非法映射提示门禁失败：当参数非空但语法非法时，橙色留空提示必须隐藏 (Collapsed)，实际为 {hintBlock.Visibility}，文案为: '{hintBlock.Text}'";
+                return;
+            }
+            if (valBlock.Visibility != System.Windows.Visibility.Visible || string.IsNullOrWhiteSpace(valBlock.Text))
+            {
+                panelUiStateMachineError = "[3g] 非法映射提示门禁失败：当参数非空但语法非法时，FocusPluginValidationText 必须显示具体的校验错误说明";
+                return;
+            }
+
+            // 4. 动态编辑流转测试（从 missing -> valid -> illegal -> valid）
+            var dynamicAction = new ActionItem
+            {
+                Type = PluginActionBinding.TypeName,
+                Name = "按键映射",
+                PluginActionRef = new PluginActionRef
+                {
+                    PluginId = pluginId,
+                    ContributionId = "keypadLayer",
+                },
+                ExtensionData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            };
+
+            // 阶段 1：初始 missing -> hintBlock 与 valBlock 均显示
+            SettingsWindow.UpdateFocusPluginValidationUi(
+                PluginHost.ValidateActionParameters(dynamicAction), dynamicAction, null, valBlock, hintBlock);
+            if (hintBlock.Visibility != System.Windows.Visibility.Visible || valBlock.Visibility != System.Windows.Visibility.Visible)
+            {
+                panelUiStateMachineError = "[3g] 动态流转阶段1（留空）：hintBlock 与 valBlock 均应为 Visible";
+                return;
+            }
+
+            // 阶段 2：填入有效映射 -> hintBlock 与 valBlock 均立即隐藏
+            dynamicAction.ExtensionData["keyMap"] = "v1|A:Space,B:Enter";
+            SettingsWindow.UpdateFocusPluginValidationUi(
+                PluginHost.ValidateActionParameters(dynamicAction), dynamicAction, null, valBlock, hintBlock);
+            if (hintBlock.Visibility != System.Windows.Visibility.Collapsed || valBlock.Visibility != System.Windows.Visibility.Collapsed)
+            {
+                panelUiStateMachineError = "[3g] 动态流转阶段2（配置有效）：hintBlock 与 valBlock 均应立即变为 Collapsed";
+                return;
+            }
+
+            // 阶段 3：编辑为非法映射 -> hintBlock 隐藏（未留空），valBlock 显示语法错误
+            dynamicAction.ExtensionData["keyMap"] = "v1|A->";
+            SettingsWindow.UpdateFocusPluginValidationUi(
+                PluginHost.ValidateActionParameters(dynamicAction), dynamicAction, null, valBlock, hintBlock);
+            if (hintBlock.Visibility != System.Windows.Visibility.Collapsed || valBlock.Visibility != System.Windows.Visibility.Visible)
+            {
+                panelUiStateMachineError = "[3g] 动态流转阶段3（编辑为非法）：hintBlock 应隐藏，valBlock 应展示错误说明";
+                return;
+            }
+
+            // 阶段 4：修复为有效映射 -> hintBlock 与 valBlock 均恢复隐藏
+            dynamicAction.ExtensionData["keyMap"] = "v1|A:Space";
+            SettingsWindow.UpdateFocusPluginValidationUi(
+                PluginHost.ValidateActionParameters(dynamicAction), dynamicAction, null, valBlock, hintBlock);
+            if (hintBlock.Visibility != System.Windows.Visibility.Collapsed || valBlock.Visibility != System.Windows.Visibility.Collapsed)
+            {
+                panelUiStateMachineError = "[3g] 动态流转阶段4（修复为有效）：hintBlock 与 valBlock 应再次恢复 Collapsed";
+                return;
+            }
+        });
+
+        if (panelUiStateMachineError != null)
+        {
+            return panelUiStateMachineError;
+        }
+
+        line("    必填参数提示行联动状态机：有效隐藏、留空警告、非法拦截、动态编辑四阶段流转全部通过 ✓");
+
         // ---- 3h 插件级参数页（SDK 1.6）----
         //
         // 这一段管的是「声明出来的东西到底能不能用」：入口判据、字段面是否与声明一致、
@@ -5159,7 +5340,41 @@ internal static class PluginSelfTest
             }
         }
 
-        line("  回归自检：带/不带 .exe 进程名规范化与 PID 安全门禁、SDK 次版本与最低宿主版本门禁（旧宿主拒绝、新宿主接受）、编辑器画刷安全契约与打开检查、单键录制控件与标点句点区分、停用插件类型下拉与不可用提示、主扇区类型往返保持、Win32 INPUT 原生尺寸与三类失败序列状态机全部通过 ✓");
+        // 回归断言：--test-instance / --plugin-selftest 模式下 EnsureAutoStartRegistryUpToDate 绝不读写 HKCU 开机启动项
+        bool isTestMode = ConfigManager.IsTestInstanceMode();
+        if (!isTestMode)
+        {
+            fail("测试实例自启门禁", "在自检模式下 ConfigManager.IsTestInstanceMode() 未能识别测试参数");
+        }
+
+        string? beforeRunVal = null;
+        try
+        {
+            using var rk = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: false);
+            beforeRunVal = (rk?.GetValue("StarPie") as string) ?? (rk?.GetValue("WinPieGestures") as string);
+        }
+        catch
+        {
+        }
+
+        ConfigManager.EnsureAutoStartRegistryUpToDate();
+
+        string? afterRunVal = null;
+        try
+        {
+            using var rk = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", writable: false);
+            afterRunVal = (rk?.GetValue("StarPie") as string) ?? (rk?.GetValue("WinPieGestures") as string);
+        }
+        catch
+        {
+        }
+
+        if (beforeRunVal != afterRunVal)
+        {
+            fail("测试实例自启门禁", $"EnsureAutoStartRegistryUpToDate 在测试模式下读写或修改了 HKCU 启动项！Before=[{beforeRunVal}], After=[{afterRunVal}]");
+        }
+
+        line("  回归自检：带/不带 .exe 进程名规范化与 PID 安全门禁、SDK 次版本与最低宿主版本门禁（旧宿主拒绝、新宿主接受）、编辑器画刷安全契约与打开检查、单键录制控件与标点句点区分、停用插件类型下拉与不可用提示、主扇区类型往返保持、Win32 INPUT 原生尺寸与三类失败序列状态机、--test-instance 自启注册表零写入保护全部通过 ✓");
     }
 
     private static void RunOnSta(Action action)
