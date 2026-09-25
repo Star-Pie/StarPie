@@ -293,6 +293,7 @@ StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用
 交互事件与轮盘结构路径也已建立可扩展入口，后续可以继续扩展而不复制整套插件生命周期代码。
 
 > 📖 **插件开发入口**：开发文档、当前 API、架构说明、示例工程和历史资料统一收录在 [《StarPie 插件开发资源》](plugin/README.md)。
+> 🔗 **官方插件仓库**：[StarPie-Official-Plugins](https://github.com/Star-Pie/StarPie-Official-Plugins)。主仓库中的 `external/StarPie-Official-Plugins/` 是该仓库的 Git 子模块检出目录；官方插件的源码、打包和发布流程均在这个独立仓库中维护，StarPie 主仓库不重复引用、构建或随发行包携带官方插件 DLL。
 
 - **官方插件必须手动安装**：主程序不会在启动后自动下载或安装官方模块。用户需要在插件管理页手动刷新 `StarPie-Official-Plugins` 的 catalog，并点击具体模块的安装按钮；下载包仍会校验 SHA-256 与程序集 SHA-256。
 - **社区插件仍可本地安装**：把社区插件 `.dll` 放进**程序目录的 `plugin` 文件夹**后点「重新扫描」，在候选卡片上点安装；或在设置里点「手动安装社区插件 (.dll)」直接挑文件。
@@ -421,6 +422,7 @@ StarPie/
 │   ├── IconHelper.cs                # 内置 / 程序 / 自定义图标解析
 │   └── WinPieGestures.csproj        # .NET 8 WPF 项目配置
 ├── plugin/                          # 插件开发文档、SDK、历史资料与示例工程
+├── external/StarPie-Official-Plugins/ # 官方插件独立仓库的 Git 子模块
 ├── releases/                        # 历史版本与发布归档
 ├── attachments/                     # README 截图、GIF 与待补演示素材
 ├── tests/                           # pywinauto GUI 自动化测试
