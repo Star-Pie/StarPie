@@ -20683,6 +20683,12 @@ public partial class SettingsWindow : Window
 		catch (Exception ex)
 		{
 			AppLogger.LogWarn($"[plugin] 引导安装官方插件弹窗异常：{ex.Message}");
+			System.Windows.MessageBox.Show(
+				this,
+				I18n.TF("PluginsOnboardingOpenDialogFailed", ex.Message),
+				I18n.T("PluginsOfficialMsgTitle"),
+				MessageBoxButton.OK,
+				MessageBoxImage.Warning);
 		}
 		finally
 		{

@@ -233,6 +233,7 @@ ONBOARDING_REQUIRED_KEYS = [
     "PluginsOnboardingBannerTitle",
     "PluginsOnboardingBannerText",
     "PluginsOnboardingBannerButton",
+    "PluginsOnboardingOpenDialogFailed",
     "OfficialPluginNameFolder",
     "OfficialPluginDescFolder",
     "OfficialPluginNameWebUrl",

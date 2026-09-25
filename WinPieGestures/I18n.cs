@@ -2281,6 +2281,7 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("PluginsOnboardingBannerTitle", "官方核心插件未全部安装", "官方核心外掛未全部安裝", "Official Core Plugins Incomplete", "公式コアプラグインが未完了です");
 		Add("PluginsOnboardingBannerText", "尚有 {0} 项官方核心插件未安装。安装后可使用打开文件夹、启动程序、网页跳转、系统控制等常用内置动作。", "尚有 {0} 項官方核心外掛未安裝。安裝後可使用開啟資料夾、啟動程式、網頁跳轉、系統控制等常用內建動作。", "{0} official core plugin(s) are not installed. Install them to use commonly used built-in actions like Open Folder, Launch App, Web URL, and System Control.", "公式コアプラグインが {0} 件未導入です。インストールするとフォルダーを開く、アプリ起動、Web ページ、システム制御などの機能が使用可能になります。");
 		Add("PluginsOnboardingBannerButton", "⬇️ 一键安装缺失项", "⬇️ 一鍵安裝缺失項", "⬇️ Install Missing Plugins", "⬇️ 不足プラグインを一括導入");
+		Add("PluginsOnboardingOpenDialogFailed", "无法打开官方插件安装引导窗口：{0}", "無法開啟官方外掛安裝引導視窗：{0}", "Failed to open official plugins onboarding dialog: {0}", "公式プラグインの導入ガイドウィンドウを開けませんでした: {0}");
 
 		Translations = dictionary;
 	}

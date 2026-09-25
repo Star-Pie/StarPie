@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -85,6 +85,7 @@ public static class AppThemeManager
 		SetBrush(root, "TextPrimaryBrush", textPrimary);
 		SetBrush(root, "TextSecondaryBrush", textSecondary);
 		SetBrush(root, "TextMutedBrush", textMuted);
+		SetBrush(root, "TextTertiaryBrush", textMuted);
 		SetBrush(root, "InputBackgroundBrush", inputBg);
 		SetBrush(root, "InputBorderBrush", inputBorder);
 		SetBrush(root, "ItemHoverBrush", itemHover);

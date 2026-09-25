@@ -21,6 +21,9 @@ public partial class OfficialPluginsOnboardingDialog : Window
     private bool _isCancellingAndClosing;
     private readonly HashSet<string> _preExistingDisabledIds;
     private CancellationTokenSource? _installCts;
+    private bool _hasBeenDisplayed;
+
+    internal bool HasBeenDisplayed => _hasBeenDisplayed;
 
     public OfficialPluginsOnboardingDialog()
     {
@@ -28,10 +31,18 @@ public partial class OfficialPluginsOnboardingDialog : Window
         AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig?.AppTheme ?? "System");
         _preExistingDisabledIds = new HashSet<string>(OfficialPluginOnboarding.GetOriginallyDisabledPluginIds(), StringComparer.OrdinalIgnoreCase);
 
+        Loaded += (s, e) => _hasBeenDisplayed = true;
+
         ApplyLocalization();
         PopulatePluginItems();
 
         I18n.LanguageChanged += ApplyLocalization;
+    }
+
+    protected override void OnContentRendered(EventArgs e)
+    {
+        base.OnContentRendered(e);
+        _hasBeenDisplayed = true;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -48,9 +59,20 @@ public partial class OfficialPluginsOnboardingDialog : Window
         }
 
         I18n.LanguageChanged -= ApplyLocalization;
-        // 无论用户是点击完成、暂不安装、还是点击右上角关闭，均标记为已提示，升级或下次打开不再弹窗
-        OfficialPluginOnboarding.MarkPrompted();
+
+        // 严格保证：只有弹窗实际向用户展示过，关闭窗口时才消耗提示状态；
+        // 构造失败或未渲染展示时绝不消耗。
+        if (_hasBeenDisplayed)
+        {
+            OfficialPluginOnboarding.MarkPrompted();
+        }
+
         base.OnClosing(e);
+    }
+
+    private Brush ResolveBrush(string key, Brush fallback)
+    {
+        return TryFindResource(key) as Brush ?? fallback;
     }
 
     private async Task CancelAndCloseAfterOperationAsync()
@@ -159,14 +181,14 @@ public partial class OfficialPluginsOnboardingDialog : Window
                 Text = target.Name,
                 FontSize = 12,
                 FontWeight = FontWeights.SemiBold,
-                Foreground = (Brush)FindResource("TextPrimaryBrush"),
+                Foreground = ResolveBrush("TextPrimaryBrush", Brushes.Black),
                 VerticalAlignment = VerticalAlignment.Center
             });
             titleStack.Children.Add(new TextBlock
             {
                 Text = $"({target.Id})",
                 FontSize = 10.5,
-                Foreground = (Brush)FindResource("TextTertiaryBrush"),
+                Foreground = ResolveBrush("TextMutedBrush", Brushes.Gray),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 0, 0)
             });
@@ -176,7 +198,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
             {
                 Text = target.Description,
                 FontSize = 11,
-                Foreground = (Brush)FindResource("TextSecondaryBrush"),
+                Foreground = ResolveBrush("TextSecondaryBrush", Brushes.Gray),
                 Margin = new Thickness(18, 1, 0, 0),
                 TextWrapping = TextWrapping.Wrap
             });
@@ -191,7 +213,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
                 Padding = new Thickness(6, 2, 6, 2),
                 VerticalAlignment = VerticalAlignment.Center,
                 Background = !isInstalled
-                    ? (Brush)FindResource("SubtleCardBrush")
+                    ? ResolveBrush("SubtleCardBrush", Brushes.Transparent)
                     : (isEnabled
                         ? new SolidColorBrush(Color.FromArgb(32, 16, 185, 129))
                         : new SolidColorBrush(Color.FromArgb(32, 245, 158, 11)))
@@ -202,7 +224,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
             if (!isInstalled)
             {
                 badgeText = I18n.T("OfficialPluginsStateToInstall");
-                badgeFg = (Brush)FindResource("TextSecondaryBrush");
+                badgeFg = ResolveBrush("TextSecondaryBrush", Brushes.Gray);
             }
             else if (isEnabled)
             {

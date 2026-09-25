@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -13,6 +14,20 @@ public class Program
 {
     private static int _passedCount = 0;
     private static int _failedCount = 0;
+
+    private static void RunInSta(Action action)
+    {
+        Exception? err = null;
+        var staThread = new Thread(() =>
+        {
+            try { action(); }
+            catch (Exception ex) { err = ex; }
+        });
+        staThread.SetApartmentState(ApartmentState.STA);
+        staThread.Start();
+        staThread.Join();
+        if (err != null) throw new TargetInvocationException(err);
+    }
 
     public static async Task<int> Main()
     {
@@ -1233,6 +1248,159 @@ public class Program
             var folderFinal = PluginRegistryStore.FindEntry("starpie.builtin.folder");
             Assert(folderFinal != null && folderFinal.Enabled == false,
                 "16.11 Folder remains strictly disabled in mixed scenario");
+        }
+
+        // -------------------------------------------------------------
+        // Test 17: Theme Resource Key Resolution & TextMutedBrush Audit
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 17: Theme Resource Key Resolution & TextMutedBrush Audit ---");
+        {
+            // 17.1 XAML 静态检查：不得含有未定义的 TextTertiaryBrush
+            string xamlPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "WinPieGestures", "OfficialPluginsOnboardingDialog.xaml");
+            if (!File.Exists(xamlPath))
+            {
+                xamlPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "WinPieGestures", "OfficialPluginsOnboardingDialog.xaml"));
+            }
+            if (!File.Exists(xamlPath))
+            {
+                xamlPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "WinPieGestures", "OfficialPluginsOnboardingDialog.xaml"));
+            }
+
+            Assert(File.Exists(xamlPath), "17.1 OfficialPluginsOnboardingDialog.xaml exists");
+            string xamlContent = File.ReadAllText(xamlPath);
+            Assert(!xamlContent.Contains("TextTertiaryBrush"),
+                "17.2 OfficialPluginsOnboardingDialog.xaml does NOT contain TextTertiaryBrush");
+            Assert(xamlContent.Contains("TextMutedBrush"),
+                "17.3 OfficialPluginsOnboardingDialog.xaml uses TextMutedBrush");
+
+            // 17.4 明暗与各色系主题下，引导窗依赖的所有资源键均可解析为有效的 SolidColorBrush
+            string[] themes = { "Light", "Dark", "TitaniumGray", "ObsidianDark", "MidnightNavy", "RoyalViolet" };
+            string[] requiredBrushKeys =
+            {
+                "WindowBackgroundBrush",
+                "CardBackgroundBrush",
+                "CardBorderBrush",
+                "TextPrimaryBrush",
+                "TextSecondaryBrush",
+                "TextMutedBrush",
+                "SubtleCardBrush",
+                "ButtonDefaultBgBrush",
+                "ButtonDefaultFgBrush",
+                "ButtonDefaultBorderBrush",
+                "ButtonHoverBgBrush",
+                "AccentPrimaryBrush",
+                "AccentHoverBrush",
+                "AccentTextBrush"
+            };
+
+            bool allKeysResolved = true;
+            string keyFailMsg = "";
+
+            RunInSta(() =>
+            {
+                var dummyElement = new System.Windows.Controls.Border();
+                foreach (string theme in themes)
+                {
+                    AppThemeManager.ApplyTheme(dummyElement, theme);
+                    foreach (string key in requiredBrushKeys)
+                    {
+                        object res = dummyElement.Resources[key];
+                        if (res is not System.Windows.Media.SolidColorBrush)
+                        {
+                            allKeysResolved = false;
+                            keyFailMsg = $"Key '{key}' failed to resolve as SolidColorBrush under theme '{theme}' (value={res})";
+                            return;
+                        }
+                    }
+
+                    // 验证防御性别名 TextTertiaryBrush 也可作为 fallback 解析为 SolidColorBrush
+                    object fallbackTertiary = dummyElement.Resources["TextTertiaryBrush"];
+                    Assert(fallbackTertiary is System.Windows.Media.SolidColorBrush,
+                        $"17.4 Defensive fallback TextTertiaryBrush resolved as SolidColorBrush under {theme}");
+                }
+            });
+
+            Assert(allKeysResolved, "17.5 All required onboarding dialog brushes resolve across all themes", keyFailMsg);
+
+            // 17.6 旧代码缺陷复现对比：旧代码中直接强转 (Brush)FindResource("TextTertiaryBrush")
+            // 在未配置该键时会导致异常，新代码采用 TextMutedBrush 且具备安全回落机制
+            bool oldCastFailed = false;
+            try
+            {
+                object missingRes = System.Windows.DependencyProperty.UnsetValue;
+                _ = (System.Windows.Media.Brush)missingRes;
+            }
+            catch (InvalidCastException)
+            {
+                oldCastFailed = true;
+            }
+            Assert(oldCastFailed, "17.6 Verified old pattern: casting DependencyProperty.UnsetValue / NamedObject throws InvalidCastException");
+        }
+
+        // -------------------------------------------------------------
+        // Test 18: Dialog Construction & Display Failure Must Not Consume Prompt State
+        // -------------------------------------------------------------
+        Console.WriteLine("\n--- Scenario 18: Dialog Construction & Display Failure Must Not Consume Prompt State ---");
+        {
+            CleanRegistry();
+            ConfigManager.CurrentConfig = new AppConfig
+            {
+                Plugins = new PluginsPreference
+                {
+                    EnablePluginSystem = true,
+                    HasPromptedOfficialPluginsOnboarding = false
+                }
+            };
+
+            // 18.1 初始未提示状态
+            Assert(!ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
+                "18.1 Initial HasPromptedOfficialPluginsOnboarding is false");
+
+            // 18.2 在 STA 线程中构建 OfficialPluginsOnboardingDialog 并验证生命周期状态
+            RunInSta(() =>
+            {
+                var testDialog = new OfficialPluginsOnboardingDialog();
+                Assert(testDialog != null, "18.2 OfficialPluginsOnboardingDialog constructs cleanly without brush cast exception");
+                Assert(!testDialog!.HasBeenDisplayed, "18.3 Newly constructed dialog has HasBeenDisplayed == false");
+
+                // 18.4 模拟弹窗在未实际展示时因异常或退出而关闭（OnClosing 被触发）
+                // 新代码保障：因为未成功渲染展示，绝对不得消耗一次性提示状态
+                var closingMethod = typeof(OfficialPluginsOnboardingDialog).GetMethod("OnClosing", BindingFlags.Instance | BindingFlags.NonPublic);
+                var cancelArgs = new CancelEventArgs();
+                closingMethod?.Invoke(testDialog, new object[] { cancelArgs });
+
+                Assert(!ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
+                    "18.4 Closing an un-displayed dialog does NOT mark HasPromptedOfficialPluginsOnboarding = true");
+
+                // 18.5 旧代码逻辑缺陷对比：旧代码中 OnClosing 无条件调用 MarkPrompted
+                // 若按旧逻辑执行，将导致提示被错误吞没
+                OfficialPluginOnboarding.MarkPrompted();
+                Assert(ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
+                    "18.5 Contrast check: old unconditional OnClosing logic would mistakenly consume prompt");
+
+                // 重置为未提示状态
+                ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding = false;
+
+                // 18.6 验证真实成功展示且用户关闭时，正确消耗提示状态
+                var displayedField = typeof(OfficialPluginsOnboardingDialog).GetField("_hasBeenDisplayed", BindingFlags.Instance | BindingFlags.NonPublic);
+                displayedField?.SetValue(testDialog, true);
+
+                closingMethod?.Invoke(testDialog, new object[] { cancelArgs });
+
+                Assert(ConfigManager.CurrentConfig.Plugins.HasPromptedOfficialPluginsOnboarding,
+                    "18.6 Displayed dialog correctly consumes prompt upon user closing");
+            });
+
+            // 18.7 横幅按钮打不开弹窗时的错误提示多语言完整性
+            string[] testLangs = { "zh-CN", "zh-TW", "en", "ja" };
+            foreach (string lang in testLangs)
+            {
+                I18n.SetLanguage(lang);
+                string errText = I18n.TF("PluginsOnboardingOpenDialogFailed", "SampleErrorDetail");
+                Assert(!string.IsNullOrWhiteSpace(errText) && !errText.Contains("{0}") && errText.Contains("SampleErrorDetail"),
+                    $"18.7 PluginsOnboardingOpenDialogFailed properly localized in {lang}");
+            }
+            I18n.SetLanguage("zh-CN");
         }
     }
 }

@@ -116,7 +116,7 @@
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-        <TextBlock Name="HintTextBlock" Grid.Column="0" Text="稍后也可在设置「插件与扩展」中随时安装" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" VerticalAlignment="Center" />
+        <TextBlock Name="HintTextBlock" Grid.Column="0" Text="稍后也可在设置「插件与扩展」中随时安装" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
           <Button Name="LaterButton" Content="暂不安装" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Click="LaterButton_Click" />
           <Button Name="InstallButton" Content="⬇️ 一键安装并启用" Style="{StaticResource DialogPrimaryButtonStyle}" Click="InstallButton_Click" />
