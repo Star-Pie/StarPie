@@ -45,9 +45,9 @@ public sealed class SettingsPageDescriptor
 /// 所以 <c>Settings.Get("diameter")</c> 读到的就是用户在设置页里填进去的那个值。
 /// </para>
 /// <para>
-/// 刻意不提供 <c>OnSettingsChanged</c> 事件：订阅是插件卸载判定的头号杀手
-/// （事件处理器会钉住插件的 <c>AssemblyLoadContext</c>），而一个只在用户点「关闭」时才变化的值，
-/// 不值得让整枚插件永久无法卸载。需要在改动后重新排程的插件，请在自己的动作执行时按值判断。
+/// 设置页本身不提供保存回调；需要响应设置变化的插件应通过
+/// <see cref="IPluginSettings.OnChanged"/> 订阅具体键，并在停用时释放返回的凭据。
+/// 宿主会在插件停用时兜底清理订阅，避免回调处理器钉住插件的 <c>AssemblyLoadContext</c>。
 /// </para>
 /// </summary>
 public interface ISettingsPageRegistry

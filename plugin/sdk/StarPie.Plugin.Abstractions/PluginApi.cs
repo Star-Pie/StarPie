@@ -29,7 +29,7 @@ public static class PluginApi
     /// <item>1.6 —— 新增 <see cref="ISettingsPageRegistry"/>（装配到
     /// <see cref="IPluginContext.SettingsPage"/>）与 <see cref="SettingsPageDescriptor"/>，
     /// 使插件能声明<b>插件级</b>参数页、由宿主在插件管理卡片上统一渲染。
-    /// 刻意不带能力位与变更事件，理由见 <see cref="ISettingsPageRegistry"/>。</item>
+    /// 同时提供 <see cref="IPluginSettings.OnChanged"/>，让插件在设置成功持久化后响应具体字段变化。</item>
     /// </list>
     /// <para>
     /// <b>每加一个服务面就在这里补一条，别只改数字。</b>这份清单是后来者判断

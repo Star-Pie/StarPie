@@ -60,9 +60,19 @@ public interface IPluginLogger
     string LogFilePath { get; }
 }
 
+/// <summary>一次已经持久化的插件设置变更。</summary>
+public readonly record struct PluginSettingChanged(
+    string Key,
+    string? OldValue,
+    string? NewValue);
+
 /// <summary>
 /// 插件私有配置。宿主读写 <c>plugins\&lt;id&gt;\settings.json</c>，与主 <c>config.json</c> 完全隔离。
 /// <para>键值一律用字符串，避免插件自定义类型进入持久化层。修改后需调用 <see cref="Save"/>。</para>
+/// <para>
+/// <see cref="OnChanged"/> 只在值真正改变并且保存成功后通知；注册时不会立即回调。
+/// 订阅返回的 <see cref="IDisposable"/> 必须在插件 <c>Shutdown</c> 中释放，宿主停用插件时也会兜底清理。
+/// </para>
 /// </summary>
 public interface IPluginSettings
 {
@@ -75,8 +85,17 @@ public interface IPluginSettings
 
     /// <summary>把所有未保存的修改落盘（原子写）。</summary>
     void Save();
-}
 
+    /// <summary>
+    /// 订阅指定键的持久化变更。
+    /// <para>
+    /// 回调不保证运行在 UI 线程；需要触碰窗口的插件必须通过
+    /// <see cref="IDispatcherFacade"/> 切回宿主 UI 线程。回调异常由宿主隔离并记录，
+    /// 不应影响设置保存或其他订阅者。
+    /// </para>
+    /// </summary>
+    IDisposable OnChanged(string key, Action<PluginSettingChanged> handler);
+}
 /// <summary>非侵入式通知服务。宿主优先走托盘气泡，没有托盘时降级为日志。</summary>
 public interface INotificationService
 {
