@@ -690,6 +690,9 @@ internal sealed class PluginInstance
     /// </summary>
     private void Teardown()
     {
+        // 配置服务是宿主对象，必须在卸载 ALC 前剪断它持有的插件回调。
+        Settings.ClearSubscriptions();
+
         PluginLoadContext? context = _loadContext;
 
         // 先摘字段 —— 字段是根，局部变量同样也是根

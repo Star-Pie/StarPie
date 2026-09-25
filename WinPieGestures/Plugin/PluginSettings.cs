@@ -20,14 +20,22 @@ namespace WinPieGestures.Plugins;
 /// </summary>
 internal sealed class PluginSettings : IPluginSettings
 {
+    private readonly string _pluginId;
     private readonly string _path;
     private readonly object _gate = new();
+    private readonly object _saveGate = new();
+    private readonly Dictionary<string, List<SettingsSubscription>> _subscriptions =
+        new(StringComparer.Ordinal);
+
     private Dictionary<string, string> _values;
+    private Dictionary<string, string> _persistedValues;
 
     public PluginSettings(string pluginId)
     {
+        _pluginId = pluginId;
         _path = PluginPaths.GetSettingsPath(pluginId);
         _values = Load();
+        _persistedValues = new Dictionary<string, string>(_values, StringComparer.Ordinal);
     }
 
     public string? Get(string key)
@@ -86,34 +94,174 @@ internal sealed class PluginSettings : IPluginSettings
         }
     }
 
-    public void Save()
+    /// <summary>
+    /// 订阅指定键的已持久化变更。Set 只修改内存，Save 成功后才会通知。
+    /// </summary>
+    public IDisposable OnChanged(string key, Action<PluginSettingChanged> handler)
     {
-        string json;
+        if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("设置键不能为空。", nameof(key));
+        ArgumentNullException.ThrowIfNull(handler);
+
+        var subscription = new SettingsSubscription(this, key, handler);
         lock (_gate)
         {
-            json = JsonSerializer.Serialize(_values, new JsonSerializerOptions { WriteIndented = true });
+            if (!_subscriptions.TryGetValue(key, out List<SettingsSubscription>? list))
+            {
+                list = new List<SettingsSubscription>();
+                _subscriptions.Add(key, list);
+            }
+
+            list.Add(subscription);
         }
 
-        try
-        {
-            string? dir = Path.GetDirectoryName(_path);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        return subscription;
+    }
 
+    /// <summary>
+    /// 宿主停用插件时的兜底清理。插件正常会 Dispose 自己的 token，
+    /// 这里仍必须清掉宿主持有的所有回调，避免插件 ALC 被配置服务钉住。
+    /// </summary>
+    internal void ClearSubscriptions()
+    {
+        SettingsSubscription[] subscriptions;
+        lock (_gate)
+        {
+            var all = new List<SettingsSubscription>();
+            foreach (List<SettingsSubscription> list in _subscriptions.Values)
+            {
+                all.AddRange(list);
+            }
+
+            _subscriptions.Clear();
+            subscriptions = all.ToArray();
+        }
+
+        foreach (SettingsSubscription subscription in subscriptions)
+        {
+            subscription.DetachFromOwner();
+        }
+    }
+
+    public void Save()
+    {
+        lock (_saveGate)
+        {
+            Dictionary<string, string> snapshot;
+            List<PluginSettingChanged> changes;
+
+            lock (_gate)
+            {
+                snapshot = new Dictionary<string, string>(_values, StringComparer.Ordinal);
+                changes = BuildChanges(_persistedValues, snapshot);
+            }
+
+            if (changes.Count == 0) return;
+
+            string json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
             string temp = _path + ".tmp";
-            File.WriteAllText(temp, json);
-            if (File.Exists(_path))
+
+            try
             {
-                File.Replace(temp, _path, null);
+                string? dir = Path.GetDirectoryName(_path);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+                File.WriteAllText(temp, json);
+                if (File.Exists(_path))
+                {
+                    File.Replace(temp, _path, null);
+                }
+                else
+                {
+                    File.Move(temp, _path, overwrite: true);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                File.Move(temp, _path, overwrite: true);
+                AppLogger.LogError($"[plugin] 保存插件配置失败：{_path}", ex);
+                try
+                {
+                    if (File.Exists(temp)) File.Delete(temp);
+                }
+                catch
+                {
+                    // 清理失败不应覆盖原始保存错误。
+                }
+
+                return;
             }
+
+            lock (_gate)
+            {
+                _persistedValues = snapshot;
+            }
+
+            NotifySubscribers(changes);
         }
-        catch (Exception ex)
+    }
+
+    private static List<PluginSettingChanged> BuildChanges(
+        IReadOnlyDictionary<string, string> oldValues,
+        IReadOnlyDictionary<string, string> newValues)
+    {
+        var changes = new List<PluginSettingChanged>();
+
+        foreach ((string key, string oldValue) in oldValues)
         {
-            AppLogger.LogError($"[plugin] 保存插件配置失败：{_path}", ex);
+            if (!newValues.TryGetValue(key, out string? newValue))
+            {
+                changes.Add(new PluginSettingChanged(key, oldValue, null));
+            }
         }
+
+        foreach ((string key, string newValue) in newValues)
+        {
+            if (!oldValues.TryGetValue(key, out string? oldValue))
+            {
+                changes.Add(new PluginSettingChanged(key, null, newValue));
+            }
+            else if (!string.Equals(oldValue, newValue, StringComparison.Ordinal))
+            {
+                changes.Add(new PluginSettingChanged(key, oldValue, newValue));
+            }
+        }
+
+        return changes;
+    }
+
+    private void NotifySubscribers(IReadOnlyList<PluginSettingChanged> changes)
+    {
+        foreach (PluginSettingChanged change in changes)
+        {
+            SettingsSubscription[] subscribers;
+            lock (_gate)
+            {
+                if (!_subscriptions.TryGetValue(change.Key, out List<SettingsSubscription>? list) || list.Count == 0)
+                {
+                    continue;
+                }
+
+                // 回调在锁外执行：回调可能 Dispose 自身、触发保存或导致插件停用。
+                subscribers = list.ToArray();
+            }
+
+            foreach (SettingsSubscription subscription in subscribers)
+            {
+                subscription.Invoke(change);
+            }
+        }
+    }
+
+    private void RemoveSubscription(SettingsSubscription subscription)
+    {
+        lock (_gate)
+        {
+            if (!_subscriptions.TryGetValue(subscription.Key, out List<SettingsSubscription>? list)) return;
+
+            list.Remove(subscription);
+            if (list.Count == 0) _subscriptions.Remove(subscription.Key);
+        }
+
+        subscription.DetachFromOwner();
     }
 
     private Dictionary<string, string> Load()
@@ -131,6 +279,52 @@ internal sealed class PluginSettings : IPluginSettings
         {
             AppLogger.LogWarn($"[plugin] 插件配置损坏，已忽略并使用默认值：{_path}（{ex.Message}）");
             return new Dictionary<string, string>(StringComparer.Ordinal);
+        }
+    }
+
+    private sealed class SettingsSubscription : IDisposable
+    {
+        private readonly Action<PluginSettingChanged> _handler;
+        private PluginSettings? _owner;
+        private int _disposed;
+
+        public SettingsSubscription(
+            PluginSettings owner,
+            string key,
+            Action<PluginSettingChanged> handler)
+        {
+            _owner = owner;
+            Key = key;
+            _handler = handler;
+        }
+
+        public string Key { get; }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            PluginSettings? owner = Interlocked.Exchange(ref _owner, null);
+            owner?.RemoveSubscription(this);
+        }
+
+        public void DetachFromOwner()
+        {
+            Interlocked.Exchange(ref _disposed, 1);
+            Interlocked.Exchange(ref _owner, null);
+        }
+
+        public void Invoke(PluginSettingChanged change)
+        {
+            if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _owner) == null) return;
+
+            try
+            {
+                _handler(change);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogError($"[plugin] 设置变更回调失败：{Key}", ex);
+            }
         }
     }
 }

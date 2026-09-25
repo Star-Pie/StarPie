@@ -85,7 +85,8 @@ internal sealed class ActionItemParameterTarget : IPluginParameterTarget
 /// <para>
 /// 落盘时机由调用方决定（设置窗口关闭时 <c>Save()</c> 一次），这里只做内存写穿：
 /// 宿主与插件共用同一个 <see cref="PluginSettings"/> 实例，所以用户一改动，
-/// 插件下一次 <c>Settings.Get</c> 就读到新值，不需要事件也不需要重启插件。
+/// 插件下一次 <c>Settings.Get</c> 就读到新值；保存成功后，宿主还会通过
+/// <see cref="IPluginSettings.OnChanged"/> 通知订阅了对应键的插件。
 /// 不在每次按键上落盘：文本框每敲一个字符触发一次变化，逐字符重写整份 JSON 是纯粹的浪费。
 /// </para>
 /// </summary>
