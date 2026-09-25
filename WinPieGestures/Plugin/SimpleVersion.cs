@@ -108,8 +108,11 @@ internal readonly struct SimpleVersion : IComparable<SimpleVersion>
     {
         if (host.CompareTo(minimum) >= 0) return true;
 
-        // 同一版本号 + 宿主带预发布标识 => 视为满足（见上方说明）
-        return host.SameRelease(minimum) && !string.IsNullOrEmpty(host.PreRelease);
+        // 仅当下界是同号正式版时放行预发布宿主；若下界本身带 beta/rc，
+        // 必须保留 CompareTo 的预发布顺序，不能让 beta.2 满足 beta.3。
+        return host.SameRelease(minimum)
+            && !string.IsNullOrEmpty(host.PreRelease)
+            && string.IsNullOrEmpty(minimum.PreRelease);
     }
 }
 

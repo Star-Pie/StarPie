@@ -5316,27 +5316,34 @@ internal static class PluginSelfTest
             fail("SDK次版本门禁", $"低次版本 ApiVersion ({manifestLowerMinor.ApiVersion}) 向下兼容应当通过，实际失败 ({failLowerMinor}): {errLowerMinor}");
         }
 
-        // 3. SimpleVersion.SatisfiesMinimum 与宿主版本断言：旧宿主 1.8.0-beta.2 拒绝 1.8.1-beta.1，新宿主 1.8.1-beta.1 接受 1.8.1-beta.1
+        // 3. SimpleVersion.SatisfiesMinimum 与宿主版本断言：旧宿主 1.8.0-beta.2 拒绝 1.8.0-beta.3，新宿主 1.8.0-beta.3 接受 1.8.0-beta.3
         if (!SimpleVersion.TryParse("1.8.0-beta.2", out var oldHostVer) ||
-            !SimpleVersion.TryParse("1.8.1-beta.1", out var newHostVer) ||
-            !SimpleVersion.TryParse("1.8.1-beta.1", out var pluginMinVer))
+            !SimpleVersion.TryParse("1.8.0-beta.3", out var newHostVer) ||
+            !SimpleVersion.TryParse("1.8.0-beta.3", out var pluginMinVer) ||
+            !SimpleVersion.TryParse("1.8.0", out var stableMinVer))
         {
             fail("版本门禁", "解析测试版本号失败");
         }
         else
         {
-            // 旧宿主 1.8.0-beta.2 对比插件要求的 minHostVersion 1.8.1-beta.1：必须拒绝！
+            // 旧宿主 1.8.0-beta.2 对比插件要求的 minHostVersion 1.8.0-beta.3：必须拒绝！
             bool oldHostSatisfies = SimpleVersion.SatisfiesMinimum(oldHostVer, pluginMinVer);
             if (oldHostSatisfies)
             {
-                fail("版本门禁", "旧宿主 1.8.0-beta.2 不满足插件最低版本 1.8.1-beta.1，但 SatisfiesMinimum 错误返回 true！");
+                fail("版本门禁", "旧宿主 1.8.0-beta.2 不满足插件最低版本 1.8.0-beta.3，但 SatisfiesMinimum 错误返回 true！");
             }
 
-            // 新宿主 1.8.1-beta.1 对比插件要求的 minHostVersion 1.8.1-beta.1：必须接受！
+            // 新宿主 1.8.0-beta.3 对比插件要求的 minHostVersion 1.8.0-beta.3：必须接受！
             bool newHostSatisfies = SimpleVersion.SatisfiesMinimum(newHostVer, pluginMinVer);
             if (!newHostSatisfies)
             {
-                fail("版本门禁", "新宿主 1.8.1-beta.1 满足插件最低版本 1.8.1-beta.1，但 SatisfiesMinimum 错误返回 false！");
+                fail("版本门禁", "新宿主 1.8.0-beta.3 满足插件最低版本 1.8.0-beta.3，但 SatisfiesMinimum 错误返回 false！");
+            }
+
+            // 既有兼容规则仍保留：同号预发布宿主可满足不带预发布标识的正式版下界。
+            if (!SimpleVersion.SatisfiesMinimum(oldHostVer, stableMinVer))
+            {
+                fail("版本门禁", "宿主 1.8.0-beta.2 应兼容插件最低版本 1.8.0，但 SatisfiesMinimum 错误返回 false！");
             }
         }
 
