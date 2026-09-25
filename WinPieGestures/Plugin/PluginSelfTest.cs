@@ -4744,7 +4744,7 @@ internal static class PluginSelfTest
         var slotAction = new ActionItem
         {
             Type = PluginActionBinding.TypeName,
-            Name = "CAD 数字键盘层",
+            Name = "按键映射",
             PluginActionRef = new PluginActionRef
             {
                 PluginId = "starpie.plugin.keypadlayer",
@@ -4777,7 +4777,7 @@ internal static class PluginSelfTest
         var settingsAction = new ActionItem
         {
             Type = PluginActionBinding.TypeName,
-            Name = "CAD 数字键盘层",
+            Name = "按键映射",
             PluginActionRef = new PluginActionRef
             {
                 PluginId = "starpie.plugin.keypadlayer",
