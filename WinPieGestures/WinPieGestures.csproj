@@ -45,6 +45,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="test_onboarding" />
+    <InternalsVisibleTo Include="test_icon_cache" />
   </ItemGroup>
 
 

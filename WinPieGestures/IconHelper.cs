@@ -1056,7 +1056,9 @@ public static class IconHelper
 
 			if (!ResolveShortcutTarget(expandedPath, out string targetPath, out string iconPath, out _))
 			{
-				return true;
+				// 不能仅因 ResolveShortcutTarget 返回 false 或目标为空，就判定快捷方式失效。
+				// 对于无标准 Win32 物理文件路径的合法虚拟对象/Shell PIDL（例如回收站等），不判定为失效。
+				return false;
 			}
 
 			// 1. 若显式指定了图标文件路径，且该文件存在，则图标资源有效
@@ -1077,18 +1079,31 @@ public static class IconHelper
 				{
 					return false;
 				}
-				if (File.Exists(expandedTargetPath) || Directory.Exists(expandedTargetPath))
+
+				bool looksLikeFileTarget = Path.IsPathRooted(expandedTargetPath) ||
+					expandedTargetPath.Contains('\\') ||
+					expandedTargetPath.Contains('/') ||
+					expandedTargetPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+
+				if (looksLikeFileTarget)
 				{
-					return false;
+					if (File.Exists(expandedTargetPath) || Directory.Exists(expandedTargetPath))
+					{
+						return false;
+					}
+					// 明确指向文件系统路径但物理文件不存在，判定为明确失效
+					return true;
 				}
-				return true;
+
+				return false;
 			}
 
-			return true;
+			// 文件系统目标为空，可能是 Shell 虚拟项（如回收站），不判定为失效文件目标
+			return false;
 		}
 		catch
 		{
-			return true;
+			return false;
 		}
 	}
 

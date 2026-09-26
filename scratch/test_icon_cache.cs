@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Media.Imaging;
 using WinPieGestures;
+using WinPieGestures.Plugins;
 
 public class Program
 {
@@ -14,8 +17,59 @@ public class Program
     private static int _passedCount = 0;
 
     [STAThread]
-    public static int Main()
+    public static int Main(string[] args)
     {
+        // 独立子进程分支 1：固定图标并创建持久化快照
+        if (args.Length >= 3 && args[0] == "--subproc-pin")
+        {
+            string targetExe = args[1];
+            string localAppDataDir = args[2];
+            Environment.SetEnvironmentVariable("LOCALAPPDATA", localAppDataDir);
+            IconHelper.ClearPinnedIcons();
+            IconHelper.ClearCache();
+            IconHelper.PinIcon(targetExe);
+            string cacheFile = IconHelper.GetPersistentIconCachePath(targetExe);
+            if (!File.Exists(cacheFile))
+            {
+                Console.Error.WriteLine($"[Subproc1-Error] Cache file not created on disk: {cacheFile}");
+                return 2;
+            }
+            Console.WriteLine($"[Subproc1-OK] Pinned and created cache: {cacheFile}");
+            return 0;
+        }
+
+        // 独立子进程分支 2：冷启动（全新进程内存干净无状态），检测源文件已不可用，从持久化快照读取
+        if (args.Length >= 3 && args[0] == "--subproc-read")
+        {
+            string targetExe = args[1];
+            string localAppDataDir = args[2];
+            Environment.SetEnvironmentVariable("LOCALAPPDATA", localAppDataDir);
+            if (!IconHelper.IsUnavailableFileSystemSource(targetExe))
+            {
+                Console.Error.WriteLine($"[Subproc2-Error] Target exe {targetExe} not recognized as unavailable source");
+                return 3;
+            }
+            BitmapSource? icon = IconHelper.GetIcon(targetExe);
+            if (icon == null)
+            {
+                Console.Error.WriteLine($"[Subproc2-Error] Failed to load icon from persistent cache for {targetExe}");
+                return 4;
+            }
+            if (icon.PixelWidth <= 0 || icon.PixelHeight <= 0)
+            {
+                Console.Error.WriteLine($"[Subproc2-Error] Invalid icon dimensions: {icon.PixelWidth}x{icon.PixelHeight}");
+                return 5;
+            }
+            if (!icon.IsFrozen)
+            {
+                Console.Error.WriteLine($"[Subproc2-Error] Restored icon is not frozen");
+                return 6;
+            }
+            Console.WriteLine($"[Subproc2-OK] Loaded frozen icon from cache: {icon.PixelWidth}x{icon.PixelHeight}");
+            return 0;
+        }
+
+        // 主测试套件流程
         Console.WriteLine("==========================================================");
         Console.WriteLine("StarPie PR #142 Icon Cache & Fallback Regression Suite");
         Console.WriteLine("==========================================================");
@@ -30,9 +84,10 @@ public class Program
         {
             Test1_RestartAfterSourceDeleted(tempBase, localAppData);
             Test2_BrokenShortcutFallback(tempBase, localAppData);
+            Test_RecycleBinShortcut(tempBase, localAppData);
             Test3_CorruptedCacheSelfHealing(tempBase, localAppData);
             Test4_UnwritableCacheFaultTolerance(tempBase, localAppData);
-            Test5_FullConfigurationEntityCoverage();
+            Test5_FullConfigurationEntityCoverage(tempBase, localAppData);
             Test6_PluginIconsUnaffected();
 
             Console.WriteLine("==========================================================");
@@ -88,12 +143,57 @@ public class Program
         shortcut.Save();
     }
 
+    private static int RunSubprocess(string mode, string targetExe, string localAppDataDir, out string stdout, out string stderr)
+    {
+        ProcessStartInfo psi = new ProcessStartInfo();
+        string? entryAssembly = Assembly.GetEntryAssembly()?.Location;
+        string processPath = Environment.ProcessPath ?? "";
+
+        if (File.Exists(processPath) && processPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && !processPath.EndsWith("dotnet.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            psi.FileName = processPath;
+            psi.ArgumentList.Add(mode);
+            psi.ArgumentList.Add(targetExe);
+            psi.ArgumentList.Add(localAppDataDir);
+        }
+        else if (!string.IsNullOrEmpty(entryAssembly) && File.Exists(entryAssembly))
+        {
+            psi.FileName = "dotnet";
+            psi.ArgumentList.Add(entryAssembly);
+            psi.ArgumentList.Add(mode);
+            psi.ArgumentList.Add(targetExe);
+            psi.ArgumentList.Add(localAppDataDir);
+        }
+        else
+        {
+            psi.FileName = processPath;
+            psi.ArgumentList.Add(mode);
+            psi.ArgumentList.Add(targetExe);
+            psi.ArgumentList.Add(localAppDataDir);
+        }
+
+        psi.Environment["LOCALAPPDATA"] = localAppDataDir;
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+
+        using Process proc = Process.Start(psi)!;
+        stdout = proc.StandardOutput.ReadToEnd();
+        stderr = proc.StandardError.ReadToEnd();
+        proc.WaitForExit();
+        return proc.ExitCode;
+    }
+
     /// <summary>
-    /// 测试 1：程序重启且原文件被删后，能正确从持久化缓存读取快照并正常显示。
+    /// 测试 1：源文件被删后的持久化缓存恢复。
+    /// 包含：
+    /// 1A. 单进程内重置缓存模拟重启；
+    /// 1B. 严格跨两个独立 OS 进程验证快照创建及源文件删除后的冷启动读取。
     /// </summary>
     private static void Test1_RestartAfterSourceDeleted(string tempBase, string localAppData)
     {
-        Console.WriteLine("\n--- Running Test 1: Restart After Source File Deleted ---");
+        Console.WriteLine("\n--- Running Test 1A: In-Process Restart Simulation After Source File Deleted ---");
 
         string testAppExe = Path.Combine(tempBase, "app_to_delete.exe");
         File.Copy(GetSystemNotepadPath(), testAppExe, true);
@@ -123,6 +223,25 @@ public class Program
             Assert(loadedIcon.PixelWidth > 0 && loadedIcon.PixelHeight > 0, "Test1_IconValidDimensions", $"Dimensions: {loadedIcon.PixelWidth}x{loadedIcon.PixelHeight}");
             Assert(loadedIcon.IsFrozen, "Test1_IconIsFrozen", "Cached icon is properly frozen");
         }
+
+        Console.WriteLine("\n--- Running Test 1B: Two Independent Processes Snapshot Creation & Cold Read ---");
+        string twoProcExe = Path.Combine(tempBase, "two_proc_test_app.exe");
+        File.Copy(GetSystemNotepadPath(), twoProcExe, true);
+
+        // 进程 1：固定图标生成持久化快照
+        int proc1Exit = RunSubprocess("--subproc-pin", twoProcExe, localAppData, out string out1, out string err1);
+        Assert(proc1Exit == 0, "Test1_TwoProc_Process1PinnedAndCreatedSnapshot", $"Process 1 exited with 0 (stdout: {out1.Trim()}, stderr: {err1.Trim()})");
+
+        string twoProcCache = IconHelper.GetPersistentIconCachePath(twoProcExe);
+        Assert(File.Exists(twoProcCache), "Test1_TwoProc_SnapshotFileExistsOnDisk", $"Snapshot verified on disk: {Path.GetFileName(twoProcCache)}");
+
+        // 父进程：删除源可执行文件
+        File.Delete(twoProcExe);
+        Assert(!File.Exists(twoProcExe), "Test1_TwoProc_SourceFileDeleted", "Source executable deleted from disk before Process 2 launch");
+
+        // 进程 2：全新独立 OS 进程，冷启动从持久化缓存读取
+        int proc2Exit = RunSubprocess("--subproc-read", twoProcExe, localAppData, out string out2, out string err2);
+        Assert(proc2Exit == 0, "Test1_TwoProc_Process2RestoredFromCache", $"Process 2 cold read exited with 0 (stdout: {out2.Trim()}, stderr: {err2.Trim()})");
     }
 
     /// <summary>
@@ -169,6 +288,37 @@ public class Program
         // 6. 获取图标依然返回原有效快照
         BitmapSource? restoredIcon = IconHelper.GetIcon(shortcutLnk);
         Assert(restoredIcon != null, "Test2_RestoredValidIcon", "GetIcon returns valid persistent snapshot rather than placeholder or null");
+    }
+
+    /// <summary>
+    /// 回收站（Shell PIDL）快捷方式回归测试：有效虚拟快捷方式绝不得误判为失效，且能成功提取图标并生成快照。
+    /// </summary>
+    private static void Test_RecycleBinShortcut(string tempBase, string localAppData)
+    {
+        Console.WriteLine("\n--- Running Test: Recycle Bin (Shell PIDL) Shortcut Support ---");
+
+        string recycleBinLnk = Path.Combine(tempBase, "recycle_bin.lnk");
+        CreateShortcut(recycleBinLnk, "::{645FF040-5081-101B-9F08-00AA002F954E}");
+
+        IconHelper.ClearPinnedIcons();
+        IconHelper.ClearCache();
+
+        bool isBroken = IconHelper.IsBrokenShortcut(recycleBinLnk);
+        Assert(!isBroken, "Test_RecycleBin_NotClassifiedBroken", "Recycle bin shortcut must NOT be classified as broken");
+
+        bool isUnavailable = IconHelper.IsUnavailableFileSystemSource(recycleBinLnk);
+        Assert(!isUnavailable, "Test_RecycleBin_NotClassifiedUnavailable", "Recycle bin shortcut must NOT be classified as unavailable file source");
+
+        IconHelper.PinIcon(recycleBinLnk);
+        BitmapSource? icon = IconHelper.GetIcon(recycleBinLnk);
+        Assert(icon != null, "Test_RecycleBin_IconExtracted", "Valid icon successfully extracted for Recycle Bin shortcut");
+        if (icon != null)
+        {
+            Assert(icon.PixelWidth > 0 && icon.PixelHeight > 0, "Test_RecycleBin_ValidDimensions", $"Dimensions: {icon.PixelWidth}x{icon.PixelHeight}");
+        }
+
+        string cacheFile = IconHelper.GetPersistentIconCachePath(recycleBinLnk);
+        Assert(File.Exists(cacheFile), "Test_RecycleBin_SnapshotPersisted", $"Snapshot persisted to cache: {Path.GetFileName(cacheFile)}");
     }
 
     /// <summary>
@@ -260,11 +410,41 @@ public class Program
 
     /// <summary>
     /// 测试 5：全实体持图覆盖（一级扇区、二级级联扇区、中心动作、多层轮盘 profile/layer、取消动作、手势动作）。
+    /// 使用真实临时样本，通过 PinIconsForConfig 验证各动作入口，并验证源文件被删后各入口均能从快照恢复。
     /// </summary>
-    private static void Test5_FullConfigurationEntityCoverage()
+    private static void Test5_FullConfigurationEntityCoverage(string tempBase, string localAppData)
     {
-        Console.WriteLine("\n--- Running Test 5: Full Configuration Entity Icon Pinning Coverage ---");
+        Console.WriteLine("\n--- Running Test 5: Real Sample Files & Full Configuration Entity Coverage ---");
 
+        string entityDir = Path.Combine(tempBase, "RealEntities");
+        Directory.CreateDirectory(entityDir);
+        string sysNotepad = GetSystemNotepadPath();
+
+        string tier1Exe = Path.Combine(entityDir, "sample_tier1.exe");
+        string launchExe = Path.Combine(entityDir, "sample_launch.exe");
+        string subactionExe = Path.Combine(entityDir, "sample_subaction.exe");
+        string centerExe = Path.Combine(entityDir, "sample_center.exe");
+        string layerActionExe = Path.Combine(entityDir, "sample_layer_action.exe");
+        string layerCenterExe = Path.Combine(entityDir, "sample_layer_center.exe");
+        string cadAppExe = Path.Combine(entityDir, "sample_cad_app.exe");
+        string cancelExe = Path.Combine(entityDir, "sample_cancel.exe");
+        string gestureInheritExe = Path.Combine(entityDir, "sample_gesture_inherit.exe");
+        string gestureLaunchExe = Path.Combine(entityDir, "sample_gesture_launch.exe");
+
+        string[] allSampleExes = new string[]
+        {
+            tier1Exe, launchExe, subactionExe, centerExe, layerActionExe,
+            layerCenterExe, cadAppExe, cancelExe, gestureInheritExe, gestureLaunchExe
+        };
+
+        // 1. 创建真实临时可执行文件样本
+        foreach (var sample in allSampleExes)
+        {
+            File.Copy(sysNotepad, sample, true);
+        }
+        Assert(allSampleExes.All(File.Exists), "Test5_RealSamplesCreated", $"Created all {allSampleExes.Length} real temporary executable samples");
+
+        // 2. 组装覆盖全部 10 个动作入口的 AppConfig
         AppConfig config = new AppConfig
         {
             Profiles = new List<WheelProfile>
@@ -274,18 +454,18 @@ public class Program
                     ProcessName = "Global",
                     Actions = new List<ActionItem>
                     {
-                        new ActionItem { Type = "Hotkey", InheritAppIconPath = @"C:\TestEntities\app_tier1.exe" },
+                        new ActionItem { Type = "Hotkey", InheritAppIconPath = tier1Exe },
                         new ActionItem
                         {
                             Type = "Launch",
-                            Parameter = @"C:\TestEntities\app_launch.exe",
+                            Parameter = launchExe,
                             SubActions = new List<ActionItem>
                             {
-                                new ActionItem { Type = "Hotkey", InheritAppIconPath = @"C:\TestEntities\app_subaction.exe" }
+                                new ActionItem { Type = "Hotkey", InheritAppIconPath = subactionExe }
                             }
                         }
                     },
-                    CenterAction = new ActionItem { Type = "Hotkey", InheritAppIconPath = @"C:\TestEntities\app_center.exe" },
+                    CenterAction = new ActionItem { Type = "Hotkey", InheritAppIconPath = centerExe },
                     Layers = new List<WheelLayer>
                     {
                         new WheelLayer
@@ -293,9 +473,9 @@ public class Program
                             Name = "Layer 2",
                             Actions = new List<ActionItem>
                             {
-                                new ActionItem { Type = "Hotkey", InheritAppIconPath = @"C:\TestEntities\app_layer_action.exe" }
+                                new ActionItem { Type = "Hotkey", InheritAppIconPath = layerActionExe }
                             },
-                            CenterAction = new ActionItem { Type = "Launch", Parameter = @"C:\TestEntities\app_layer_center.exe" }
+                            CenterAction = new ActionItem { Type = "Launch", Parameter = layerCenterExe }
                         }
                     }
                 },
@@ -304,55 +484,61 @@ public class Program
                     ProcessName = "CAD.exe",
                     Actions = new List<ActionItem>
                     {
-                        new ActionItem { Type = "App", Parameter = @"C:\TestEntities\app_cad_type_app.exe" }
+                        new ActionItem { Type = "App", Parameter = cadAppExe }
                     }
                 }
             },
-            CancelAction = new ActionItem { Type = "Hotkey", InheritAppIconPath = @"C:\TestEntities\app_cancel.exe" },
+            CancelAction = new ActionItem { Type = "Hotkey", InheritAppIconPath = cancelExe },
             GestureMappings = new List<GestureMapping>
             {
                 new GestureMapping
                 {
                     Pattern = "D-R",
-                    Action = new ActionItem { Type = "Hotkey", InheritAppIconPath = @"C:\TestEntities\app_gesture_inherit.exe" }
+                    Action = new ActionItem { Type = "Hotkey", InheritAppIconPath = gestureInheritExe }
                 },
                 new GestureMapping
                 {
                     Pattern = "U-D",
-                    Action = new ActionItem { Type = "Launch", Parameter = @"C:\TestEntities\app_gesture_launch.exe" }
+                    Action = new ActionItem { Type = "Launch", Parameter = gestureLaunchExe }
                 }
             }
         };
 
-        // 通过私有字段反射验证 PinIconsForConfig 收集的全部路径
         IconHelper.ClearPinnedIcons();
         IconHelper.ClearCache();
 
-        // 收集预期路径集合
-        string[] expectedPaths = new string[]
-        {
-            @"C:\TestEntities\app_tier1.exe",
-            @"C:\TestEntities\app_launch.exe",
-            @"C:\TestEntities\app_subaction.exe",
-            @"C:\TestEntities\app_center.exe",
-            @"C:\TestEntities\app_layer_action.exe",
-            @"C:\TestEntities\app_layer_center.exe",
-            @"C:\TestEntities\app_cad_type_app.exe",
-            @"C:\TestEntities\app_cancel.exe",
-            @"C:\TestEntities\app_gesture_inherit.exe",
-            @"C:\TestEntities\app_gesture_launch.exe"
-        };
-
-        // 我们通过反射调用私有的 CollectPinnedIconPaths 与 PinIconsForConfig 逻辑
-        var collectMethod = typeof(IconHelper).GetMethod("CollectPinnedIconPath", BindingFlags.NonPublic | BindingFlags.Static);
-        HashSet<string> collected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        // 运行 PinIconsForConfig
+        // 3. 通过 PinIconsForConfig 驱动真实样本固定与快照持久化
         IconHelper.PinIconsForConfig(config);
 
-        // 检查 PinIconsForConfig 是否涵盖了全部预期路径
-        // 因为这些虚构路径物理上不存在，PinIcon 会调用 IsUnavailableFileSystemSource 并尝试 LoadPersistentIconSnapshot
-        // 我们可以测试内部的 CollectPinnedIconPaths 收集到的集合
+        // 4. 验证全部 10 个动作入口在磁盘上均生成了持久化 PNG 快照
+        foreach (var sample in allSampleExes)
+        {
+            string cachePath = IconHelper.GetPersistentIconCachePath(sample);
+            Assert(File.Exists(cachePath), "Test5_SnapshotExistsOnDisk", $"Snapshot verified on disk: {Path.GetFileName(sample)}");
+        }
+
+        // 5. 模拟这 10 个样本源文件全部从磁盘删除
+        foreach (var sample in allSampleExes)
+        {
+            File.Delete(sample);
+        }
+        Assert(allSampleExes.All(s => !File.Exists(s)), "Test5_AllSourceSamplesDeleted", $"All {allSampleExes.Length} source executables deleted from disk");
+
+        // 6. 重置内存缓存（模拟程序重启）
+        IconHelper.ClearPinnedIcons();
+        IconHelper.ClearCache();
+
+        // 7. 逐一验证各动作入口在源文件被删后，依然能无损从持久化快照恢复图标！
+        foreach (var sample in allSampleExes)
+        {
+            Assert(IconHelper.IsUnavailableFileSystemSource(sample), "Test5_UnavailableDetected", $"Unavailable source detected: {Path.GetFileName(sample)}");
+            BitmapSource? restored = IconHelper.GetIcon(sample);
+            Assert(restored != null && restored.PixelWidth > 0 && restored.PixelHeight > 0, "Test5_SnapshotRestored", $"Icon restored from cache for {Path.GetFileName(sample)}: {restored?.PixelWidth}x{restored?.PixelHeight}");
+        }
+
+        // 8. 辅助断言：内部反射收集器准确覆盖了 10 个路径
+        var collectMethod = typeof(IconHelper).GetMethod("CollectPinnedIconPath", BindingFlags.NonPublic | BindingFlags.Static);
+        HashSet<string> collected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var p in config.Profiles)
         {
             if (p.Actions != null)
@@ -380,35 +566,49 @@ public class Program
                 if (gm.Action != null) collectMethod?.Invoke(null, new object[] { gm.Action, collected });
             }
         }
-
-        foreach (var expected in expectedPaths)
-        {
-            Assert(collected.Contains(expected), "Test5_EntityCovered", $"Entity path covered: {expected}");
-        }
-        Assert(collected.Count == expectedPaths.Length, "Test5_ExactCoverageCount", $"Total collected: {collected.Count}/{expectedPaths.Length}");
+        Assert(collected.Count == allSampleExes.Length, "Test5_ExactCoverageCount", $"CollectPinnedIconPath covered all {collected.Count}/{allSampleExes.Length} action endpoints");
     }
 
     /// <summary>
     /// 测试 6：插件图标（plugin:前缀矢量与动态注册）完全不受影响。
+    /// 实际向 PluginCatalog 注册插件 SVG，断言解析结果与注册值一致，且撤销后正确清除。
     /// </summary>
     private static void Test6_PluginIconsUnaffected()
     {
-        Console.WriteLine("\n--- Running Test 6: Plugin Icons Unaffected ---");
+        Console.WriteLine("\n--- Running Test 6: Plugin Icons Registration and Resolution ---");
 
-        string pluginKey = "plugin:sample_plugin:light_bulb";
+        string pluginId = "test_icon_plugin";
+        string shortKey = "custom_tool";
+        string fullKey = $"plugin:{pluginId}:{shortKey}";
+        string expectedSvg = "M 10 10 L 20 20 L 30 10 Z";
 
-        // 1. GetSvgPathByKey 对插件前缀正确转发至 PluginHost.Catalog，且绝不触发文件提取
-        string? svg = IconHelper.GetSvgPathByKey(pluginKey);
-        // sample_plugin 虽未安装，但 ResolveIcon 优雅返回 null 或默认，不发生异常
-        Assert(true, "Test6_GetSvgPathByKeyHandled", $"GetSvgPathByKey for '{pluginKey}' executed without throwing");
+        // 1. 实际向 PluginCatalog 事务式注册插件矢量 SVG 图标
+        var session = PluginHost.Catalog.BeginSession(pluginId);
+        session.StageIcon(new PluginIconRegistration
+        {
+            PluginId = pluginId,
+            FullKey = fullKey,
+            SvgPathData = expectedSvg
+        });
+        bool committed = session.Commit(out string err);
+        Assert(committed && string.IsNullOrEmpty(err), "Test6_PluginIconCommitted", "Plugin icon registered via PluginCatalog session cleanly");
 
-        // 2. ActionItem 为 Plugin 类型时，若未设置 InheritAppIconPath，PinIcon 不做无效文件提取
+        // 2. 断言 IconHelper.GetSvgPathByKey 解析出的 SVG 路径与实际注册值完全一致
+        string? resolvedSvg = IconHelper.GetSvgPathByKey(fullKey);
+        Assert(string.Equals(resolvedSvg, expectedSvg, StringComparison.Ordinal), "Test6_ResolvedSvgMatchesRegistered", $"Resolved SVG matches registered: '{resolvedSvg}' == '{expectedSvg}'");
+
+        // 3. 撤销注册后，断言再次解析返回 null
+        PluginHost.Catalog.RevokeAll(pluginId);
+        string? revokedSvg = IconHelper.GetSvgPathByKey(fullKey);
+        Assert(revokedSvg == null, "Test6_RevokedPluginIconReturnsNull", "GetSvgPathByKey returns null after RevokeAll");
+
+        // 4. ActionItem 为 Plugin 类型时，若未设置 InheritAppIconPath，PinIcon 不做无效文件提取
         ActionItem pluginAction = new ActionItem
         {
             Type = "Plugin",
             Name = "插件动作",
             Parameter = "param",
-            IconKey = pluginKey,
+            IconKey = fullKey,
             InheritAppIconPath = ""
         };
 
