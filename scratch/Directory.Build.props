@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'test_icon_cache' Or '$(MSBuildProjectName)' == 'test_onboarding'">
     <BaseIntermediateOutputPath>obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <BaseOutputPath>bin\$(MSBuildProjectName)\</BaseOutputPath>
   </PropertyGroup>
