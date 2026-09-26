@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Windows;
 using System.Windows.Interop;
@@ -55,6 +56,18 @@ public static class IconHelper
 	private static readonly ConcurrentDictionary<string, BitmapSource> _dynamicIcons;
 	private static readonly LinkedList<string> _dynamicLruList;
 	private static readonly object _dynamicLruLock;
+	public static string PersistentIconCacheFolder
+	{
+		get
+		{
+			string localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA") ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+			return Path.Combine(localAppData, "StarPie", "IconCache");
+		}
+	}
+	public static void ClearPinnedIcons()
+	{
+		_pinnedIcons.Clear();
+	}
 	private const int MaxDynamicIcons = 120;
 
 	public static readonly List<VectorIconItem> VectorIconList;
@@ -860,20 +873,44 @@ public static class IconHelper
 	public static void PinIconsForConfig(AppConfig? config)
 	{
 		HashSet<string> requiredPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		if (config?.Profiles != null)
+		if (config != null)
 		{
-			foreach (var profile in config.Profiles)
+			if (config.Profiles != null)
 			{
-				if (profile?.Actions == null) continue;
-				CollectPinnedIconPaths(profile.Actions, requiredPaths);
-				if (profile.Layers != null)
+				foreach (var profile in config.Profiles)
 				{
-					foreach (var layer in profile.Layers)
+					if (profile == null) continue;
+					if (profile.Actions != null)
 					{
-						if (layer?.Actions != null)
+						CollectPinnedIconPaths(profile.Actions, requiredPaths);
+					}
+					CollectPinnedIconPath(profile.CenterAction, requiredPaths);
+					if (profile.Layers != null)
+					{
+						foreach (var layer in profile.Layers)
 						{
-							CollectPinnedIconPaths(layer.Actions, requiredPaths);
+							if (layer == null) continue;
+							if (layer.Actions != null)
+							{
+								CollectPinnedIconPaths(layer.Actions, requiredPaths);
+							}
+							CollectPinnedIconPath(layer.CenterAction, requiredPaths);
 						}
+					}
+				}
+			}
+
+			// 取消动作持图
+			CollectPinnedIconPath(config.CancelAction, requiredPaths);
+
+			// 鼠标手势映射动作持图
+			if (config.GestureMappings != null)
+			{
+				foreach (var mapping in config.GestureMappings)
+				{
+					if (mapping?.Action != null)
+					{
+						CollectPinnedIconPath(mapping.Action, requiredPaths);
 					}
 				}
 			}
@@ -898,16 +935,22 @@ public static class IconHelper
 	{
 		foreach (var action in actions)
 		{
-			if (action == null) continue;
-			AddPinnedIconPath(paths, action.InheritAppIconPath);
-			if (string.Equals(action.Type, "Launch", StringComparison.OrdinalIgnoreCase))
-			{
-				AddPinnedIconPath(paths, action.Parameter);
-			}
-			if (action.SubActions != null && action.SubActions.Count > 0)
-			{
-				CollectPinnedIconPaths(action.SubActions, paths);
-			}
+			CollectPinnedIconPath(action, paths);
+		}
+	}
+
+	private static void CollectPinnedIconPath(ActionItem? action, ISet<string> paths)
+	{
+		if (action == null) return;
+		AddPinnedIconPath(paths, action.InheritAppIconPath);
+		if (string.Equals(action.Type, "Launch", StringComparison.OrdinalIgnoreCase) ||
+		    string.Equals(action.Type, "App", StringComparison.OrdinalIgnoreCase))
+		{
+			AddPinnedIconPath(paths, action.Parameter);
+		}
+		if (action.SubActions != null && action.SubActions.Count > 0)
+		{
+			CollectPinnedIconPaths(action.SubActions, paths);
 		}
 	}
 
@@ -927,10 +970,19 @@ public static class IconHelper
 		string cleanPath = path.Trim().Trim('"');
 		if (_pinnedIcons.ContainsKey(cleanPath)) return;
 
-		BitmapSource? icon = ExtractIconRaw(cleanPath);
+		bool sourceUnavailable = IsUnavailableFileSystemSource(cleanPath);
+		BitmapSource? icon = sourceUnavailable ? LoadPersistentIconSnapshot(cleanPath) : ExtractIconRaw(cleanPath);
+		if (icon == null && !sourceUnavailable)
+		{
+			icon = LoadPersistentIconSnapshot(cleanPath);
+		}
 		if (icon != null)
 		{
 			_pinnedIcons[cleanPath] = icon;
+			if (!sourceUnavailable)
+			{
+				PersistIconSnapshot(cleanPath, icon);
+			}
 		}
 	}
 
@@ -959,13 +1011,247 @@ public static class IconHelper
 			return dynamicVal;
 		}
 
-		// 3. 提取图标并加入动态弹性缓存
+		// 3. 文件路径已失效时优先回退到持久化快照，避免 Shell 返回通用空白图标覆盖原图标。
+		bool sourceUnavailable = IsUnavailableFileSystemSource(text);
+		if (sourceUnavailable)
+		{
+			BitmapSource? persisted = LoadPersistentIconSnapshot(text);
+			if (persisted != null)
+			{
+				CacheDynamicIcon(text, persisted);
+				return persisted;
+			}
+		}
+
+		// 4. 提取实时图标并加入动态弹性缓存
 		BitmapSource? extracted = ExtractIconRaw(text);
 		if (extracted != null)
 		{
 			CacheDynamicIcon(text, extracted);
+			return extracted;
 		}
-		return extracted;
+
+		// 5. 路径仍存在但提取临时失败时，也允许使用上次成功保存的快照。
+		if (!sourceUnavailable)
+		{
+			BitmapSource? persisted = LoadPersistentIconSnapshot(text);
+			if (persisted != null)
+			{
+				CacheDynamicIcon(text, persisted);
+				return persisted;
+			}
+		}
+		return null;
+	}
+
+	public static bool IsBrokenShortcut(string lnkPath)
+	{
+		try
+		{
+			string expandedPath = Environment.ExpandEnvironmentVariables(lnkPath.Trim().Trim('"'));
+			if (string.IsNullOrWhiteSpace(expandedPath) || !File.Exists(expandedPath))
+			{
+				return true;
+			}
+
+			if (!ResolveShortcutTarget(expandedPath, out string targetPath, out string iconPath, out _))
+			{
+				// 不能仅因 ResolveShortcutTarget 返回 false 或目标为空，就判定快捷方式失效。
+				// 对于无标准 Win32 物理文件路径的合法虚拟对象/Shell PIDL（例如回收站等），不判定为失效。
+				return false;
+			}
+
+			// 1. 若显式指定了图标文件路径，且该文件存在，则图标资源有效
+			if (!string.IsNullOrEmpty(iconPath))
+			{
+				string expandedIconPath = Environment.ExpandEnvironmentVariables(iconPath.Trim().Trim('"'));
+				if (File.Exists(expandedIconPath) || Directory.Exists(expandedIconPath))
+				{
+					return false;
+				}
+			}
+
+			// 2. 若解析出目标程序/路径
+			if (!string.IsNullOrEmpty(targetPath))
+			{
+				string expandedTargetPath = Environment.ExpandEnvironmentVariables(targetPath.Trim().Trim('"'));
+				if (expandedTargetPath.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+				{
+					return false;
+				}
+
+				bool looksLikeFileTarget = Path.IsPathRooted(expandedTargetPath) ||
+					expandedTargetPath.Contains('\\') ||
+					expandedTargetPath.Contains('/') ||
+					expandedTargetPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+
+				if (looksLikeFileTarget)
+				{
+					if (File.Exists(expandedTargetPath) || Directory.Exists(expandedTargetPath))
+					{
+						return false;
+					}
+					// 明确指向文件系统路径但物理文件不存在，判定为明确失效
+					return true;
+				}
+
+				return false;
+			}
+
+			// 文件系统目标为空，可能是 Shell 虚拟项（如回收站），不判定为失效文件目标
+			return false;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	public static bool IsUnavailableFileSystemSource(string sourcePath)
+	{
+		try
+		{
+			string expandedPath = Environment.ExpandEnvironmentVariables(sourcePath.Trim().Trim('"'));
+			if (expandedPath.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
+			bool looksLikeFileSystemPath = Path.IsPathRooted(expandedPath) ||
+				expandedPath.Contains('\\') ||
+				expandedPath.Contains('/') ||
+				expandedPath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ||
+				expandedPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ||
+				expandedPath.EndsWith(".ico", StringComparison.OrdinalIgnoreCase);
+
+			if (!looksLikeFileSystemPath)
+			{
+				return false;
+			}
+
+			if (expandedPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+			{
+				if (!File.Exists(expandedPath))
+				{
+					return true;
+				}
+				return IsBrokenShortcut(expandedPath);
+			}
+
+			return !File.Exists(expandedPath) && !Directory.Exists(expandedPath);
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	public static string GetPersistentIconCachePath(string sourcePath)
+	{
+		string expandedPath = Environment.ExpandEnvironmentVariables(sourcePath.Trim().Trim('"'));
+		string normalizedPath;
+		try
+		{
+			normalizedPath = (Path.IsPathRooted(expandedPath) ? Path.GetFullPath(expandedPath) : expandedPath)
+				.Replace('/', '\\')
+				.TrimEnd('\\')
+				.ToUpperInvariant();
+		}
+		catch
+		{
+			normalizedPath = expandedPath.Replace('/', '\\').TrimEnd('\\').ToUpperInvariant();
+		}
+		string cacheKey = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalizedPath)));
+		return Path.Combine(PersistentIconCacheFolder, cacheKey + ".png");
+	}
+
+	public static BitmapSource? LoadPersistentIconSnapshot(string sourcePath)
+	{
+		string cachePath = GetPersistentIconCachePath(sourcePath);
+		try
+		{
+			if (!File.Exists(cachePath))
+			{
+				return null;
+			}
+
+			using FileStream stream = new FileStream(cachePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			BitmapImage bitmap = new BitmapImage();
+			bitmap.BeginInit();
+			bitmap.CacheOption = BitmapCacheOption.OnLoad;
+			bitmap.StreamSource = stream;
+			bitmap.EndInit();
+			bitmap.Freeze();
+			return bitmap;
+		}
+		catch
+		{
+			try
+			{
+				if (File.Exists(cachePath))
+				{
+					File.Delete(cachePath);
+				}
+			}
+			catch
+			{
+			}
+			return null;
+		}
+	}
+
+	public static void PersistIconSnapshot(string sourcePath, BitmapSource icon)
+	{
+		if (IsUnavailableFileSystemSource(sourcePath))
+		{
+			return;
+		}
+
+		string? tempPath = null;
+		try
+		{
+			Directory.CreateDirectory(PersistentIconCacheFolder);
+			string cachePath = GetPersistentIconCachePath(sourcePath);
+			PngBitmapEncoder encoder = new PngBitmapEncoder();
+			encoder.Frames.Add(BitmapFrame.Create(icon));
+			byte[] pngBytes;
+			using (MemoryStream stream = new MemoryStream())
+			{
+				encoder.Save(stream);
+				pngBytes = stream.ToArray();
+			}
+
+			if (File.Exists(cachePath))
+			{
+				byte[] existingBytes = File.ReadAllBytes(cachePath);
+				if (existingBytes.AsSpan().SequenceEqual(pngBytes))
+				{
+					return;
+				}
+			}
+
+			tempPath = cachePath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+			File.WriteAllBytes(tempPath, pngBytes);
+			File.Move(tempPath, cachePath, overwrite: true);
+			tempPath = null;
+		}
+		catch
+		{
+			// 持久化缓存是最佳努力路径；失败时仍保留现有实时图标解析行为。
+		}
+		finally
+		{
+			if (!string.IsNullOrEmpty(tempPath))
+			{
+				try
+				{
+					File.Delete(tempPath);
+				}
+				catch
+				{
+				}
+			}
+		}
 	}
 
 	private static BitmapSource? ExtractIconRaw(string text)
@@ -973,23 +1259,33 @@ public static class IconHelper
 		try
 		{
 			string text2 = Environment.ExpandEnvironmentVariables(text);
-			if (text2.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) && ResolveShortcutTarget(text2, out string targetPath, out string iconPath, out int iconIndex))
+			if (text2.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
 			{
-				if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
+				if (ResolveShortcutTarget(text2, out string targetPath, out string iconPath, out int iconIndex))
 				{
-					BitmapSource bitmapSource = ExtractPureIconFromFile(iconPath, iconIndex);
-					if (bitmapSource != null)
+					if (!string.IsNullOrEmpty(iconPath) && File.Exists(iconPath))
 					{
-						return bitmapSource;
+						BitmapSource bitmapSource = ExtractPureIconFromFile(iconPath, iconIndex);
+						if (bitmapSource != null)
+						{
+							return bitmapSource;
+						}
+					}
+					if (!string.IsNullOrEmpty(targetPath) && File.Exists(targetPath))
+					{
+						BitmapSource bitmapSource2 = ExtractPureIconFromFile(targetPath, 0);
+						if (bitmapSource2 != null)
+						{
+							return bitmapSource2;
+						}
 					}
 				}
-				if (!string.IsNullOrEmpty(targetPath) && File.Exists(targetPath))
+
+				// 防护：若快捷方式的目标程序或图标文件已失效/不存在，绝不继续调用 ExtractShellItemIcon 或 SHGetFileInfo，
+				// 避免 Windows Shell 返回通用未知文件占位图标并污染有效快照。
+				if (IsBrokenShortcut(text2))
 				{
-					BitmapSource bitmapSource2 = ExtractPureIconFromFile(targetPath, 0);
-					if (bitmapSource2 != null)
-					{
-						return bitmapSource2;
-					}
+					return null;
 				}
 			}
 			if (File.Exists(text2) || Directory.Exists(text2))
