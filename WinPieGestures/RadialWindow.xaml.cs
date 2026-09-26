@@ -33,10 +33,12 @@ public partial class RadialWindow : Window
 	private const uint SWP_NOMOVE = 0x0002;
 	private const uint SWP_NOACTIVATE = 0x0010;
 	private const uint SWP_NOZORDER = 0x0004;
+	private const uint SWP_FRAMECHANGED = 0x0020;
 	private const int WM_DPICHANGED = 0x02E0;
 	private const int GWL_EXSTYLE = -20;
 	private const nint WS_EX_NOACTIVATE = 0x08000000;
 	private const nint WS_EX_TOOLWINDOW = 0x00000080;
+	private const nint WS_EX_TRANSPARENT = 0x00000020;
 	private static readonly nint HWND_TOPMOST = new(-1);
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -680,6 +682,30 @@ public partial class RadialWindow : Window
 			MainGrid.Visibility = Visibility.Visible;
 			StartIntroAnimation(presentationVersion);
 		}), DispatcherPriority.Render);
+	}
+
+	/// <summary>
+	/// 粘滞轮盘的输入由下层全屏遮罩接收。WPF 的 IsHitTestVisible=false 只控制视觉树，
+	/// 不能替代透明顶层 HWND 的鼠标穿透；退出粘滞会话时恢复原扩展样式。
+	/// </summary>
+	internal void SetMousePassThrough(bool enabled)
+	{
+		if (!Dispatcher.CheckAccess())
+		{
+			Dispatcher.Invoke(() => SetMousePassThrough(enabled));
+			return;
+		}
+
+		nint handle = new WindowInteropHelper(this).Handle;
+		if (handle == IntPtr.Zero) return;
+		nint style = GetWindowLongPtr(handle, GWL_EXSTYLE);
+		nint updated = enabled ? style | WS_EX_TRANSPARENT : style & ~WS_EX_TRANSPARENT;
+		if (updated != style)
+		{
+			SetWindowLongPtr(handle, GWL_EXSTYLE, updated);
+			SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+		}
 	}
 
 	/// <summary>隐藏当前手势，但保留 Window/HWND 供下一次呼出复用。旧手势的延迟回调不得隐藏新手势。</summary>

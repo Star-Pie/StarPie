@@ -614,10 +614,12 @@ internal sealed class PluginInstance
         RequestPluginShutdown();
         DisposeTokens();
 
-        Teardown();
-
+        // OwnedActions 里的 PluginActionRegistration 持有插件侧 IActionContribution。
+        // 必须在 Teardown/GC 探测之前清空，否则这个宿主字段会把插件 ALC 继续钉住。
         OwnedActions = Array.Empty<PluginActionRegistration>();
         ActionCount = 0;
+
+        Teardown();
 
         SetState(PluginRuntimeState.Installed);
     }
