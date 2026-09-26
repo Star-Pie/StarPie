@@ -172,12 +172,8 @@ internal static class StickyWheelSession
             profile.SyncRootPropertiesFromActiveLayer();
             session.Profile = profile;
 
-            (session.DpiX, session.DpiY) = RadialWindow.GetMonitorDpiScale(session.Center);
-            if (session.DpiX <= 0.0) session.DpiX = 1.0;
-            if (session.DpiY <= 0.0) session.DpiY = 1.0;
-
             // 与 ShowRadialUI 相同的顺序：遮罩先上屏，轮盘在其后进入最上层带，
-            // 视觉上轮盘压住遮罩；命中永远由遮罩收（轮盘本体 IsHitTestVisible=false）。
+            // 视觉上轮盘压住遮罩；轮盘 HWND 显式穿透鼠标，命中由遮罩收。
             StickyWheelBackdrop backdrop = _cachedBackdrop ??= new StickyWheelBackdrop();
             backdrop.Bind(session);
             backdrop.ShowSession();
@@ -185,6 +181,13 @@ internal static class StickyWheelSession
             RadialWindow wheel = _cachedWheel ??= new RadialWindow(session.Center, profile);
             session.Wheel = wheel;
             wheel.Present(session.Center, profile, ConfigManager.ConfigurationRevision, session.Version);
+            // Present 可能把靠边的轮盘钳进工作区；命中必须以真正画出来的中心为准。
+            session.HitCenter = wheel.ActualPhysicalCenter;
+            (session.DpiX, session.DpiY) = RadialWindow.GetMonitorDpiScale(session.HitCenter);
+            if (session.DpiX <= 0.0) session.DpiX = 1.0;
+            if (session.DpiY <= 0.0) session.DpiY = 1.0;
+            // 轮盘只负责绘制；整个透明 HWND 穿透鼠标，输入由下层全屏遮罩接收。
+            wheel.SetMousePassThrough(true);
 
             session.Live = true;
             SoundEffectManager.Play(SoundType.WheelPopup);
@@ -245,10 +248,40 @@ internal static class StickyWheelSession
             SoundEffectManager.Play(SoundType.SectorHover);
         }
 
+        QueueHighlight(session, hit);
+    }
+
+    /// <summary>只排一个待执行的 Render 更新，连续鼠标事件只覆盖最新命中。</summary>
+    private static void QueueHighlight(Session session, HitResult hit)
+    {
+        session.PendingSector = hit.Sector;
+        session.PendingSub = hit.Sub;
+        session.PendingShowSub = hit.ShowSub;
+        session.PendingEscaped = hit.Escaped;
+        if (session.HighlightScheduled) return;
+
+        session.HighlightScheduled = true;
         try
         {
-            session.Wheel.SetOuterEscapeState(hit.Escaped);
-            session.Wheel.HighlightSector(hit.Sector, hit.Sub, hit.ShowSub);
+            Application.Current.Dispatcher.BeginInvoke(new Action(() => ApplyPendingHighlight(session)),
+                System.Windows.Threading.DispatcherPriority.Render);
+        }
+        catch (Exception ex)
+        {
+            session.HighlightScheduled = false;
+            AppLogger.LogWarn($"[plugin] 粘滞轮盘高亮排队失败：{ex.Message}");
+        }
+    }
+
+    private static void ApplyPendingHighlight(Session session)
+    {
+        session.HighlightScheduled = false;
+        if (!session.Live || !ReferenceEquals(CurrentSession(), session) || session.Wheel == null) return;
+
+        try
+        {
+            session.Wheel.SetOuterEscapeState(session.PendingEscaped);
+            session.Wheel.HighlightSector(session.PendingSector, session.PendingSub, session.PendingShowSub);
         }
         catch (Exception ex)
         {
@@ -299,21 +332,25 @@ internal static class StickyWheelSession
 
     private static void CloseUi(Session session)
     {
+        session.Live = false;
         try
         {
-            if (session.Wheel != null)
-            {
-                session.Wheel.Dismiss(session.Version);
-            }
-            if (session.BackdropBound)
-            {
-                _cachedBackdrop?.HideSession();
-            }
+            session.Wheel?.Dismiss(session.Version);
         }
         catch (Exception ex)
         {
-            AppLogger.LogWarn($"[plugin] 粘滞轮盘收摊异常：{ex.Message}");
+            AppLogger.LogWarn($"[plugin] 粘滞轮盘收盘异常：{ex.Message}");
         }
+        finally
+        {
+            // 即使 Dismiss 失败也要恢复输入样式；否则缓存窗口会一直穿透点击。
+            try { session.Wheel?.SetMousePassThrough(false); }
+            catch (Exception ex) { AppLogger.LogWarn($"[plugin] 轮盘鼠标样式恢复失败：{ex.Message}"); }
+        }
+
+        if (!session.BackdropBound) return;
+        try { _cachedBackdrop?.HideSession(); }
+        catch (Exception ex) { AppLogger.LogWarn($"[plugin] 粘滞轮盘遮罩收摊异常：{ex.Message}"); }
     }
 
     private static Session? CurrentSession()
@@ -372,8 +409,8 @@ internal static class StickyWheelSession
             return new HitResult(-1, -1, false, false);
         }
 
-        double dx = (cursorPhysical.X - session.Center.X) / session.DpiX;
-        double dy = (cursorPhysical.Y - session.Center.Y) / session.DpiY;
+        double dx = (cursorPhysical.X - session.HitCenter.X) / session.DpiX;
+        double dy = (cursorPhysical.Y - session.HitCenter.Y) / session.DpiY;
         double dist = Math.Sqrt(dx * dx + dy * dy);
 
         // 死区：照抄 ProcessMove 1981~1987 的取值式，含 CoreRadius/DragThreshold 兜底链。
@@ -458,8 +495,8 @@ internal static class StickyWheelSession
     {
         if (parentIndex < 0 || subCount <= 0) return -1;
 
-        double dx = (cursorPhysical.X - session.Center.X) / session.DpiX;
-        double dy = (cursorPhysical.Y - session.Center.Y) / session.DpiY;
+        double dx = (cursorPhysical.X - session.HitCenter.X) / session.DpiX;
+        double dy = (cursorPhysical.Y - session.HitCenter.Y) / session.DpiY;
         double dist = Math.Sqrt(dx * dx + dy * dy);
 
         double outer = cfg.WheelRadius;
@@ -540,12 +577,14 @@ internal static class StickyWheelSession
         {
             PluginId = pluginId;
             Center = center;
+            HitCenter = center;
             Version = version;
             Replaces = replaces;
         }
 
         public string PluginId { get; }
         public Point Center { get; }
+        public Point HitCenter { get; set; }
         public long Version { get; }
         public Session? Replaces { get; }
 
@@ -555,6 +594,12 @@ internal static class StickyWheelSession
         public double DpiY { get; set; } = 1.0;
         public bool Live { get; set; }
         public bool BackdropBound { get; set; }
+
+        public bool HighlightScheduled { get; set; }
+        public int PendingSector { get; set; }
+        public int PendingSub { get; set; }
+        public bool PendingShowSub { get; set; }
+        public bool PendingEscaped { get; set; }
 
         public int LastSector { get; set; } = -2;
         public int LastSub { get; set; } = -2;

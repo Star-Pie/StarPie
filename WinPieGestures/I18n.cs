@@ -2060,6 +2060,9 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("PluginsCardNotLoaded", "未加载", "未載入", "not loaded", "未読み込み");
 		Add("PluginsCardPreloadCheckBox", "开机预加载", "開機預載入", "Preload", "起動時プリロード");
 		Add("PluginsCardRestartReason", "旧程序集尚未从内存释放，重启 StarPie 后才会完全生效。", "舊組件尚未從記憶體釋放，重新啟動 StarPie 後才會完全生效。", "The old assembly is still held in memory; it takes full effect only after restarting StarPie.", "古いアセンブリがまだメモリ上に残っています。StarPie を再起動すると完全に反映されます。");
+		Add("PluginsRestartPrompt", "插件 {0} 已停止，但旧程序集仍被占用。\n\n{1}\n\n现在立即重启 StarPie 吗？", "外掛 {0} 已停止，但舊組件仍被佔用。\n\n{1}\n\n現在立即重新啟動 StarPie 嗎？", "Plugin {0} has stopped, but its old assembly is still held in memory.\n\n{1}\n\nRestart StarPie now?", "プラグイン {0} は停止しましたが、古いアセンブリがまだ使用中です。\n\n{1}\n\nStarPie を今すぐ再起動しますか？");
+		Add("PluginsRestartTitle", "重启 StarPie", "重新啟動 StarPie", "Restart StarPie", "StarPie を再起動");
+		Add("PluginsRestartFailed", "重启 StarPie 失败：{0}", "重新啟動 StarPie 失敗：{0}", "Failed to restart StarPie: {0}", "StarPie の再起動に失敗しました：{0}");
 		Add("PluginsCardSettingsButton", "⚙ 设置", "⚙ 設定", "⚙ Settings", "⚙ 設定");
 		Add("PluginsCardSigned", "已签名", "已簽章", "signed", "署名済み");
 		Add("PluginsCardUninstallButton", "🗑 卸载", "🗑 解除安裝", "🗑 Uninstall", "🗑 アンインストール");

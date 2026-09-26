@@ -421,6 +421,31 @@ public partial class App : Application
 		MainTrayController?.UpdatePauseState(MainMouseHook.IsPaused);
 	}
 
+	/// <summary>普通重启：等待当前进程退出后启动同一路径的 StarPie。</summary>
+	public static bool Restart()
+	{
+		try
+		{
+			string fileName = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
+			string escaped = fileName.Replace("\"", "\"\"");
+			string command = $"/C ping 127.0.0.1 -n 2 > nul & start \"\" \"{escaped}\" --silent";
+			Process.Start(new ProcessStartInfo
+			{
+				FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+				Arguments = command,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+				WindowStyle = ProcessWindowStyle.Hidden,
+			});
+			ExitApplication();
+			return true;
+		}
+		catch (Exception ex)
+		{
+			AppLogger.LogError("普通重启 StarPie 失败", ex);
+			return false;
+		}
+	}
 	public static void RestartElevated()
 	{
 		try

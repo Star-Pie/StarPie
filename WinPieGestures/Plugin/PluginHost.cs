@@ -401,6 +401,13 @@ internal static class PluginHost
         return true;
     }
 
+    /// <summary>是否需要重启宿主才能释放该插件的旧运行时。</summary>
+    public static bool IsRestartRequired(string pluginId)
+    {
+        PluginInstance? instance = Find(pluginId);
+        return instance != null &&
+               (instance.RequiresRestart || instance.State == PluginRuntimeState.RequiresRestart);
+    }
     /// <summary>兼容同步调用；新 UI 与管理流程应使用 <see cref="DisableAsync"/>。</summary>
     public static bool Disable(string pluginId, out string error)
     {

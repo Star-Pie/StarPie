@@ -8118,8 +8118,11 @@ public partial class SettingsWindow : Window
 			{
 				if (!PluginHost.Enable(pluginId, out string enableError))
 				{
-					System.Windows.MessageBox.Show(this, I18n.TF("PluginsEnableFailed", pluginId, enableError),
-						I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+					if (!OfferPluginRestart(pluginId, enableError))
+					{
+						System.Windows.MessageBox.Show(this, I18n.TF("PluginsEnableFailed", pluginId, enableError),
+							I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+					}
 				}
 			}
 			else
@@ -8136,10 +8139,11 @@ public partial class SettingsWindow : Window
 				}
 				else if (!stop.IsFullyStopped)
 				{
-					// stop.Message 由宿主生成（「插件「X」仍有 N 个调用未结束…」），
-					// 属宿主内部消息，不在本次接线范围内。
-					System.Windows.MessageBox.Show(this, stop.Message,
-						I18n.T("PluginsStoppingTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+					if (!OfferPluginRestart(pluginId, stop.Message))
+					{
+						System.Windows.MessageBox.Show(this, stop.Message,
+							I18n.T("PluginsStoppingTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
+					}
 				}
 			}
 		}
@@ -8148,6 +8152,32 @@ public partial class SettingsWindow : Window
 			box.IsEnabled = true;
 			RefreshPluginManagerUi();
 		}
+	}
+
+	private bool OfferPluginRestart(string pluginId, string detail)
+	{
+		if (!PluginHost.IsRestartRequired(pluginId) &&
+			!detail.Contains("旧运行时", StringComparison.OrdinalIgnoreCase) &&
+			!detail.Contains("old runtime", StringComparison.OrdinalIgnoreCase))
+		{
+			return false;
+		}
+
+		string pluginName = PluginHost.Find(pluginId)?.Entry.Name ?? pluginId;
+		MessageBoxResult choice = MessageBox.Show(
+			this,
+			I18n.TF("PluginsRestartPrompt", pluginName, detail),
+			I18n.T("PluginsRestartTitle"),
+			MessageBoxButton.YesNo,
+			MessageBoxImage.Warning,
+			MessageBoxResult.Yes);
+		if (choice != MessageBoxResult.Yes) return true;
+
+		if (App.Restart()) return true;
+
+		MessageBox.Show(this, I18n.TF("PluginsRestartFailed", "无法启动新的 StarPie 进程"),
+			I18n.T("PluginsRestartTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+		return true;
 	}
 
 	private void PluginRowSettingsButton_Click(object sender, RoutedEventArgs e)
