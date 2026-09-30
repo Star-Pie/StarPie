@@ -784,7 +784,24 @@ public static class ActionExecutor
 		}
 	}
 
-	internal static void ExecuteShellTool(string verb)
+	internal static void ExecuteShellTool(string verb) => ExecuteShellToolCore(verb, StarPie.Plugin.ProcessLaunchMode.Default);
+
+	internal static bool ExecuteShellToolWithMode(string verb, StarPie.Plugin.ProcessLaunchMode mode)
+	{
+		if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+		if (string.IsNullOrWhiteSpace(verb)) return false;
+		if (mode != StarPie.Plugin.ProcessLaunchMode.Default && !SupportsShellToolLaunchMode(verb.Trim()))
+			throw new NotSupportedException($"Shell tool '{verb}' does not support an explicit process launch mode.");
+		ExecuteShellToolCore(verb, mode);
+		return true;
+	}
+
+	internal static bool SupportsShellToolLaunchMode(string verb) => verb is
+		"VSCode.Open" or "vscode_open" or "Git.BashHere" or "git_bash_here" or
+		"Windows.Terminal" or "windows_terminal" or "Windows.CmdHere" or "cmd_here" or
+		"Windows.PowerShellHere" or "powershell_here";
+
+	private static void ExecuteShellToolCore(string verb, StarPie.Plugin.ProcessLaunchMode mode)
 	{
 		if (string.IsNullOrWhiteSpace(verb)) return;
 		AppLogger.LogInfo($"Executing ShellTool verb: '{verb}'");
@@ -893,23 +910,23 @@ public static class ActionExecutor
 				var (folder, selected) = GetActiveExplorerContext();
 				if (selected.Count > 0)
 				{
-					Process.Start(new ProcessStartInfo
+					StartShellToolProcess(new ProcessStartInfo
 					{
 						FileName = "code",
 						Arguments = string.Join(" ", selected.Select(s => $"\"{s}\"")),
 						UseShellExecute = true,
 						WorkingDirectory = folder
-					});
+					}, mode);
 				}
 				else
 				{
-					Process.Start(new ProcessStartInfo
+					StartShellToolProcess(new ProcessStartInfo
 					{
 						FileName = "code",
 						Arguments = $"\"{folder}\"",
 						UseShellExecute = true,
 						WorkingDirectory = folder
-					});
+					}, mode);
 				}
 				break;
 			}
@@ -924,13 +941,13 @@ public static class ActionExecutor
 					Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Programs\Git\git-bash.exe")
 				};
 				string gitExe = possibleGitPaths.FirstOrDefault(File.Exists) ?? "git-bash.exe";
-				Process.Start(new ProcessStartInfo
+				StartShellToolProcess(new ProcessStartInfo
 				{
 					FileName = gitExe,
 					Arguments = $"--cd=\"{folder}\"",
 					UseShellExecute = true,
 					WorkingDirectory = folder
-				});
+				}, mode);
 				break;
 			}
 			case "Windows.Terminal":
@@ -939,23 +956,23 @@ public static class ActionExecutor
 				var (folder, _) = GetActiveExplorerContext();
 				try
 				{
-					Process.Start(new ProcessStartInfo
+					StartShellToolProcess(new ProcessStartInfo
 					{
 						FileName = "wt.exe",
 						Arguments = $"-d \"{folder}\"",
 						UseShellExecute = true,
 						WorkingDirectory = folder
-					});
+					}, mode);
 				}
-				catch
+				catch when (mode == StarPie.Plugin.ProcessLaunchMode.Default)
 				{
-					Process.Start(new ProcessStartInfo
+					StartShellToolProcess(new ProcessStartInfo
 					{
 						FileName = "powershell.exe",
 						Arguments = $"-NoExit -Command \"Set-Location '{folder}'\"",
 						UseShellExecute = true,
 						WorkingDirectory = folder
-					});
+					}, mode);
 				}
 				break;
 			}
@@ -963,26 +980,26 @@ public static class ActionExecutor
 			case "cmd_here":
 			{
 				var (folder, _) = GetActiveExplorerContext();
-				Process.Start(new ProcessStartInfo
+				StartShellToolProcess(new ProcessStartInfo
 				{
 					FileName = "cmd.exe",
 					Arguments = $"/K cd /d \"{folder}\"",
 					UseShellExecute = true,
 					WorkingDirectory = folder
-				});
+				}, mode);
 				break;
 			}
 			case "Windows.PowerShellHere":
 			case "powershell_here":
 			{
 				var (folder, _) = GetActiveExplorerContext();
-				Process.Start(new ProcessStartInfo
+				StartShellToolProcess(new ProcessStartInfo
 				{
 					FileName = "powershell.exe",
 					Arguments = $"-NoExit -Command \"Set-Location '{folder}'\"",
 					UseShellExecute = true,
 					WorkingDirectory = folder
-				});
+				}, mode);
 				break;
 			}
 			case "7-Zip.ExtractHere":
@@ -2188,6 +2205,40 @@ public static class ActionExecutor
 		}
 	}
 
+    private static void StartShellToolProcess(ProcessStartInfo info, StarPie.Plugin.ProcessLaunchMode mode)
+    {
+        if (!ProcessLaunchExecutor.Start(info, mode))
+            throw new InvalidOperationException($"Could not launch '{info.FileName}' in mode {mode}.");
+    }
+
+    internal static bool ExecuteLaunchWithMode(string path, string arguments, StarPie.Plugin.ProcessLaunchMode mode)
+    {
+        if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        if (mode == StarPie.Plugin.ProcessLaunchMode.Default)
+        {
+            ExecuteLaunch(path, arguments, false);
+            return true;
+        }
+        string file = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
+        bool appId = file.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase) ||
+            (file.Contains('!') && !file.Contains(":\\") && !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+        if (appId && mode == StarPie.Plugin.ProcessLaunchMode.Administrator)
+            throw new NotSupportedException("Packaged application activation does not support administrator launch.");
+        if (appId)
+        {
+            arguments = file.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase) ? file : "shell:AppsFolder\\" + file;
+            file = "explorer.exe";
+        }
+        return ProcessLaunchExecutor.Start(new ProcessStartInfo
+        {
+            FileName = file,
+            Arguments = arguments ?? "",
+            WorkingDirectory = File.Exists(file) ? Path.GetDirectoryName(file) ?? "" : "",
+            UseShellExecute = true,
+        }, mode);
+    }
+
 	internal static void ExecuteLaunch(string path, string arguments, bool runAsStandardUser = false)
 	{
 		if (string.IsNullOrWhiteSpace(path))
@@ -2311,8 +2362,17 @@ public static class ActionExecutor
 	/// Issue #58: 当 StarPie 以管理员提权运行时，通过 Windows 资源管理器 (explorer.exe) 桌面 Shell 中转以标准普通用户权限 (Medium Integrity) 启动外部程序。
 	/// 解决以普通权限启动失效、终端仍带管理员盾牌、以及因 UIPI 隔离无法拖入外部文件的问题。
 	/// </summary>
-	public static bool TryLaunchUnelevatedViaExplorer(string path, string arguments, string workingDir)
+	public static bool TryLaunchUnelevatedViaExplorer(string path, string arguments, string workingDir) =>
+        TryLaunchUnelevatedViaExplorer(path, arguments, workingDir, 1);
+
+    internal static bool TryLaunchUnelevatedViaExplorer(string path, string arguments, string workingDir, int showCommand)
 	{
+        if (!DesktopShellToken.IsStandardUser())
+        {
+            AppLogger.LogWarn("Unelevated launch refused: no non-elevated desktop Shell is available.");
+            return false;
+        }
+        var comObjects = new System.Collections.Generic.List<object>();
 		try
 		{
 			Type? shellType = Type.GetTypeFromProgID("Shell.Application");
@@ -2320,9 +2380,11 @@ public static class ActionExecutor
 
 			object? shell = Activator.CreateInstance(shellType);
 			if (shell == null) return false;
+            comObjects.Add(shell);
 
 			object? windows = shellType.InvokeMember("Windows", BindingFlags.InvokeMethod, null, shell, null);
 			if (windows == null) return false;
+            comObjects.Add(windows);
 
 			// SWC_DESKTOP = 8, SWFO_NEEDDISPATCH = 1
 			object[] args = new object[] { 0, Type.Missing, 8, 0, 1 };
@@ -2341,19 +2403,22 @@ public static class ActionExecutor
 				null);
 
 			if (desktop == null) return false;
+            comObjects.Add(desktop);
 
 			object? doc = desktop.GetType().InvokeMember("Document", BindingFlags.GetProperty, null, desktop, null);
 			if (doc == null) return false;
+            comObjects.Add(doc);
 
 			object? app = doc.GetType().InvokeMember("Application", BindingFlags.GetProperty, null, doc, null);
 			if (app == null) return false;
+            comObjects.Add(app);
 
 			app.GetType().InvokeMember(
 				"ShellExecute",
 				BindingFlags.InvokeMethod,
 				null,
 				app,
-				new object[] { path, arguments ?? "", workingDir ?? "", "open", 1 });
+				new object[] { path, arguments ?? "", workingDir ?? "", "open", showCommand });
 
 			return true;
 		}
@@ -2362,10 +2427,27 @@ public static class ActionExecutor
 			AppLogger.LogWarn($"TryLaunchUnelevatedViaExplorer failed for '{path}': {ex.Message}");
 			return false;
 		}
+        finally
+        {
+            // COM 对象只在本次调用中创建，逆序释放；同一 RCW 可能由不同属性返回。
+            var released = new System.Collections.Generic.HashSet<object>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
+            for (int i = comObjects.Count - 1; i >= 0; i--)
+            {
+                object value = comObjects[i];
+                if (released.Add(value) && Marshal.IsComObject(value))
+                {
+                    try { Marshal.ReleaseComObject(value); }
+                    catch (Exception ex) { AppLogger.LogWarn($"Releasing launch COM object: {ex.Message}"); }
+                }
+            }
+        }
 	}
 
 	/// <summary>Runs a command in the selected terminal (cmd / PowerShell / WSL), with or without a window.</summary>
-	internal static bool ExecuteCommand(string command, string? terminal)
+	internal static bool ExecuteCommand(string command, string? terminal) =>
+        ExecuteCommandWithMode(command, StarPie.Plugin.ProcessLaunchMode.Default, terminal);
+
+    internal static bool ExecuteCommandWithMode(string command, StarPie.Plugin.ProcessLaunchMode mode, string? terminal)
 	{
 		if (string.IsNullOrWhiteSpace(command))
 		{
@@ -2383,31 +2465,26 @@ public static class ActionExecutor
 			{
 			case "powershell":
 				// Visible: keep the window open (-NoExit). Hidden: run to completion.
-				Process.Start(new ProcessStartInfo("powershell.exe", (hidden ? "-NoProfile -Command \"" : "-NoProfile -NoExit -Command \"") + quoted + "\"")
+				return ProcessLaunchExecutor.Start(new ProcessStartInfo("powershell.exe", (hidden ? "-NoProfile -Command \"" : "-NoProfile -NoExit -Command \"") + quoted + "\"")
 				{
 					UseShellExecute = false,
 					CreateNoWindow = hidden
-				});
-				break;
+				}, mode);
 			case "wsl":
 				// WSL receives the raw command after "--"; no extra quoting needed
-				Process.Start(new ProcessStartInfo("wsl.exe", "-- " + command)
+				return ProcessLaunchExecutor.Start(new ProcessStartInfo("wsl.exe", "-- " + command)
 				{
 					UseShellExecute = false,
 					CreateNoWindow = hidden
-				});
-				break;
+				}, mode);
 			default:
 				// Visible: keep the window open (/k). Hidden: /c so no lingering process.
-				Process.Start(new ProcessStartInfo("cmd.exe", (hidden ? "/c \"" : "/k \"") + quoted + "\"")
+				return ProcessLaunchExecutor.Start(new ProcessStartInfo("cmd.exe", (hidden ? "/c \"" : "/k \"") + quoted + "\"")
 				{
 					UseShellExecute = false,
 					CreateNoWindow = hidden
-				});
-				break;
+				}, mode);
 			}
-
-			return true;
 		}
 		catch (Exception ex)
 		{

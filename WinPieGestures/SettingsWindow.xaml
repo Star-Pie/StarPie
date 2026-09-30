@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window x:Class="WinPieGestures.SettingsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:WinPieGestures" xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options" Title="StarPie 设置控制台" Icon="app_icon.ico" Height="740" Width="1220" MinWidth="1060" MinHeight="660" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBackgroundBrush}" FontFamily="Segoe UI, Microsoft YaHei UI, Arial" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown">
+<Window x:Class="WinPieGestures.SettingsWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:d="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:local="clr-namespace:WinPieGestures" xmlns:plugins="clr-namespace:WinPieGestures.Plugins" xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options" Title="StarPie 设置控制台" Icon="app_icon.ico" Height="740" Width="1220" MinWidth="1060" MinHeight="660" WindowStartupLocation="CenterScreen" Background="{DynamicResource WindowBackgroundBrush}" FontFamily="Segoe UI, Microsoft YaHei UI, Arial" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" Closing="Window_Closing" PreviewKeyDown="Window_PreviewKeyDown">
   <FrameworkElement.Resources>
     <ResourceDictionary>
       <!-- 共享冻结阴影：原 41 处内联 DropShadowEffect 各自生成独立渲染资源，改为全局共享单实例 -->
@@ -2996,7 +2996,16 @@
                             <TextBlock x:Name="FocusLaunchArgsLabel" Text="启动参数:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
                             <TextBox Name="FocusLaunchArgsTextBox" Grid.Column="1" Height="28" FontSize="11" ToolTip="启动命令行参数 (可选)" TextChanged="FocusLaunchArgsTextBox_TextChanged" />
                           </Grid>
-                          <CheckBox Name="FocusLaunchStandardUserCheckBox" Style="{StaticResource ToggleSwitchStyle}" Margin="0,6,0,0" Checked="FocusLaunchStandardUserCheckBox_Changed" Unchecked="FocusLaunchStandardUserCheckBox_Changed">
+                          <CheckBox Name="FocusLaunchStandardUserCheckBox" Margin="0,6,0,0" Checked="FocusLaunchStandardUserCheckBox_Changed" Unchecked="FocusLaunchStandardUserCheckBox_Changed">
+                            <CheckBox.Style>
+                              <Style TargetType="CheckBox" BasedOn="{StaticResource ToggleSwitchStyle}">
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding UsesLegacyStandardUser, ElementName=FocusContributedParamsHost}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </CheckBox.Style>
                             <StackPanel Margin="6,0,0,0">
                               <TextBlock x:Name="FocusLaunchAsUserTitleText" Text="🛡️ 以常规普通权限启动 (解决高权限下外部文件无法拖入目标软件的问题)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
                               <TextBlock x:Name="FocusLaunchAsUserSubtitleText" Text="当 StarPie 以管理员权限运行时，通过 Windows Shell 降权启动目标程序，恢复文件拖拽交互支持。" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
@@ -3233,6 +3242,8 @@
                             <Button Name="FocusPickShellToolBtn" Grid.Column="1" Content="⚡ 挑选功能..." Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Margin="6,0,0,0" ToolTip="打开系统与右键工具库，支持搜索与分类" Click="FocusPickShellToolBtn_Click" />
                           </Grid>
                         </StackPanel>
+
+                        <plugins:ContributedActionParameterPanel x:Name="FocusContributedParamsHost" Margin="0,8,0,0" ValuesChanged="FocusContributedParams_Changed" />
 
                         <!-- 关联外部程序图标 (解耦执行与外观 Issue #11) -->
                         <Border Name="FocusInheritIconBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,10,0,0" Visibility="Collapsed">

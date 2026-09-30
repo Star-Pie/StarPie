@@ -126,6 +126,7 @@ internal enum PluginActivationReason
     ManualEnable,
     StartupPreload,
     ActionExecution,
+    ActionEditing,
     WheelStructureQuery,
 }
 

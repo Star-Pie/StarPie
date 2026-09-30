@@ -190,6 +190,15 @@ public interface IHostActionInvoker
     /// <summary>启动程序或打开文档。<paramref name="runAsStandardUser"/> 为 true 时通过 Shell 令牌降权启动。</summary>
     bool Launch(string path, string arguments = "", bool runAsStandardUser = false);
 
+    /// <summary>SDK 1.8：指定本次进程启动权限，需要 Process 能力；固定权限失败不回退。
+    /// InvokeWithMode 仅支持启动进程的工具，不适用的动词返回 false。</summary>
+    bool LaunchWithMode(string path, ProcessLaunchMode mode, string arguments = "")
+    {
+        if (mode != ProcessLaunchMode.Default)
+            throw new NotSupportedException("This host adapter does not support explicit process launch modes.");
+        return Launch(path, arguments, false);
+    }
+
     /// <summary>在资源管理器中打开文件夹（不存在则尝试创建）。</summary>
     bool OpenFolder(string folderPath);
 
@@ -257,6 +266,15 @@ public interface IHostCommandService
     /// <returns>是否成功发起。失败原因记入宿主日志，<b>不弹对话框</b>（插件侧失败必须可忽略）。</returns>
     /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.Process"/>。</exception>
     bool Run(string command, string terminal = "cmd");
+
+    /// <summary>SDK 1.8：指定本次进程启动权限，需要 Process 能力；固定权限失败不回退。
+    /// InvokeWithMode 仅支持启动进程的工具，不适用的动词返回 false。</summary>
+    bool RunWithMode(string command, ProcessLaunchMode mode, string terminal = "cmd")
+    {
+        if (mode != ProcessLaunchMode.Default)
+            throw new NotSupportedException("This host adapter does not support explicit process launch modes.");
+        return Run(command, terminal);
+    }
 }
 
 /// <summary>一项 Shell 上下文动词。</summary>
@@ -298,6 +316,15 @@ public interface IHostShellService
     /// <returns>是否成功发起（动词为空、或宿主判断当前上下文不适用时返回 false）。</returns>
     /// <exception cref="PluginCapabilityDeniedException">清单未声明 <see cref="PluginCapability.Process"/>。</exception>
     bool Invoke(string verb);
+
+    /// <summary>SDK 1.8：指定本次进程启动权限，需要 Process 能力；固定权限失败不回退。
+    /// InvokeWithMode 仅支持启动进程的工具，不适用的动词返回 false。</summary>
+    bool InvokeWithMode(string verb, ProcessLaunchMode mode)
+    {
+        if (mode != ProcessLaunchMode.Default)
+            throw new NotSupportedException("This host adapter does not support explicit process launch modes.");
+        return Invoke(verb);
+    }
 }
 
 /// <summary>一项平铺布局。</summary>

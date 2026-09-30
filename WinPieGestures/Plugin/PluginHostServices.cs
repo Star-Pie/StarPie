@@ -182,7 +182,13 @@ internal sealed class PluginHostActionInvoker : IHostActionInvoker
 {
     private readonly string _pluginId;
 
-    public PluginHostActionInvoker(string pluginId) => _pluginId = pluginId;
+    private readonly PluginCapability _capabilities;
+
+    public PluginHostActionInvoker(string pluginId, PluginCapability capabilities = PluginCapability.None)
+    {
+        _pluginId = pluginId;
+        _capabilities = capabilities;
+    }
 
     public bool SendHotkey(string hotkey)
     {
@@ -200,6 +206,14 @@ internal sealed class PluginHostActionInvoker : IHostActionInvoker
     {
         if (string.IsNullOrWhiteSpace(path)) return false;
         return Guard(nameof(Launch), () => ActionExecutor.ExecuteLaunch(path, arguments ?? "", runAsStandardUser));
+    }
+
+    public bool LaunchWithMode(string path, ProcessLaunchMode mode, string arguments = "")
+    {
+        if ((_capabilities & PluginCapability.Process) != PluginCapability.Process)
+            throw new PluginCapabilityDeniedException(PluginCapability.Process, nameof(LaunchWithMode), _pluginId);
+        if (string.IsNullOrWhiteSpace(path)) return false;
+        return Guard(nameof(LaunchWithMode), () => ActionExecutor.ExecuteLaunchWithMode(path, arguments ?? "", mode));
     }
 
     public bool OpenFolder(string folderPath)
@@ -258,6 +272,16 @@ internal sealed class PluginHostActionInvoker : IHostActionInvoker
     /// 统一包裹：插件通过宿主服务触发的任何异常都不允许冒泡到 <see cref="ActionExecutor.Execute"/>，
     /// 否则会命中它内部的 MessageBox 分支，在无人值守时卡住动作线程。
     /// </summary>
+    private bool Guard(string operation, Func<bool> action)
+    {
+        try { return action(); }
+        catch (Exception ex)
+        {
+            AppLogger.LogError($"[plugin:{_pluginId}] 宿主动作服务 {operation} 执行失败", ex);
+            return false;
+        }
+    }
+
     private bool Guard(string operation, Action action)
     {
         try
@@ -383,6 +407,13 @@ internal sealed class PluginCommandService : PluginGatedService, IHostCommandSer
         }
     }
 
+    public bool RunWithMode(string command, ProcessLaunchMode mode, string terminal = "cmd")
+    {
+        RequireCapability();
+        if (string.IsNullOrWhiteSpace(command)) return false;
+        return Guard(nameof(RunWithMode), () => ActionExecutor.ExecuteCommandWithMode(command, mode, terminal ?? "cmd"));
+    }
+
     public bool Run(string command, string terminal = "cmd")
     {
         RequireCapability();
@@ -433,6 +464,13 @@ internal sealed class PluginShellService : PluginGatedService, IHostShellService
             }
             return list;
         }
+    }
+
+    public bool InvokeWithMode(string verb, ProcessLaunchMode mode)
+    {
+        RequireCapability();
+        if (string.IsNullOrWhiteSpace(verb)) return false;
+        return Guard(nameof(InvokeWithMode), () => ActionExecutor.ExecuteShellToolWithMode(verb, mode));
     }
 
     public bool Invoke(string verb)

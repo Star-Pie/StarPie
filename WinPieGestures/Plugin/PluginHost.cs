@@ -703,6 +703,18 @@ internal static class PluginHost
     public static bool TryResolveClaimedType(string? type, out PluginTypeClaimBinding binding) =>
         PluginActionClaimRegistry.TryResolve(type, out binding);
 
+    /// <summary>用户正在编辑某个认领动作时获取声明。仅激活这一项已启用的插件；不改启用／预加载偏好。
+    /// 参数校验仍然只读，不通过此入口激活。</summary>
+    public static bool TryGetClaimedEditorRegistration(string? type, out PluginActionRegistration registration)
+    {
+        registration = null!;
+        if (!_initialized || !_enabled || _safeModeActive || !TryResolveClaimedType(type, out PluginTypeClaimBinding claim))
+            return false;
+        if (Catalog.TryGetAction(claim.FullId, out registration)) return true;
+        PluginActivationResult activation = Runtime.EnsurePluginLoaded(claim.PluginId, PluginActivationReason.ActionEditing, requireEnabled: true);
+        return activation.IsReady && Catalog.TryGetAction(claim.FullId, out registration);
+    }
+
     public static PluginExecuteOutcome ExecuteClaimedAction(ActionItem action, PluginTypeClaimBinding binding) =>
         Runtime.ExecuteClaimedAction(action, binding);
     public static IReadOnlyList<string> ClaimedTypeNamesOf(string pluginId) =>

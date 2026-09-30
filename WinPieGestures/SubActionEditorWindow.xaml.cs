@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
+using WinPieGestures.Plugins;
 
 namespace WinPieGestures;
 
@@ -496,6 +497,16 @@ public partial class SubActionEditorWindow : Window
 
 	private void SaveButton_Click(object sender, RoutedEventArgs e)
 	{
+        foreach (SubSlotViewModel slot in SubSlots)
+        {
+            PluginActionValidation validation = PluginHost.ValidateActionParameters(slot.Action);
+            if (!validation.IsValid)
+            {
+                string reason = validation.Describe() ?? "";
+                System.Windows.MessageBox.Show(this, reason, slot.Action.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+        }
 		ResultSubActions = SubSlots.Select((SubSlotViewModel s) => s.Action).ToList();
 		DialogResult = true;
 		Close();

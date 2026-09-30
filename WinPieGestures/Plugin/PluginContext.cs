@@ -34,7 +34,7 @@ internal sealed class PluginContext : IPluginContext
         I18n = new PluginI18nRegistry(session, metadata.Id);
         Icons = new PluginIconRegistry(session, metadata.Id);
         SettingsPage = new PluginSettingsPageRegistry(session, metadata.Id, settings);
-        Host = new PluginHostActionInvoker(metadata.Id);
+        Host = new PluginHostActionInvoker(metadata.Id, metadata.Capabilities);
 
         // 这四个服务带能力门禁：构造时就把清单里的 Capabilities 交给它们，
         // 未声明对应能力的插件拿到的是一个「调用即拒绝」的对象。

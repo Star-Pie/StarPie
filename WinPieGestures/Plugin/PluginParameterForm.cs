@@ -61,9 +61,9 @@ internal sealed class PluginParameterForm
 	/// </summary>
 	internal void Build(IReadOnlyList<ParameterField>? fields, string? pluginId)
 	{
+		Reset();
 		_fields = fields ?? Array.Empty<ParameterField>();
 		_pluginId = pluginId;
-		Reset();
 
 		if (_fields.Count == 0) return;
 
@@ -92,6 +92,8 @@ internal sealed class PluginParameterForm
 				row.Write(ResolveInitialValue(row.Field, stored));
 			}
 
+            foreach (ParameterField field in _fields)
+                if (!string.IsNullOrEmpty(field.FallbackParameterKey)) declared.Add(field.FallbackParameterKey);
 			AppendUndeclaredNotice(target, stored, declared);
 		}
 		catch (Exception ex)
@@ -108,6 +110,8 @@ internal sealed class PluginParameterForm
 	/// <summary>清空表单。</summary>
 	internal void Reset()
 	{
+		_fields = Array.Empty<ParameterField>();
+		_pluginId = null;
 		_rows.Clear();
 		if (_host.Children.Count > 0) _host.Children.Clear();
 	}
@@ -527,14 +531,19 @@ internal sealed class PluginParameterForm
 	/// <summary>
 	/// 决定一个字段初次显示什么：已保存值 → 声明默认值 → 空。
 	/// </summary>
-	private static string ResolveInitialValue(ParameterField field, IReadOnlyDictionary<string, string>? stored)
+	internal static string ResolveInitialValue(ParameterField field, IReadOnlyDictionary<string, string>? stored)
 	{
 		if (stored != null && stored.TryGetValue(field.Key, out string? saved) && saved != null)
 		{
 			return saved;
 		}
 
-		string fallback = field.DefaultValue ?? "";
+        // 回填规则由插件声明；宿主不认识具体业务参数键，也不在回填时改配置。
+        string fallback = field.DefaultValue ?? "";
+        if (!string.IsNullOrEmpty(field.FallbackParameterKey) && field.FallbackValueMap != null &&
+            stored != null && stored.TryGetValue(field.FallbackParameterKey, out string? legacy) && legacy != null &&
+            field.FallbackValueMap.TryGetValue(legacy, out string? mapped))
+            fallback = mapped;
 		if (field.Type == ParameterFieldType.Bool)
 		{
 			// 布尔项的默认值可能是 "True"/"1"/"yes"，统一归一化成 true/false，

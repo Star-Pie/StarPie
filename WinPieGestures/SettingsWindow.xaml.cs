@@ -6383,6 +6383,7 @@ public partial class SettingsWindow : Window
 			if (FocusOcrPanel != null) FocusOcrPanel.Visibility = (type == "Ocr" || type == "ScreenOcr") ? Visibility.Visible : Visibility.Collapsed;
 			if (FocusPluginPanel != null) FocusPluginPanel.Visibility = (type == PluginActionBinding.TypeName) ? Visibility.Visible : Visibility.Collapsed;
 			if (type == PluginActionBinding.TypeName) RefreshFocusPluginPanel(displayItem);
+            FocusContributedParamsHost?.SetAction(displayItem, () => GetCurrentFocusActionItem(ensureLocalForEdit: true));
 
 			// 插件动作子下拉（按插件分组）。非插件类型时由该方法自行隐藏并清空。
 			RefreshFocusPluginActionComboBox(displayItem);
@@ -7344,6 +7345,12 @@ public partial class SettingsWindow : Window
 			}
 		}
 	}
+
+    private void FocusContributedParams_Changed(object sender, EventArgs e)
+    {
+        if (_isUpdatingFocusUi || _isUpdatingUi || !_isUiInitialized) return;
+        ScheduleAutoSave(); // 不重建焦点编辑器，避免下拉选中值和键盘焦点被重置。
+    }
 
 	/// <summary>参数表单内任一字段变化时的回调。</summary>
 	private void OnFocusPluginParameterChanged()

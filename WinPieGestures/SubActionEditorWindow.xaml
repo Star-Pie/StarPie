@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:WinPieGestures"
+        xmlns:local="clr-namespace:WinPieGestures" xmlns:plugins="clr-namespace:WinPieGestures.Plugins"
         Title="扇区级联子菜单管理 (Sub-Actions Editor)"
         Icon="app_icon.ico"
         Height="680" Width="930" MinHeight="560" MinWidth="850"
@@ -205,7 +205,16 @@
                         <TextBlock Text="启动参数:" VerticalAlignment="Center" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0" />
                         <TextBox Grid.Column="1" Height="28" FontSize="11" VerticalContentAlignment="Center" ToolTip="启动命令行参数 (可选)" Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                       </Grid>
-                      <CheckBox Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding RunAsStandardUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                      <CheckBox IsChecked="{Binding RunAsStandardUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <CheckBox.Style>
+                          <Style TargetType="CheckBox" BasedOn="{StaticResource ToggleSwitchStyle}">
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding UsesLegacyStandardUser, ElementName=SubContributedParamsHost}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </CheckBox.Style>
                         <StackPanel Margin="6,0,0,0">
                           <TextBlock Text="🛡️ 以常规普通权限启动 (解决高权限下外部文件无法拖入目标软件的问题)" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                           <TextBlock Text="当 StarPie 以管理员权限运行时，通过 Windows Shell 降权启动目标程序，恢复外部文件拖放交互支持。" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
@@ -423,6 +432,8 @@
                         <Button Grid.Column="1" Content="⚡ 挑选功能..." Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Margin="6,0,0,0" ToolTip="打开系统与右键工具库，支持搜索与分类" Click="SubPickShellTool_Click" />
                       </Grid>
                     </StackPanel>
+
+                    <plugins:ContributedActionParameterPanel x:Name="SubContributedParamsHost" Margin="0,8,0,0" />
 
                     <!-- 关联外部程序图标面板 (解耦执行与外观) -->
                     <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,8,0,0">
