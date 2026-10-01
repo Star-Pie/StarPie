@@ -70,6 +70,7 @@ g:\Users\2 Better\Desktop\design\
 │   ├── AppThemeManager.cs         # 窗口深浅色主题画刷注入管理器
 │   ├── FullScreenHelper.cs        # 独占全屏检测与 Windows Explorer 穿透识别
 │   ├── ActiveWindowHelper.cs      # 前台活动窗口探测器
+│   ├── WheelFocusSwitcher.cs      # 鼠标呼出轮盘时的前台焦点对齐（解析呼出点所在窗口并激活）
 │   ├── MemoryOptimizer.cs         # 内存整理与工作集压缩工具
 │   ├── I18n.cs                    # 多语言国际化字典 (zh-CN, zh-TW, en-US, ja-JP)
 │   ├── Renderers/                 # 轮盘切削形态渲染器策略族
@@ -217,6 +218,15 @@ g:\Users\2 Better\Desktop\design\
   - 最终释放后只允许调用 `MemoryOptimizer.TrimMemory(force: false)`，不得在日常关闭路径执行 Full GC 与强制工作集剥离，避免下一次轮盘唤起发生硬缺页或卡顿。
 - **初始化不得产生系统副作用**：WPF 给 `CheckBox.IsChecked` 赋值时也可能触发 `Checked/Unchecked`。加载自启动状态时必须同时使用 `_isUpdatingUi`、`_isUiInitializing` 与 `_isLoadingAutoStartState` 防护，并比较已加载状态；只有用户实际修改开关时才能调用 `ConfigManager.SetAutoStart()`，严禁打开控制台时创建或删除计划任务。
 - **显式退出模式**：`App.xaml` 必须保持 `ShutdownMode="OnExplicitShutdown"`，关闭最后一个设置窗口不能结束后台 Hook 与托盘进程；只有托盘退出、提权重启或明确的应用退出流程可以调用 `Shutdown()`。
+
+### 3.7 鼠标呼出轮盘时的前台焦点对齐
+- **触发键的点击被自己吞掉了，宿主窗口就不会被激活**。轮盘触发键（右键/中键/侧键）的 DOWN/UP 都由 `MouseHook` 拦截，被点中的那个窗口收不到任何鼠标消息，Windows 自然不会把它切到前台 —— 前台仍留在按下之前那个窗口上。多显示器场景下这条缺陷最刺眼：光标在显示器 2、轮盘也画在显示器 2，但松手后执行的动作（`SendInput` 注入的快捷键、窗口操作）全部落进显示器 1 上原来那个前台窗口。单屏上"右键点在背景窗口上"同样成立，只是不容易被注意到。
+- **修法**：`WheelFocusSwitcher.SwitchFocusToPoint(呼出点)` 在轮盘真正上屏之前调用一次（`GestureController.ShowRadialUI` 的最前面），把前台切到呼出点所在的顶层窗口；激活复用 `WindowTaskbarHelper.ActivateWindow`（前台锁的 `AttachThreadInput` / `Alt` 兜底都在那里），本类只负责"解析出该切给谁"，不注入点击、不改窗口样式、不移动窗口。
+- **只服务「鼠标呼出轮盘」这一条路径**：`ShowRadialUI` 的 `switchFocusToWheelPoint` 参数只有鼠标触发传 `true`（拖动阈值路径看 `_kbTriggerWaiting`，长按路径看 `isMouseWaiting`）。键盘触发（穿透模式）与插件经 `IHostWheelService` 呼出的粘滞轮盘一律不动前台 —— 前者用户正在某个窗口里打字，后者连触发都不在钩子上，抢前台都是错的。
+- **⚠️ 光切前台还不够：轮盘方案也必须一起换过去。** 方案是按进程名取的（`ConfigManager.GetProfileForProcess`），而进程名过去一律取 `ActiveWindowHelper.GetActiveWindowProcessName()`（**前台**窗口）。跨显示器呼出时前台还在另一块屏幕上，于是第一次呼出拿到的是**另一个程序**的扇区配置，前台虽然被切过去了、用户却得**再呼出一次**才看到该有的选项。所以鼠标路径改用 `WheelFocusSwitcher.TryGetProcessNameAtPoint(呼出点)`（解析同一个目标窗口 → `ActiveWindowHelper.GetProcessNameForWindow`），键盘路径与解析失败时回落到前台窗口，行为不变。
+  - **解析必须在钩子线程上做、激活必须留到 UI 线程**：`ProcessMove(初始位置)` 在 `BeginInvoke` 之前就按 `_activeProfile` 算好了初始扇区并写进手势状态，松手执行的动作也读这一份 —— 方案若等到 UI 线程才换，初判扇区会按**另一个方案**的扇区数算（12 扇区方案算出 10，套到 8 扇区方案上），用户松手可能落到错的扇区或空扇区。所以 `TryGetProcessNameAtPoint` 刻意只读（`WindowFromPoint`/`GetWindowRect`/`GetWindowLongPtr` 之类，钩子已有同类调用先例），前台切换仍留在 `ShowRadialUI`（UI 线程）里。
+- **解析规则（判据一律保守，宁可不切也不切错）**：先 `WindowFromPoint` + `GetAncestor(GA_ROOT)`；命中的是自己人的窗口（轮盘 HWND 隐藏后仍占着原位置、轨迹浮层）或 no-activate 悬浮层时，沿 z 序自上而下兜底找真正压在下面的窗口。**兜底只对这两类成立**：命中的是 Shell 表面（桌面、任务栏）时绝不下钻 —— 桌面铺满整块屏幕、任务栏上方还压着最大化的程序，往下找到的第一个「矩形盖住该点」的窗口就是那个无关程序，在桌面/任务栏空白处呼出轮盘会把用户当前软件抢走；此时宁可不动前台。被排除的目标：StarPie 自身进程的窗口、`WS_EX_NOACTIVATE` / `WS_EX_TRANSPARENT` 窗口、最小化/不可见窗口、桌面与任务栏等 Shell 表面（类名清单见 `ShellWindowClasses`）。目标已是前台时直接返回，不做任何多余的置顶/还原动作。
+- **机器护栏**：`scratch/test_wheel_focus.ps1`（真摆几层窗口做端到端验证，含"探针自己那层确实压在最上面"的前置条件断言，另有一条拉真记事本断言"进程名取自呼出点而不是前台窗口"，以及一条"Shell 表面上不做 z 序兜底、宁可不动前台"）。这段逻辑够不着单测与 UI 套件 —— 它们要的是屏幕上真的压着几层窗口；变异测试验过：去掉"自己的窗口"判据、去掉 no-activate 判据、把进程名换回取前台窗口，各自会红掉对应的断言。
 
 ---
 

@@ -49,6 +49,7 @@
     <InternalsVisibleTo Include="test_onboarding" />
     <InternalsVisibleTo Include="test_icon_cache" />
     <InternalsVisibleTo Include="test_sound_forensics" />
+    <InternalsVisibleTo Include="test_wheel_focus" />
   </ItemGroup>
 
 
