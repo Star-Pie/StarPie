@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <AssemblyName>test_wheel_focus</AssemblyName>
+    <RootNamespace>test_wheel_focus</RootNamespace>
+    <NoWarn>$(NoWarn);CS8600;CS8601;CS8602;CS8604;CS8618;CS8625</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="test_wheel_focus.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WinPieGestures\WinPieGestures.csproj" />
+  </ItemGroup>
+</Project>

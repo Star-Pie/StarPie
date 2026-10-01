@@ -1421,8 +1421,11 @@ public class GestureController : IDisposable
 				_currentDpiScaleX = scaleX;
 				_currentDpiScaleY = scaleY;
 			}
-			string processName = ActiveWindowHelper.GetActiveWindowProcessName();
-			WheelProfile profile = ConfigManager.GetProfileForProcess(processName);
+			// 同拖动路径：鼠标呼出时轮盘方案必须按呼出点所在的窗口取（键盘触发保持原样，只读解析不切前台）。
+			string? processAtWheelPoint = isMouseWaiting
+				? WheelFocusSwitcher.TryGetProcessNameAtPoint(_startPoint)
+				: null;
+			WheelProfile profile = ConfigManager.GetProfileForProcess(processAtWheelPoint ?? ActiveWindowHelper.GetActiveWindowProcessName());
 			long gestureVersion = GetCurrentGestureVersion();
 			Point startPoint = _startPoint;
 			((DispatcherObject)Application.Current).Dispatcher.BeginInvoke((Delegate)(Action)delegate
@@ -1433,7 +1436,7 @@ public class GestureController : IDisposable
 					{
 						return;
 					}
-					if (ShowRadialUI(startPoint, profile, gestureVersion))
+					if (ShowRadialUI(startPoint, profile, gestureVersion, switchFocusToWheelPoint: isMouseWaiting))
 					{
 						ProcessMove(startPoint);
 						ApplyPendingHighlight();
@@ -2005,13 +2008,21 @@ public class GestureController : IDisposable
 				{
 					return;
 				}
+				// 本帧越过拖动阈值的呼出来源：键盘触发（穿透模式）时 _kbTriggerWaiting 为 true。
+				// 只有鼠标触发才允许抢前台焦点（见 ShowRadialUI 的 switchFocusToWheelPoint）。
+				bool switchFocusToWheelPoint = !_kbTriggerWaiting;
 				_kbTriggerWaiting = false;
 				_isWaitingForThreshold = false;
 				_isGestureActive = true;
 				_soundSessionId = SoundEffectManager.BeginSession(SoundSessionSource.NormalGesture);
 				CancelLongPressTimer(); // 拖动先于长按触发
-				string activeWindowProcessName = ActiveWindowHelper.GetActiveWindowProcessName();
-				_activeProfile = ConfigManager.GetProfileForProcess(activeWindowProcessName);
+				// 轮盘方案按「呼出点所在的窗口」取，而不是前台窗口：跨显示器呼出时前台窗口还在另一块屏幕上，
+				// 沿用它的进程会拿到另一个程序的方案，用户得呼出第二次才对（前台这时才被切过去）。
+				// 这里只做只读解析 —— 钩子线程绝不做前台切换，激活留在 ShowRadialUI 里。
+				string? processAtWheelPoint = switchFocusToWheelPoint
+					? WheelFocusSwitcher.TryGetProcessNameAtPoint(_startPoint)
+					: null;
+				_activeProfile = ConfigManager.GetProfileForProcess(processAtWheelPoint ?? ActiveWindowHelper.GetActiveWindowProcessName());
 				Point center = _startPoint;
 				WheelProfile profile = _activeProfile;
 				Point initialPos = e.Position;
@@ -2027,7 +2038,7 @@ public class GestureController : IDisposable
 						{
 							return;
 						}
-						if (ShowRadialUI(center, profile, gestureVersion))
+						if (ShowRadialUI(center, profile, gestureVersion, switchFocusToWheelPoint))
 						{
 							ApplyPendingHighlight();
 						ApplyVolumePreview();
@@ -2175,7 +2186,12 @@ public class GestureController : IDisposable
 		QueueHighlightUpdate(num4, num5, flag, flag2, GetCurrentGestureVersion());
 	}
 
-	private bool ShowRadialUI(Point center, WheelProfile profile, long gestureVersion)
+	/// <param name="switchFocusToWheelPoint">
+	/// 是否把前台焦点切到轮盘呼出点所在的窗口。只有「鼠标呼出轮盘」的路径传 true：
+	/// 触发键的点击已被本程序的鼠标钩子吞掉，宿主窗口收不到激活，多显示器下会让动作落到另一块屏幕的窗口上。
+	/// 键盘触发与插件粘滞轮盘一律传 false，前台语义保持原样。
+	/// </param>
+	private bool ShowRadialUI(Point center, WheelProfile profile, long gestureVersion, bool switchFocusToWheelPoint)
 	{
 		profile.EnsureLayers();
 		profile.ActiveLayerIndex = 0;
@@ -2205,6 +2221,13 @@ public class GestureController : IDisposable
 
 		try
 		{
+			// 鼠标呼出轮盘：先把前台焦点对齐到呼出点所在的窗口，再上屏。
+			// 必须在 Present 之前完成 —— 轮盘一旦呈现，用户随时可能松手执行动作，
+			// 而动作（快捷键注入、窗口操作）作用的对象就是此刻的前台窗口。
+			if (switchFocusToWheelPoint)
+			{
+				WheelFocusSwitcher.SwitchFocusToPoint(center);
+			}
 			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion);
 			lock (_uiUpdateSync)
 			{
