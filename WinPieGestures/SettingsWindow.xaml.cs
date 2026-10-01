@@ -7583,7 +7583,7 @@ public partial class SettingsWindow : Window
 		if (OfficialPluginItemsControl == null || _officialPluginCatalog == null) return;
 		var installed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		foreach (PluginInstance instance in PluginHost.ListInstances()) installed[instance.PluginId] = instance.Entry.Version;
-		OfficialPluginItemsControl.ItemsSource = _officialPluginCatalog.Modules.OrderBy(module => module.Name, StringComparer.CurrentCultureIgnoreCase).Select(module => new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null)).ToList();
+		OfficialPluginItemsControl.ItemsSource = _officialPluginCatalog.Modules.Select(module => new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null)).OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList();
 	}
 
 	private void OpenOfficialPluginDetailsButton_Click(object sender, RoutedEventArgs e)

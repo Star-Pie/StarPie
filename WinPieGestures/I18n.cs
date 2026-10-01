@@ -2133,6 +2133,14 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("PluginsMsgTitle", "StarPie 插件", "StarPie 外掛", "StarPie Plugins", "StarPie プラグイン");
 		Add("PluginsNotAPlugin", "这个文件不能作为 StarPie 插件安装。\n\n原因：{0}\n详情：{1}\n\n建议：{2}\n\n文件：{3}", "這個檔案不能作為 StarPie 外掛安裝。\n\n原因：{0}\n詳情：{1}\n\n建議：{2}\n\n檔案：{3}", "This file cannot be installed as a StarPie plugin.\n\nReason: {0}\nDetails: {1}\n\nSuggestion: {2}\n\nFile: {3}", "このファイルは StarPie プラグインとしてインストールできません。\n\n理由：{0}\n詳細：{1}\n\n推奨：{2}\n\nファイル：{3}");
 		Add("PluginsNotReady", "插件系统尚未完成初始化。请稍候片刻再试，或重启 StarPie。", "外掛系統尚未完成初始化。請稍候片刻再試，或重新啟動 StarPie。", "The plugin system has not finished initializing yet. Please wait a moment and try again, or restart StarPie.", "プラグインシステムの初期化が完了していません。しばらく待ってから再試行するか、StarPie を再起動してください。");
+        Add("PluginsCompatibilityHostOld", "需要主程序 ≥ {0}，当前为 {1}", "需要主程式 ≥ {0}，目前為 {1}", "Requires StarPie ≥ {0}; current: {1}", "StarPie {0} 以上が必要です（現在: {1}）");
+        Add("PluginsCompatibilityHostNew", "支持主程序 ≤ {0}，当前为 {1}", "支援主程式 ≤ {0}，目前為 {1}", "Supports StarPie ≤ {0}; current: {1}", "StarPie {0} 以下に対応（現在: {1}）");
+        Add("PluginsCompatibilityApi", "需要 SDK API {0}，当前支持 {1}", "需要 SDK API {0}，目前支援 {1}", "Requires SDK API {0}; supported: {1}", "SDK API {0} が必要です（対応: {1}）");
+        Add("PluginsCompatibilityFramework", "需要目标框架 {0}，当前为 {1}", "需要目標框架 {0}，目前為 {1}", "Requires target framework {0}; current: {1}", "対象フレームワーク {0} が必要です（現在: {1}）");
+        Add("PluginsCompatibilityInvalid", "版本或兼容性信息无效，请刷新目录", "版本或相容性資訊無效，請重新整理目錄", "Invalid version or compatibility metadata. Refresh the catalog.", "バージョンまたは互換性情報が無効です。カタログを更新してください。");
+        Add("PluginsOfficialActionUnavailable", "当前环境不可安装", "目前環境無法安裝", "Unavailable for this host", "現在の環境ではインストール不可");
+        Add("PluginsOfficialStateCompatibleCurrent", "已是当前环境的最新兼容版本", "已是目前環境的最新相容版本", "Latest compatible version installed", "最新の互換バージョンを導入済み");
+        Add("PluginsOfficialStateInstalledNewer", "已安装版本较新，不自动降级", "已安裝版本較新，不自動降級", "A newer version is installed; no automatic downgrade", "より新しいバージョンを導入済み（自動ダウングレードなし）");
 		Add("PluginsOfficialActionInstall", "⬇️ 下载并安装", "⬇️ 下載並安裝", "⬇️ Download and install", "⬇️ ダウンロードしてインストール");
 		Add("PluginsOfficialActionInstalled", "已安装", "已安裝", "Installed", "インストール済み");
 		Add("PluginsOfficialActionUpdate", "⬆️ 更新", "⬆️ 更新", "⬆️ Update", "⬆️ 更新");

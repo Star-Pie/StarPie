@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -24,11 +25,19 @@ internal sealed class OfficialPluginCatalog
     public string SdkApiVersion { get; set; } = "";
     public string MinimumHostVersion { get; set; } = "";
     public DateTimeOffset GeneratedAt { get; set; }
-    public List<OfficialPluginModule> Modules { get; set; } = new();
+    public List<OfficialPluginCatalogEntry> Modules { get; set; } = new();
 }
 
+internal sealed class OfficialPluginCatalogEntry
+{
+    public string Id { get; set; } = "";
+    public List<OfficialPluginModule> Versions { get; set; } = new();
+}
+
+/// <summary>一个不可变发布版本的元数据。ID 由所属目录项赋值，不重复序列化。</summary>
 internal sealed class OfficialPluginModule
 {
+    [JsonIgnore]
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public string Version { get; set; } = "";
@@ -251,8 +260,15 @@ internal static class OfficialPluginClient
         bool? forceEnable = null)
     {
         if (module == null) return new OfficialPluginInstallResult { Error = "官方插件条目为空。" };
+        OfficialPluginCompatibility compatibility = OfficialPluginVersionSelector.Evaluate(module);
+        if (!compatibility.IsCompatible)
+            return new OfficialPluginInstallResult { PluginId = module.Id, Error = compatibility.Message };
+        cancellationToken.ThrowIfCancellationRequested();
 
         PluginInstance? previous = PluginHost.Find(module.Id);
+        if (previous != null && SimpleVersion.TryParse(previous.Entry.Version, out SimpleVersion installedVersion) &&
+            SimpleVersion.TryParse(module.Version, out SimpleVersion requestedVersion) && requestedVersion.CompareTo(installedVersion) < 0)
+            return new OfficialPluginInstallResult { PluginId = module.Id, Error = I18n.T("PluginsOfficialStateInstalledNewer") };
         bool enableAfterInstall = forceEnable ?? (previous?.Entry.Enabled ?? true);
         bool preloadAfterInstall = previous?.Entry.Preload ?? false;
 
@@ -470,43 +486,43 @@ internal static class OfficialPluginClient
         }
     }
 
-    private static void ValidateCatalog(OfficialPluginCatalog? catalog)
+    internal static void ValidateCatalog(OfficialPluginCatalog? catalog)
     {
         if (catalog == null) throw new InvalidDataException("官方插件 catalog 为空。");
-        if (catalog.SchemaVersion != 1) throw new InvalidDataException("不支持的官方插件 catalog 版本。");
+        if (catalog.SchemaVersion != 2) throw new InvalidDataException("不支持的官方插件 catalog 版本；需要 catalog v2。请手动刷新目录。");
         if (catalog.Modules == null) throw new InvalidDataException("官方插件 catalog 缺少 modules。");
-
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (OfficialPluginModule module in catalog.Modules)
+        foreach (OfficialPluginCatalogEntry entry in catalog.Modules)
         {
-            if (string.IsNullOrWhiteSpace(module.Id) || !module.Id.StartsWith("starpie.", StringComparison.OrdinalIgnoreCase))
+            if (entry == null || string.IsNullOrWhiteSpace(entry.Id) || !entry.Id.StartsWith("starpie.", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidDataException("catalog 含有非法官方插件 ID。");
-            if (!ids.Add(module.Id)) throw new InvalidDataException($"catalog 含有重复插件：{module.Id}。");
-            if (!Uri.TryCreate(module.PackageUrl, UriKind.Absolute, out Uri? uri)
-                || uri.Scheme != Uri.UriSchemeHttps
-                || !string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase)
-                || !uri.AbsolutePath.StartsWith("/Star-Pie/StarPie-Official-Plugins/releases/download/", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException($"插件 {module.Id} 的下载地址不是官方 GitHub Release 地址。");
-            if (!string.Equals(Path.GetFileName(uri.AbsolutePath), module.AssetName, StringComparison.Ordinal))
-                throw new InvalidDataException($"插件 {module.Id} 的下载资产名与 catalog 不一致。");
-            if (module.Size <= 0 || module.Size > MaxPackageSize)
-                throw new InvalidDataException($"插件 {module.Id} 的包大小不合法。");
-            if (module.Sha256.Length != 64 || !module.Sha256.All(Uri.IsHexDigit))
-                throw new InvalidDataException($"插件 {module.Id} 的 SHA-256 不合法。");
-
-            var featureIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (OfficialPluginFeature feature in module.Features ?? new List<OfficialPluginFeature>())
+            if (!ids.Add(entry.Id)) throw new InvalidDataException($"catalog 含有重复插件：{entry.Id}。");
+            if (entry.Versions == null || entry.Versions.Count == 0)
+                throw new InvalidDataException($"插件 {entry.Id} 缺少历史版本。");
+            var versions = new HashSet<string>(StringComparer.Ordinal);
+            foreach (OfficialPluginModule module in entry.Versions)
             {
-                if (string.IsNullOrWhiteSpace(feature.Id) || string.IsNullOrWhiteSpace(feature.Name))
-                    throw new InvalidDataException($"插件 {module.Id} 的功能条目缺少 id 或 name。");
-                if (!featureIds.Add(feature.Id))
-                    throw new InvalidDataException($"插件 {module.Id} 含有重复功能：{feature.Id}。");
+                if (module == null) throw new InvalidDataException($"插件 {entry.Id} 含有空版本。");
+                module.Id = entry.Id;
+                if (!SimpleVersion.TryParse(module.Version, out SimpleVersion version) || !versions.Add(version.ToString()))
+                    throw new InvalidDataException($"插件 {entry.Id} 的版本无效或重复：{module.Version}。");
+                if (string.IsNullOrWhiteSpace(module.Name) || !OfficialPluginVersionSelector.HasValidRequirements(module))
+                    throw new InvalidDataException($"插件 {entry.Id} v{module.Version} 缺少合法名称或兼容要求。");
+                if (!Uri.TryCreate(module.PackageUrl, UriKind.Absolute, out Uri? uri) || uri.Scheme != Uri.UriSchemeHttps ||
+                    !string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase) ||
+                    !uri.AbsolutePath.StartsWith("/Star-Pie/StarPie-Official-Plugins/releases/download/", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException($"插件 {entry.Id} 的下载地址不是官方 GitHub Release 地址。");
+                if (string.IsNullOrWhiteSpace(module.ReleaseTag) || string.IsNullOrWhiteSpace(module.AssetName) || !module.AssetName.EndsWith(".spkg", StringComparison.OrdinalIgnoreCase) ||
+                    !string.Equals(Path.GetFileName(uri.AbsolutePath), module.AssetName, StringComparison.Ordinal) ||
+                    !uri.AbsolutePath.StartsWith("/Star-Pie/StarPie-Official-Plugins/releases/download/" + Uri.EscapeDataString(module.ReleaseTag) + "/", StringComparison.Ordinal))
+                    throw new InvalidDataException($"插件 {entry.Id} 的资产名或发布标签与地址不一致。");
+                if (module.Size <= 0 || module.Size > MaxPackageSize || string.IsNullOrEmpty(module.Sha256) || module.Sha256.Length != 64 || !module.Sha256.All(Uri.IsHexDigit))
+                    throw new InvalidDataException($"插件 {entry.Id} 的包大小或 SHA-256 不合法。");
+                var featureIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (OfficialPluginFeature feature in module.Features ?? new List<OfficialPluginFeature>())
+                    if (feature == null || string.IsNullOrWhiteSpace(feature.Id) || string.IsNullOrWhiteSpace(feature.Name) || !featureIds.Add(feature.Id))
+                        throw new InvalidDataException($"插件 {entry.Id} 含有无效或重复的功能条目。");
             }
         }
     }
 }
-
-
-
-
-

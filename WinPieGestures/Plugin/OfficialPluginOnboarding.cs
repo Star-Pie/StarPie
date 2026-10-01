@@ -562,7 +562,7 @@ internal static class OfficialPluginOnboarding
                     var targetInfo = GetTargetInfo(id);
                     string pluginName = targetInfo != null ? I18n.T(targetInfo.NameKey) : id;
 
-                    if (!moduleMap.TryGetValue(id, out OfficialPluginModule? module) || module == null)
+                    if (!moduleMap.TryGetValue(id, out OfficialPluginCatalogEntry? entry) || entry == null)
                     {
                         string err = I18n.TF("OfficialPluginsOnboardingCatalogItemNotFound", id);
                         report.FailedPlugins[id] = err;
@@ -582,6 +582,23 @@ internal static class OfficialPluginOnboarding
                             Message = err
                         });
                         continue;
+                    }
+
+                    OfficialPluginSelection selection = OfficialPluginVersionSelector.Select(entry);
+                    OfficialPluginModule? module = selection.Compatible;
+                    if (module == null)
+                    {
+                        string err = selection.Blocked.Message;
+                        report.FailedPlugins[id] = err;
+                        report.ItemResults[id] = new OfficialPluginItemResult
+                        {
+                            PluginId = id, PluginName = pluginName,
+                            Status = OfficialPluginStatusKind.InstallFailed, ErrorOrGuidance = err
+                        };
+                        completed++;
+                        progress?.Report(new OfficialPluginBatchProgress
+                        { TotalCount = totalToProcess, CompletedCount = completed, CurrentPluginId = id, Message = err });
+                        continue; // 不请求下载，不产生额外能力确认，不改变已安装项。
                     }
 
                     // 阶段 1：比对预告权限与 catalog 权限

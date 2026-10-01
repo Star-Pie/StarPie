@@ -39,6 +39,14 @@ internal readonly struct SimpleVersion : IComparable<SimpleVersion>
         if (dash >= 0)
         {
             pre = raw.Substring(dash + 1);
+            if (pre.Length == 0) return false;
+            foreach (string identifier in pre.Split('.'))
+            {
+                if (identifier.Length == 0) return false;
+                foreach (char symbol in identifier)
+                    if (!((symbol >= '0' && symbol <= '9') || (symbol >= 'a' && symbol <= 'z') || (symbol >= 'A' && symbol <= 'Z') || symbol == '-')) return false;
+                if (IsNumericIdentifier(identifier) && identifier.Length > 1 && identifier[0] == '0') return false;
+            }
             raw = raw.Substring(0, dash);
         }
 
@@ -73,7 +81,30 @@ internal readonly struct SimpleVersion : IComparable<SimpleVersion>
         bool otherPre = !string.IsNullOrEmpty(other.PreRelease);
         if (thisPre && !otherPre) return -1;
         if (!thisPre && otherPre) return 1;
-        return string.CompareOrdinal(PreRelease, other.PreRelease);
+        if (!thisPre) return 0;
+        string[] left = PreRelease!.Split('.'), right = other.PreRelease!.Split('.');
+        for (int i = 0; i < Math.Min(left.Length, right.Length); i++)
+        {
+            bool ln = IsNumericIdentifier(left[i]), rn = IsNumericIdentifier(right[i]);
+            int part;
+            if (ln && rn)
+            {
+                string l = left[i].TrimStart('0'), r = right[i].TrimStart('0');
+                part = l.Length.CompareTo(r.Length);
+                if (part == 0) part = string.CompareOrdinal(l, r);
+            }
+            else if (ln != rn) part = ln ? -1 : 1;
+            else part = string.CompareOrdinal(left[i], right[i]);
+            if (part != 0) return part;
+        }
+        return left.Length.CompareTo(right.Length);
+    }
+
+    private static bool IsNumericIdentifier(string value)
+    {
+        if (value.Length == 0) return false;
+        foreach (char digit in value) if (digit < '0' || digit > '9') return false;
+        return true;
     }
 
     public override string ToString() =>

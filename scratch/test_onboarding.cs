@@ -36,6 +36,7 @@ public class Program
         Console.WriteLine("=================================================");
 
         string sandbox = Path.Combine(Path.GetTempPath(), "StarPie-OnboardingTest-" + Guid.NewGuid().ToString("N"));
+        Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(sandbox, "app-data"));
         string hostRoot = Path.Combine(sandbox, "plugin-data");
         string scanRoot = Path.Combine(sandbox, "plugin");
         Directory.CreateDirectory(hostRoot);
@@ -47,6 +48,33 @@ public class Program
         try
         {
             await RunAllTestsAsync(hostRoot, scanRoot);
+        Console.WriteLine("\n--- Scenario 19: Catalog v2 highest-compatible selection ---");
+        CleanRegistry();
+        var historyCatalog = CreateMockCatalog();
+        foreach (var group in historyCatalog.Modules)
+        {
+            group.Versions.Add(new OfficialPluginModule
+            {
+                Id = group.Id, Name = group.Id + " future", Version = "2.0.0", MinHostVersion = "99.0.0",
+                ApiVersion = "1.8", TargetFramework = "net8.0-windows", Capabilities = new() { "ScreenCapture" }
+            });
+        }
+        int historyInstalls = 0; bool futurePermissionPrompt = false;
+        var historyReport = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+            catalogFetcher: _ => Task.FromResult(historyCatalog),
+            moduleInstaller: (module, _) => { Assert(module.Version == "1.0.0", "19.1 Onboarding picks compatible historical package"); historyInstalls++; return Task.FromResult(new OfficialPluginInstallResult { Success = true, PluginId = module.Id, Enabled = true }); },
+            extraCapabilityPrompter: (_, _) => { futurePermissionPrompt = true; return Task.FromResult(false); });
+        Assert(historyInstalls == 5 && historyReport.SuccessCount == 5, "19.2 Older host can first-install all compatible historical modules");
+        Assert(!futurePermissionPrompt, "19.3 Unsupported future capabilities never prompt");
+        CleanRegistry();
+        foreach (var group in historyCatalog.Modules) group.Versions.RemoveAt(0);
+        int blockedDownloads = 0;
+        var blockedReport = await OfficialPluginOnboarding.InstallMissingPluginsAsync(
+            catalogFetcher: _ => Task.FromResult(historyCatalog),
+            moduleInstaller: (module, _) => { blockedDownloads++; return Task.FromResult(new OfficialPluginInstallResult { Success = true }); });
+        Assert(blockedDownloads == 0 && blockedReport.FailureCount == 5, "19.4 No compatible versions are rejected before download");
+
+
         }
         finally
         {
@@ -54,7 +82,12 @@ public class Program
             {
                 if (Directory.Exists(sandbox))
                 {
-                    Directory.Delete(sandbox, recursive: true);
+                    string resolved = Path.GetFullPath(sandbox);
+                    string tempRoot = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                    if (!resolved.StartsWith(tempRoot, StringComparison.OrdinalIgnoreCase) ||
+                        !Path.GetFileName(resolved).StartsWith("StarPie-OnboardingTest-", StringComparison.Ordinal))
+                        throw new InvalidOperationException("Refusing to clean a path outside the test sandbox.");
+                    Directory.Delete(resolved, recursive: true);
                 }
             }
             catch
@@ -90,7 +123,7 @@ public class Program
     {
         var catalog = new OfficialPluginCatalog
         {
-            SchemaVersion = 1,
+            SchemaVersion = 2,
             CatalogVersion = "2026.09.25",
             ReleaseTag = "v2026.09.25",
             ReleaseChannel = "stable"
@@ -104,8 +137,11 @@ public class Program
                 caps.AddRange(extraCapabilities);
             }
 
-            catalog.Modules.Add(new OfficialPluginModule
+            catalog.Modules.Add(new OfficialPluginCatalogEntry
             {
+                Id = info.Id,
+                Versions = new() { new OfficialPluginModule
+                {
                 Id = info.Id,
                 Name = info.Id,
                 Version = "1.0.0",
@@ -114,7 +150,9 @@ public class Program
                 PackageUrl = "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/v2026.09.25/" + info.Id + ".spkg",
                 Sha256 = new string('a', 64),
                 Size = 1024,
+                ApiVersion = "1.4", TargetFramework = "net8.0-windows", MinHostVersion = "1.8.0-beta.1",
                 Capabilities = caps
+                } }
             });
         }
 
@@ -745,7 +783,7 @@ public class Program
             // 12.2 Catalog extra capability on a specific plugin (e.g. folder requests InputSimulation, not disclosed for folder!)
             CleanRegistry();
             var catalogWithFolderExtra = CreateMockCatalog();
-            var folderModule = catalogWithFolderExtra.Modules.First(m => m.Id == "starpie.builtin.folder");
+            var folderModule = catalogWithFolderExtra.Modules.First(m => m.Id == "starpie.builtin.folder").Versions[0];
             folderModule.Capabilities.Add("InputSimulation"); // InputSimulation was disclosed for system, but NOT for folder!
 
             string? promptedPluginName = null;

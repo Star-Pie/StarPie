@@ -44,6 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="test_catalog" />
     <InternalsVisibleTo Include="test_process_launch" />
     <InternalsVisibleTo Include="test_onboarding" />
     <InternalsVisibleTo Include="test_icon_cache" />

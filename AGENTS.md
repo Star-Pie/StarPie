@@ -272,6 +272,7 @@ g:\Users\2 Better\Desktop\design\
     - **容灾与非回滚**：展示下载与校验进度；失败时保留已成功项，不整体回滚，清晰提示错误原因；
     - **常驻重试横幅**：弹窗关闭后，若仍有未安装的官方核心插件，在设置页「插件与扩展」顶部常驻提供轻量重试横幅；
     - **即时刷新**：安装成功后立即触发 `PluginHost.NotifyPluginSetChanged()` 与 `HandlePluginAvailabilityChanged()`，使五个内置动作立即可用，无需重启。
+  - 官方 `module-catalog.json` 使用 schemaVersion=2：模块只保留 `id + versions`，包字段和兼容要求属于每个历史版本。客户端、缓存、手动安装与引导共用最高兼容版本选择；不保留旧客户端默认包，不自动降级。发布工具可以迁移 v1 历史，客户端只接受 v2。
   - 当前阶段只使用哈希校验；不得下载或依赖 `cosign.exe`、`module-catalog.sigstore.json` 或其他外部验签程序。
 - **两个插件目录，职责严格分开**：
   - **社区插件候选区** `程序目录\plugin\`（`PluginPaths.ScanRoot`）：只供用户手动安装社区 `.dll`；宿主只读、只扫描，绝不创建、写入或删除。`starpie.*` 保留 ID 不得通过这里安装。
