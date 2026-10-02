@@ -18,7 +18,7 @@ internal static class Program
     {
         // 所有日志都在隔离目录；不打开窗口，不启动程序，不弹 UAC。
         Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(Path.GetTempPath(), "StarPie-ProcessLaunchTests-" + Guid.NewGuid().ToString("N")));
-        Check(AppVersionInfo.DisplayVersion == "1.8.0-beta.4", "host release version remains beta.4");
+        Check(AppVersionInfo.DisplayVersion == "1.8.0-beta.5", "host release version is beta.5");
         Check(SimpleVersion.TryParse("1.8.0-beta.4", out var oldHost) &&
             SimpleVersion.TryParse("1.8.0-beta.5", out _), "minimum host versions parse");
         SimpleVersion.TryParse("1.8.0-beta.5", out var minimum);
@@ -112,8 +112,103 @@ internal static class Program
         var noDirectory = new ProcessStartInfo("cmd.exe", "/c exit");
         ProcessLaunchExecutor.Start(noDirectory, ProcessLaunchMode.StandardUser,
             (_, _, directory, show) => { Check(directory == Environment.CurrentDirectory && show == 1, "standard launch preserves inherited working directory"); return true; }, _ => throw new Exception("fallback"));
+        RunPluginUpdateRestartChecks();
         RunColdEditorIntegration();
-        Console.WriteLine($"PASS: {_checks} host launch/SDK/UI checks; no processes or windows were started.");
+        Console.WriteLine($"PASS: {_checks} host launch/SDK/UI/update-restart checks; no processes or windows were started.");
+    }
+
+    private static void RunPluginUpdateRestartChecks()
+    {
+        foreach (PluginStopStatus status in Enum.GetValues<PluginStopStatus>())
+        {
+            var stop = new PluginStopResult { Status = status, PluginId = "test.update", Message = "held" };
+            bool expected = status is PluginStopStatus.Pending or PluginStopStatus.RequiresRestart;
+            Check(stop.RestartSuggested == expected, "restart is suggested only for unresolved stopping/unload " + status);
+            if (!stop.IsFullyStopped)
+            {
+                PluginInstallResult failure = PluginInstallResult.FromStopFailure(stop);
+                Check(!failure.Success && failure.PluginId == stop.PluginId && failure.Error.Contains(stop.Message) && failure.RestartSuggested == expected,
+                    "installation retains stop reason and restart hint " + status);
+                var official = OfficialPluginInstallResult.FromInstallResult(failure);
+                Check(!official.Success && official.PluginId == failure.PluginId && official.Error == failure.Error && official.RestartSuggested == expected,
+                    "official updater propagates restart hint " + status);
+            }
+        }
+        Check(!OfficialPluginInstallResult.FromInstallResult(new PluginInstallResult { Error = "network/validation failure" }).RestartSuggested,
+            "unrelated failures do not suggest restart");
+        var installed = OfficialPluginInstallResult.FromInstallResult(new PluginInstallResult { Success = true, Enabled = true, PluginId = "test" });
+        Check(installed.Success && installed.Enabled && !installed.RestartSuggested, "successful installation keeps existing result semantics");
+        Check(PluginHost.IsFileInUse(new IOException("sharing", unchecked((int)0x80070020))), "sharing violation suggests restart");
+        Check(PluginHost.IsFileInUse(new IOException("lock", unchecked((int)0x80070021))), "lock violation suggests restart");
+        Check(!PluginHost.IsFileInUse(new IOException("disk full", unchecked((int)0x80070070))), "disk full does not suggest restart");
+        Check(!PluginHost.IsFileInUse(new UnauthorizedAccessException("denied")), "permissions error does not suggest restart");
+
+        string sandbox = Path.Combine(Environment.GetEnvironmentVariable("LOCALAPPDATA")!, "update-lock");
+        string source = Path.Combine(sandbox, "source");
+        string hostRoot = Path.Combine(sandbox, "plugin-data");
+        string target = Path.Combine(hostRoot, "test.update");
+        Directory.CreateDirectory(source); Directory.CreateDirectory(target);
+        string sourceFile = Path.Combine(source, "test.dll");
+        string targetFile = Path.Combine(target, "test.dll");
+        File.WriteAllText(sourceFile, "new payload"); File.WriteAllText(targetFile, "old payload");
+        string privateSettings = Path.Combine(target, "settings.json");
+        File.WriteAllText(privateSettings, "private settings");
+        var scan = new PluginScanResult
+        {
+            Accepted = true, ManifestSource = "Manifest", SourceDirectory = source, DllPath = sourceFile,
+            Manifest = new PluginManifest { Id = "test.update", Name = "Test", Version = "1.0.1" },
+        };
+        PluginPaths.OverrideRootsForTesting(hostRoot, Path.Combine(sandbox, "scan"));
+        using (var held = new FileStream(targetFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            Check(!PluginHost.CopyPayload(scan, target, true, out string copyError, out bool restart) && restart && copyError.Length > 0,
+                "actual destination sharing lock reaches copy failure hint");
+            var result = PluginHost.CommitInstall(scan, new PluginInstallOptions { Acknowledged = true, OverwriteExisting = true });
+            Check(!result.Success && result.RestartSuggested && result.PluginId == scan.Manifest.Id,
+                "installation surfaces destination lock without reporting success");
+            Check(File.ReadAllText(targetFile) == "old payload" && File.ReadAllText(privateSettings) == "private settings",
+                "locked payload and private settings are not overwritten");
+            var bare = new PluginScanResult { ManifestSource = "AssemblyMetadata", DllPath = sourceFile };
+            Check(!PluginHost.CopyPayload(bare, target, true, out _, out bool bareRestart) && bareRestart,
+                "bare DLL update also surfaces sharing lock");
+        }
+        Check(PluginHost.CopyPayload(scan, target, true, out _, out bool afterRelease) && !afterRelease && File.ReadAllText(targetFile) == "new payload",
+            "manual retry after releasing lock succeeds without restart hint");
+        Check(File.ReadAllText(privateSettings) == "private settings", "retry preserves plugin private settings");
+        scan.SourceDirectory = Path.Combine(sandbox, "missing");
+        Check(!PluginHost.CopyPayload(scan, target, true, out _, out bool missingRestart) && !missingRestart,
+            "missing update source is not misclassified as file occupation");
+
+        string previousLanguage = I18n.CurrentLanguageCode;
+        foreach (string language in new[] { "zh-CN", "zh-TW", "en", "ja" })
+        {
+            I18n.SetLanguage(language);
+            string prompt = I18n.TF("PluginsUpdateRestartPrompt", "TestPlugin", "DETAIL");
+            Check(prompt.Contains("TestPlugin") && prompt.Contains("DETAIL") && !prompt.Contains("{0}") && !prompt.Contains("{1}"),
+                "update restart prompt includes original failure and plugin name " + language);
+            Check(I18n.T("PluginsRestartStartFailed") != "PluginsRestartStartFailed", "restart launch failure localized " + language);
+        }
+        I18n.SetLanguage(previousLanguage);
+
+        int waitCalls = 0;
+        bool Wait(int pid, long ticks) { waitCalls++; Check(pid == 123 && ticks == 456, "restart preserves parent identity"); return true; }
+        Check(AppRestartCoordinator.WaitForPreviousProcess(new[] { "--silent" }, Wait) && waitCalls == 0, "normal startup never waits on another process");
+        Check(AppRestartCoordinator.WaitForPreviousProcess(new[] { "--silent", AppRestartCoordinator.WaitArgument, "123", "456" }, Wait) && waitCalls == 1,
+            "restart waits for predecessor before normal startup");
+        Check(!AppRestartCoordinator.WaitForPreviousProcess(new[] { AppRestartCoordinator.WaitArgument, "123", "456" }, (_, _) => false),
+            "restart timeout cancels new startup without killing predecessor");
+        Check(!AppRestartCoordinator.WaitForPreviousProcess(new[] { AppRestartCoordinator.WaitArgument, "123", "456" }, (_, _) => throw new IOException("wait failure")),
+            "restart wait failure cancels new startup");
+        foreach (string[] invalid in new[] {
+            new[] { AppRestartCoordinator.WaitArgument }, new[] { AppRestartCoordinator.WaitArgument, "bad", "456" },
+            new[] { AppRestartCoordinator.WaitArgument, "0", "456" }, new[] { AppRestartCoordinator.WaitArgument, "123", "bad" },
+            new[] { AppRestartCoordinator.WaitArgument, "123", "0" }, new[] { AppRestartCoordinator.WaitArgument, Environment.ProcessId.ToString(), "456" },
+        }) Check(!AppRestartCoordinator.WaitForPreviousProcess(invalid, (_, _) => throw new Exception("must not wait")), "invalid restart arguments do not wait");
+        var start = AppRestartCoordinator.CreateStartInfo(@"C:\test folder\StarPie.exe", 123, 456);
+        Check(start.FileName == @"C:\test folder\StarPie.exe" && !start.UseShellExecute && start.CreateNoWindow,
+            "restart launches same executable directly without shell quoting");
+        Check(start.ArgumentList.SequenceEqual(new[] { "--silent", AppRestartCoordinator.WaitArgument, "123", "456" }),
+            "restart passes separate silent/predecessor arguments without update resume task");
     }
 
     private static void RunColdEditorIntegration()
@@ -140,11 +235,9 @@ internal static class Program
             var productionManifest = JsonSerializer.Deserialize<PluginManifest>(
                 File.ReadAllText(Path.Combine(source, "plugin.json")),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
-            Check(!PluginManifestReader.Validate(productionManifest, out PluginScanFailure failure, out _, true) &&
-                failure == PluginScanFailure.HostVersionOutOfRange,
-                "production beta.5 minimum still rejects beta.4 " + type);
-            // 只调整隔离测试副本以测试参数渲染；生产清单和版本门禁保持不变。
-            productionManifest.MinHostVersion = AppVersionInfo.DisplayVersion;
+            Check(PluginManifestReader.Validate(productionManifest, out _, out _, true),
+                "beta.5 accepts production minimum and SDK requirements " + type);
+            // 使用原始生产清单的隔离副本，不放宽最低宿主版本或 SDK 门禁。
             File.WriteAllText(Path.Combine(directory, "plugin.json"), JsonSerializer.Serialize(productionManifest));
             registry.Entries.Add(new PluginRegistryEntry
             {

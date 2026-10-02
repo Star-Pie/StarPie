@@ -79,10 +79,17 @@ internal sealed class OfficialPluginCatalogCache
 
 internal sealed class OfficialPluginInstallResult
 {
+    public bool RestartSuggested { get; init; }
     public bool Success { get; init; }
     public string PluginId { get; init; } = "";
     public string Error { get; init; } = "";
     public bool Enabled { get; init; }
+
+    internal static OfficialPluginInstallResult FromInstallResult(PluginInstallResult result) => new()
+    {
+        Success = result.Success, PluginId = result.PluginId, Error = result.Error,
+        Enabled = result.Enabled, RestartSuggested = result.RestartSuggested,
+    };
 }
 
 /// <summary>
@@ -357,13 +364,7 @@ internal static class OfficialPluginClient
                 PluginRegistryStore.UpsertEntry(installed.Entry);
             }
 
-            return new OfficialPluginInstallResult
-            {
-                Success = result.Success,
-                PluginId = result.PluginId,
-                Error = result.Error,
-                Enabled = result.Enabled,
-            };
+            return OfficialPluginInstallResult.FromInstallResult(result);
         }
         catch (OperationCanceledException)
         {

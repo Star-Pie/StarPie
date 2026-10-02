@@ -134,6 +134,13 @@ public partial class App : Application
 
 	protected override void OnStartup(StartupEventArgs e)
 	{
+		// 必须先等旧进程退出，再获取单实例互斥体或读取用户/插件状态。
+		if (!AppRestartCoordinator.WaitForPreviousProcess(e.Args))
+		{
+			_isDuplicateInstance = true;
+			Shutdown(1);
+			return;
+		}
 		DisablePowerThrottling();
 		try
 		{
@@ -427,16 +434,10 @@ public partial class App : Application
 		try
 		{
 			string fileName = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
-			string escaped = fileName.Replace("\"", "\"\"");
-			string command = $"/C ping 127.0.0.1 -n 2 > nul & start \"\" \"{escaped}\" --silent";
-			Process.Start(new ProcessStartInfo
-			{
-				FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
-				Arguments = command,
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				WindowStyle = ProcessWindowStyle.Hidden,
-			});
+			using Process current = Process.GetCurrentProcess();
+			using Process? next = Process.Start(AppRestartCoordinator.CreateStartInfo(
+				fileName, current.Id, current.StartTime.ToUniversalTime().Ticks));
+			if (next == null) return false;
 			ExitApplication();
 			return true;
 		}

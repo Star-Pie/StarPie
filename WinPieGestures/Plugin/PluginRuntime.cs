@@ -297,6 +297,9 @@ internal sealed class PluginStopResult
     public int RemainingCalls { get; init; }
 
     public bool IsFullyStopped => Status is PluginStopStatus.AlreadyStopped or PluginStopStatus.Stopped;
+
+    /// <summary>旧调用或程序集仍未释放时，可让用户重启后手动重试，不代表已完成操作。</summary>
+    public bool RestartSuggested => Status is PluginStopStatus.Pending or PluginStopStatus.RequiresRestart;
 }
 
 internal sealed class PluginUninstallResult

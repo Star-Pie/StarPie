@@ -40,10 +40,19 @@ internal sealed class PluginInstallOptions
 
 internal sealed class PluginInstallResult
 {
+    /// <summary>仅表示可以重启后手动重试；不会保存或自动恢复安装任务。</summary>
+    public bool RestartSuggested { get; init; }
     public bool Success { get; init; }
     public string PluginId { get; init; } = "";
     public string Error { get; init; } = "";
     public bool Enabled { get; init; }
+
+    internal static PluginInstallResult FromStopFailure(PluginStopResult stop) => new()
+    {
+        PluginId = stop.PluginId,
+        Error = $"旧版本尚未完全停止，不能覆盖安装：{stop.Message}",
+        RestartSuggested = stop.RestartSuggested,
+    };
 }
 
 /// <summary>
@@ -237,12 +246,7 @@ internal static class PluginHost
 
             if (!stop.IsFullyStopped)
             {
-                return new PluginInstallResult
-                {
-                    Success = false,
-                    PluginId = pluginId,
-                    Error = $"旧版本尚未完全停止，不能覆盖安装：{stop.Message}",
-                };
+                return PluginInstallResult.FromStopFailure(stop);
             }
         }
 
@@ -297,9 +301,13 @@ internal static class PluginHost
 
                 if (!options.DeveloperExternalPath)
                 {
-                    if (!CopyPayload(scan, targetDirectory, options.OverwriteExisting, out string copyError))
+                    if (!CopyPayload(scan, targetDirectory, options.OverwriteExisting, out string copyError, out bool restartSuggested))
                     {
-                        return new PluginInstallResult { Success = false, PluginId = manifest.Id, Error = copyError };
+                        return new PluginInstallResult
+                        {
+                            Success = false, PluginId = manifest.Id, Error = copyError,
+                            RestartSuggested = restartSuggested,
+                        };
                     }
                 }
                 else if (!_developerMode)
@@ -1714,13 +1722,17 @@ internal static class PluginHost
     /// </list>
     /// </summary>
     internal static bool CopyPayload(PluginScanResult scan, string targetDirectory, bool overwrite, out string error)
+        => CopyPayload(scan, targetDirectory, overwrite, out error, out _);
+
+    internal static bool CopyPayload(PluginScanResult scan, string targetDirectory, bool overwrite, out string error, out bool restartSuggested)
     {
+        restartSuggested = false;
         if (string.Equals(scan.ManifestSource, "Manifest", StringComparison.Ordinal))
         {
-            return CopyDirectory(scan.SourceDirectory, targetDirectory, overwrite, out error);
+            return CopyDirectory(scan.SourceDirectory, targetDirectory, overwrite, out error, out restartSuggested);
         }
 
-        if (!CopySingleFile(scan.DllPath, targetDirectory, overwrite, out error))
+        if (!CopySingleFile(scan.DllPath, targetDirectory, overwrite, out error, out restartSuggested))
         {
             return false;
         }
@@ -1729,6 +1741,10 @@ internal static class PluginHost
         // 后续识别（进而是启用）会直接失败 —— 表现是「装上了却怎么都启不动」。
         return WriteGeneratedManifest(scan, targetDirectory, out error);
     }
+
+    /// <summary>只识别 Windows 共享/锁冲突，不把权限不足、磁盘错误等误判成需要重启。</summary>
+    internal static bool IsFileInUse(Exception error)
+        => error is IOException && (error.HResult & 0xffff) is 32 or 33;
 
     /// <summary>
     /// 为裸 DLL 安装回填 <c>plugin.json</c>：把扫描阶段已经确认过的事实固化成清单。
@@ -1768,9 +1784,10 @@ internal static class PluginHost
     }
 
     /// <summary>只复制一枚程序集（裸 DLL 安装用）。</summary>
-    private static bool CopySingleFile(string sourceFile, string targetDirectory, bool overwrite, out string error)
+    private static bool CopySingleFile(string sourceFile, string targetDirectory, bool overwrite, out string error, out bool restartSuggested)
     {
         error = "";
+        restartSuggested = false;
         try
         {
             if (string.IsNullOrWhiteSpace(sourceFile) || !File.Exists(sourceFile))
@@ -1808,6 +1825,7 @@ internal static class PluginHost
         catch (Exception ex)
         {
             error = $"复制插件文件失败：{ex.Message}";
+            restartSuggested = IsFileInUse(ex);
             return false;
         }
     }
@@ -1846,9 +1864,10 @@ internal static class PluginHost
         }
     }
 
-    private static bool CopyDirectory(string source, string target, bool overwrite, out string error)
+    private static bool CopyDirectory(string source, string target, bool overwrite, out string error, out bool restartSuggested)
     {
         error = "";
+        restartSuggested = false;
         try
         {
             if (!Directory.Exists(source))
@@ -1892,6 +1911,7 @@ internal static class PluginHost
         catch (Exception ex)
         {
             error = $"复制插件文件失败：{ex.Message}";
+            restartSuggested = IsFileInUse(ex);
             return false;
         }
     }
