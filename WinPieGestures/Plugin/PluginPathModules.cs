@@ -391,9 +391,9 @@ internal sealed class InteractionEventPathModule : PluginPathModule
         ArgumentNullException.ThrowIfNull(interactionEvent);
         if (!_activation.IsPluginSystemEnabled) return 0;
         int accepted = 0;
-        foreach (var group in _catalog.SnapshotInteractions())
+        foreach (var group in _catalog.SnapshotInteractions(interactionEvent.Kind))
         {
-            int matches = group.MatchCount(interactionEvent.Kind);
+            int matches = group.RegisteredCount;
             if (matches == 0 || !ReferenceEquals(_findInteractionInstance(group.Owner.PluginId), group.Owner) ||
                 !group.Owner.CanAcceptInteraction(group.Generation)) continue;
             PluginInteractionQueue queue;

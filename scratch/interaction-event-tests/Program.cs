@@ -231,6 +231,106 @@ internal static class Program
             "unloaded plugin is not activated by broadcast");
     }
 
+    private static async Task TestSubscriptionIndex()
+    {
+        using var rig = new Rig();
+        var owner = rig.Owner("test.index"); var other = rig.Owner("test.index.other");
+        var entered = Gate(); var release = Gate();
+        var first = new Recorder { Id = "first", Filter = InteractionEventKind.Presented | InteractionEventKind.ActionCommitted,
+            Handler = async (e, _) => { if (e.Sequence == 1) { entered.TrySetResult(true); await release.Task; } } };
+        var selection = new Recorder { Id = "selection", Filter = InteractionEventKind.SelectionChanged };
+        var last = new Recorder { Id = "last", Filter = InteractionEventKind.Presented };
+        var all = new Recorder { Id = "all" };
+        var firstToken = rig.Add(owner, first); rig.Add(owner, selection);
+        var lastToken = rig.Add(owner, last); rig.Add(owner, all);
+        rig.Add(other, new Recorder { Filter = InteractionEventKind.SelectionChanged });
+        var registrations = rig.Catalog.SnapshotInteractions();
+        foreach (InteractionEventKind kind in Enum.GetValues<InteractionEventKind>())
+        {
+            int bits = (int)kind;
+            if (bits == 0 || (bits & (bits - 1)) != 0) continue;
+            var groups = rig.Catalog.SnapshotInteractions(kind);
+            var expected = registrations.SelectMany(g => g.Registrations).Where(r => (r.Events & kind) != 0);
+            Check(groups.SelectMany(g => g.Registrations).SequenceEqual(expected), "event index contains only ordered matching registrations: " + kind);
+            Check(groups.All(g => g.Registrations.Length != 0 && g.Registrations.All(r => ReferenceEquals(r.Owner, g.Owner))),
+                "event index keeps nonempty per-plugin groups: " + kind);
+            Check(ReferenceEquals(groups, rig.Catalog.SnapshotInteractions(kind)), "event lookup reuses committed snapshot: " + kind);
+        }
+        Check(rig.Catalog.SnapshotInteractions(InteractionEventKind.None).Length == 0 &&
+              rig.Catalog.SnapshotInteractions(InteractionEventKind.All).Length == 0 &&
+              rig.Catalog.SnapshotInteractions((InteractionEventKind)128).Length == 0,
+            "none/composite/unknown kinds are not event index entries");
+        var presented = rig.Catalog.SnapshotInteractions(InteractionEventKind.Presented);
+        Check(presented.Length == 1 && presented[0].Registrations.Length == 3,
+            "Presented index excludes selection-only plugin and contribution");
+        try
+        {
+            Check(Publish(rig.Runtime, Event(InteractionEventKind.Presented, 1)) == 3, "indexed publish counts matching contributions");
+            await Wait(entered.Task);
+            Check(rig.Runtime.Interactions.FindQueue(other.PluginId) == null, "unrelated plugin gets no queue");
+            Publish(rig.Runtime, Event(InteractionEventKind.Presented, 2));
+            Check(Publish(rig.Runtime, Event(InteractionEventKind.SelectionChanged, 3)) == 3, "selection index routes matching plugins");
+            var queue = rig.Runtime.Interactions.FindQueue(owner.PluginId)!;
+            var pending = (System.Collections.IEnumerable)typeof(PluginInteractionQueue).GetField("_pending", PrivateInstance)!.GetValue(queue)!;
+            var deliveryGroups = pending.Cast<object>().Select(d => (PluginInteractionGroup)d.GetType().GetProperty("Group")!.GetValue(d)!).ToArray();
+            Check(deliveryGroups.Length == 2 && ReferenceEquals(deliveryGroups[0], presented[0]) &&
+                  deliveryGroups[0].Registrations.Select(r => r.FullId).SequenceEqual(new[] { owner.PluginId + ".first", owner.PluginId + ".last", owner.PluginId + ".all" }) &&
+                  deliveryGroups[1].Registrations.Select(r => r.FullId).SequenceEqual(new[] { owner.PluginId + ".selection", owner.PluginId + ".all" }),
+                "queued deliveries carry only their already-matched contribution groups");
+            lastToken.Dispose();
+            var rebuilt = rig.Catalog.SnapshotInteractions(InteractionEventKind.Presented);
+            Check(!ReferenceEquals(presented, rebuilt) && rebuilt[0].Registrations.Length == 2,
+                "individual revocation rebuilds event index");
+            Check(presented[0].Registrations.Length == 3 && presented[0].RegisteredCount == 2,
+                "retained delivery snapshot stays stable but revoked registration closes immediately");
+            Check(Publish(rig.Runtime, Event(InteractionEventKind.Presented, 4)) == 2, "rebuilt index excludes revoked receiver");
+        }
+        finally { release.TrySetResult(true); }
+        await Wait(rig.Runtime.Interactions.FindQueue(owner.PluginId)!.Completion);
+        await Wait(rig.Runtime.Interactions.FindQueue(other.PluginId)!.Completion);
+        Check(first.Seen.Select(e => e.Sequence).SequenceEqual(new long[] { 1, 2, 4 }) && last.Seen.Count == 0,
+            "buffered pre-revocation delivery skips revoked receiver without losing live receivers");
+        Check(selection.Seen.Select(e => e.Sequence).SequenceEqual(new long[] { 3 }) &&
+              all.Seen.Select(e => e.Sequence).SequenceEqual(new long[] { 1, 2, 3, 4 }),
+            "mixed-filter contributions preserve plugin serial event order");
+        Check(new[] { first, selection, last, all }.All(r => r.DescriptorReads == 1), "index rebuild and publish never reread plugin descriptors");
+        rig.Catalog.RevokeAll(owner.PluginId);
+        Check(Enum.GetValues<InteractionEventKind>().All(kind => rig.Catalog.SnapshotInteractions(kind).All(g => !ReferenceEquals(g.Owner, owner))),
+            "whole-plugin revocation removes owner from every event index");
+        rig.Add(owner, new Recorder { Id = "first", Filter = InteractionEventKind.Presented });
+        firstToken.Dispose();
+        Check(rig.Catalog.SnapshotInteractions(InteractionEventKind.Presented).Single().Registrations.Single().IsRegistered,
+            "old token cannot revoke replacement with same full contribution ID");
+        var staged = rig.Catalog.BeginSession(owner.PluginId);
+        var stagedToken = new PluginInteractionRegistry(staged, owner, rig.Catalog).Register(new Recorder { Id = "withdrawn", Filter = InteractionEventKind.SessionEnded });
+        stagedToken.Dispose(); Check(staged.Commit(out _), "precommit token withdrawal leaves transaction valid");
+        Check(rig.Catalog.SnapshotInteractions(InteractionEventKind.SessionEnded).Length == 0,
+            "withdrawn staged registration never enters event index");
+    }
+    private static async Task TestIndexedSubscriptionBarrier()
+    {
+        using var rig = new Rig(); var owner = rig.Owner("test.index.barrier");
+        var entered = Gate(); var release = Gate();
+        var blocker = new Recorder { Id = "blocker", Handler = async (e, _) =>
+            { if (e.Sequence == 1) { entered.TrySetResult(true); await release.Task; } } };
+        var revoked = new Recorder { Id = "listener", Filter = InteractionEventKind.SelectionChanged };
+        var replacement = new Recorder { Id = "listener", Filter = InteractionEventKind.SelectionChanged };
+        rig.Add(owner, blocker); var token = rig.Add(owner, revoked);
+        try
+        {
+            Publish(rig.Runtime, Event(InteractionEventKind.Presented, 1)); await Wait(entered.Task);
+            Publish(rig.Runtime, Event(InteractionEventKind.SelectionChanged, 2));
+            token.Dispose(); rig.Add(owner, replacement);
+            Publish(rig.Runtime, Event(InteractionEventKind.SelectionChanged, 3));
+            Check(rig.Runtime.Interactions.FindQueue(owner.PluginId)!.PendingCount == 2,
+                "adjacent selections cannot merge across rebuilt subscription snapshots");
+        }
+        finally { release.TrySetResult(true); }
+        await Wait(rig.Runtime.Interactions.FindQueue(owner.PluginId)!.Completion);
+        Check(blocker.Seen.Select(e => e.Sequence).SequenceEqual(new long[] { 1, 2, 3 }) &&
+              revoked.Seen.Count == 0 && replacement.Seen.Select(e => e.Sequence).SequenceEqual(new long[] { 3 }),
+            "new registration never receives pre-registration buffered event");
+    }
     private static async Task TestQueue()
     {
         using var rig = new Rig(4); var owner = rig.Owner("test.coalescing"); var entered = Gate(); var release = Gate();
@@ -428,7 +528,7 @@ internal static class Program
         PluginPaths.OverrideRootsForTesting(Path.Combine(root, "host"), Path.Combine(root, "scan"));
         try
         {
-            TestSessions(); TestConfiguredConfirmation(); TestRenderCompletion(); await TestFrozenEndPublishing(); await TestRegistration(); await TestQueue(); await TestSessionSeparationAndSerialContributions(); await TestOverflowAndLease();
+            TestSessions(); TestConfiguredConfirmation(); TestRenderCompletion(); await TestFrozenEndPublishing(); await TestRegistration(); await TestSubscriptionIndex(); await TestIndexedSubscriptionBarrier(); await TestQueue(); await TestSessionSeparationAndSerialContributions(); await TestOverflowAndLease();
             await TestRevocationAndGeneration(); await TestIsolation(); await TestRealHost();
         }
         catch (Exception ex) { Check(false, ex.ToString()); }

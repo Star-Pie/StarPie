@@ -533,6 +533,7 @@ SDK 1.9 `IHostWheelSessionService` 追踪调用者自己呼出的轮盘；这里
 
 ## 5.6 调度与背压
 
+- 宿主在提交/撤销时建立事件类型索引，发布只读取匹配组；投递项携带匹配登记，消费时不再筛选无关贡献。每次调用前仍校验登记、当前实例和代际并取得租约。
 - 回调由宿主后台按插件串行调度，同一插件多个交互贡献也共用串行消费者；不同插件相互隔离。不保证固定线程，更不保证 UI 线程。
 - 有界容量默认 **128 个待处理事件投递项/插件**，不是每贡献 128 个，也不包括已经在执行的回调。插件不能从 SDK 调整容量。
 - 只合并相邻、同 SessionId、同订阅组快照的 SelectionChanged；保留最新快照。不能越过展开/确认/结束等顺序屏障，也不能跨会话合并。
@@ -560,7 +561,7 @@ SDK 1.9 `IHostWheelSessionService` 追踪调用者自己呼出的轮盘；这里
 → PluginHost.PublishInteractionEvent(InteractionEvent)
 → PluginRuntime.PublishInteractionEvent
 → InteractionEventPathModule.Publish
-→ PluginCatalog.SnapshotInteractions + 无安装锁实例快照
+→ PluginCatalog.SnapshotInteractions(kind) + 无安装锁实例快照
 → PluginInteractionQueue.Enqueue / DrainAsync
 → 当前实例/代际/注册检查 + PluginInvocationLease
 → IInteractionContribution.OnInteractionAsync

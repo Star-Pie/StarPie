@@ -229,8 +229,8 @@ flowchart LR
     COMMIT --> LOOKUP
 
     PH_EVENT --> RT_PUBLISH
-    RT_PUBLISH --> EVENT_PUBLISH["匹配贡献并入队<br/>InteractionEventPathModule.Publish"]
-    EVENT_PUBLISH --> EVENT_GROUPS["读取交互订阅组<br/>PluginCatalog.SnapshotInteractions"]
+    RT_PUBLISH --> EVENT_PUBLISH["查事件索引并入队<br/>InteractionEventPathModule.Publish"]
+    EVENT_PUBLISH --> EVENT_GROUPS["读取事件类型匹配组<br/>PluginCatalog.SnapshotInteractions(kind)"]
     EVENT_PUBLISH --> EVENT_OWNER["读取不可变实例快照<br/>PluginHost.FindInteractionInstance"]
     EVENT_PUBLISH --> EVENT_ENQUEUE["受理有界投递<br/>PluginInteractionQueue.Enqueue"]
     EVENT_ENQUEUE --> EVENT_DRAIN["后台串行消费<br/>PluginInteractionQueue.DrainAsync"]
@@ -304,7 +304,7 @@ PluginHost
 │
 ├─ 统一交互事件
 │  ├─ PublishInteractionEvent()
-│  ├─ PluginCatalog.SnapshotInteractions()
+│  ├─ PluginCatalog.SnapshotInteractions(kind)
 │  ├─ FindInteractionInstance() 不争用安装锁
 │  ├─ PluginInteractionQueue.Enqueue() / DrainAsync()
 │  ├─ 当前实例、代际和活动调用租约
@@ -714,7 +714,7 @@ sequenceDiagram
     alt 初始化成功且登记无冲突
         P-->>I: 初始化返回
         I->>C: 原子提交登记：Commit(session)
-        C->>C: 原子提交全部贡献并重建订阅组
+        C->>C: 原子提交全部贡献并重建事件类型索引
         C-->>I: 提交成功
         I->>I: 开放活动调用入口
     else 初始化抛出异常或提交冲突
@@ -746,7 +746,7 @@ com.example.wheelobserver.observeWheel
 | `PluginRegistrationSession` | 保存暂存交互贡献，失败关闭登记 |
 | `PluginCatalog.Commit()` | 所有贡献一起成功才可见 |
 | `PluginInteractionRegistration` | 绑定贡献、插件实例和加载代际 |
-| `PluginCatalog.SnapshotInteractions()` | 取得按插件分组的稳定订阅快照 |
+| `PluginCatalog.SnapshotInteractions(kind)` | 读取当前事件类型下按插件分组的稳定匹配快照 |
 
 交互实现的主要调用方法：
 
@@ -843,10 +843,10 @@ GestureController
 flowchart TD
     SRC["生成不可变交互事件<br/>PluginInteractionSession"] --> HOST["发布交互事件<br/>PluginHost.PublishInteractionEvent"]
     HOST --> RT["发布交互事件<br/>PluginRuntime.PublishInteractionEvent"]
-    RT --> PATH["匹配贡献并入队<br/>InteractionEventPathModule.Publish"]
-    PATH --> GROUPS["读取交互订阅组<br/>PluginCatalog.SnapshotInteractions"]
+    RT --> PATH["查事件索引并入队<br/>InteractionEventPathModule.Publish"]
+    PATH --> GROUPS["读取事件类型匹配组<br/>PluginCatalog.SnapshotInteractions(kind)"]
     PATH --> OWNER["读取不可变实例快照<br/>FindInteractionInstance"]
-    GROUPS --> MATCH{"事件筛选、当前实例与加载代际是否有效？"}
+    GROUPS --> MATCH{"匹配登记、当前实例与加载代际是否有效？"}
     OWNER --> MATCH
     MATCH -->|否| ZERO["不受理，不触发插件加载"]
     MATCH -->|是| Q["每插件有界队列，待处理容量 128"]
@@ -862,7 +862,8 @@ flowchart TD
     EVICT --> ACCEPT
     ACCEPT --> RETURN["立即返回受理数，不等待回调完成"]
     ACCEPT --> DRAIN["后台串行消费<br/>DrainAsync"]
-    DRAIN --> LEASE["检查实例、代际和登记，获取活动租约"]
+    DRAIN --> RECEIVERS["只遍历投递项内已匹配登记，不再筛选事件"]
+    RECEIVERS --> LEASE["检查实例、代际和登记，获取活动租约"]
     LEASE --> CALLBACK["调用交互观察实现<br/>IInteractionContribution.OnInteractionAsync"]
     CALLBACK --> REALEND["等待真实 ValueTask 结束后释放租约"]
 ```
@@ -1048,7 +1049,7 @@ sequenceDiagram
 | `PluginHost.PublishInteractionEvent()` | `WinPieGestures/Plugin/PluginHost.cs` | 统一事件发布门面，返回受理贡献数 |
 | `PluginHost.FindInteractionInstance()` | `WinPieGestures/Plugin/PluginHost.cs` | 无安装锁实例快照查找 |
 | `PluginInteractionRegistry.Register()` | `WinPieGestures/Plugin/PluginInteractionRegistration.cs` | 校验、快照并暂存交互贡献 |
-| `PluginCatalog.SnapshotInteractions()` | `WinPieGestures/Plugin/PluginCatalog.cs` | 取得稳定订阅组 |
+| `PluginCatalog.SnapshotInteractions(kind)` | `WinPieGestures/Plugin/PluginCatalog.cs` | 读取事件类型对应的稳定匹配组 |
 | `InteractionEventPathModule.Publish()` | `WinPieGestures/Plugin/PluginPathModules.cs` | 匹配有效实例与贡献，只入队不加载 |
 | `PluginInteractionQueue.Enqueue() / DrainAsync()` | `WinPieGestures/Plugin/PluginInteractionQueue.cs` | 有界合并/背压与每插件串行消费者 |
 | `PluginInteractionSession.Presented() / Update() / Confirm()` | `WinPieGestures/Plugin/PluginInteractionSession.cs` | 语义快照和会话内顺序 |

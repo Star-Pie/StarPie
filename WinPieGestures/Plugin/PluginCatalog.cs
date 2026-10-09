@@ -100,7 +100,7 @@ internal sealed class PluginCatalog
 {
     private readonly object _gate = new();
     private readonly Dictionary<string, PluginInteractionRegistration> _interactions = new(StringComparer.OrdinalIgnoreCase);
-    private PluginInteractionGroup[] _interactionSnapshot = Array.Empty<PluginInteractionGroup>();
+    private PluginInteractionSnapshot _interactionSnapshot = new(Array.Empty<PluginInteractionRegistration>());
 
     private readonly Dictionary<string, PluginActionRegistration> _actions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PluginIconRegistration> _icons = new(StringComparer.OrdinalIgnoreCase);
@@ -306,11 +306,13 @@ internal sealed class PluginCatalog
         }
     }
 
-    internal PluginInteractionGroup[] SnapshotInteractions() => Volatile.Read(ref _interactionSnapshot);
+    internal PluginInteractionGroup[] SnapshotInteractions() => Volatile.Read(ref _interactionSnapshot).Groups;
+
+    internal PluginInteractionGroup[] SnapshotInteractions(InteractionEventKind kind) =>
+        Volatile.Read(ref _interactionSnapshot).ForEvent(kind);
 
     private void RebuildInteractionSnapshot() => Volatile.Write(ref _interactionSnapshot,
-        _interactions.Values.GroupBy(r => r.Owner)
-            .Select(g => new PluginInteractionGroup(g.ToArray())).ToArray());
+        new PluginInteractionSnapshot(_interactions.Values));
 
     internal void RemoveInteraction(PluginInteractionRegistration registration)
     {

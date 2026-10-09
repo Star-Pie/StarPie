@@ -847,7 +847,7 @@ ActionName
 → PluginHost.PublishInteractionEvent
 → PluginRuntime.PublishInteractionEvent
 → InteractionEventPathModule.Publish
-→ PluginCatalog.SnapshotInteractions + PluginHost.FindInteractionInstance 无安装锁快照
+→ PluginCatalog.SnapshotInteractions(kind) + PluginHost.FindInteractionInstance 无安装锁快照
 → 每插件 PluginInteractionQueue.Enqueue / DrainAsync
 → 当前实例 / generation / 注册有效性 / PluginInvocationLease
 → IInteractionContribution.OnInteractionAsync
@@ -861,13 +861,13 @@ ActionName
 |---|---|
 | SDK `Interactions.cs` | 可选上下文、注册/贡献接口、描述符、只读事件与枚举 |
 | `PluginInteractionRegistry` | Initialize 内校验/快照元数据并暂存；返回撤销凭据 |
-| `PluginCatalog` / `PluginRegistrationSession` | 与动作等贡献共同 Commit/Discard；构建稳定订阅组快照 |
+| `PluginCatalog` / `PluginRegistrationSession` | 与动作等贡献共同 Commit/Discard；提交/撤销时构建事件类型索引，整体发布稳定匹配组快照 |
 | `PluginInteractionSession` | 进程统一 SessionId、会话 Sequence、缓存初始选择、语义去重及终结冻结 |
 | `GestureController` | 普通鼠标/键盘手势的激活、选择与结束事实；不改命中几何或动作执行 |
 | `StickyWheelSession` | 粘滞轮盘的选择、确认、取消、替代/撤回事实 |
 | `RadialWindow` / `WheelPresentationCompletion` | 内容 Render 揭示成功前后检查版本，才通知语义 Presented；旧四参数入口保持 |
-| `InteractionEventPathModule` | 匹配已有贡献、校验实例及代际、只入队；旧同步 Opening/Closed 兼容 |
-| `PluginInteractionQueue` | 每插件串行后台调度、有界容量、合并/淘汰/溢出及取消 |
+| `InteractionEventPathModule` | 只读取当前事件类型的匹配组、校验登记/实例/代际、只入队；旧同步 Opening/Closed 兼容 |
+| `PluginInteractionQueue` | 只消费已匹配登记，每插件串行后台调度、有界容量、合并/淘汰/溢出及取消 |
 | `PluginCallCoordinator` / `PluginInstance` | 活动租约、原子代际门禁、停止排空及 ALC 生命周期 |
 
 普通会话在配置选定/手势激活时建立，因此快速松手不依赖 UI 已呈现；粘滞会话在请求受理对象建立时已有语义会话，配置键在首个事件前绑定，因此呈现准备前失败也有结束原因。`Presented` 不是请求受理，也不是 `Present()` 返回；它由有效 Render 内容揭示后的宿主通知产生，不保证显示器物理合成已经完成。
@@ -877,6 +877,8 @@ ActionName
 ### `InteractionEventPathModule` 与 `PluginInteractionQueue`
 
 广播不加载插件，不扫描安装目录，不争用安装时可能做 IO 的宿主实例表锁；只通知已经加载、完成注册且当前有效的实例。用户启用/预加载与事件分发是两条流程，晚加载不回放历史。
+
+目录在注册事务提交、单个 token 撤销和整插件撤销时重建事件类型索引，再整体发布快照。Publish 只读取当前 Kind 对应的匹配组，不扫描无关插件/贡献、不重新读取插件描述符；每个投递项携带已经匹配的登记组。DrainAsync 只逐个调用该组的接收者，不再筛选事件类型，但仍在每次调用前校验登记、当前实例、代际并取得租约。旧投递项保留旧组，token 撤销立即关闭该登记；索引重建改变组身份，相邻选择不会跨订阅快照合并。
 
 每插件默认 128 个待处理投递项，多个贡献共用串行消费者；插件间隔离，不需要为每个订阅建永久线程。相邻同会话且同订阅组的 SelectionChanged 合并，生命周期/导航事件是屏障；满时优先淘汰可替代选择，没有可替代项则暂停该代际事件路由、清空待投递引用、异步取消并诊断。不得更改用户 Enabled 或创建无界备用队列。
 

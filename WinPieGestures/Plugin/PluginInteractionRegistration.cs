@@ -47,8 +47,37 @@ internal sealed class PluginInteractionGroup
     internal PluginInstance Owner => Registrations[0].Owner;
     internal long Generation => Registrations[0].Generation;
     internal PluginInteractionGroup(PluginInteractionRegistration[] registrations) => Registrations = registrations;
-    internal int MatchCount(InteractionEventKind kind) =>
-        Registrations.Count(r => (r.Events & kind) != 0 && r.IsRegistered);
+    internal int RegisteredCount =>
+        Registrations.Count(r => r.IsRegistered);
+}
+
+/// <summary>在目录锁内构建、整体发布；事件热路径只读对应类型的匹配组。</summary>
+internal sealed class PluginInteractionSnapshot
+{
+    private readonly Dictionary<InteractionEventKind, PluginInteractionGroup[]> _byEvent = new();
+    internal PluginInteractionGroup[] Groups { get; }
+
+    internal PluginInteractionSnapshot(IEnumerable<PluginInteractionRegistration> registrations)
+    {
+        Groups = registrations.GroupBy(r => r.Owner)
+            .Select(g => new PluginInteractionGroup(g.ToArray())).ToArray();
+        foreach (InteractionEventKind kind in Enum.GetValues<InteractionEventKind>())
+        {
+            // All 是订阅掩码，不是可发布事件；索引仅包含单一事件类型。
+            int bits = (int)kind;
+            if (bits == 0 || (bits & (bits - 1)) != 0) continue;
+            var matches = new List<PluginInteractionGroup>();
+            foreach (PluginInteractionGroup group in Groups)
+            {
+                var matched = group.Registrations.Where(r => (r.Events & kind) != 0).ToArray();
+                if (matched.Length != 0) matches.Add(new PluginInteractionGroup(matched));
+            }
+            if (matches.Count != 0) _byEvent.Add(kind, matches.ToArray());
+        }
+    }
+
+    internal PluginInteractionGroup[] ForEvent(InteractionEventKind kind) =>
+        _byEvent.TryGetValue(kind, out var groups) ? groups : Array.Empty<PluginInteractionGroup>();
 }
 
 internal sealed class PluginInteractionRegistry : IInteractionRegistry

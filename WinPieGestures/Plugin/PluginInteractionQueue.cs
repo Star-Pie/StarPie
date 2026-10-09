@@ -113,7 +113,7 @@ internal sealed class PluginInteractionQueue
             }
             foreach (PluginInteractionRegistration registration in delivery.Group.Registrations)
             {
-                if ((registration.Events & delivery.Event.Kind) == 0) continue;
+                // 投递组已按事件类型匹配；仍须检查撤销、实例和代际并取得租约。
                 // Stop must close the queue gate and start lease acquisition atomically.
                 IInteractionContribution? contribution;
                 PluginInvocationLease? lease;
