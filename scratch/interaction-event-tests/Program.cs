@@ -520,6 +520,46 @@ internal static class Program
         instances.Remove(owner.PluginId); PluginHost.RefreshInteractionInstances();
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static PluginInstance ExerciseRealSoundModule(bool invokeEvents = true)
+    {
+        string dll = Path.GetFullPath("plugin/StarPie-Official-Plugins/src/StarPie.Plugin.Sound/bin/Release/net8.0-windows/StarPie.Plugin.Sound.dll");
+        var scan = PluginScanner.ScanSelectedDll(dll, allowReservedIdPrefix: true);
+        Check(scan.Accepted, "sound production DLL passes manifest/SDK scan");
+        var owner = new PluginInstance("starpie.plugin.sound", new PluginRegistryEntry
+            { Id = "starpie.plugin.sound", Enabled = true, Official = true, ExternalPath = dll }, scan);
+        var instances = (Dictionary<string, PluginInstance>)typeof(PluginHost).GetField("Instances", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var runtime = (PluginRuntime)typeof(PluginHost).GetField("Runtime", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        instances.Add(owner.PluginId, owner); PluginHost.RefreshInteractionInstances();
+        Check(owner.Load(out string error), "sound Initialize succeeds without physical playback: " + error);
+        var plugin = typeof(PluginInstance).GetField("_plugin", PrivateInstance)!.GetValue(owner)!;
+        var engine = plugin.GetType().Assembly.GetType("StarPie.Plugin.Sound.SoundEffectManager")!;
+        const BindingFlags flags = BindingFlags.Static | BindingFlags.NonPublic;
+        engine.GetProperty("TestMode", flags)!.SetValue(null, true);
+        using var reached = new ManualResetEventSlim();
+        engine.GetProperty("PlaybackSink", flags)!.SetValue(null, (Action<byte[], uint>)((_, _) => reached.Set()));
+        if (invokeEvents)
+        {
+        Check(PluginHost.PublishInteractionEvent(Event(InteractionEventKind.Presented, 1, 900)) == 1, "actual host routes event to loaded sound observer");
+        runtime.Interactions.FindQueue(owner.PluginId)!.Completion.GetAwaiter().GetResult();
+        Check(reached.Wait(3000), "loaded ALC reaches guarded mock sound backend");
+        PluginHost.PublishInteractionEvent(Event(InteractionEventKind.SessionEnded, 2, 900));
+        runtime.Interactions.FindQueue(owner.PluginId)!.Completion.GetAwaiter().GetResult();
+        }
+        engine.GetProperty("PlaybackSink", flags)!.SetValue(null, null);
+        var drained = owner.BeginStopping(); runtime.NotifyPluginStopping(owner.PluginId); drained.GetAwaiter().GetResult();
+        owner.Unload(); runtime.NotifyPluginStopped(owner.PluginId); instances.Remove(owner.PluginId); PluginHost.RefreshInteractionInstances();
+        return owner;
+    }
+    private static void TestRealSoundModule()
+    {
+        var idle = ExerciseRealSoundModule(invokeEvents: false);
+        Check(idle.WaitForUnloadVerdict(5000), "idle sound metadata/settings ownership releases collectible ALC");
+        var owner = ExerciseRealSoundModule();
+        Check(owner.WaitForUnloadVerdict(5000), "sound observer/settings/native-worker ownership releases collectible ALC");
+        Check(PluginHost.PublishInteractionEvent(Event(InteractionEventKind.Presented, 3, 900)) == 0, "unloaded sound module has no route and no host fallback");
+    }
+
     private static async Task<int> Main()
     {
         string? old = Environment.GetEnvironmentVariable("LOCALAPPDATA");
@@ -529,7 +569,7 @@ internal static class Program
         try
         {
             TestSessions(); TestConfiguredConfirmation(); TestRenderCompletion(); await TestFrozenEndPublishing(); await TestRegistration(); await TestSubscriptionIndex(); await TestIndexedSubscriptionBarrier(); await TestQueue(); await TestSessionSeparationAndSerialContributions(); await TestOverflowAndLease();
-            await TestRevocationAndGeneration(); await TestIsolation(); await TestRealHost();
+            await TestRevocationAndGeneration(); await TestIsolation(); await TestRealHost(); TestRealSoundModule();
         }
         catch (Exception ex) { Check(false, ex.ToString()); }
         finally { Environment.SetEnvironmentVariable("LOCALAPPDATA", old); }

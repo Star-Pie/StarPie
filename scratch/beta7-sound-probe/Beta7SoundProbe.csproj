@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <BuildInParallel>false</BuildInParallel>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 复用既有测试友元身份，不扩大主程序的公共或内部访问契约。 -->
+    <AssemblyName>test_sound_forensics</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" />
+    <ProjectReference Include="..\..\plugin\StarPie-Official-Plugins\src\StarPie.Plugin.Sound\Sound.csproj">
+      <AdditionalProperties>StarPieSdkProject=$(MSBuildThisFileDirectory)..\..\plugin\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj;BaseOutputPath=$(MSBuildThisFileDirectory)bin\sound-module\</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

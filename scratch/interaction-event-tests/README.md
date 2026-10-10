@@ -18,9 +18,15 @@ dotnet run --project .\scratch\interaction-event-tests\InteractionEventTests.csp
 - 持有实际宿主安装 Gate 时发布仍能完成，不争用安装 IO 的互斥锁。
 - 会话语义的不可变快照、快速松手、空动作、返回/取消/替代/结束及呈现前失败。
 
-当前 156 项测试覆盖真实生产 Render 纯接缝：未运行回调不发 Presented，旧版本/关闭/处置/揭示失败不通知，重入失效不误报。撤销使用实际 ReserveDismissal/旧 Present/FinishDismissal，通过闸门强制交错验证冻结原因及单次发布。
+当前 165 项测试覆盖真实生产 Render 纯接缝与音效插件集成：未运行回调不发 Presented，旧版本/关闭/处置/揭示失败不通知，重入失效不误报。撤销使用实际 ReserveDismissal/旧 Present/FinishDismissal，通过闸门强制交错验证冻结原因及单次发布。
 
-这些测试不构造真实轮盘窗口，不证明显示器实际合成、DPI、多屏或手感。此前阶段的独立 Standards/Spec 结论不覆盖本轮索引改动；本轮独立复核仍待进行；真实视觉与手感仍须用户验收，不能只凭绿色测试宣称完整任务完成。
+新增音效集成断言加载实际 `starpie.plugin.sound` DLL，经宿主队列调用贡献并到达 Mock 播放后端，验证空闲及播放后的可回收 ALC、卸载后无路由与无宿主兜底。运行前需构建官方音效模块：
+
+```powershell
+dotnet build .\plugin\StarPie-Official-Plugins\src\StarPie.Plugin.Sound\Sound.csproj -c Release --nologo
+```
+
+这些测试不构造真实轮盘窗口，不证明显示器实际合成、DPI、多屏、物理声音或手感。本轮音效迁移的独立 Standards/Spec 复核与候选指纹见[迁移验收记录](../../docs/plans/beta7-sound-plugin-verification.md)，不追溯宣称更早阶段的审查已经完成；真实视觉与手感仍须用户验收，不能只凭绿色测试宣称完整发布验收完成。
 ## 自检夹具纪律
 
 现有 PluginSelfTest 的 [3g] 参数面板状态机要求 keypadLayer 贡献和必填 keyMap。Folder/Recorder 夹具不满足这项前置条件，不能用来判断完整自检是否全绿。

@@ -26,6 +26,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+        submodules: recursive
 
     - name: Detect Build-Relevant Changes
       id: changes
@@ -73,6 +74,8 @@ jobs:
           'installer/',
           'WinPieGestures/',
           'scratch/'
+          'plugin/sdk/'
+          'plugin/StarPie-Official-Plugins'
         )
         $requiresBuild = $false
         $ignoredFiles = [System.Collections.Generic.List[string]]::new()
@@ -128,5 +131,9 @@ jobs:
     - name: Build and Run Sound Forensics Suite
       if: steps.changes.outputs.requires_build == 'true'
       run: |
-        dotnet build scratch/test_sound_forensics.csproj -c Release --nologo
+        dotnet build scratch/test_sound_forensics.csproj -c Release --nologo -m:1
         dotnet run --project scratch/test_sound_forensics.csproj -c Release --no-build -- --test-instance
+
+    - name: Verify Sound Plugin Without Audio
+      if: steps.changes.outputs.requires_build == 'true'
+      run: dotnet run --project plugin/StarPie-Official-Plugins/tests/starpie.plugin.sound/Sound.Tests.csproj -c Release

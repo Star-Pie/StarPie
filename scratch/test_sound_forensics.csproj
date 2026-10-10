@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <BuildInParallel>false</BuildInParallel>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
@@ -10,8 +11,12 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test_sound_forensics.cs" />
+    <Compile Include="SoundMigrationHarness.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\WinPieGestures\WinPieGestures.csproj" />
+    <ProjectReference Include="..\plugin\StarPie-Official-Plugins\src\StarPie.Plugin.Sound\Sound.csproj">
+      <AdditionalProperties>StarPieSdkProject=$(MSBuildThisFileDirectory)..\plugin\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj;BaseOutputPath=$(MSBuildThisFileDirectory)beta7-verification\bin\sound-module\</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 </Project>

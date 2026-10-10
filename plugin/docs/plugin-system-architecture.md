@@ -834,7 +834,7 @@ ActionName
 
 ### 调用入口
 
-当前源码的 SDK 1.10 候选已经实现统一交互贡献，旧同步事件保持兼容。候选能力不等于所有已发布宿主可用；当前音效仍为内置实现，配置和播放引擎尚未迁移。API 签名、字段、筛选和异常的权威说明见[API 第 5 节](plugin-system-api-and-performance.md#5-交互事件-api)。
+当前源码的 SDK 1.10 候选已经实现统一交互贡献，旧同步事件保持兼容。候选能力不等于所有已发布宿主可用；beta.7 已将配置、播放引擎与生命周期完整迁入官方插件源码候选 `starpie.plugin.sound`，宿主不保留音效专用实现或播放兜底。API 签名、字段、筛选和异常的权威说明见[API 第 5 节](plugin-system-api-and-performance.md#5-交互事件-api)。
 
 ```text
 插件 Initialize
@@ -898,7 +898,7 @@ Publish 的返回值为受理的匹配贡献数，不是已经完成的回调数
 
 图与时序见[架构图第 10 节](plugin-system-architecture-map.md#10-交互事件调用主路径)，开发示例见[快速入门第 9 节](plugin-development-quickstart.md#9-实现第一个交互贡献)。当前验证入口为[`scratch/interaction-event-tests/`](../../scratch/interaction-event-tests/)：记录型 SDK/BCL 夹具、实际宿主加载/调用/ALC、生产 Render 纯接缝与闸门强制撤回交错；相关断言有安全变异红态证明。测试不播放音频、不构造真实轮盘或执行系统动作。
 
-代码与自动复核收口不替代真实视觉、DPI、多屏与手感验收。音效插件迁移仍需独立实现与用户安装/启用、配置和播放生命周期契约，不把普通浏览变成自动安装，不静默重新启用禁用插件。
+代码与自动复核收口不替代真实视觉、DPI、多屏与手感验收。音效插件源码候选仍需用户单独安装、启用并按需选择预加载；旧配置由插件只读迁入私有数据目录，不把普通浏览变成自动安装，不静默重新启用禁用插件。当前双仓库证据与剩余门禁见[迁移验收记录](../../docs/plans/beta7-sound-plugin-verification.md)。
 
 ---
 ## 14. `PluginInvoker`：Sequential 和 Background 调度

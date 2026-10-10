@@ -288,24 +288,11 @@ public static class ConfigManager
 			profile.SyncActiveLayerFromRootProperties();
 		}
 
-		EnsureCustomSoundProfilesHealth(currentConfig);
 		CleanLegacyActionBase64(currentConfig);
 		EnsureTriggerHealth(currentConfig);
 	}
 
-	private static void EnsureCustomSoundProfilesHealth(AppConfig? config)
-	{
-		if (config == null) return;
-		if (config.CustomSoundProfiles == null || config.CustomSoundProfiles.Count == 0)
-		{
-			config.CustomSoundProfiles = CustomSoundProfile.CreateDefaultDemoProfiles();
-		}
-		if (string.IsNullOrWhiteSpace(config.ActiveCustomSoundProfileId) ||
-			!config.CustomSoundProfiles.Any(p => p.Id == config.ActiveCustomSoundProfileId))
-		{
-			config.ActiveCustomSoundProfileId = config.CustomSoundProfiles.FirstOrDefault()?.Id ?? "cyber";
-		}
-	}
+
 
 	private static void CleanLegacyActionBase64(AppConfig? config)
 	{
