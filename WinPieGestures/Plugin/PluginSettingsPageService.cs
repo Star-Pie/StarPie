@@ -31,45 +31,79 @@ internal static class PluginSettingsPageService
         public string Description { get; init; } = "";
 
         public IReadOnlyList<ParameterField> Fields { get; init; } = Array.Empty<ParameterField>();
+        public IReadOnlyList<ParameterField> AllFields { get; init; } = Array.Empty<ParameterField>();
+        public string? SectionId { get; init; }
+        public IReadOnlyList<Section> Sections { get; init; } = Array.Empty<Section>();
 
         /// <summary>写穿目标；<see cref="Persist"/> 负责落盘。</summary>
         public PluginSettingsParameterTarget Target { get; init; } = null!;
+        internal PluginSettings Settings { get; init; } = null!;
+        public long Generation { get; init; }
+        public IReadOnlyList<Command> Commands { get; init; } = Array.Empty<Command>();
     }
+    internal sealed record Command(string ShortId, string Label);
+    internal sealed record Section(string Id, string Label);
 
     /// <summary>
     /// 这张卡片该不该显示「设置」按钮。
     /// <para>
-    /// 声明了页但<b>一个字段都没有</b>时返回 false：点开是一张空表，
+    /// 声明了页但<b>字段和命令都没有</b>时返回 false：点开是一张空表，
     /// 不如让按钮根本不出现 —— 「有入口却没内容」比「没有入口」更让人怀疑程序坏了。
     /// </para>
     /// </summary>
     public static bool HasPage(string pluginId)
     {
         PluginSettingsPageRegistration? page = PluginHost.Catalog.TryGetSettingsPage(pluginId);
-        return page != null && page.Fields.Count > 0;
+        return page != null && (page.Fields.Count > 0 || page.ActionIds.Count > 0);
     }
 
     /// <summary>
-    /// 解析出可渲染的页。<c>null</c> 表示没有入口（未声明、空表、或插件已不在本会话加载）。
+    /// 解析出可渲染的页。分区复用原字段与存储，不另建配置副本。
     /// </summary>
-    public static Page? Open(string pluginId)
+    public static Page? Open(string pluginId, string? sectionId = null)
     {
         PluginSettingsPageRegistration? page = PluginHost.Catalog.TryGetSettingsPage(pluginId);
-        if (page == null || page.Fields.Count == 0) return null;
+        if (page == null || (page.Fields.Count == 0 && page.ActionIds.Count == 0)) return null;
 
         // 值存在插件的 settings.json 里，而那份配置属于「已加载的插件实例」。
         // 实例不在（被停用 / 从未启用）时连读写目标都没有，宁可不给入口也不去造一个
         // 写盘无人读的临时实例。
         PluginInstance? instance = PluginHost.Find(pluginId);
-        if (instance == null) return null;
+        if (instance == null || !instance.Entry.Enabled || instance.State != PluginRuntimeState.Active) return null;
 
+        PluginSettingsSectionRegistration? section = null;
+        if (sectionId != null)
+        {
+            section = System.Linq.Enumerable.FirstOrDefault(page.Sections, item => item.Id.Equals(sectionId, StringComparison.OrdinalIgnoreCase));
+            if (section == null) return null;
+        }
+        var sectionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in page.Sections) foreach (var key in item.FieldKeys) sectionKeys.Add(key);
+        var fields = new List<ParameterField>();
+        if (section == null)
+        {
+            foreach (var field in page.Fields) if (!sectionKeys.Contains(field.Key)) fields.Add(field);
+        }
+        else
+        {
+            foreach (string key in section.FieldKeys)
+                fields.Add(System.Linq.Enumerable.First(page.Fields, field => field.Key.Equals(key, StringComparison.OrdinalIgnoreCase)));
+        }
+        var navigation = new List<Section>();
+        if (section == null) foreach (var item in page.Sections) navigation.Add(new(item.Id, ResolveText(pluginId, item.TitleKey, item.Title)));
         return new Page
         {
             PluginId = page.PluginId,
-            Title = ResolveText(page.PluginId, page.TitleKey, page.Title),
-            Description = ResolveText(page.PluginId, page.DescriptionKey, page.Description),
-            Fields = page.Fields,
+            Title = section == null ? ResolveText(page.PluginId, page.TitleKey, page.Title) : ResolveText(pluginId, section.TitleKey, section.Title),
+            Description = section == null ? ResolveText(page.PluginId, page.DescriptionKey, page.Description) : ResolveText(pluginId, section.DescriptionKey, section.Description),
+            Fields = fields,
+            AllFields = page.Fields,
+            SectionId = sectionId,
+            Sections = navigation,
             Target = new PluginSettingsParameterTarget(instance.Settings),
+            Settings = instance.Settings,
+            Generation = instance.GenerationId,
+            Commands = section == null ? ResolveCommands(page) : Array.Empty<Command>(),
         };
     }
 
@@ -92,8 +126,37 @@ internal static class PluginSettingsPageService
     {
         if (page == null) return new List<PluginParameterIssue>();
 
+        if (!IsCurrent(page)) return new List<PluginParameterIssue>();
         page.Target.Save();
         return Validate(page);
+    }
+
+    internal static bool IsCurrent(Page page)
+    {
+        var instance = PluginHost.Find(page.PluginId);
+        return instance != null && instance.Entry.Enabled && instance.State == PluginRuntimeState.Active &&
+            instance.GenerationId == page.Generation && ReferenceEquals(instance.Settings, page.Settings);
+    }
+
+    private static IReadOnlyList<Command> ResolveCommands(PluginSettingsPageRegistration page)
+    {
+        var commands = new List<Command>();
+        foreach (string id in page.ActionIds)
+        {
+            if (PluginHost.TryGetAction($"{page.PluginId}.{id}", out var action))
+                commands.Add(new Command(id, ResolveText(page.PluginId, action.DisplayNameKey, action.DisplayName)));
+        }
+        return commands;
+    }
+
+    internal static ActionItem? CreateCommand(string pluginId, string shortId, long generation)
+    {
+        PluginInstance? instance = PluginHost.Find(pluginId);
+        PluginSettingsPageRegistration? page = PluginHost.Catalog.TryGetSettingsPage(pluginId);
+        if (!PluginHost.IsEnabled || PluginHost.IsSafeModeActive || instance == null || !instance.Entry.Enabled || instance.State != PluginRuntimeState.Active ||
+            instance.GenerationId != generation || page == null ||
+            !System.Linq.Enumerable.Contains(page.ActionIds, shortId, StringComparer.OrdinalIgnoreCase)) return null;
+        return PluginHost.CreateActionItem($"{pluginId}.{shortId}");
     }
 
     /// <summary>

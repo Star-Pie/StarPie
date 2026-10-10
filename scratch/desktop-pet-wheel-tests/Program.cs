@@ -550,7 +550,8 @@ internal static class Program
         Assert(calls == 0, "CallbacksDetachedAfterTokenDisposeNoDismiss");
     }
 
-    private const string DesktopPetDllPath = "H:/starpie-official-worktrees/SP-DESKTOPPET-001/src/StarPie.Plugin.DesktopPet/bin/Release/net8.0-windows/StarPie.Plugin.DesktopPet.dll";
+    private static string DesktopPetDllPath => Environment.GetEnvironmentVariable("STARPIE_DESKTOP_PET_DLL")
+        ?? "H:/starpie-official-worktrees/SP-DESKTOPPET-001/src/StarPie.Plugin.DesktopPet/bin/Release/net8.0-windows/StarPie.Plugin.DesktopPet.dll";
 
     private static void TestRealLoadGenerationMatchesActiveInstanceAndAcceptsCallback()
     {

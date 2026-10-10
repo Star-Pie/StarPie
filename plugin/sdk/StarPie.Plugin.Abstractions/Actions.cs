@@ -33,6 +33,8 @@ public enum ParameterFieldType
     Hotkey = 7,
     Color = 8,
     KeyMap = 9,
+    /// <summary>带减加按钮及数值显示的滑块；需声明 Min、Max 和正步长。</summary>
+    Slider = 10,
 }
 
 /// <summary><see cref="ParameterFieldType.Enum"/> 的可选项。</summary>
@@ -84,6 +86,8 @@ public sealed class ParameterField
 
     /// <summary>补充说明（显示在字段下方的小字）。</summary>
     public string? HelpText { get; init; }
+    /// <summary>可选的插件词条短键；非空时优先解析帮助文案。</summary>
+    public string? HelpTextKey { get; init; }
 
     /// <summary><see cref="ParameterFieldType.Enum"/> 专用选项表。</summary>
     public IReadOnlyList<ParameterOption>? Options { get; init; }
@@ -99,6 +103,10 @@ public sealed class ParameterField
 
     /// <summary><see cref="ParameterFieldType.Number"/> 的最大值。</summary>
     public double? Max { get; init; }
+    /// <summary>滑块步长；默认 1，必须为有限正数。</summary>
+    public double Step { get; init; } = 1;
+    /// <summary>数值显示单位，例如 px、ms 或 ×。</summary>
+    public string? Unit { get; init; }
 }
 
 /// <summary>插件动作的自描述信息。</summary>
@@ -118,6 +126,10 @@ public sealed class ActionDescriptor
 
     /// <summary>列表里的副标题 / 说明。</summary>
     public string? Description { get; init; }
+    /// <summary>可选的插件词条短键；非空时优先解析动作说明。</summary>
+    public string? DescriptionKey { get; init; }
+    /// <summary>是否提供给新动作选择。隐藏仍允许已有引用执行，默认兼容旧插件。</summary>
+    public bool ShowInActionPicker { get; init; } = true;
 
     /// <summary>分类名，用于动作下拉分组，例如「效率工具」。留空归入「插件」。</summary>
     public string Category { get; init; } = "";

@@ -2036,6 +2036,14 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("PluginsDetailButton", "详情", "詳細資料", "Details", "詳細");
 		Add("PluginsDetailTitle", "插件详情", "外掛詳細資料", "Plugin details", "プラグイン詳細");
 		Add("PluginsDetailDescription", "功能描述", "功能描述", "Description", "機能説明");
+		Add("PluginsHiddenActionContractInvalid", "兼容动作 {0} 的注册、隐藏或旧引用回填不符合契约。", "相容動作 {0} 的註冊、隱藏或舊引用回填不符合契約。", "Compatibility action {0} does not satisfy registration, visibility or retained-reference rules.", "互換アクション {0} の登録、表示、既存参照が契約を満たしていません。");
+		Add("PluginsSliderInvalidDefinition", "滑块必须有有限的上下界和正步长。", "滑桿必須有有限的上下界和正步長。", "Sliders require finite bounds and a positive step.", "スライダーには有限の範囲と正のステップが必要です。");
+		Add("PluginsSettingsCommandInvalid", "设置命令只能引用本插件的合法动作短 ID。", "設定命令只能引用本外掛的合法動作短 ID。", "Settings commands must reference a valid action ID within this plugin.", "設定コマンドはこのプラグイン内の有効なアクション ID を参照してください。");
+		Add("PluginsSettingsCommandDuplicate", "设置命令重复：{0}", "設定命令重複：{0}", "Duplicate settings command: {0}", "設定コマンドが重複しています：{0}");
+		Add("PluginsSettingsCommandMissing", "设置命令未注册：{0}", "設定命令未註冊：{0}", "Settings command is not registered: {0}", "設定コマンドが登録されていません：{0}");
+		Add("PluginsSettingsSectionInvalid", "配置分区必须使用唯一的合法短 ID。", "設定分區必須使用唯一的合法短 ID。", "Settings sections require unique valid IDs.", "設定セクションには一意の有効な ID が必要です。");
+		Add("PluginsSettingsSectionFieldInvalid", "配置分区字段必须已声明，且只能属于一个分区。", "設定分區欄位必須已宣告，且只能屬於一個分區。", "Section fields must be declared and belong to only one section.", "セクションのフィールドは宣言済みで、1 つのセクションにのみ所属できます。");
+		Add("PluginsSettingsSectionEmpty", "配置分区不能是空字段表。", "設定分區不能是空欄位表。", "Settings sections cannot have an empty field list.", "設定セクションのフィールド一覧は空にできません。");
 		Add("PluginsDetailFeatures", "包含功能", "包含功能", "Included features", "含まれる機能");
 		Add("PluginsDetailCapabilities", "所需权限", "所需權限", "Required capabilities", "必要な権限");
 		Add("PluginsDetailMetadata", "插件信息", "外掛資訊", "Plugin information", "プラグイン情報");

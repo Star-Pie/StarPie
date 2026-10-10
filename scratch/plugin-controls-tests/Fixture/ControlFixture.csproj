@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ControlFixture</AssemblyName><PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="obj-selftest/**/*.cs" />
+    <ProjectReference Include="../../../plugin/sdk/StarPie.Plugin.Abstractions/StarPie.Plugin.Abstractions.csproj"><Private>false</Private></ProjectReference>
+    <AssemblyMetadata Include="StarPiePluginId" Value="user.controlfixture" />
+    <AssemblyMetadata Include="StarPiePluginName" Value="Control fixture" />
+    <AssemblyMetadata Include="StarPiePluginApiVersion" Value="1.11" />
+    <AssemblyMetadata Include="StarPiePluginMinHostVersion" Value="1.8.0-beta.5" />
+  </ItemGroup>
+</Project>

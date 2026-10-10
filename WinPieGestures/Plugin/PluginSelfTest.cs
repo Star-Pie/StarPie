@@ -1745,12 +1745,15 @@ internal static class PluginSelfTest
         List<PluginActionItem> options = PluginActionBinding.BuildPluginActionItems()
             .Where(option => string.Equals(option.PluginId, pluginId, StringComparison.OrdinalIgnoreCase))
             .ToList();
-        List<PluginActionRegistration> expectedVisible = actions
+        List<PluginActionRegistration> expectedRegistered = actions
             .Where(action => !claimedFullIds.Contains(action.FullId))
+            .ToList();
+        List<PluginActionRegistration> expectedVisible = expectedRegistered
+            .Where(action => action.ShowInActionPicker)
             .ToList();
 
         line($"    子下拉候选：{options.Count} 项 / 应显示动作 {expectedVisible.Count} 项 / 认领隐藏 {claimedFullIds.Count} 项");
-        if (registered.Count != expectedVisible.Count || options.Count != expectedVisible.Count)
+        if (registered.Count != expectedRegistered.Count || options.Count != expectedVisible.Count)
         {
             return "普通插件子下拉没有精确排除认领动作，界面会出现重复入口或漏掉社区动作。";
         }
@@ -1760,6 +1763,16 @@ internal static class PluginSelfTest
                 !options.Any(option => string.Equals(option.FullId, expected.FullId, StringComparison.OrdinalIgnoreCase)))
             {
                 return $"普通插件动作 {expected.FullId} 未出现在子下拉候选中。";
+            }
+        }
+        foreach (PluginActionRegistration hidden in expectedRegistered.Where(action => !action.ShowInActionPicker))
+        {
+            if (!registered.Any(action => string.Equals(action.FullId, hidden.FullId, StringComparison.OrdinalIgnoreCase)) ||
+                options.Any(option => string.Equals(option.FullId, hidden.FullId, StringComparison.OrdinalIgnoreCase)) ||
+                !PluginActionBinding.BuildPluginActionItems(hidden.FullId).Any(option =>
+                    string.Equals(option.FullId, hidden.FullId, StringComparison.OrdinalIgnoreCase)))
+            {
+                return I18n.TF("PluginsHiddenActionContractInvalid", hidden.FullId);
             }
         }
         foreach (string claimedFullId in claimedFullIds)
@@ -1775,7 +1788,7 @@ internal static class PluginSelfTest
         }
 
         var groupOfPlugin = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (PluginActionRegistration registration in registered)
+        foreach (PluginActionRegistration registration in registered.Where(action => action.ShowInActionPicker))
         {
             PluginActionItem? option = options.FirstOrDefault(o => o.FullId == registration.FullId);
             if (option == null)

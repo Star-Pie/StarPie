@@ -24,12 +24,14 @@ public partial class PluginSettingsPageWindow : Window
     private readonly PluginSettingsPageService.Page? _page;
     private PluginParameterForm? _form;
 
-    public PluginSettingsPageWindow(string pluginId)
+    public PluginSettingsPageWindow(string pluginId) : this(pluginId, null) { }
+
+    public PluginSettingsPageWindow(string pluginId, string? sectionId)
     {
         InitializeComponent();
         AppThemeManager.ApplyTheme(this, AppThemeManager.CurrentEffectiveTheme);
 
-        _page = PluginSettingsPageService.Open(pluginId);
+        _page = PluginSettingsPageService.Open(pluginId, sectionId);
 
         // 卡片上的按钮可见性已经按 HasPage 判过，正常路径不会走到 null。
         // 留着这条守卫是因为「刷新列表」与「点击」之间隔着一段时间，
@@ -49,8 +51,8 @@ public partial class PluginSettingsPageWindow : Window
         }
         CloseButton.Content = I18n.T("BtnClose");
 
-        _form = new PluginParameterForm(FormPanel, () => _page.Target, RefreshValidation);
-        _form.Build(_page.Fields, _page.PluginId);
+        _form = new PluginParameterForm(FormPanel, () => PluginSettingsPageService.IsCurrent(_page) ? _page.Target : null, RefreshValidation, includeSettingsShortcut: false);
+        _form.Build(_page.Fields, _page.PluginId, _page.SectionId);
         RefreshValidation();
     }
 
@@ -86,6 +88,16 @@ public partial class PluginSettingsPageWindow : Window
             AppLogger.LogError("[plugin] 刷新插件设置页校验结论时异常", ex);
             ValidationText.Visibility = Visibility.Collapsed;
         }
+    }
+
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        if (_page == null || _form == null) return;
+        FormPanel.IsEnabled = PluginSettingsPageService.IsCurrent(_page);
+        if (!FormPanel.IsEnabled) return;
+        _form.Build(_page.Fields, _page.PluginId, _page.SectionId);
+        RefreshValidation();
     }
 
     /// <summary>关闭即落盘。Esc、右上角 × 与本按钮都会走到这里，只此一处就不会漏。</summary>

@@ -34,6 +34,21 @@ public sealed class SettingsPageDescriptor
     /// <para>无字段请返回空列表，不要返回 null。</para>
     /// </summary>
     public IReadOnlyList<ParameterField> Fields { get; init; } = Array.Empty<ParameterField>();
+    /// <summary>配置区命令按钮，引用本插件已注册动作的短 ID。宿主通过正常动作队列执行。</summary>
+    public IReadOnlyList<string> ActionIds { get; init; } = Array.Empty<string>();
+    /// <summary>可选配置分区；分区字段不在主设置页重复显示，功能区提供导航按钮。</summary>
+    public IReadOnlyList<SettingsSectionDescriptor> Sections { get; init; } = Array.Empty<SettingsSectionDescriptor>();
+}
+
+/// <summary>复用同一设置字段与存储的配置分区，不包含插件回调或自定义 UI。</summary>
+public sealed class SettingsSectionDescriptor
+{
+    public string Id { get; init; } = "";
+    public string Title { get; init; } = "";
+    public string? TitleKey { get; init; }
+    public string? Description { get; init; }
+    public string? DescriptionKey { get; init; }
+    public IReadOnlyList<string> FieldKeys { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>

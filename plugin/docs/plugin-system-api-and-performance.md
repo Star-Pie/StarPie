@@ -2,7 +2,9 @@
 
 > **文档状态**：当前实现参考（Current Reference）
 > **适用范围**：当前主仓库实现；各接口起始 SDK 版本见对应章节，不代表所有已发布宿主都包含候选接口
-> **SDK 契约**：`StarPie.Plugin.Abstractions` API `1.10`（当前源码候选）
+> **SDK 契约**：`StarPie.Plugin.Abstractions` API `1.11`（当前源码候选）
+
+SDK 1.11 增量支持声明式滑块、设置命令与配置分区，详见 [桌宠兼容与插件设置控件](../../docs/desktop-pet-sdk-compatibility.md)。SDK 1.10 的交互观察接口及最低版本声明保持不变。
 > **最后核对**：2026-10-09
 > **首选入门文档**：[插件开发快速入门](plugin-development-quickstart.md)
 >

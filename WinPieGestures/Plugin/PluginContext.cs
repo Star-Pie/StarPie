@@ -212,6 +212,10 @@ internal sealed class PluginActionRegistry : IActionRegistry
             {
                 throw new PluginContractException($"{fullId} 的参数 {field.Key} 是 Enum 类型，但没有提供 Options。");
             }
+            if (field.Type == ParameterFieldType.Slider &&
+                (!field.Min.HasValue || !field.Max.HasValue || !double.IsFinite(field.Min.Value) || !double.IsFinite(field.Max.Value) ||
+                 field.Min.Value >= field.Max.Value || !double.IsFinite(field.Step) || field.Step <= 0))
+                throw new PluginContractException(I18n.T("PluginsSliderInvalidDefinition"));
         }
 
         string displayName = ResolveDisplayName(_pluginId, descriptor, shortId, out bool displayNameFromI18n);
@@ -226,6 +230,8 @@ internal sealed class PluginActionRegistry : IActionRegistry
             DisplayNameKey = string.IsNullOrWhiteSpace(descriptor.DisplayNameKey) ? null : descriptor.DisplayNameKey!.Trim(),
             DisplayNameFromI18n = displayNameFromI18n,
             Description = descriptor.Description ?? "",
+            DescriptionKey = descriptor.DescriptionKey,
+            ShowInActionPicker = descriptor.ShowInActionPicker,
             Category = string.IsNullOrWhiteSpace(descriptor.Category) ? "插件" : descriptor.Category!.Trim(),
             IconKey = descriptor.IconKey,
             Kind = descriptor.Kind,
@@ -527,6 +533,41 @@ internal sealed class PluginSettingsPageRegistry : ISettingsPageRegistry
             }
         }
 
+        var commandIds = new List<string>();
+        var uniqueCommands = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string id in page.ActionIds ?? Array.Empty<string>())
+        {
+            if (string.IsNullOrWhiteSpace(id) || !Regex.IsMatch(id, "^[A-Za-z][A-Za-z0-9_]{0,63}$", RegexOptions.CultureInvariant))
+                throw new PluginContractException(I18n.T("PluginsSettingsCommandInvalid"));
+            if (!uniqueCommands.Add(id)) throw new PluginContractException(I18n.TF("PluginsSettingsCommandDuplicate", id));
+            commandIds.Add(id);
+        }
+
+        var sections = new List<PluginSettingsSectionRegistration>();
+        var sectionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sectionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var section in page.Sections ?? Array.Empty<SettingsSectionDescriptor>())
+        {
+            if (section == null || !Regex.IsMatch(section.Id ?? "", "^[A-Za-z][A-Za-z0-9_]{0,63}$", RegexOptions.CultureInvariant) || !sectionIds.Add(section.Id))
+                throw new PluginContractException(I18n.T("PluginsSettingsSectionInvalid"));
+            var keys = new List<string>();
+            foreach (string key in section.FieldKeys ?? Array.Empty<string>())
+            {
+                if (!seenKeys.Contains(key ?? "") || !sectionKeys.Add(key))
+                    throw new PluginContractException(I18n.T("PluginsSettingsSectionFieldInvalid"));
+                keys.Add(key);
+            }
+            if (keys.Count == 0) throw new PluginContractException(I18n.T("PluginsSettingsSectionEmpty"));
+            sections.Add(new(section.Id, section.Title ?? "", section.TitleKey, section.Description ?? "", section.DescriptionKey, keys.ToArray()));
+        }
+        foreach (var field in fields)
+        {
+            if (field.Type == ParameterFieldType.Slider &&
+                (!field.Min.HasValue || !field.Max.HasValue || !double.IsFinite(field.Min.Value) || !double.IsFinite(field.Max.Value) ||
+                 field.Min.Value >= field.Max.Value || !double.IsFinite(field.Step) || field.Step <= 0))
+                throw new PluginContractException(I18n.T("PluginsSliderInvalidDefinition"));
+        }
+
         var registration = new PluginSettingsPageRegistration
         {
             PluginId = _pluginId,
@@ -537,6 +578,8 @@ internal sealed class PluginSettingsPageRegistry : ISettingsPageRegistry
             // 复制成数组再留档：插件给的列表可能实现自插件自己程序集的类型，
             // 长期表留着它，插件停用后收集上下文就回收不掉了。
             Fields = ToArray(fields),
+            ActionIds = commandIds.ToArray(),
+            Sections = sections.ToArray(),
         };
 
         _session.StageSettingsPage(registration);

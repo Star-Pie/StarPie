@@ -95,11 +95,12 @@ internal static class PluginParameterValidator
 			switch (field.Type)
 			{
 				case ParameterFieldType.Number:
+                case ParameterFieldType.Slider:
 				{
 					// 一律用不变文化解析：插件写的是 "0.5"。
 					// 若交给当前区域设置，在德语等以逗号作小数点的机器上会解析失败，
 					// 同一份配置换个系统就「参数不合法」，属于最难查的那类不一致。
-					if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number))
+					if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number) || !double.IsFinite(number))
 					{
 						issues.Add(NewIssue(field, label, $"「{value}」不是有效数字。"));
 						break;
