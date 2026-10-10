@@ -120,3 +120,13 @@ git diff -- .\tests\i18n_baseline.json
 5. 任务要求的人工门禁通过。
 
 否则使用“实现完成、待人工验收”“自动门禁通过、独立复核未完成”或“未完成收口”等精确状态。
+
+## 音效完整插件化候选（beta.7）
+
+- `scratch/test_sound_forensics.csproj` 的292项断言针对生产音效插件和真实控制器语义接缝；宿主不得重引入播放/音效配置。
+- `plugin/StarPie-Official-Plugins/tests/starpie.plugin.sound/Sound.Tests.csproj` 为SDK/BCL控制台行为测试，Mock后端，不执行真实试听动作、GUI或系统操作。
+- `scratch/beta7-sound-probe` 保留旧红态断言，迁移后必须全绿；不把配置中合法静音误当资源失败，不修改真实播放时刻。
+- Root配置的旧音效键经JsonExtensionData往返，插件只读迁入私有sound.json；覆盖显式false、未知方案字段、重复迁移、失败/取消不覆盖源数据。
+- 根CI需检出官方子模块；先独立提交插件，再更新主仓库指针。源代码测试通过不等于官方包/catalog已经发布。
+
+当前双仓库候选指纹、准确命令/退出码、独立复核与实机验收清单见[音效迁移验收记录](plans/beta7-sound-plugin-verification.md)。日志及编译产物保留在被忽略的 `scratch/beta7-verification/`，不作为产品或源码提交。

@@ -227,15 +227,6 @@ public partial class App : Application
 			// 插件路径诊断：只解析路径与登记，不启动钩子与托盘。
 			if (TryRunPluginPathsReport()) return;
 
-			if (ConfigManager.CurrentConfig?.EnableSoundEffects == true)
-			{
-				SoundEffectManager.Initialize();
-				AppLogger.LogInfo("SoundEffectManager.Initialize completed");
-			}
-			else
-			{
-				AppLogger.LogInfo("SoundEffectManager initialization deferred because sound effects are disabled");
-			}
 			MainMouseHook = new MouseHook();
 			MainMouseHook.Start();
 			AppLogger.LogInfo("MainMouseHook started");
@@ -701,7 +692,6 @@ public partial class App : Application
 			MainGestureController = null;
 			MainMouseHook?.Stop();
 			MainKeyboardHook?.Stop();
-			SoundEffectManager.Shutdown();
 		}
 		catch
 		{

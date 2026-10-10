@@ -569,7 +569,7 @@ SDK 1.9 `IHostWheelSessionService` 追踪调用者自己呼出的轮盘；这里
 
 宿主 Publish 的 int 返回值是**成功受理的匹配贡献数**，包括被合并到待处理项的受理，不是已完成次数、队列数或显示器帧数；受理后仍可能因停用被撤销。注册 token 的 Dispose 与该 int 没有关联。
 
-图与时序见[架构图第 10 节](plugin-system-architecture-map.md#10-交互事件调用主路径)，职责与实现文件见[架构第 13 节](plugin-system-architecture.md#13-交互事件路径的完整调用过程)。无 GUI 记录夹具见[`scratch/interaction-event-tests/`](../../scratch/interaction-event-tests/)，只注册、记录和验证生命周期，不播放音频或执行真实动作。当前统一路径可用不等于音效插件已经迁移；视觉、DPI、多屏与手感仍为人工门禁。
+图与时序见[架构图第 10 节](plugin-system-architecture-map.md#10-交互事件调用主路径)，职责与实现文件见[架构第 13 节](plugin-system-architecture.md#13-交互事件路径的完整调用过程)。无 GUI 记录夹具见[`scratch/interaction-event-tests/`](../../scratch/interaction-event-tests/)，只注册、记录和验证生命周期，不播放音频或执行真实动作。音效已完整迁入官方插件源码候选，宿主不保留播放兜底，用户仍需单独安装、启用及选择预加载；视觉、DPI、多屏与手感仍为人工门禁。
 
 ---
 # 6. 宿主服务 API

@@ -1,5 +1,6 @@
 using System.IO;
 using WinPieGestures;
+using StarPie.Plugin.Sound;
 
 internal static class Program
 {
@@ -28,7 +29,7 @@ internal static class Program
                     BuiltInTheme = "Mechanical" }
             }
         };
-        var config = ConfigManager.CurrentConfig!;
+        var config = SoundEffectManager.Preferences;
         config.EnableSoundEffects = true; config.SoundOnHover = true; config.SoundOnPopup = true;
         config.SoundTheme = "Custom"; config.SoundVolume = 0.6;
         config.CustomSoundProfiles = new() { profile }; config.ActiveCustomSoundProfileId = profile.Id;
@@ -103,15 +104,15 @@ internal static class Program
         ConfigManager.DisableAutoStartSync = true; _ = ConfigManager.CurrentConfig;
         SoundEffectManager.TestMode = true;
         Check(AppVersionInfo.DisplayVersion == "1.8.0-beta.7", "actual runtime display version is beta.7");
-        Check(typeof(SoundEffectManager).Assembly.GetName().Version == new Version(1, 8, 0, 0), "assembly identity keeps numeric version 1.8.0.0");
-        Check(System.Diagnostics.FileVersionInfo.GetVersionInfo(typeof(SoundEffectManager).Assembly.Location).FileVersion == "1.8.0.0",
+        Check(typeof(AppVersionInfo).Assembly.GetName().Version == new Version(1, 8, 0, 0), "assembly identity keeps numeric version 1.8.0.0");
+        Check(System.Diagnostics.FileVersionInfo.GetVersionInfo(typeof(AppVersionInfo).Assembly.Location).FileVersion == "1.8.0.0",
             "compiled file numeric version remains 1.8.0.0");
         Console.WriteLine("Isolated probe root: " + root);
         Console.WriteLine("Expected healthy behavior: no reselection of a ready muted hover. TestMode remains enabled; no native audio or GUI.");
         try { TestEmptyHoverReselection(muted: false); TestEmptyHoverReselection(muted: true); TestBlockedPlaybackHoverExpiration(); }
         catch (Exception ex) { Check(false, ex.ToString()); }
         finally { Stop(); }
-        Console.WriteLine($"Probe result: {_failed} failed assertions (nonzero is the reproduced baseline defect, not a fixed candidate).");
+        Console.WriteLine($"Probe result: {_failed} failed assertions (the migrated plugin candidate must be green).");
         return _failed == 0 ? 0 : 1;
     }
 }

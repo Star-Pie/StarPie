@@ -205,4 +205,8 @@ StarPie.exe --plugin-selftest <插件.dll> --skip-invoke
 - 插件作者：[完整 API](docs/plugin-system-api-and-performance.md#5-交互事件-api) → [最小无副作用例子](docs/plugin-development-quickstart.md#9-实现第一个交互贡献)。
 - 宿主维护者：[职责/调用树](docs/plugin-system-architecture.md#13-交互事件路径的完整调用过程) → [注册、Render、队列、撤回与停用图](docs/plugin-system-architecture-map.md#10-交互事件调用主路径)。
 - SDK 事实来源：[Interactions.cs](sdk/StarPie.Plugin.Abstractions/Interactions.cs)；验证器：[记录型行为测试](../scratch/interaction-event-tests/)。
-- 广播不加载未激活插件；新路径可用不等于音效迁移已完成；旧事件接口和程序集身份不变。候选不是发布承诺，真实窗口、DPI、多屏与手感仍须实机验收。
+- 广播不加载未激活插件；音效完整迁入独立官方候选 `starpie.plugin.sound`，需用户安装、启用并选择预加载；宿主没有播放兜底。旧事件接口和程序集身份不变。候选不是发布承诺，真实窗口、DPI、多屏与手感仍须实机验收。
+
+### 音效插件候选（beta.7）
+
+宿主只发布交互语义，播放/调度/主题/自定义方案均由官方音效插件拥有。设置入口位于插件卡片；试听、导入和导出使用后台插件动作。旧音效键不再是宿主属性，但经通用扩展数据保留，插件只读迁入私有目录。未安装或禁用时无音效，不自动下载或启用。官方包和catalog尚需单独打包、发布授权；源码候选不等于已可下载发行版。

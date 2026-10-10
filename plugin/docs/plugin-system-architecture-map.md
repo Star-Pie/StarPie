@@ -953,7 +953,7 @@ sequenceDiagram
 
 旧 RegisterWheelOpening/Closed 仍在交互路径模块中托管，保持原 UI 线程同步契约；新贡献不是旧回调的重命名或自动桥接。完整动作路径与事件路径共享实例/激活/租约/停止治理，保留各自强类型接口和调度规则，不合并成 `Invoke(string, object)`。
 
-无副作用实际记录夹具与强制交错验证见[`scratch/interaction-event-tests/`](../../scratch/interaction-event-tests/)；自动/源码复核不替代真实窗口视觉、DPI、多屏与手感验收。音效仍未从内置系统迁移。
+无副作用实际记录夹具与强制交错验证见[`scratch/interaction-event-tests/`](../../scratch/interaction-event-tests/)；自动/源码复核不替代真实窗口视觉、DPI、多屏与手感验收。音效完整迁入官方源码候选 `starpie.plugin.sound`；发布资产与用户实机验收仍是独立门禁。
 ## 11. `PluginInvoker` 调用治理
 
 插件动作不能直接调用 `ExecuteAsync()`，必须经过 `PluginInvoker.Invoke()`。

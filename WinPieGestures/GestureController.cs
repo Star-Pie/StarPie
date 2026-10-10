@@ -66,8 +66,6 @@ public class GestureController : IDisposable
 	private Point _pendingMouseReleasePosition;
 
 	private string _pendingMouseReleaseButton = "RightButton";
-
-	private long _soundSessionId = 0L;
 	private PluginInteractionSession? _interactionSession;
 
 	// ---- 键盘触发穿透模式 ----
@@ -344,7 +342,7 @@ public class GestureController : IDisposable
 			_interactionSession = new PluginInteractionSession(InteractionSource.NormalGesture, profile.ProcessName);
 		}
 	}
-	private void CancelGestureTracking(bool allowTerminalFeedback = false, string reason = "Interrupted")
+	private void CancelGestureTracking(string reason = "Interrupted")
 	{
 		_kbTriggerWaiting = false;
 		_isWaitingForThreshold = false;
@@ -364,12 +362,11 @@ public class GestureController : IDisposable
 			_highlightUpdateScheduled = false;
 			_pendingGestureVersion = _gestureVersion;
 		}
-		SoundEffectManager.EndSession(SoundSessionSource.NormalGesture, _soundSessionId, allowTerminalFeedback: allowTerminalFeedback);
 		HideRadialUI();
 		ActionExecutor.ReleaseStuckModifiers();
 	}
 
-	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction) EndActiveGesture(bool allowTerminalFeedback = true)
+	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction) EndActiveGesture()
 	{
 		lock (_uiUpdateSync)
 		{
@@ -381,7 +378,6 @@ public class GestureController : IDisposable
 			_gestureVersion++;
 			_highlightUpdateScheduled = false;
 			_pendingGestureVersion = _gestureVersion;
-			SoundEffectManager.EndSession(SoundSessionSource.NormalGesture, _soundSessionId, allowTerminalFeedback: allowTerminalFeedback);
 			ActionExecutor.ReleaseStuckModifiers();
 			return result;
 		}
@@ -424,10 +420,6 @@ public class GestureController : IDisposable
 			_lastEscapedState = false;
 			_lastShowSubTier = false;
 			_highlightUpdateScheduled = false;
-			if (active)
-			{
-				_soundSessionId = SoundEffectManager.BeginSession(SoundSessionSource.NormalGesture);
-			}
 		}
 	}
 
@@ -438,10 +430,9 @@ public class GestureController : IDisposable
 
 	internal void TestEndActiveGesture()
 	{
-		EndActiveGesture();
+		var ending = EndActiveGesture();
+		ending.Interaction?.End("Closed");
 	}
-
-	internal long TestSoundSessionId => _soundSessionId;
 
 	internal Action<ActionItem>? TestActionEnqueued { get; set; }
 	internal Action<ActionItem, ActionExecutionContext?>? TestActionEnqueuedWithContext { get; set; }
@@ -484,10 +475,20 @@ public class GestureController : IDisposable
 		Hook_OnRawMouseButton(null, e);
 	}
 
-	internal void TestCancelGestureTracking(bool allowTerminalFeedback = false)
+	internal void TestCancelGestureTracking(string reason = "Interrupted")
 	{
-		CancelGestureTracking(allowTerminalFeedback);
+		CancelGestureTracking(reason);
 	}
+
+    // 验证器通过同一语义会话接缝观察状态，不引入任何音效或动作实现。
+    internal PluginInteractionSession TestBeginInteractionSession(Func<InteractionEvent, int> publish)
+    {
+        lock (_uiUpdateSync)
+        {
+            _interactionSession?.End("Superseded");
+            return _interactionSession = new(InteractionSource.NormalGesture, "Test", publish);
+        }
+    }
 
 	internal bool TestShowRadialUI(Point center, WheelProfile profile, long gestureVersion, WheelFocusSession? focusSession = null)
 	{
@@ -540,10 +541,6 @@ public class GestureController : IDisposable
 				return;
 			}
 
-			int prevSector = _selectedSectorIndex;
-			int prevSubSector = _selectedSubSectorIndex;
-			bool prevEscaped = _lastEscapedState;
-			bool prevShowSubTier = _lastShowSubTier;
 
 			_selectedSectorIndex = sectorIndex;
 			_selectedSubSectorIndex = subSectorIndex;
@@ -559,43 +556,7 @@ public class GestureController : IDisposable
 
 			_interactionSession?.Update(sectorIndex, subSectorIndex, showSubTier, isEscaped);
 
-			// 音效反馈触发：扇区切换、二级展开与外甩取消
-			if (!prevEscaped && isEscaped)
-			{
-				SoundEffectManager.CancelHover(SoundSessionSource.NormalGesture, _soundSessionId);
-				SoundEffectManager.Play(SoundType.GestureCancel, SoundSessionSource.NormalGesture, _soundSessionId);
-			}
-			else if (!prevShowSubTier && showSubTier)
-			{
-				SoundEffectManager.CancelHover(SoundSessionSource.NormalGesture, _soundSessionId);
-				SoundEffectManager.Play(SoundType.SubmenuExpand, SoundSessionSource.NormalGesture, _soundSessionId);
-			}
-			else if (isEscaped)
-			{
-				SoundEffectManager.CancelHover(SoundSessionSource.NormalGesture, _soundSessionId);
-			}
-			else if (showSubTier)
-			{
-				if (subSectorIndex >= 0)
-				{
-					SoundEffectManager.ReportHover(SoundSessionSource.NormalGesture, _soundSessionId, level: 1, parentIndex: sectorIndex, subIndex: subSectorIndex);
-				}
-				else
-				{
-					SoundEffectManager.CancelHover(SoundSessionSource.NormalGesture, _soundSessionId);
-				}
-			}
-			else
-			{
-				if (sectorIndex >= 0)
-				{
-					SoundEffectManager.ReportHover(SoundSessionSource.NormalGesture, _soundSessionId, level: 0, parentIndex: -1, subIndex: sectorIndex);
-				}
-				else
-				{
-					SoundEffectManager.CancelHover(SoundSessionSource.NormalGesture, _soundSessionId);
-				}
-			}
+
 		}
 
 		if (!shouldSchedule)
@@ -1561,7 +1522,6 @@ public class GestureController : IDisposable
 		{
 			_isWaitingForThreshold = false;
 			_isGestureActive = true;
-			_soundSessionId = SoundEffectManager.BeginSession(SoundSessionSource.NormalGesture);
 			if (isKbWaiting)
 			{
 				_kbTriggerWaiting = false;
@@ -1667,7 +1627,7 @@ public class GestureController : IDisposable
 
 		if (_isWaitingForThreshold)
 		{
-			CancelGestureTracking(allowTerminalFeedback: false);
+			CancelGestureTracking();
 			_isWaitingForThreshold = false;
 			ThreadPool.QueueUserWorkItem(_ => _mouseHook.ReplayTriggerClick(triggerButton));
 			return true;
@@ -1679,11 +1639,9 @@ public class GestureController : IDisposable
 			ThreadPool.QueueUserWorkItem(_ => _mouseHook.ReplayTriggerClick(triggerButton));
 			return true;
 		}
-
-		long endedSoundSessionId = _soundSessionId;
 		bool volumeTookOver = _volumeGestureTookOver;
 		float volumeBaseline = _volumeBaseline;
-		var finalState = EndActiveGesture(allowTerminalFeedback: !volumeTookOver);
+		var finalState = EndActiveGesture();
 			var endedInteractionSession = finalState.Interaction;
 		int finalSector = finalState.Sector;
 		int finalSubSector = finalState.SubSector;
@@ -1791,7 +1749,6 @@ public class GestureController : IDisposable
 				if (targetAction != null)
 				{
 					endedInteractionSession?.Confirm(targetAction, PluginInteractionSession.Target(finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
-					SoundEffectManager.Play(SoundType.ActionExecute, SoundSessionSource.NormalGesture, endedSoundSessionId);
 
 					// 构建目标执行上下文，将目标保护延伸至 ActionExecutor 队列消费入口
 					ActionExecutionContext? execContext = null;
@@ -1820,7 +1777,6 @@ public class GestureController : IDisposable
 				else
 				{
 					endedInteractionSession?.Cancel(isEscaped ? "Escaped" : "NoAction");
-					SoundEffectManager.Play(SoundType.GestureCancel, SoundSessionSource.NormalGesture, endedSoundSessionId);
 					Interlocked.CompareExchange(ref _pendingExecutionSession, null, focusSession);
 				}
 			}
@@ -1958,9 +1914,7 @@ public class GestureController : IDisposable
 			// ESC 按键即刻取消手势轮盘并吞键，防止干扰前台应用
 			if (e.VkCode == 27)
 			{
-				long endedSoundSessionId = _soundSessionId;
-				CancelGestureTracking(allowTerminalFeedback: true, reason: "Cancelled");
-				SoundEffectManager.Play(SoundType.GestureCancel, SoundSessionSource.NormalGesture, endedSoundSessionId);
+				CancelGestureTracking(reason: "Cancelled");
 				e.Handled = true;
 				return;
 			}
@@ -2123,10 +2077,9 @@ public class GestureController : IDisposable
 				_kbTriggerWaiting = false;
 				return;
 			}
-			long endedSoundSessionId = _soundSessionId;
 			bool volumeTookOver = _volumeGestureTookOver;
 			float volumeBaseline = _volumeBaseline;
-			var finalState = EndActiveGesture(allowTerminalFeedback: !volumeTookOver);
+			var finalState = EndActiveGesture();
 			var endedInteractionSession = finalState.Interaction;
 			int finalSector = finalState.Sector;
 			int finalSubSector = finalState.SubSector;
@@ -2193,13 +2146,11 @@ public class GestureController : IDisposable
 				if (targetAction != null)
 				{
 					endedInteractionSession?.Confirm(targetAction, PluginInteractionSession.Target(finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
-					SoundEffectManager.Play(SoundType.ActionExecute, SoundSessionSource.NormalGesture, endedSoundSessionId);
 					ActionExecutor.EnqueueAction(targetAction);
 				}
 				else
 				{
 					endedInteractionSession?.Cancel(isEscaped ? "Escaped" : "NoAction");
-					SoundEffectManager.Play(SoundType.GestureCancel, SoundSessionSource.NormalGesture, endedSoundSessionId);
 				}
 			}, DispatcherPriority.Normal, Array.Empty<object>());
 			// 穿透模式：激活前的 Down 已原生放行，KeyUp 放行与其配对，
@@ -2267,7 +2218,6 @@ public class GestureController : IDisposable
 				}
 				_isWaitingForThreshold = false;
 				_isGestureActive = true;
-				_soundSessionId = SoundEffectManager.BeginSession(SoundSessionSource.NormalGesture);
 				CancelLongPressTimer(); // 拖动先于长按触发
 				string activeWindowProcessName = (!wasKb && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.ProcessName))
 					? _currentWheelFocusSession.TargetInfo.ProcessName
@@ -2522,7 +2472,6 @@ public class GestureController : IDisposable
 				SetCursorPos((int)Math.Round(actualCenter.X), (int)Math.Round(actualCenter.Y));
 				ProcessMove(actualCenter);
 			}
-			SoundEffectManager.Play(SoundType.WheelPopup, SoundSessionSource.NormalGesture, _soundSessionId);
 			return true;
 		}
 		catch

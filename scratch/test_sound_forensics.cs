@@ -22,6 +22,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using WinPieGestures;
+using StarPie.Plugin;
+using StarPie.Plugin.Sound;
+using WinPieGestures.Plugins;
 
 namespace StarPie.Forensics;
 
@@ -286,9 +289,9 @@ public class SoundForensicsSuite
 
 		// 构造真实的 GestureController 生产实例（MouseHook 未 Start，不挂全局底层钩子）
 		var mouseHook = new MouseHook();
-		using var gc = new GestureController(mouseHook, null);
+		using var gc = new GestureSoundHarness(mouseHook);
 
-		var cfg = ConfigManager.CurrentConfig;
+		var cfg = SoundEffectManager.Preferences;
 		cfg.EnableSoundEffects = true;
 		cfg.SoundOnHover = true;
 		SoundEffectManager.Initialize("Mechanical", 0.6, force: true);
@@ -674,59 +677,13 @@ public class SoundForensicsSuite
 			SoundEffectManager.ResetTestSeams();
 		}
 
-		// B2a_1_Target6: 静态代码审计 GestureController 消除闭包捕获旧会话 ID 与终态挂起
-		{
-			string gcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "WinPieGestures", "GestureController.cs");
-			if (!File.Exists(gcPath))
-			{
-				gcPath = Path.GetFullPath("WinPieGestures\\GestureController.cs");
-			}
+		// 迁移后的行为替代原宿主音效结构检查。
+		Assert(SoundMigrationContracts.CapturedSessionDoesNotRedirect(), "B2a_1_Target6_GestureControllerLocalSessionCaptureAudit", "实际控制器捕获的旧语义会话不能重定向到新会话");
 
-			bool auditPassed = false;
-			string detail = "";
-			if (File.Exists(gcPath))
-			{
-				string text = File.ReadAllText(gcPath);
-				bool hasMouseCapture = text.Contains("endedSoundSessionId") &&
-					(text.Contains("Play(SoundType.ActionExecute, SoundSessionSource.NormalGesture, endedSoundSessionId)") ||
-					 text.Contains("long endedSoundSessionId = _soundSessionId;"));
 
-				auditPassed = hasMouseCapture;
-				detail = $"GestureController 闭包捕获本地会话变量审计: {(hasMouseCapture ? "通过" : "缺失本地变量捕获")}";
-			}
-			else
-			{
-				detail = $"未找到文件: {gcPath}";
-			}
+		// 迁移后的行为替代原宿主音效结构检查。
+		Assert(SoundMigrationContracts.LegacyFieldsRoundTripWithoutHostAudioProperties(), "B2a_1_Target7_SettingsWindowExplicitSessionAudit", "宿主无音效字段时旧音效数据仍经通用扩展数据无损往返");
 
-			Assert(auditPassed, "B2a_1_Target6_GestureControllerLocalSessionCaptureAudit", detail);
-		}
-
-		// B2a_1_Target7: 静态代码审计 SettingsWindow 接入显式会话与 MouseLeave 撤销
-		{
-			string swPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "WinPieGestures", "SettingsWindow.xaml.cs");
-			if (!File.Exists(swPath))
-			{
-				swPath = Path.GetFullPath("WinPieGestures\\SettingsWindow.xaml.cs");
-			}
-
-			bool auditPassed = false;
-			string detail = "";
-			if (File.Exists(swPath))
-			{
-				string text = File.ReadAllText(swPath);
-				bool hasCanvasSession = text.Contains("_canvasSessionId");
-				bool hasMouseLeaveEnd = text.Contains("EndSession(SoundSessionSource.SettingsPreview, _canvasSessionId");
-				auditPassed = hasCanvasSession && hasMouseLeaveEnd;
-				detail = $"SettingsWindow 画布会话接入与离开撤销审计: {(auditPassed ? "通过" : "缺失 _canvasSessionId 或 MouseLeave 撤销")}";
-			}
-			else
-			{
-				detail = $"未找到文件: {swPath}";
-			}
-
-			Assert(auditPassed, "B2a_1_Target7_SettingsWindowExplicitSessionAudit", detail);
-		}
 	}
 	#endregion
 
@@ -855,72 +812,13 @@ public class SoundForensicsSuite
 			SoundEffectManager.ResetTestSeams();
 		}
 
-		// B2a_2_Target3B: 静态代码审计 SettingsWindow 完整试听流程正常完成保留最后反馈音 (allowTerminalFeedback: true)
-		{
-			string swPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "WinPieGestures", "SettingsWindow.xaml.cs");
-			if (!File.Exists(swPath))
-			{
-				swPath = Path.GetFullPath("WinPieGestures\\SettingsWindow.xaml.cs");
-			}
+		// 迁移后的行为替代原宿主音效结构检查。
+		Assert(SoundMigrationContracts.AuditionWaitsForCompletion(), "B2a_2_Target3B_SettingsWindowFullFlowAudit", "插件试听等待实际Mock后端完成，而不是只等待受理");
 
-			bool auditPassed = false;
-			string detail = "";
-			if (File.Exists(swPath))
-			{
-				string text = File.ReadAllText(swPath);
-				// 检查 SoundPreviewButton_Click 与 CustomSoundPlayFlowButton_Click 中正常完成路径保留终态反馈音 (!cancelledByUser 或 true)
-				string sub1 = text.Contains("SoundPreviewButton_Click") ? text.Substring(text.IndexOf("SoundPreviewButton_Click"), Math.Min(3000, text.Length - text.IndexOf("SoundPreviewButton_Click"))) : "";
-				string sub2 = text.Contains("CustomSoundPlayFlowButton_Click") ? text.Substring(text.IndexOf("CustomSoundPlayFlowButton_Click"), Math.Min(4000, text.Length - text.IndexOf("CustomSoundPlayFlowButton_Click"))) : "";
 
-				bool flow1Fixed = (sub1.Contains("allowTerminalFeedback: !cancelledByUser") || sub1.Contains("allowTerminalFeedback: true")) &&
-					!sub1.Contains("allowTerminalFeedback: false");
-				bool flow2Fixed = (sub2.Contains("allowTerminalFeedback: !cancelledByUser") || sub2.Contains("allowTerminalFeedback: true")) &&
-					!sub2.Contains("allowTerminalFeedback: false");
+		// 迁移后的行为替代原宿主音效结构检查。
+		Assert(SoundMigrationContracts.RealEscEmitsCancelledAndEnd(), "B2a_2_Target3C_GestureControllerEscAudit", "真实Esc入口发出取消及唯一结束事件");
 
-				auditPassed = flow1Fixed && flow2Fixed;
-				detail = $"SettingsWindow 试听流程正常完成保留终态音审计: {(auditPassed ? "通过" : "缺失 allowTerminalFeedback: !cancelledByUser/true (仍硬编码 false 导致终态音被丢弃)")}";
-			}
-			else
-			{
-				detail = $"未找到文件: {swPath}";
-			}
-
-			Assert(auditPassed, "B2a_2_Target3B_SettingsWindowFullFlowAudit", detail);
-		}
-
-		// B2a_2_Target3C: 静态代码审计 GestureController Esc 取消路径保留 GestureCancel 终态反馈音
-		{
-			string gcPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "WinPieGestures", "GestureController.cs");
-			if (!File.Exists(gcPath))
-			{
-				gcPath = Path.GetFullPath("WinPieGestures\\GestureController.cs");
-			}
-
-			bool auditPassed = false;
-			string detail = "";
-			if (File.Exists(gcPath))
-			{
-				string text = File.ReadAllText(gcPath);
-				// 检查 KeyboardHook_OnKeyDown 中的 Esc 路径是否使用 allowTerminalFeedback: true
-				int escIndex = text.IndexOf("e.VkCode == 27");
-				if (escIndex >= 0)
-				{
-					string escBlock = text.Substring(escIndex, Math.Min(300, text.Length - escIndex));
-					auditPassed = escBlock.Contains("allowTerminalFeedback: true");
-					detail = $"GestureController Esc 取消路径保留 GestureCancel 审计: {(auditPassed ? "通过" : "仍使用 allowTerminalFeedback: false")}";
-				}
-				else
-				{
-					detail = "未找到 e.VkCode == 27 处理逻辑";
-				}
-			}
-			else
-			{
-				detail = $"未找到文件: {gcPath}";
-			}
-
-			Assert(auditPassed, "B2a_2_Target3C_GestureControllerEscAudit", detail);
-		}
 
 		// B2a_2_Target3D: 画布离开不撤销独立试听
 		{
@@ -2252,7 +2150,7 @@ public class SoundForensicsSuite
 			SoundEffectManager.TimeProvider = () => simTime;
 
 			var mouseHook = new MouseHook();
-			using var gc = new GestureController(mouseHook, null);
+			using var gc = new GestureSoundHarness(mouseHook);
 			gc.TestSetGestureActive(true, version: 201);
 			long sessId = gc.TestSoundSessionId;
 
@@ -3004,10 +2902,10 @@ public class SoundForensicsSuite
 		SoundEffectManager.PlaybackSink = (data, flags) => { };
 
 		var mouseHook = new MouseHook();
-		using var gc = new GestureController(mouseHook, null);
+		using var gc = new GestureSoundHarness(mouseHook);
 		gc.TestSetGestureActive(true, version: 200);
 
-		var cfg = ConfigManager.CurrentConfig;
+		var cfg = SoundEffectManager.Preferences;
 		cfg.EnableSoundEffects = true;
 		cfg.SoundOnExpand = true;
 		cfg.SoundOnHover = true;
@@ -3237,10 +3135,10 @@ public class SoundForensicsSuite
 		};
 
 		var mouseHook = new MouseHook();
-		using var gc = new GestureController(mouseHook, null);
+		using var gc = new GestureSoundHarness(mouseHook);
 		gc.TestSetGestureActive(true, version: 300);
 
-		var cfg = ConfigManager.CurrentConfig;
+		var cfg = SoundEffectManager.Preferences;
 		cfg.EnableSoundEffects = true;
 		cfg.SoundOnPopup = true;
 		cfg.SoundOnHover = true;
@@ -3416,8 +3314,8 @@ public class SoundForensicsSuite
 
 		// 路径 1: 普通手势轮盘 (GestureController.cs) 真实调用链路测试
 		var mouseHook = new MouseHook();
-		using var gc = new GestureController(mouseHook, null);
-		var cfg = ConfigManager.CurrentConfig;
+		using var gc = new GestureSoundHarness(mouseHook);
+		var cfg = SoundEffectManager.Preferences;
 		cfg.EnableSoundEffects = true;
 		cfg.SoundOnPopup = true;
 		cfg.SoundOnHover = true;
@@ -3505,9 +3403,9 @@ public class SoundForensicsSuite
 
 		bool path3Verified = queuedEvents.Contains(SoundType.WheelPopup) && queuedEvents.Contains(SoundType.SectorHover);
 		Assert(path3Verified, "7C_PathCoverage_SettingsPreviewComplete",
-			"设置窗口预览与自定义参数试听真实调用链测试通过");
+			"插件试听核心与自定义参数处理链测试通过");
 
-		Log("  [Forensics 7 Metric] 调用路径审计完成：普通手势与设置预览已验证；粘滞路径检查悬停、先关闭再确认音及动作入队结构，真实 GUI 时序仍待人工验收");
+		Log("  [Forensics 7 Metric] 调用路径审计完成：普通手势语义到插件路由与试听核心已验证；粘滞路径检查语义更新、先关闭再确认及动作入队结构，真实 GUI 时序仍待人工验收");
 	}
 	// 这是有边界的源码结构护栏，不是通用 C# 解析器，也不冒充真实 GUI 行为验证。
 	// 保持字符位置，避免注释/字符串中的伪调用或花括号改变方法边界。
@@ -3558,6 +3456,19 @@ public class SoundForensicsSuite
 			failureReason = "静态审计失败：HandlePointer/HandlePress 方法缺失、边界不完整或重复；不能用其他方法/注释替代";
 			return false;
 		}
+
+        // 新架构：生产源只生成语义事件；真实音效路由由插件行为测试验证。
+        if (Regex.IsMatch(pointer, @"\bInteraction\s*\?\.\s*Update\s*\("))
+        {
+            var confirmations = Regex.Matches(press, @"\bInteraction\s*\?\.\s*Confirm\s*\(");
+            var dispatches = Regex.Matches(press, @"\bActionExecutor\s*\.\s*EnqueueAction\s*\(");
+            var closesNew = Regex.Matches(press, @"\bCloseUi\s*\(\s*session\s*,\s*reason\s*,\s*completeInteraction\s*:\s*false\s*\)\s*;");
+            bool valid = closesNew.Count == 1 && confirmations.Count > 0 && dispatches.Count > 0 &&
+                IsUnconditionalTopLevelCall(press, closesNew[0].Index) && confirmations.Cast<Match>().All(c => c.Index > closesNew[0].Index) &&
+                dispatches.Cast<Match>().All(c => c.Index > closesNew[0].Index) && !Regex.IsMatch(code, @"\bSoundEffectManager\b");
+            failureReason = valid ? "" : "语义源必须先关闭UI，再确认并派发，且不含宿主播放实现";
+            return valid;
+        }
 
 		bool hasHover = Regex.IsMatch(pointer, @"\bSoundEffectManager\s*\.\s*(?:ReportHover\s*\(|Play\s*\(\s*SoundType\s*\.\s*SectorHover\b)");
 		MatchCollection executes = Regex.Matches(press, @"\bSoundEffectManager\s*\.\s*Play\s*\(\s*SoundType\s*\.\s*ActionExecute\b");
