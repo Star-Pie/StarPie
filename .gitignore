@@ -55,3 +55,27 @@ CLAUDE.md
 
 *.bak
 build-out-*/
+
+# Local scratch experiments and generated verification artifacts; keep maintained tests tracked
+/scratch/Everything-SDK/
+/scratch/Issue17Demo/
+/scratch/StarPie-Plugin-Protocol/
+/scratch/capture.ps1
+/scratch/icon_clarity_preview.png
+/scratch/issue17_demo_screenshot.png
+/scratch/issue17_image.png
+/scratch/issue17_mode_A.png
+/scratch/issue17_mode_B.png
+/scratch/issue17_mode_C.png
+/scratch/issue17_mode_D.png
+/scratch/test_bfs.ps1
+/scratch/test_classes.ps1
+/scratch/test_everything.ps1
+/scratch/test_everything_live.ps1
+/scratch/test_native_search.ps1
+/scratch/test_search.ps1
+/scratch/test_syntax.ps1
+/scratch/test_v170.cs
+/scratch/test_v170.csproj
+/scratch/beta7-verification/
+/scratch/beta7-sound-probe/candidate-files.sha256
