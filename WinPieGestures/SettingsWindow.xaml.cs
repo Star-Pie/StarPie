@@ -6955,7 +6955,7 @@ public partial class SettingsWindow : Window
 		try
 		{
 			_isUpdatingFocusUi = true;
-			FocusPluginActionComboBox.ItemsSource = PluginActionBinding.BuildPluginActionView();
+			FocusPluginActionComboBox.ItemsSource = PluginActionBinding.BuildPluginActionView(item.PluginActionRef?.FullId);
 
 			// 引用失效（插件停用 / 卸载）时 ProjectSelectedAction 会返回 null，
 			// 下拉框显示为未选中；具体原因由下方的插件面板如实说明。
@@ -7047,7 +7047,7 @@ public partial class SettingsWindow : Window
 			registration.FullId,
 			registration.Kind == StarPie.Plugin.ActionKind.Background,
 			registration.TimeoutSeconds,
-			registration.Description);
+			PluginI18n.Resolve(registration.PluginId, registration.DescriptionKey) ?? registration.Description);
 		FocusPluginTitleText.Text = registered.Title;
 		FocusPluginDetailText.Text = registered.Detail;
 

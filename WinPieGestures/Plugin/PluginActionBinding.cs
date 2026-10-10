@@ -157,7 +157,7 @@ internal static class PluginActionBinding
     /// 界面表现为「没有可选的插件动作」，与插件系统关闭时一致。
     /// </para>
     /// </summary>
-    public static List<PluginActionItem> BuildPluginActionItems()
+    public static List<PluginActionItem> BuildPluginActionItems(string? selectedFullId = null)
     {
         var items = new List<PluginActionItem>();
 
@@ -183,6 +183,7 @@ internal static class PluginActionBinding
 
             foreach (PluginActionRegistration registration in registrations)
             {
+                if (!registration.ShowInActionPicker && !string.Equals(registration.FullId, selectedFullId, StringComparison.OrdinalIgnoreCase)) continue;
                 string pluginName = ResolvePluginDisplayName(registration.PluginId);
                 string groupName = nameCounts[pluginName] > 1
                     ? $"{pluginName} ({registration.PluginId})"
@@ -215,9 +216,9 @@ internal static class PluginActionBinding
     /// </para>
     /// </summary>
     /// <returns>没有任何插件动作时返回 <c>null</c>，由界面显示空状态提示。</returns>
-    public static ICollectionView? BuildPluginActionView()
+    public static ICollectionView? BuildPluginActionView(string? selectedFullId = null)
     {
-        List<PluginActionItem> items = BuildPluginActionItems();
+        List<PluginActionItem> items = BuildPluginActionItems(selectedFullId);
         if (items.Count == 0) return null;
 
         var view = new ListCollectionView(items);

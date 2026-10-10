@@ -151,7 +151,7 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 				OnPropertyChanged(nameof(AggregatedType));
 				OnPropertyChanged(nameof(IsWindowManagerType));
 				OnPropertyChanged(nameof(IsPluginType));
-				_pluginActionOptions = PluginActionBinding.BuildPluginActionView();
+				_pluginActionOptions = PluginActionBinding.BuildPluginActionView(Mapping.Action.PluginActionRef?.FullId);
 				OnPropertyChanged(nameof(PluginActionOptions));
 				NotifyAllPropertiesChanged();
 			}
@@ -164,7 +164,7 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 	/// <summary>
 	/// 子下拉的候选插件动作，已按插件分组（分组头即插件显示名，本身不可选中）。
 	/// </summary>
-	public ICollectionView? PluginActionOptions => _pluginActionOptions ??= PluginActionBinding.BuildPluginActionView();
+	public ICollectionView? PluginActionOptions => _pluginActionOptions ??= PluginActionBinding.BuildPluginActionView(Mapping.Action.PluginActionRef?.FullId);
 
 	/// <summary>
 	/// 子下拉当前选中的插件动作全 ID。
@@ -495,7 +495,7 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 				// 类型切换是子下拉**唯一**需要重建候选集的时机；
 				// 其余路径（例如用户刚选定了一个动作）刻意不重建，见 NotifyAllPropertiesChanged 的说明。
 				OnPropertyChanged(nameof(IsPluginType));
-				_pluginActionOptions = PluginActionBinding.BuildPluginActionView();
+				_pluginActionOptions = PluginActionBinding.BuildPluginActionView(Mapping.Action.PluginActionRef?.FullId);
 				OnPropertyChanged(nameof(PluginActionOptions));
 				OnPropertyChanged(nameof(SelectedPluginActionFullId));
 				OnPropertyChanged(nameof(IsPluginActionBroken));

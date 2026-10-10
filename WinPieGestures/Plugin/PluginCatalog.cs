@@ -34,6 +34,8 @@ internal sealed class PluginActionRegistration
     public bool DisplayNameFromI18n { get; internal set; }
 
     public string Description { get; init; } = "";
+    public string? DescriptionKey { get; init; }
+    public bool ShowInActionPicker { get; init; } = true;
     public string Category { get; init; } = "";
     public string? IconKey { get; init; }
     public ActionKind Kind { get; init; }
@@ -84,7 +86,11 @@ internal sealed class PluginSettingsPageRegistration
     public string? DescriptionKey { get; init; }
 
     public IReadOnlyList<ParameterField> Fields { get; init; } = Array.Empty<ParameterField>();
+    public IReadOnlyList<string> ActionIds { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<PluginSettingsSectionRegistration> Sections { get; init; } = Array.Empty<PluginSettingsSectionRegistration>();
 }
+
+internal sealed record PluginSettingsSectionRegistration(string Id, string Title, string? TitleKey, string Description, string? DescriptionKey, string[] FieldKeys);
 
 /// <summary>
 /// 贡献点注册表 —— 插件系统与主程序之间**唯一**的接缝。
@@ -176,6 +182,17 @@ internal sealed class PluginCatalog
                 _settingsPages.ContainsKey(session.StagedSettingsPage.PluginId))
             {
                 conflicts.Add($"设置页冲突：{session.StagedSettingsPage.PluginId} 已声明过参数页。");
+            }
+
+            if (session.StagedSettingsPage is { } commandPage)
+            {
+                foreach (string id in commandPage.ActionIds)
+                {
+                    string fullId = $"{commandPage.PluginId}.{id}";
+                    if (!session.StagedActions.Exists(a => a.FullId.Equals(fullId, StringComparison.OrdinalIgnoreCase)) &&
+                        !_actions.ContainsKey(fullId))
+                        conflicts.Add(I18n.TF("PluginsSettingsCommandMissing", fullId));
+                }
             }
 
             if (conflicts.Count > 0)

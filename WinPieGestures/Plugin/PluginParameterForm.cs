@@ -38,19 +38,23 @@ internal sealed class PluginParameterForm
 	private IReadOnlyList<ParameterField> _fields = Array.Empty<ParameterField>();
 	private string? _pluginId;
 	private bool _suppress;
+	private bool _hasSettingsCommands;
+	private readonly bool _includeSettingsShortcut;
+	private string? _sectionId;
 
 	/// <param name="host">承载表单的容器。</param>
 	/// <param name="targetSource">取当前写入目标（动作项 / 插件配置）；返回 <c>null</c> 时表单只读不写。</param>
 	/// <param name="onChanged">任一字段变化后的回调（用于自动保存与预览刷新）。</param>
-	internal PluginParameterForm(StackPanel host, Func<IPluginParameterTarget?> targetSource, Action onChanged)
+	internal PluginParameterForm(StackPanel host, Func<IPluginParameterTarget?> targetSource, Action onChanged, bool includeSettingsShortcut = true)
 	{
 		_host = host ?? throw new ArgumentNullException(nameof(host));
 		_targetSource = targetSource ?? throw new ArgumentNullException(nameof(targetSource));
 		_onChanged = onChanged ?? (() => { });
+		_includeSettingsShortcut = includeSettingsShortcut;
 	}
 
 	/// <summary>当前表单是否为空（无任何声明字段）。</summary>
-	internal bool IsEmpty => _rows.Count == 0;
+	internal bool IsEmpty => _rows.Count == 0 && !_hasSettingsCommands;
 
 	/// <summary>
 	/// 依据字段声明重建表单，并回填已保存的值。
@@ -59,11 +63,13 @@ internal sealed class PluginParameterForm
 	/// 不会让整个「手势与动作」页失去响应 —— 参数表单运行在设置页的刷新路径上。
 	/// </para>
 	/// </summary>
-	internal void Build(IReadOnlyList<ParameterField>? fields, string? pluginId)
+	internal void Build(IReadOnlyList<ParameterField>? fields, string? pluginId, string? sectionId = null)
 	{
 		Reset();
 		_fields = fields ?? Array.Empty<ParameterField>();
 		_pluginId = pluginId;
+		_sectionId = sectionId;
+		AppendSettingsCommands();
 
 		if (_fields.Count == 0) return;
 
@@ -112,7 +118,9 @@ internal sealed class PluginParameterForm
 	{
 		_fields = Array.Empty<ParameterField>();
 		_pluginId = null;
+		_sectionId = null;
 		_rows.Clear();
+		_hasSettingsCommands = false;
 		if (_host.Children.Count > 0) _host.Children.Clear();
 	}
 
@@ -138,6 +146,62 @@ internal sealed class PluginParameterForm
 	}
 
 	// ------------------------------------------------------------------ 构建
+
+	private void AppendSettingsCommands()
+	{
+		if (string.IsNullOrEmpty(_pluginId)) return;
+		var page = PluginSettingsPageService.Open(_pluginId, _sectionId);
+		if (page == null || (page.Commands.Count == 0 && page.Sections.Count == 0)) return;
+		string pluginId = page.PluginId;
+		long generation = page.Generation;
+		var toolbar = new WrapPanel { Margin = new Thickness(0, 0, 0, 12) };
+		foreach (var command in page.Commands)
+		{
+			string commandId = command.ShortId;
+			var button = new Button { Content = command.Label, Height = 32, Padding = new Thickness(12, 0, 12, 0), Margin = new Thickness(0, 0, 8, 6) };
+			ApplyButtonStyle(button);
+			button.Click += (_, _) =>
+			{
+				ActionItem? action = PluginSettingsPageService.CreateCommand(pluginId, commandId, generation);
+				if (action == null) { button.IsEnabled = false; return; }
+				ActionExecutor.ExecuteForTesting(action);
+			};
+			toolbar.Children.Add(button);
+		}
+		if (_includeSettingsShortcut)
+		{
+			var settings = new Button { Content = page.Title, Height = 32, Padding = new Thickness(12, 0, 12, 0), Margin = new Thickness(0, 0, 0, 6) };
+			ApplyButtonStyle(settings);
+			settings.Click += (_, _) =>
+			{
+				var current = PluginSettingsPageService.Open(pluginId);
+				if (current == null || current.Generation != generation) { settings.IsEnabled = false; return; }
+				var dialog = new PluginSettingsPageWindow(pluginId);
+				Window? owner = Window.GetWindow(_host);
+				if (owner != null) dialog.Owner = owner;
+				dialog.ShowDialog();
+			};
+			toolbar.Children.Add(settings);
+		}
+		foreach (var section in page.Sections)
+		{
+			string sectionId = section.Id;
+			var button = new Button { Content = section.Label, Height = 32, Padding = new Thickness(12, 0, 12, 0), Margin = new Thickness(8, 0, 0, 6) };
+			ApplyButtonStyle(button);
+			button.Click += (_, _) =>
+			{
+				var current = PluginSettingsPageService.Open(pluginId, sectionId);
+				if (current == null || current.Generation != generation) { button.IsEnabled = false; return; }
+				var dialog = new PluginSettingsPageWindow(pluginId, sectionId);
+				Window? owner = Window.GetWindow(_host);
+				if (owner != null) dialog.Owner = owner;
+				dialog.ShowDialog();
+			};
+			toolbar.Children.Add(button);
+		}
+		_host.Children.Add(toolbar);
+		_hasSettingsCommands = true;
+	}
 
 	private void TryAddRow(ParameterField field)
 	{
@@ -181,7 +245,7 @@ internal sealed class PluginParameterForm
 			container.Children.Add(editor);
 
 			// ---- 说明行（帮助文本优先；没有则用占位提示顶替，省掉自绘 TextBox 的水印层）
-			string help = field.HelpText ?? "";
+			string help = PluginI18n.Resolve(_pluginId, field.HelpTextKey) ?? field.HelpText ?? "";
 			if (string.IsNullOrWhiteSpace(help) && !string.IsNullOrWhiteSpace(field.Placeholder))
 			{
 				help = "例：" + field.Placeholder;
@@ -273,6 +337,43 @@ internal sealed class PluginParameterForm
 				});
 				box.TextChanged += (_, _) => Commit(field.Key, box.Text);
 				return (box, () => box.Text ?? "", value => box.Text = value ?? "");
+			}
+
+			case ParameterFieldType.Slider:
+			{
+				double min = field.Min ?? 0, max = field.Max ?? 100, step = field.Step;
+				if (!double.IsFinite(min) || !double.IsFinite(max) || min >= max || !double.IsFinite(step) || step <= 0)
+					throw new ArgumentException("Invalid slider bounds or step");
+				var grid = new Grid();
+				grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+				grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+				grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+				grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(76) });
+				var minus = new Button { Content = "−", Width = 30, Height = 30, Padding = new Thickness(0) };
+				var plus = new Button { Content = "+", Width = 30, Height = 30, Padding = new Thickness(0) };
+				ApplyButtonStyle(minus); ApplyButtonStyle(plus);
+                var slider = Styled(new Slider { Minimum = min, Maximum = max, TickFrequency = step, SmallChange = step, LargeChange = Math.Min(step * 10, max - min), IsSnapToTickEnabled = true, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 10, 0) });
+				var valueText = new TextBlock { VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right, FontWeight = FontWeights.SemiBold };
+				valueText.SetResourceReference(TextBlock.ForegroundProperty, "TextPrimaryBrush");
+				string Read() => slider.Value.ToString("R", CultureInfo.InvariantCulture);
+				void Update()
+				{
+					valueText.Text = slider.Value.ToString("G8", CultureInfo.InvariantCulture) + (field.Unit ?? "");
+					minus.IsEnabled = slider.Value > min;
+					plus.IsEnabled = slider.Value < max;
+				}
+				minus.Click += (_, _) => slider.Value = Math.Clamp(slider.Value - step, min, max);
+				plus.Click += (_, _) => slider.Value = Math.Clamp(slider.Value + step, min, max);
+				slider.ValueChanged += (_, _) => { Update(); Commit(field.Key, Read()); };
+				Grid.SetColumn(slider, 1); Grid.SetColumn(plus, 2); Grid.SetColumn(valueText, 3);
+				grid.Children.Add(minus); grid.Children.Add(slider); grid.Children.Add(plus); grid.Children.Add(valueText);
+				return (grid, Read, raw =>
+				{
+					if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) || !double.IsFinite(value))
+						value = double.TryParse(field.DefaultValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var fallback) && double.IsFinite(fallback) ? fallback : min;
+					slider.Value = Math.Clamp(value, min, max);
+					Update();
+				});
 			}
 
 			case ParameterFieldType.Number:

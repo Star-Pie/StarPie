@@ -174,7 +174,7 @@ public class SubSlotViewModel : INotifyPropertyChanged
 	public bool IsPluginType => Type == PluginActionBinding.TypeName;
 
 	/// <summary>子下拉的候选插件动作，已按插件分组（分组头即插件显示名，本身不可选中）。</summary>
-	public ICollectionView? PluginActionOptions => PluginActionBinding.BuildPluginActionView();
+	public ICollectionView? PluginActionOptions => PluginActionBinding.BuildPluginActionView(Action.PluginActionRef?.FullId);
 
 	/// <summary>子下拉当前选中的插件动作全 ID。</summary>
 	public string? SelectedPluginActionFullId

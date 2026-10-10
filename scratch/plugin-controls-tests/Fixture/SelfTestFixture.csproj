@@ -1,0 +1,19 @@
+﻿<Project>
+  <!-- Keep this fixture's intermediate path local and set it before SDK props. -->
+  <PropertyGroup><BaseIntermediateOutputPath>obj-selftest/</BaseIntermediateOutputPath></PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>ControlSelfTestFixture</AssemblyName><PlatformTarget>x64</PlatformTarget>
+    <DefineConstants>$(DefineConstants);SELFTEST_CONTRIBUTION_ONLY</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="obj/**/*.cs;obj-selftest/**/*.cs" />
+    <ProjectReference Include="../../../plugin/sdk/StarPie.Plugin.Abstractions/StarPie.Plugin.Abstractions.csproj"><Private>false</Private></ProjectReference>
+    <AssemblyMetadata Include="StarPiePluginId" Value="user.controlselftest" />
+    <AssemblyMetadata Include="StarPiePluginName" Value="Self-test fixture" />
+    <AssemblyMetadata Include="StarPiePluginApiVersion" Value="1.11" />
+    <AssemblyMetadata Include="StarPiePluginMinHostVersion" Value="1.8.0-beta.5" />
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>
