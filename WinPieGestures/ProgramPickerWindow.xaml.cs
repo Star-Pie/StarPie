@@ -898,7 +898,7 @@ public partial class ProgramPickerWindow : Window
 		}
 		else
 		{
-			MessageBox.Show("请选择一个程序，或者点击“手动浏览文件...”", "未选择", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			AppMessageBox.Show("请选择一个程序，或者点击“手动浏览文件...”", "未选择", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 		}
 	}
 

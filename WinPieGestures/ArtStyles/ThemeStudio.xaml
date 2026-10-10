@@ -1,0 +1,89 @@
+<UserControl x:Class="WinPieGestures.ArtStyles.ThemeStudio" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="Transparent">
+  <UserControl.Resources>
+    <Style x:Key="StudioButton" TargetType="Button">
+      <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
+      <Setter Property="Padding" Value="10,7" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Margin" Value="0,0,6,6" />
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
+        <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.8" /></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" /><Setter TargetName="Frame" Property="BorderThickness" Value="2" /></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value="0.4" /></Trigger></ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="StudioInput" TargetType="TextBox"><Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" /><Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" /><Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" /><Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" /><Setter Property="Padding" Value="7,5" /><Setter Property="VerticalContentAlignment" Value="Center" /></Style>
+    <Style x:Key="StudioLabel" TargetType="TextBlock"><Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" /><Setter Property="FontSize" Value="11" /><Setter Property="TextWrapping" Value="Wrap" /></Style>
+    <Style x:Key="StudioComboItem" TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" /><Setter Property="Padding" Value="8,6" />
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBoxItem">
+        <Border x:Name="ItemFrame" Background="Transparent" Padding="{TemplateBinding Padding}" CornerRadius="{DynamicResource ControlCornerRadius}"><ContentPresenter /></Border>
+        <ControlTemplate.Triggers><Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="{DynamicResource ItemHoverBrush}" /></Trigger><Trigger Property="IsSelected" Value="True"><Setter TargetName="ItemFrame" Property="Background" Value="{DynamicResource NavTabActiveBgBrush}" /></Trigger></ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="StudioCombo" TargetType="ComboBox">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" /><Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" /><Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" /><Setter Property="Padding" Value="7,5" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource StudioComboItem}" /><Setter Property="MaxDropDownHeight" Value="220" />
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
+        <Grid x:Name="ComboRoot">
+          <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}" BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}"><Path Data="M 0,0 L 4,4 L 8,0" Stroke="{DynamicResource TextSecondaryBrush}" StrokeThickness="1.5" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0" /></Border></ControlTemplate></ToggleButton.Template>
+          </ToggleButton>
+          <ContentPresenter x:Name="Selection" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False" Margin="7,0,30,0" VerticalAlignment="Center" />
+          <TextBox x:Name="PART_EditableTextBox" Visibility="Collapsed" Background="{TemplateBinding Background}" Foreground="{TemplateBinding Foreground}" CaretBrush="{TemplateBinding Foreground}" BorderThickness="0" Margin="6,3,30,3" VerticalContentAlignment="Center" IsReadOnly="{TemplateBinding IsReadOnly}" />
+          <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False">
+            <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="4" MinWidth="{Binding ActualWidth, ElementName=ComboRoot}" MaxHeight="{TemplateBinding MaxDropDownHeight}"><ScrollViewer CanContentScroll="True"><ItemsPresenter /></ScrollViewer></Border>
+          </Popup>
+        </Grid>
+        <ControlTemplate.Triggers><Trigger Property="IsEditable" Value="True"><Setter TargetName="Selection" Property="Visibility" Value="Collapsed" /><Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible" /></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="ComboRoot" Property="Opacity" Value="0.4" /></Trigger></ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+  </UserControl.Resources>
+  <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="18" Margin="0,0,0,12">
+    <StackPanel>
+      <TextBlock x:Name="TitleText" Text="Theme studio" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="23" FontWeight="SemiBold" />
+      <TextBlock x:Name="DescriptionText" Style="{StaticResource StudioLabel}" Margin="0,4,0,14" />
+      <ItemsControl x:Name="ThemeCards"><ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate>
+        <Button Click="Card_Click" Tag="{Binding Profile.Id}" Background="{Binding Surface}" Foreground="{Binding Ink}" BorderBrush="{Binding Frame}" BorderThickness="{Binding FrameThickness}" Style="{StaticResource StudioButton}" Padding="9" HorizontalContentAlignment="Stretch" ToolTip="{Binding Description}">
+          <Grid MinHeight="82"><Grid.ColumnDefinitions><ColumnDefinition Width="54" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <ContentControl Content="{Binding Sample}" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center">
+              <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding ActiveLabel}" FontSize="10" Opacity="0.8" Margin="0,3,0,6" />
+              <StackPanel Orientation="Horizontal"><Ellipse Width="9" Height="9" Fill="{Binding Accent}" /><Ellipse Width="9" Height="9" Fill="{Binding Swatch}" Margin="5,0,0,0" /><Rectangle Width="20" Height="4" Fill="{Binding Ink}" Margin="5,0,0,0" VerticalAlignment="Center" /></StackPanel>
+            </StackPanel>
+          </Grid>
+        </Button>
+      </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+      <TextBlock x:Name="CurrentText" Style="{StaticResource StudioLabel}" Margin="0,5,0,10" />
+      <WrapPanel><Button x:Name="ApplyButton" Style="{StaticResource StudioButton}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentTextBrush}" Click="Apply_Click" /><Button x:Name="EditButton" Style="{StaticResource StudioButton}" Click="Edit_Click" /><Button x:Name="NewButton" Style="{StaticResource StudioButton}" Click="New_Click" /><Button x:Name="RenameButton" Style="{StaticResource StudioButton}" Click="Rename_Click" /><Button x:Name="DeleteButton" Style="{StaticResource StudioButton}" Click="Delete_Click" /><Button x:Name="ImportButton" Style="{StaticResource StudioButton}" Click="Import_Click" /><Button x:Name="ExportButton" Style="{StaticResource StudioButton}" Click="Export_Click" /></WrapPanel>
+      <CheckBox x:Name="FollowBox" Foreground="{DynamicResource TextPrimaryBrush}" Checked="Follow_Changed" Unchecked="Follow_Changed" Margin="0,6,0,5" />
+      <TextBlock x:Name="FollowHint" Style="{StaticResource StudioLabel}" Margin="0,0,0,12" />
+      <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10" Margin="0,0,0,8">
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><ContentControl x:Name="ControlSample" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center" /><ContentControl x:Name="WheelSample" Grid.Column="1" HorizontalContentAlignment="Center" /></Grid>
+      </Border>
+      <StackPanel x:Name="EditorPanel" Visibility="Collapsed">
+        <TextBlock x:Name="EditorTitle" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="17" FontWeight="SemiBold" Margin="0,12,0,4" />
+        <TextBlock x:Name="DraftHint" Style="{StaticResource StudioLabel}" Margin="0,0,0,12" />
+        <TextBlock x:Name="NameLabel" Style="{StaticResource StudioLabel}" Margin="0,0,0,4" />
+        <TextBox x:Name="DraftNameBox" Style="{StaticResource StudioInput}" MaxLength="80" TextChanged="Name_Changed" Margin="0,0,0,12" />
+        <StackPanel x:Name="PaletteFields" />
+        <Expander x:Name="AdvancedPanel" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,10">
+          <StackPanel Margin="0,10,0,0">
+            <TextBlock x:Name="FontLabel" Style="{StaticResource StudioLabel}" Margin="0,0,0,4" />
+            <ComboBox x:Name="FontBox" Style="{StaticResource StudioCombo}" IsEditable="True" Height="32" Margin="0,0,0,10" />
+            <CheckBox x:Name="DarkBox" Foreground="{DynamicResource TextPrimaryBrush}" Checked="Dark_Changed" Unchecked="Dark_Changed" Margin="0,0,0,10" />
+            <TextBlock x:Name="DecorationLabel" Style="{StaticResource StudioLabel}" Margin="0,0,0,4" />
+            <ComboBox x:Name="DecorationBox" Style="{StaticResource StudioCombo}" SelectionChanged="Decoration_Changed" Height="32" Margin="0,0,0,10" />
+            <StackPanel x:Name="MetricFields" />
+          </StackPanel>
+        </Expander>
+        <TextBlock x:Name="ValidationText" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
+        <WrapPanel><Button x:Name="SaveDraftButton" Style="{StaticResource StudioButton}" Background="{DynamicResource AccentPrimaryBrush}" Foreground="{DynamicResource AccentTextBrush}" Click="SaveDraft_Click" /><Button x:Name="CancelButton" Style="{StaticResource StudioButton}" Click="Cancel_Click" /><Button x:Name="ResetButton" Style="{StaticResource StudioButton}" Click="Reset_Click" /></WrapPanel>
+      </StackPanel>
+      <TextBlock x:Name="StatusText" Style="{StaticResource StudioLabel}" Margin="0,8,0,0" />
+    </StackPanel>
+  </Border>
+</UserControl>

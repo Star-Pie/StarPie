@@ -28,7 +28,7 @@
       <Style x:Key="ModernBtn" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Padding" Value="14,6" />
@@ -36,7 +36,7 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6">
+              <Border Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Control.Padding}" />
               </Border>
             </ControlTemplate>
@@ -66,7 +66,7 @@
         <TextBlock Text="在色盘中精调色彩，或使用屏幕吸管捕获任意像素。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
       </StackPanel>
       <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-        <Border Width="64" Height="36" CornerRadius="6" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" Margin="0,0,8,0">
+        <Border Width="64" Height="36" CornerRadius="{DynamicResource ControlCornerRadius}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" Margin="0,0,8,0">
           <Grid>
             <Border CornerRadius="5" Background="{DynamicResource SubtleCardBrush}" />
             <Border Name="ColorPreviewBorder" CornerRadius="5" />

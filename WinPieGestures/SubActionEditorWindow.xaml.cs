@@ -105,7 +105,7 @@ public partial class SubActionEditorWindow : Window
 		else
 		{
 			string styleName = isFan ? "蜂窝扇 (Honeycomb Fan)" : "外圈子环 (Sub-Ring)";
-			System.Windows.MessageBox.Show(this, $"当前二级菜单样式为【{styleName}】，每个主扇区最多支持配置 {maxAllowed} 个二级级联子动作。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, $"当前二级菜单样式为【{styleName}】，每个主扇区最多支持配置 {maxAllowed} 个二级级联子动作。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 	}
 
@@ -194,7 +194,7 @@ public partial class SubActionEditorWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "打开按键拼装器失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+			AppMessageBox.Show(this, "打开按键拼装器失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
@@ -503,7 +503,7 @@ public partial class SubActionEditorWindow : Window
             if (!validation.IsValid)
             {
                 string reason = validation.Describe() ?? "";
-                System.Windows.MessageBox.Show(this, reason, slot.Action.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppMessageBox.Show(this, reason, slot.Action.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
         }

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "id": "glacier",
+    "name": "Glacier",
+    "isDark": false,
+    "colors": {
+      "background": "#EAF4F8",
+      "surface": "#F8FDFF",
+      "sidebar": "#DAEAF2",
+      "text": "#163745",
+      "muted": "#4B6979",
+      "accent": "#176B8A",
+      "border": "#BDD3DE",
+      "wheelBackground": "#EFFAFF",
+      "wheelBorder": "#97C8DD",
+      "wheelHighlight": "#176B8A",
+      "wheelText": "#163745",
+      "wheelHighlightText": "#FFFFFF"
+    },
+    "fontFamily": "Microsoft YaHei UI, Segoe UI",
+    "cornerRadius": 14,
+    "strokeWidth": 1,
+    "shadowBlur": 22,
+    "shadowDepth": 2,
+    "shadowOpacity": 0.15,
+    "wheelOpacity": 0.82,
+    "decoration": "Glass",
+    "decorationStrength": 0.65
+  }
+}

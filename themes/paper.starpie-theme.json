@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "id": "paper",
+    "name": "Paper",
+    "isDark": false,
+    "colors": {
+      "background": "#F5F1E8",
+      "surface": "#FFFCF5",
+      "sidebar": "#EDE7DA",
+      "text": "#252820",
+      "muted": "#626458",
+      "accent": "#B54735",
+      "border": "#D2CCBE",
+      "wheelBackground": "#FFFCF5",
+      "wheelBorder": "#858373",
+      "wheelHighlight": "#B54735",
+      "wheelText": "#252820",
+      "wheelHighlightText": "#FFFFFF"
+    },
+    "fontFamily": "Microsoft YaHei UI, Segoe UI",
+    "cornerRadius": 4,
+    "strokeWidth": 1,
+    "shadowBlur": 8,
+    "shadowDepth": 2,
+    "shadowOpacity": 0.1,
+    "wheelOpacity": 0.96,
+    "decoration": "Paper",
+    "decorationStrength": 0.5
+  }
+}

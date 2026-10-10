@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "id": "pixel",
+    "name": "Pixel",
+    "isDark": false,
+    "colors": {
+      "background": "#F2E9CD",
+      "surface": "#FFF9E6",
+      "sidebar": "#E5DABB",
+      "text": "#292C32",
+      "muted": "#626057",
+      "accent": "#B74327",
+      "border": "#89836F",
+      "wheelBackground": "#FFF9E6",
+      "wheelBorder": "#292C32",
+      "wheelHighlight": "#B74327",
+      "wheelText": "#292C32",
+      "wheelHighlightText": "#FFFFFF"
+    },
+    "fontFamily": "Cascadia Mono, Consolas, Microsoft YaHei UI",
+    "cornerRadius": 0,
+    "strokeWidth": 2.5,
+    "shadowBlur": 0,
+    "shadowDepth": 3,
+    "shadowOpacity": 0.3,
+    "wheelOpacity": 1,
+    "decoration": "Pixel",
+    "decorationStrength": 0.7
+  }
+}

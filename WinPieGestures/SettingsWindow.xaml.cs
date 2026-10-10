@@ -531,6 +531,7 @@ public partial class SettingsWindow : Window
 		_isUpdatingUi = true;
 		_isUpdatingFocusUi = true;
 		InitializeComponent();
+		InitializeArtStyleStudio();
 		PluginHost.PluginAvailabilityChanged += HandlePluginAvailabilityChanged;
 		try
 		{
@@ -841,6 +842,8 @@ public partial class SettingsWindow : Window
 
 	private void LoadConfigToUi()
 	{
+		ReloadArtStyleStudio();
+		ReloadUiFontOptions();
 		ProfilesListBox.ItemsSource = null;
 		ProfilesListBox.ItemsSource = ConfigManager.CurrentConfig.Profiles;
 		if (MappingsProfileComboBox != null)
@@ -1673,49 +1676,14 @@ public partial class SettingsWindow : Window
 
 	public bool IsCurrentThemeDark()
 	{
-		string theme = ConfigManager.CurrentConfig?.AppTheme ?? "System";
-		if (string.Equals(theme, "System", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(theme))
-		{
-			return AppThemeManager.IsWindowsInDarkTheme();
-		}
-		return !string.Equals(theme, "Light", StringComparison.OrdinalIgnoreCase);
+		return AppThemeManager.IsEffectiveDark(ConfigManager.CurrentConfig?.AppTheme);
 	}
 
 	public void UpdateLogoTheme(bool isDark)
 	{
-		try
-		{
-			string logoResource = isDark ? "logo_dark.png" : "logo_light.png";
-			Uri uri;
-			try
-			{
-				uri = new Uri($"pack://application:,,,/StarPie;component/{logoResource}", UriKind.Absolute);
-			}
-			catch
-			{
-				uri = new Uri(logoResource, UriKind.Relative);
-			}
-
-			BitmapImage bitmap = new BitmapImage();
-			bitmap.BeginInit();
-			bitmap.UriSource = uri;
-			bitmap.CacheOption = BitmapCacheOption.OnLoad;
-			bitmap.EndInit();
-			((Freezable)bitmap).Freeze();
-
-			if (SidebarLogoImage != null)
-			{
-				SidebarLogoImage.Source = bitmap;
-			}
-			if (AboutLogoImage != null)
-			{
-				AboutLogoImage.Source = bitmap;
-			}
-		}
-		catch (Exception ex)
-		{
-			Debug.WriteLine($"[UpdateLogoTheme] Failed to load logo: {ex.Message}");
-		}
+		var image = ThemeBrandMark.Get(this);
+		if (SidebarLogoImage != null) SidebarLogoImage.Source = image;
+		if (AboutLogoImage != null) AboutLogoImage.Source = image;
 	}
 
 	private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1866,6 +1834,7 @@ public partial class SettingsWindow : Window
 
 	public void ApplyLocalization()
 	{
+		ReloadUiFontOptions();
 		base.Title = I18n.T("WindowTitle");
 		if (ConfigModeSimpleRadio != null)
 		{
@@ -4899,7 +4868,7 @@ public partial class SettingsWindow : Window
 			p.ProcessName.Equals(procName, StringComparison.OrdinalIgnoreCase) ||
 			(!string.IsNullOrEmpty(p.BoundProcesses) && p.BoundProcesses.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Any(x => x.Trim().Equals(procName, StringComparison.OrdinalIgnoreCase)))))
 		{
-			System.Windows.MessageBox.Show(this, $"已存在针对「{procName}」的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, $"已存在针对「{procName}」的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			return;
 		}
 		_selectedProfile?.SyncActiveLayerFromRootProperties();
@@ -4947,7 +4916,7 @@ public partial class SettingsWindow : Window
 				p.ProcessName.Equals(procName, StringComparison.OrdinalIgnoreCase) ||
 				(!string.IsNullOrEmpty(p.BoundProcesses) && p.BoundProcesses.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Any(x => x.Trim().Equals(procName, StringComparison.OrdinalIgnoreCase)))))
 			{
-				System.Windows.MessageBox.Show(this, $"已存在针对「{procName}」的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, $"已存在针对「{procName}」的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 				return;
 			}
 			_selectedProfile?.SyncActiveLayerFromRootProperties();
@@ -4980,7 +4949,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "捕捉窗口添加配置失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, "捕捉窗口添加配置失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -5002,7 +4971,7 @@ public partial class SettingsWindow : Window
 				p.ProcessName.Equals(procName, StringComparison.OrdinalIgnoreCase) ||
 				(!string.IsNullOrEmpty(p.BoundProcesses) && p.BoundProcesses.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Any(x => x.Trim().Equals(procName, StringComparison.OrdinalIgnoreCase)))))
 			{
-				System.Windows.MessageBox.Show(this, $"已存在针对「{procName}」的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, $"已存在针对「{procName}」的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 				return;
 			}
 			_selectedProfile?.SyncActiveLayerFromRootProperties();
@@ -5035,7 +5004,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "浏览文件添加配置失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, "浏览文件添加配置失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -5087,12 +5056,12 @@ public partial class SettingsWindow : Window
 	{
 		if (_selectedProfile == null)
 		{
-			System.Windows.MessageBox.Show(this, "请先在列表中选择要重命名的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "请先在列表中选择要重命名的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			return;
 		}
 		if (_selectedProfile.ProcessName.Equals("Global", StringComparison.OrdinalIgnoreCase))
 		{
-			System.Windows.MessageBox.Show(this, "「Global」为系统全局默认基础配置，不可重命名。", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "「Global」为系统全局默认基础配置，不可重命名。", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			return;
 		}
 		string oldName = !string.IsNullOrWhiteSpace(_selectedProfile.DisplayName) ? _selectedProfile.DisplayName : _selectedProfile.ProcessName;
@@ -5215,7 +5184,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "捕捉窗口绑定失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, "捕捉窗口绑定失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -5259,7 +5228,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "选取程序绑定失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, "选取程序绑定失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -5301,7 +5270,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "浏览选择文件失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, "浏览选择文件失败：" + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -5321,11 +5290,11 @@ public partial class SettingsWindow : Window
 		}
 		if (_selectedProfile.ProcessName.Equals("Global", StringComparison.OrdinalIgnoreCase))
 		{
-			System.Windows.MessageBox.Show(this, "全局默认配置 (Global) 是系统的基础兜底方案，不能删除！", "提示", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			AppMessageBox.Show(this, "全局默认配置 (Global) 是系统的基础兜底方案，不能删除！", "提示", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 			return;
 		}
 		string procName = _selectedProfile.ProcessName;
-		if (System.Windows.MessageBox.Show(this, $"确定要删除配置方案 [{procName}] 吗？\n删除后该程序将自动回退使用全局 (Global) 默认轮盘配置。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+		if (AppMessageBox.Show(this, $"确定要删除配置方案 [{procName}] 吗？\n删除后该程序将自动回退使用全局 (Global) 默认轮盘配置。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 		{
 			var target = _selectedProfile;
 			ConfigManager.CurrentConfig.Profiles.RemoveAll(p => p == target || string.Equals(p.ProcessName, procName, StringComparison.OrdinalIgnoreCase));
@@ -5715,13 +5684,13 @@ public partial class SettingsWindow : Window
 
 		if (_selectedProfile.Layers.Count <= 1)
 		{
-			MessageBox.Show("至少需要保留一个轮盘层！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show("至少需要保留一个轮盘层！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
 		int curIdx = _selectedProfile.ActiveLayerIndex;
 		WheelLayer layerToDelete = _selectedProfile.Layers[curIdx];
-		var result = MessageBox.Show($"确定要删除「{layerToDelete.Name}」吗？删除后该层配置将无法恢复。", "确认删除轮盘层", MessageBoxButton.YesNo, MessageBoxImage.Question);
+		var result = AppMessageBox.Show($"确定要删除「{layerToDelete.Name}」吗？删除后该层配置将无法恢复。", "确认删除轮盘层", MessageBoxButton.YesNo, MessageBoxImage.Question);
 		if (result == MessageBoxResult.Yes)
 		{
 			_selectedProfile.Layers.RemoveAt(curIdx);
@@ -6804,7 +6773,7 @@ public partial class SettingsWindow : Window
 		if (primaryAction.SubActions.Count >= maxAllowed)
 		{
 			string styleName = isFan ? "蜂窝扇 (Honeycomb Fan)" : "外圈子环 (Sub-Ring)";
-			System.Windows.MessageBox.Show(this, $"当前二级菜单样式为【{styleName}】，每个主扇区最多支持配置 {maxAllowed} 个二级级联子动作。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, $"当前二级菜单样式为【{styleName}】，每个主扇区最多支持配置 {maxAllowed} 个二级级联子动作。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 		BackupSubActionsForUndo(_selectedSlotIndex, primaryAction.SubActions);
@@ -6852,7 +6821,7 @@ public partial class SettingsWindow : Window
 
 		if ((primaryAction.SubActions != null && primaryAction.SubActions.Count > 0) || hasInheritedSubs)
 		{
-			if (System.Windows.MessageBox.Show(this, "确定要清空该扇区的所有二级动作吗？", "确认清空", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+			if (AppMessageBox.Show(this, "确定要清空该扇区的所有二级动作吗？", "确认清空", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 			{
 				BackupSubActionsForUndo(_selectedSlotIndex, primaryAction.SubActions);
 				if (hasInheritedSubs && eff != null)
@@ -7438,14 +7407,14 @@ public partial class SettingsWindow : Window
 		StarPie.Plugin.PluginActionRef? reference = item?.PluginActionRef;
 		if (item == null || reference == null || !reference.IsValid)
 		{
-			System.Windows.MessageBox.Show(this, I18n.T("PluginsActionNotSelected"), I18n.T("PluginsMsgTitle"),
+			AppMessageBox.Show(this, I18n.T("PluginsActionNotSelected"), I18n.T("PluginsMsgTitle"),
 				MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
 		if (PluginHost.Find(reference.PluginId) == null)
 		{
-			System.Windows.MessageBox.Show(this, I18n.TF("PluginsActionPluginNotFound", reference.PluginId), I18n.T("PluginsMsgTitle"),
+			AppMessageBox.Show(this, I18n.TF("PluginsActionPluginNotFound", reference.PluginId), I18n.T("PluginsMsgTitle"),
 				MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
 		}
@@ -7463,7 +7432,7 @@ public partial class SettingsWindow : Window
 
 		if (!stop.IsFullyStopped)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsReloadNotStopped", stop.Message),
 				msgTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
@@ -7471,7 +7440,7 @@ public partial class SettingsWindow : Window
 
 		if (!PluginHost.Enable(reference.PluginId, out string enableError))
 		{
-			System.Windows.MessageBox.Show(this, I18n.TF("PluginsReloadFailed", enableError), msgTitle,
+			AppMessageBox.Show(this, I18n.TF("PluginsReloadFailed", enableError), msgTitle,
 				MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
 		}
@@ -7481,7 +7450,7 @@ public partial class SettingsWindow : Window
 
 		if (reloaded?.RequiresRestart == true)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsReloadedRestartNeeded", reference.PluginId),
 				msgTitle, MessageBoxButton.OK, MessageBoxImage.Information);
 		}
@@ -7656,9 +7625,9 @@ public partial class SettingsWindow : Window
 			{
 				string detail = I18n.TF("PluginsOfficialInstallFailed", module.Name, result.Error);
 				if (!result.RestartSuggested || !OfferPluginRestart(result.PluginId, detail, restartSuggested: true, retryInstall: true))
-					System.Windows.MessageBox.Show(this, detail, title, MessageBoxButton.OK, MessageBoxImage.Warning);
+					AppMessageBox.Show(this, detail, title, MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
-			else System.Windows.MessageBox.Show(this, I18n.TF("PluginsOfficialInstalled", module.Name, module.Version), title, MessageBoxButton.OK, MessageBoxImage.Information);
+			else AppMessageBox.Show(this, I18n.TF("PluginsOfficialInstalled", module.Name, module.Version), title, MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 		finally
 		{
@@ -7888,7 +7857,7 @@ public partial class SettingsWindow : Window
 
 		if (candidate == null)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.T("PluginsCandidateGone"),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 			RefreshPluginManagerUi();
@@ -7911,11 +7880,11 @@ public partial class SettingsWindow : Window
 		{
 			string detail = I18n.TF("PluginsInstallFailed", error);
 			if (!installResult.RestartSuggested || !OfferPluginRestart(installResult.PluginId, detail, restartSuggested: true, retryInstall: true))
-				System.Windows.MessageBox.Show(this, detail, I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+				AppMessageBox.Show(this, detail, I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 		else if (candidate.State == PluginCandidateState.Update)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsUpdatedAndEnabled", candidate.DisplayName, candidate.VersionText),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		}
@@ -7930,7 +7899,7 @@ public partial class SettingsWindow : Window
 
 		if (!PluginPaths.ScanRootExists)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsScanFolderMissing", scanRoot),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
@@ -7946,7 +7915,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, I18n.TF("PluginsOpenScanFolderFailed", ex.Message),
+			AppMessageBox.Show(this, I18n.TF("PluginsOpenScanFolderFailed", ex.Message),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
@@ -7989,7 +7958,7 @@ public partial class SettingsWindow : Window
 	{
 		if (PluginHost.IsInitialized) return true;
 
-		System.Windows.MessageBox.Show(this,
+		AppMessageBox.Show(this,
 			I18n.T("PluginsNotReady"),
 			I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		return false;
@@ -8016,14 +7985,14 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, I18n.TF("PluginsReadFileFailed", ex.Message),
+			AppMessageBox.Show(this, I18n.TF("PluginsReadFileFailed", ex.Message),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 			return;
 		}
 
 		if (!scan.Accepted)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsNotAPlugin",
 					PluginScanFailureText.Title(scan.Failure),
 					scan.ErrorDetail,
@@ -8062,7 +8031,7 @@ public partial class SettingsWindow : Window
 		{
 			string detail = I18n.TF("PluginsInstallFailed", result.Error);
 			if (!result.RestartSuggested || !OfferPluginRestart(result.PluginId, detail, restartSuggested: true, retryInstall: true))
-				System.Windows.MessageBox.Show(this, detail, I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+				AppMessageBox.Show(this, detail, I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 			if (!App.IsExiting) RefreshPluginManagerUi();
 			return;
 		}
@@ -8070,7 +8039,7 @@ public partial class SettingsWindow : Window
 		RefreshPluginManagerUi();
 		PluginHost.NotifyUser(I18n.T("PluginsMsgTitle"), I18n.TF("PluginsInstalledNotify", result.PluginId));
 
-		System.Windows.MessageBox.Show(this, I18n.TF("PluginsInstalledDisabled", result.PluginId),
+		AppMessageBox.Show(this, I18n.TF("PluginsInstalledDisabled", result.PluginId),
 			I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 	}
 
@@ -8087,7 +8056,7 @@ public partial class SettingsWindow : Window
 	/// </para>
 	/// </summary>
 	private bool ConfirmPluginInstall(PluginInstallConfirmation info) =>
-		System.Windows.MessageBox.Show(this, PluginInstallConfirmationText.Build(info),
+		AppMessageBox.Show(this, PluginInstallConfirmationText.Build(info),
 			I18n.T("PluginsConfirmTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
 
 	private void RescanPluginsButton_Click(object sender, RoutedEventArgs e)
@@ -8121,7 +8090,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, I18n.TF("PluginsOpenDataFolderFailed", ex.Message),
+			AppMessageBox.Show(this, I18n.TF("PluginsOpenDataFolderFailed", ex.Message),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
@@ -8153,7 +8122,7 @@ public partial class SettingsWindow : Window
 
 		if (!desired && affected > 0)
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsDisabledNotice", affected),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		}
@@ -8193,7 +8162,7 @@ public partial class SettingsWindow : Window
 		PluginHost.SetPreload(pluginId, desired);
 		if (desired && !PluginHost.PreloadNow(pluginId, out string preloadError))
 		{
-			System.Windows.MessageBox.Show(this,
+			AppMessageBox.Show(this,
 				I18n.TF("PluginsPreloadFailed", pluginId, preloadError),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
@@ -8215,7 +8184,7 @@ public partial class SettingsWindow : Window
 			if (affected > 0)
 			{
 				string pluginName = PluginHost.Find(pluginId)?.Entry.Name ?? pluginId;
-				MessageBoxResult choice = System.Windows.MessageBox.Show(this,
+				MessageBoxResult choice = AppMessageBox.Show(this,
 					I18n.TF("PluginsConfirmDisable", pluginName, affected),
 					I18n.T("PluginsConfirmDisableTitle"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes);
 				if (choice != MessageBoxResult.Yes)
@@ -8234,7 +8203,7 @@ public partial class SettingsWindow : Window
 				{
 					if (!OfferPluginRestart(pluginId, enableError))
 					{
-						System.Windows.MessageBox.Show(this, I18n.TF("PluginsEnableFailed", pluginId, enableError),
+						AppMessageBox.Show(this, I18n.TF("PluginsEnableFailed", pluginId, enableError),
 							I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 					}
 				}
@@ -8248,14 +8217,14 @@ public partial class SettingsWindow : Window
 
 				if (stop.Status == PluginStopStatus.Failed)
 				{
-					System.Windows.MessageBox.Show(this, I18n.TF("PluginsDisableFailed", pluginId, stop.Message),
+					AppMessageBox.Show(this, I18n.TF("PluginsDisableFailed", pluginId, stop.Message),
 						I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 				}
 				else if (!stop.IsFullyStopped)
 				{
 					if (!OfferPluginRestart(pluginId, stop.Message, restartSuggested: stop.RestartSuggested))
 					{
-						System.Windows.MessageBox.Show(this, stop.Message,
+						AppMessageBox.Show(this, stop.Message,
 							I18n.T("PluginsStoppingTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 					}
 				}
@@ -8279,7 +8248,7 @@ public partial class SettingsWindow : Window
 		}
 
 		string pluginName = PluginHost.Find(pluginId)?.Entry.Name ?? pluginId;
-		MessageBoxResult choice = MessageBox.Show(
+		MessageBoxResult choice = AppMessageBox.Show(
 			this,
 			I18n.TF(retryInstall ? "PluginsUpdateRestartPrompt" : "PluginsRestartPrompt", pluginName, detail),
 			I18n.T("PluginsRestartTitle"),
@@ -8290,7 +8259,7 @@ public partial class SettingsWindow : Window
 
 		if (App.Restart()) return true;
 
-		MessageBox.Show(this, I18n.TF("PluginsRestartFailed", I18n.T("PluginsRestartStartFailed")),
+		AppMessageBox.Show(this, I18n.TF("PluginsRestartFailed", I18n.T("PluginsRestartStartFailed")),
 			I18n.T("PluginsRestartTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 		return true;
 	}
@@ -8314,7 +8283,7 @@ public partial class SettingsWindow : Window
 		catch (Exception ex)
 		{
 			AppLogger.LogError($"[plugin] 打开插件 \"{pluginId}\" 的参数页失败", ex);
-			System.Windows.MessageBox.Show(this, I18n.T("PluginsSettingsOpenFailed"),
+			AppMessageBox.Show(this, I18n.T("PluginsSettingsOpenFailed"),
 				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
@@ -8327,7 +8296,7 @@ public partial class SettingsWindow : Window
 			return;
 		}
 
-		MessageBoxResult choice = System.Windows.MessageBox.Show(this,
+		MessageBoxResult choice = AppMessageBox.Show(this,
 			I18n.TF("PluginsConfirmUninstall", pluginId),
 			I18n.T("PluginsConfirmUninstallTitle"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
 
@@ -8339,7 +8308,7 @@ public partial class SettingsWindow : Window
 			PluginUninstallResult result = await PluginHost.UninstallAsync(pluginId, removePluginData: true);
 			if (!result.Success)
 			{
-				System.Windows.MessageBox.Show(this, I18n.TF("PluginsUninstallFailed", result.Error),
+				AppMessageBox.Show(this, I18n.TF("PluginsUninstallFailed", result.Error),
 					I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
 			}
 		}
@@ -9597,7 +9566,7 @@ public partial class SettingsWindow : Window
 			// 功能配置界面 (Tab 2) 统一强制采用经典同心圆弧样式 ("Original")，杜绝胶囊或异形带来的扇区变形与位置失真
 			string shape = "Original";
 
-			IRadialStyleRenderer renderer = StyleRendererFactory.CreateRenderer(uiStyle);
+			IRadialStyleRenderer renderer = StyleRendererFactory.CreateRenderer(uiStyle, ConfigManager.CurrentConfig);
 			renderer.Initialize(theme, ConfigManager.CurrentConfig);
 
 			Brush defaultBrush = renderer.DefaultSectorBrush;
@@ -11861,7 +11830,7 @@ public partial class SettingsWindow : Window
 			{
 				text2 = ConfigManager.CurrentConfig.UiStyle ?? "ClassicRing";
 			}
-			IRadialStyleRenderer radialStyleRenderer = StyleRendererFactory.CreateRenderer(text2);
+			IRadialStyleRenderer radialStyleRenderer = StyleRendererFactory.CreateRenderer(text2, ConfigManager.CurrentConfig, true);
 			radialStyleRenderer.Initialize(text, ConfigManager.CurrentConfig);
 			if (radialStyleRenderer.DefaultSectorBrush is SolidColorBrush solidColorBrush && SubCustomSectorBgTextBox != null)
 			{
@@ -12019,7 +11988,7 @@ public partial class SettingsWindow : Window
 				SubCustomColorExpander.IsExpanded = true;
 			}
 			SyncUiToConfigAndSave();
-			System.Windows.MessageBox.Show(this, "已成功创建二级自定义配色方案【" + text + "】！\n您可以在下方色彩微调面板中继续定制各项颜色。", "新建配色成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "已成功创建二级自定义配色方案【" + text + "】！\n您可以在下方色彩微调面板中继续定制各项颜色。", "新建配色成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
@@ -12063,7 +12032,7 @@ public partial class SettingsWindow : Window
 				{
 					RenderLiveWheelPreview();
 				}
-				System.Windows.MessageBox.Show(this, "已成功保存对配色预设【" + customColorPreset.Name + "】的修改！", "保存配色修改", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, "已成功保存对配色预设【" + customColorPreset.Name + "】的修改！", "保存配色修改", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 				return;
 			}
 		}
@@ -12108,7 +12077,7 @@ public partial class SettingsWindow : Window
 				SubCustomColorExpander.IsExpanded = true;
 			}
 			SyncUiToConfigAndSave();
-			System.Windows.MessageBox.Show(this, "配色方案【" + text + "】已成功另存为独立预设！", "另存预设成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "配色方案【" + text + "】已成功另存为独立预设！", "另存预设成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
@@ -12156,7 +12125,7 @@ public partial class SettingsWindow : Window
 		}
 		string presetId = text.Substring("CustomPreset_".Length);
 		CustomColorPreset customColorPreset = ConfigManager.CurrentConfig.CustomColorPresets?.Find((CustomColorPreset p) => p.Id == presetId);
-		if (customColorPreset != null && System.Windows.MessageBox.Show(this, "确定要删除自定义配色方案预设【" + customColorPreset.Name + "】吗？", "确认删除配色方案", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+		if (customColorPreset != null && AppMessageBox.Show(this, "确定要删除自定义配色方案预设【" + customColorPreset.Name + "】吗？", "确认删除配色方案", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 		{
 			ConfigManager.CurrentConfig.CustomColorPresets?.Remove(customColorPreset);
 			if (ConfigManager.CurrentConfig.Theme == "CustomPreset_" + customColorPreset.Id)
@@ -12185,7 +12154,7 @@ public partial class SettingsWindow : Window
 				RenderLiveWheelPreview();
 			}
 			SyncUiToConfigAndSave();
-			System.Windows.MessageBox.Show(this, "自定义配色方案【" + customColorPreset.Name + "】已成功删除！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "自定义配色方案【" + customColorPreset.Name + "】已成功删除！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
@@ -12265,7 +12234,7 @@ public partial class SettingsWindow : Window
 		UpdateSubColorPreviews();
 		RenderLiveWheelPreview();
 		SyncUiToConfigAndSave();
-		System.Windows.MessageBox.Show(this, "已重置二级轮盘为跟随一级主轮盘视觉风格与配色！", "重置成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+		AppMessageBox.Show(this, "已重置二级轮盘为跟随一级主轮盘视觉风格与配色！", "重置成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 	}
 
 	private void ReloadThemePresets()
@@ -12393,7 +12362,7 @@ public partial class SettingsWindow : Window
 		}
 		else
 		{
-			IRadialStyleRenderer radialStyleRenderer = StyleRendererFactory.CreateRenderer(ConfigManager.CurrentConfig.UiStyle ?? "ClassicRing");
+			IRadialStyleRenderer radialStyleRenderer = StyleRendererFactory.CreateRenderer(ConfigManager.CurrentConfig.UiStyle ?? "ClassicRing", ConfigManager.CurrentConfig);
 			radialStyleRenderer.Initialize(text, ConfigManager.CurrentConfig);
 			if (radialStyleRenderer.DefaultSectorBrush is SolidColorBrush solidColorBrush)
 			{
@@ -13050,16 +13019,16 @@ public partial class SettingsWindow : Window
 		if (_currentCustomSoundProfile == null || _customSoundProfiles == null) return;
 		if (_customSoundProfiles.Count <= 1)
 		{
-			System.Windows.MessageBox.Show(this, "至少需要保留一个音效方案，无法删除最后一个方案。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, "至少需要保留一个音效方案，无法删除最后一个方案。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 		if (_currentCustomSoundProfile.IsBuiltIn)
 		{
-			System.Windows.MessageBox.Show(this, "系统内置预设方案受保护不可删除。如需自定义修改，可点击【➕ 新建】创建可编辑副本。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, "系统内置预设方案受保护不可删除。如需自定义修改，可点击【➕ 新建】创建可编辑副本。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
-		var res = System.Windows.MessageBox.Show(
+		var res = AppMessageBox.Show(
 			this,
 			$"确定要删除音效方案「{_currentCustomSoundProfile.Name}」吗？\n删除后无法撤销。",
 			"确认删除方案",
@@ -13126,7 +13095,7 @@ public partial class SettingsWindow : Window
 			}
 			catch (Exception ex)
 			{
-				System.Windows.MessageBox.Show(this, $"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+				AppMessageBox.Show(this, $"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 	}
@@ -13153,7 +13122,7 @@ public partial class SettingsWindow : Window
 			}
 			catch (Exception ex)
 			{
-				System.Windows.MessageBox.Show(this, $"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+				AppMessageBox.Show(this, $"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 	}
@@ -13457,7 +13426,7 @@ public partial class SettingsWindow : Window
 				CustomColorExpander.IsExpanded = true;
 			}
 			SyncUiToConfigAndSave();
-			System.Windows.MessageBox.Show(this, "已成功创建自定义配色方案【" + text + "】！\n您可以在下方色彩微调面板中继续定制各项颜色。", "新建配色成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "已成功创建自定义配色方案【" + text + "】！\n您可以在下方色彩微调面板中继续定制各项颜色。", "新建配色成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
@@ -13486,7 +13455,7 @@ public partial class SettingsWindow : Window
 				{
 					RenderLiveWheelPreview();
 				}
-				System.Windows.MessageBox.Show(this, "已成功保存对配色预设【" + customColorPreset.Name + "】的修改！", "保存配色修改", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, "已成功保存对配色预设【" + customColorPreset.Name + "】的修改！", "保存配色修改", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 				return;
 			}
 		}
@@ -13530,7 +13499,7 @@ public partial class SettingsWindow : Window
 				CustomColorExpander.IsExpanded = true;
 			}
 			SyncUiToConfigAndSave();
-			System.Windows.MessageBox.Show(this, "配色方案【" + text + "】已成功另存为独立预设！", "另存预设成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "配色方案【" + text + "】已成功另存为独立预设！", "另存预设成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
@@ -13578,7 +13547,7 @@ public partial class SettingsWindow : Window
 		}
 		string presetId = text.Substring("CustomPreset_".Length);
 		CustomColorPreset customColorPreset = ConfigManager.CurrentConfig.CustomColorPresets?.Find((CustomColorPreset p) => p.Id == presetId);
-		if (customColorPreset != null && System.Windows.MessageBox.Show(this, "确定要删除自定义配色方案预设【" + customColorPreset.Name + "】吗？", "确认删除配色方案", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+		if (customColorPreset != null && AppMessageBox.Show(this, "确定要删除自定义配色方案预设【" + customColorPreset.Name + "】吗？", "确认删除配色方案", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 		{
 			ConfigManager.CurrentConfig.CustomColorPresets?.Remove(customColorPreset);
 			ConfigManager.CurrentConfig.Theme = "System";
@@ -13603,7 +13572,7 @@ public partial class SettingsWindow : Window
 				RenderLiveWheelPreview();
 			}
 			SyncUiToConfigAndSave();
-			System.Windows.MessageBox.Show(this, "自定义配色方案【" + customColorPreset.Name + "】已成功删除！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, "自定义配色方案【" + customColorPreset.Name + "】已成功删除！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
@@ -13964,7 +13933,8 @@ public partial class SettingsWindow : Window
 				PopulateLayoutModeComboBox(includeInherit: true);
 				string currentMode = ((action != null && !string.IsNullOrWhiteSpace(action.LayoutMode)) ? action.LayoutMode : "Inherit");
 				SetComboBoxSelectedValue(IconLayoutModeComboBox, currentMode);
-				string currentFont = ((action != null && !string.IsNullOrWhiteSpace(action.CustomFontFamily)) ? action.CustomFontFamily : (ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI"));
+				IRadialStyleRenderer? editingRenderer = _selectedLayoutTier == 2 ? _previewSubStyleRenderer : _previewStyleRenderer;
+				string currentFont = ((action != null && !string.IsNullOrWhiteSpace(action.CustomFontFamily)) ? action.CustomFontFamily : ArtStyles.ArtStyleRenderer.ResolveFont(editingRenderer, ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI"));
 				SetComboBoxSelectedValue(WheelFontFamilyComboBox, currentFont);
 				if (SectorTextColorTextBox != null)
 				{
@@ -16067,7 +16037,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show("打开级联子菜单编辑器失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+			AppMessageBox.Show("打开级联子菜单编辑器失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 		}
 	}
 
@@ -16323,6 +16293,7 @@ public partial class SettingsWindow : Window
 	{
 		if (!_isUpdatingUi && ConfigManager.CurrentConfig != null)
 		{
+			ConfigManager.CurrentConfig.SelectedArtStyleId = "";
 			ConfigManager.CurrentConfig.AppTheme = themeTag;
 			AppThemeManager.ApplyTheme(this, themeTag);
 			UpdateSidebarThemeVisualState(themeTag);
@@ -16334,6 +16305,7 @@ public partial class SettingsWindow : Window
 				RenderLiveWheelPreview();
 			}
 			SyncUiToConfigAndSave();
+			ArtStyles.ArtStyleService.NotifyChanged();
 		}
 	}
 
@@ -16342,7 +16314,8 @@ public partial class SettingsWindow : Window
 		_isUpdatingUi = true;
 		try
 		{
-			string tag = themeTag ?? "System";
+			var art = ArtStyles.ArtStyleResolver.Resolve(ConfigManager.CurrentConfig);
+			string tag = art == null ? themeTag ?? "System" : "ArtStyle";
 			if (ThemeBtnSystem != null) ThemeBtnSystem.IsChecked = string.Equals(tag, "System", StringComparison.OrdinalIgnoreCase);
 			if (ThemeBtnLight != null) ThemeBtnLight.IsChecked = string.Equals(tag, "Light", StringComparison.OrdinalIgnoreCase);
 			if (ThemeBtnDark != null) ThemeBtnDark.IsChecked = string.Equals(tag, "Dark", StringComparison.OrdinalIgnoreCase);
@@ -16352,6 +16325,7 @@ public partial class SettingsWindow : Window
 			{
 				SidebarThemeCollapsedIcon.Text = tag.ToLowerInvariant() switch
 				{
+					"artstyle" => "🎨",
 					"light" => "☀️",
 					"dark" => "🌙",
 					"titaniumgray" => "⚙️",
@@ -16362,6 +16336,7 @@ public partial class SettingsWindow : Window
 			{
 				string name = tag.ToLowerInvariant() switch
 				{
+					"artstyle" => ArtStyles.ArtStyleText.Name(art!),
 					"light" => I18n.T("SidebarThemeLight"),
 					"dark" => I18n.T("SidebarThemeDark"),
 					"titaniumgray" => I18n.T("SidebarThemeGray"),
@@ -17018,7 +16993,7 @@ public partial class SettingsWindow : Window
 			AppLogger.LogError("DownloadUpdate failed", ex);
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
 			if (UpdateNewVersionPanel != null) UpdateNewVersionPanel.Visibility = Visibility.Visible;
-			System.Windows.MessageBox.Show($"下载更新包失败：{ex.Message}\n建议切换加速镜像源重试或点击前往网页下载。", "StarPie 更新", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show($"下载更新包失败：{ex.Message}\n建议切换加速镜像源重试或点击前往网页下载。", "StarPie 更新", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -17035,7 +17010,7 @@ public partial class SettingsWindow : Window
 		}
 		else
 		{
-			System.Windows.MessageBox.Show("未找到已下载的更新包，请重新点击下载。", "StarPie 更新", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show("未找到已下载的更新包，请重新点击下载。", "StarPie 更新", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 	}
 
@@ -17214,7 +17189,7 @@ public partial class SettingsWindow : Window
 		string confirmMsg = string.Format(I18n.T("RollbackConfirmMsg"), _selectedRollbackRelease.TagName);
 		string confirmTitle = I18n.T("RollbackConfirmTitle");
 
-		MessageBoxResult result = MessageBox.Show(confirmMsg, confirmTitle, MessageBoxButton.YesNo, MessageBoxImage.Question);
+		MessageBoxResult result = AppMessageBox.Show(confirmMsg, confirmTitle, MessageBoxButton.YesNo, MessageBoxImage.Question);
 		if (result != MessageBoxResult.Yes) return;
 
 		bool isStandalone = UpdateManager.Instance.IsCurrentInstallationStandalone();
@@ -17283,7 +17258,7 @@ public partial class SettingsWindow : Window
 		{
 			AppLogger.LogError("Rollback download failed", ex);
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
-			System.Windows.MessageBox.Show($"下载历史回退包失败：{ex.Message}\n建议切换加速镜像源重试或前往网页下载。", "StarPie 版本回退", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show($"下载历史回退包失败：{ex.Message}\n建议切换加速镜像源重试或前往网页下载。", "StarPie 版本回退", MessageBoxButton.OK, MessageBoxImage.Warning);
 		}
 	}
 
@@ -17704,11 +17679,11 @@ public partial class SettingsWindow : Window
 			if (ConfigManager.SaveConfigAs(newName))
 			{
 				RefreshConfigProfilesUi();
-				System.Windows.MessageBox.Show(this, $"已成功将当前全部设置另存为方案「{newName}」并已激活！", "保存成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, $"已成功将当前全部设置另存为方案「{newName}」并已激活！", "保存成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			}
 			else
 			{
-				System.Windows.MessageBox.Show(this, "保存新配置方案失败，请检查写入权限。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+				AppMessageBox.Show(this, "保存新配置方案失败，请检查写入权限。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 			}
 		}
 	}
@@ -17742,11 +17717,11 @@ public partial class SettingsWindow : Window
 			if (ConfigManager.RenameSavedConfig(currentName, newName))
 			{
 				RefreshConfigProfilesUi();
-				System.Windows.MessageBox.Show(this, $"配置方案已成功重命名为「{newName}」！", "重命名成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, $"配置方案已成功重命名为「{newName}」！", "重命名成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			}
 			else
 			{
-				System.Windows.MessageBox.Show(this, "重命名配置方案失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+				AppMessageBox.Show(this, "重命名配置方案失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 			}
 		}
 	}
@@ -17757,11 +17732,11 @@ public partial class SettingsWindow : Window
 		var list = ConfigManager.GetSavedConfigNames();
 		if (list.Count <= 1)
 		{
-			System.Windows.MessageBox.Show(this, "至少需要保留一个配置方案，无法删除最后一份配置。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, "至少需要保留一个配置方案，无法删除最后一份配置。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
 		}
 
-		var res = System.Windows.MessageBox.Show(
+		var res = AppMessageBox.Show(
 			this,
 			$"确定要删除配置方案「{currentName}」吗？\n删除后该方案配置文件将被永久移除。",
 			"确认删除配置方案",
@@ -17791,11 +17766,11 @@ public partial class SettingsWindow : Window
 				RenderMappingsWheelPreview();
 				RenderLiveWheelPreview();
 				RefreshConfigProfilesUi();
-				System.Windows.MessageBox.Show(this, $"已成功删除配置方案「{currentName}」，当前已切换至方案「{fallbackName}」。", "删除成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, $"已成功删除配置方案「{currentName}」，当前已切换至方案「{fallbackName}」。", "删除成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			}
 			else
 			{
-				System.Windows.MessageBox.Show(this, "删除配置方案失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+				AppMessageBox.Show(this, "删除配置方案失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 			}
 		}
 	}
@@ -17813,11 +17788,11 @@ public partial class SettingsWindow : Window
 		{
 			if (ConfigManager.ExportConfigToFile(targetProfile, saveFileDialog.FileName))
 			{
-				System.Windows.MessageBox.Show(this, $"配置方案「{targetProfile}」已成功导出至文件！", "导出成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+				AppMessageBox.Show(this, $"配置方案「{targetProfile}」已成功导出至文件！", "导出成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			}
 			else
 			{
-				System.Windows.MessageBox.Show(this, "配置导出失败，请检查写入权限。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+				AppMessageBox.Show(this, "配置导出失败，请检查写入权限。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 			}
 		}
 	}
@@ -17883,18 +17858,18 @@ public partial class SettingsWindow : Window
 			RenderMappingsWheelPreview();
 			RenderLiveWheelPreview();
 			RefreshConfigProfilesUi();
-			System.Windows.MessageBox.Show(this, $"外部配置文件已成功导入并收纳入方案「{importedName}」！\n已即时生效并切换至该方案。", "导入成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, $"外部配置文件已成功导入并收纳入方案「{importedName}」！\n已即时生效并切换至该方案。", "导入成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 		else
 		{
-			System.Windows.MessageBox.Show(this, "导入失败：文件格式不匹配或已损坏。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+			AppMessageBox.Show(this, "导入失败：文件格式不匹配或已损坏。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 		}
 	}
 
 	private void ResetDefaultConfigBtn_Click(object sender, RoutedEventArgs e)
 	{
 		string currentName = GetSelectedConfigProfileName();
-		var res = System.Windows.MessageBox.Show(
+		var res = AppMessageBox.Show(
 			this,
 			$"确定要将当前激活的方案「{currentName}」恢复为初始默认配置吗？\n该操作将重置手势动作与轮盘外观为初始推荐状态，其他已保存方案不受影响。",
 			"确认重置配置",
@@ -17924,14 +17899,14 @@ public partial class SettingsWindow : Window
 			RenderMappingsWheelPreview();
 			RenderLiveWheelPreview();
 			RefreshConfigProfilesUi();
-			System.Windows.MessageBox.Show(this, $"方案「{currentName}」已成功重置为默认配置！", "重置完成", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, $"方案「{currentName}」已成功重置为默认配置！", "重置完成", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 		}
 	}
 
 	private void TrimMemoryButton_Click(object sender, RoutedEventArgs e)
 	{
 		MemoryOptimizer.TrimMemory(force: true);
-		System.Windows.MessageBox.Show(this, "物理工作集内存已深度压缩！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+		AppMessageBox.Show(this, "物理工作集内存已深度压缩！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 	}
 
 	private void OpenLogFolderButton_Click(object sender, RoutedEventArgs e)
@@ -17960,7 +17935,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show("无法打开目录: " + ex.Message);
+			AppMessageBox.Show("无法打开目录: " + ex.Message);
 		}
 	}
 
@@ -17976,7 +17951,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show("无法打开目录: " + ex.Message);
+			AppMessageBox.Show("无法打开目录: " + ex.Message);
 		}
 	}
 
@@ -17994,12 +17969,12 @@ public partial class SettingsWindow : Window
 			}
 			else
 			{
-				System.Windows.MessageBox.Show("CHANGELOG.md 文件位于根目录。", "提示");
+				AppMessageBox.Show("CHANGELOG.md 文件位于根目录。", "提示");
 			}
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show("无法打开文件: " + ex.Message);
+			AppMessageBox.Show("无法打开文件: " + ex.Message);
 		}
 	}
 
@@ -18007,11 +17982,11 @@ public partial class SettingsWindow : Window
 	{
 		if (SyncUiToConfigAndSave())
 		{
-			System.Windows.MessageBox.Show("配置已成功保存至硬盘！", "成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			AppMessageBox.Show(this, I18n.T("PromptSavedMessage"), I18n.T("PromptSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 		else
 		{
-			System.Windows.MessageBox.Show("配置保存失败。请查看日志了解原因，并确认程序对配置目录有写入权限。", "保存失败", MessageBoxButton.OK, MessageBoxImage.Error);
+			AppMessageBox.Show(this, I18n.T("PromptSaveFailedMessage"), I18n.T("PromptSaveFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
@@ -18156,10 +18131,12 @@ public partial class SettingsWindow : Window
 		try
 		{
 			LiveWheelPreviewCanvas.Children.Clear();
+            _artPreviewContents.Clear();
 			_previewSectorPaths.Clear();
 			_previewTransforms.Clear();
 			_previewAngles.Clear();
 			_previewSubSectorPaths.Clear();
+			_previewSubContainers.Clear();
 			_previewSubTransforms.Clear();
 			_previewSubParentIndices.Clear();
 			_previewSubIndices.Clear();
@@ -18209,7 +18186,7 @@ public partial class SettingsWindow : Window
 			string shape = ConfigManager.CurrentConfig.Shape ?? "Original";
 			string text3 = ConfigManager.CurrentConfig.IconLayoutMode ?? "IconAndText";
 			bool flag = ConfigManager.CurrentConfig.ShowText && text3 != "IconOnly";
-			_previewStyleRenderer = StyleRendererFactory.CreateRenderer(text);
+			_previewStyleRenderer = StyleRendererFactory.CreateRenderer(text, ArtPreviewConfig);
 			_previewStyleRenderer.Initialize(text2, ConfigManager.CurrentConfig);
 			_previewDefaultBrush = _previewStyleRenderer.DefaultSectorBrush;
 			_previewHighlightBrush = _previewStyleRenderer.HighlightSectorBrush;
@@ -18218,7 +18195,7 @@ public partial class SettingsWindow : Window
 			_previewTextBrush = _previewStyleRenderer.TextColorBrush;
 			_previewCoreBgBrush = _previewStyleRenderer.CoreBgBrush;
 			_previewCoreBorderBrush = _previewStyleRenderer.CoreBorderBrush;
-			if (CustomColorExpander != null && CustomColorExpander.IsExpanded)
+			if (_previewStyleRenderer is not ArtStyles.ArtStyleRenderer && CustomColorExpander != null && CustomColorExpander.IsExpanded)
 			{
 				try
 				{
@@ -18260,7 +18237,7 @@ public partial class SettingsWindow : Window
 			{
 				try
 				{
-					_previewSubStyleRenderer = StyleRendererFactory.CreateRenderer(text4);
+					_previewSubStyleRenderer = StyleRendererFactory.CreateRenderer(text4, ArtPreviewConfig, true);
 					_previewSubStyleRenderer.Initialize(text5, ConfigManager.CurrentConfig);
 					_previewSubDefaultBrush = _previewSubStyleRenderer.DefaultSectorBrush;
 					_previewSubHighlightBrush = _previewSubStyleRenderer.HighlightSectorBrush;
@@ -18310,7 +18287,7 @@ public partial class SettingsWindow : Window
 				_previewSubHighlightBorderBrush = _previewHighlightBorderBrush;
 				_previewSubTextBrush = _previewTextBrush;
 			}
-			if (SubCustomColorExpander != null && SubCustomColorExpander.IsExpanded)
+			if (_previewSubStyleRenderer is not ArtStyles.ArtStyleRenderer && SubCustomColorExpander != null && SubCustomColorExpander.IsExpanded)
 			{
 				try
 				{
@@ -19152,7 +19129,7 @@ public partial class SettingsWindow : Window
 					} * num7;
 					string sectorFont = (action != null && !string.IsNullOrWhiteSpace(action.CustomFontFamily))
 						? action.CustomFontFamily
-						: (ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
+						: ArtStyles.ArtStyleRenderer.ResolveFont(_previewStyleRenderer, ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
 					textElement = new TextBlock
 					{
 						Text = previewText,
@@ -19236,6 +19213,8 @@ public partial class SettingsWindow : Window
 					stackPanel.Opacity = 0.65;
 				}
 				grid2.Children.Add(stackPanel);
+                _artPreviewContents.Add(stackPanel);
+                foreach (FrameworkElement content in stackPanel.Children) ArtStyles.ArtStyleRenderer.RememberContent(content, sectorPreviewTextBrush, !string.IsNullOrWhiteSpace(action?.CustomTextColor));
 				Canvas.SetLeft(grid2, num26 - num33 / 2.0);
 				Canvas.SetTop(grid2, num27 - num34 / 2.0);
 				System.Windows.Controls.Panel.SetZIndex(grid2, 10);
@@ -19519,7 +19498,7 @@ public partial class SettingsWindow : Window
 					{
 						string subFontFamily = (actionItem2 != null && !string.IsNullOrWhiteSpace(actionItem2.CustomFontFamily))
 							? actionItem2.CustomFontFamily
-							: (ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
+							: ArtStyles.ArtStyleRenderer.ResolveFont(_previewSubStyleRenderer, ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
 						double subFontSize = Math.Max(5.0, ((subLayout == "TextOnly") ? (subBaseFontSize + 1.0) : subBaseFontSize) * 0.88 * num7);
 						int subCharLen = actionItem2.Name.Length;
 						string subPreviewText = SectorTextFormatter.FormatSectorText(actionItem2.Name, num19, isSubWheel: true);
@@ -19561,6 +19540,7 @@ public partial class SettingsWindow : Window
 						Opacity = 1.0
 					};
 					grid3.Children.Add(stackPanel2);
+                    foreach (FrameworkElement content in stackPanel2.Children) ArtStyles.ArtStyleRenderer.RememberContent(content, subSectorPreviewTextBrush, !string.IsNullOrWhiteSpace(actionItem2?.CustomTextColor));
 					Canvas.SetLeft(grid3, num41 - num45 / 2.0);
 					Canvas.SetTop(grid3, num42 - num46 / 2.0);
 					System.Windows.Controls.Panel.SetZIndex(grid3, 50);
@@ -19824,11 +19804,11 @@ public partial class SettingsWindow : Window
 							{
 								if (child is System.Windows.Shapes.Path path4)
 								{
-									path4.Fill = Brushes.White;
+									path4.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_previewSubStyleRenderer, path4, true, Brushes.White);
 								}
 								else if (child is TextBlock textBlock)
 								{
-									textBlock.Foreground = Brushes.White;
+									textBlock.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_previewSubStyleRenderer, textBlock, true, Brushes.White);
 									textBlock.FontWeight = FontWeights.SemiBold;
 								}
 							}
@@ -19858,11 +19838,11 @@ public partial class SettingsWindow : Window
 							{
 								if (child2 is System.Windows.Shapes.Path path5)
 								{
-									path5.Fill = _previewSubTextBrush ?? _previewTextBrush;
+									path5.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_previewSubStyleRenderer, path5, false, _previewSubTextBrush ?? _previewTextBrush);
 								}
 								else if (child2 is TextBlock textBlock2)
 								{
-									textBlock2.Foreground = _previewSubTextBrush ?? _previewTextBrush;
+									textBlock2.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_previewSubStyleRenderer, textBlock2, false, _previewSubTextBrush ?? _previewTextBrush);
 									textBlock2.FontWeight = FontWeights.Normal;
 								}
 							}
@@ -19890,11 +19870,11 @@ public partial class SettingsWindow : Window
 						{
 							if (child3 is System.Windows.Shapes.Path path6)
 							{
-								path6.Fill = _previewSubTextBrush ?? _previewTextBrush;
+								path6.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_previewSubStyleRenderer, path6, false, _previewSubTextBrush ?? _previewTextBrush);
 							}
 							else if (child3 is TextBlock textBlock3)
 							{
-								textBlock3.Foreground = _previewSubTextBrush ?? _previewTextBrush;
+								textBlock3.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_previewSubStyleRenderer, textBlock3, false, _previewSubTextBrush ?? _previewTextBrush);
 								textBlock3.FontWeight = FontWeights.Normal;
 							}
 						}
@@ -19973,7 +19953,8 @@ public partial class SettingsWindow : Window
 
 	private void ApplyPreviewSelectedVisuals()
 	{
-		bool isSlotMode = (LayoutTargetSlotRadio != null && LayoutTargetSlotRadio.IsChecked == true && _selectedLayoutSlotIndex >= 0);
+		RefreshArtPreviewText();
+        bool isSlotMode = (LayoutTargetSlotRadio != null && LayoutTargetSlotRadio.IsChecked == true && _selectedLayoutSlotIndex >= 0);
 		
 		if (_previewSectorPaths != null)
 		{
@@ -20051,6 +20032,7 @@ public partial class SettingsWindow : Window
 
 	private void ApplySubSectorGlow(System.Windows.Shapes.Path path, bool isHighlighted)
 	{
+        if (_previewSubStyleRenderer is ArtStyles.ArtStyleRenderer art) { art.ApplySectorHighlight(path, isHighlighted); return; }
 		if (!isHighlighted)
 		{
 			path.Effect = null;
@@ -20350,8 +20332,6 @@ public partial class SettingsWindow : Window
 			FontFamily = new FontFamily("Segoe UI, Microsoft YaHei UI, Arial"),
 			ResizeMode = ResizeMode.CanResizeWithGrip
 		};
-		AppThemeManager.ApplyTheme(dialog, AppThemeManager.CurrentEffectiveTheme);
-
 		Grid rootGrid = new Grid { Margin = new Thickness(18) };
 		rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 		rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -20424,6 +20404,7 @@ public partial class SettingsWindow : Window
 		rootGrid.Children.Add(footerGrid);
 
 		dialog.Content = rootGrid;
+		AppThemeManager.ApplyTheme(dialog, AppThemeManager.CurrentEffectiveTheme);
 
 		ActionItem targetAction = vm.Mapping.Action;
 		ActionItemParameterTarget target = new ActionItemParameterTarget(targetAction);
@@ -21115,7 +21096,7 @@ public partial class SettingsWindow : Window
 		}
 		catch (Exception ex)
 		{
-			System.Windows.MessageBox.Show(this, "打开按键拼装器失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+			AppMessageBox.Show(this, "打开按键拼装器失败: " + ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
 		}
 	}
 
@@ -21335,7 +21316,7 @@ public partial class SettingsWindow : Window
 		catch (Exception ex)
 		{
 			AppLogger.LogWarn($"[plugin] 引导安装官方插件弹窗异常：{ex.Message}");
-			System.Windows.MessageBox.Show(
+			AppMessageBox.Show(
 				this,
 				I18n.TF("PluginsOnboardingOpenDialogFailed", ex.Message),
 				I18n.T("PluginsOfficialMsgTitle"),

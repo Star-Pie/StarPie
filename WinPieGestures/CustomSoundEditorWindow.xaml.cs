@@ -458,16 +458,16 @@ public partial class CustomSoundEditorWindow : Window
 		if (_currentProfile == null) return;
 		if (_profiles.Count <= 1)
 		{
-			MessageBox.Show(this, "至少需要保留一个音效配置方案，无法删除最后一个方案。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, "至少需要保留一个音效配置方案，无法删除最后一个方案。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 		if (_currentProfile.IsBuiltIn)
 		{
-			MessageBox.Show(this, "系统预置默认方案受保护不可删除。如需自定义修改，可点击【➕ 新建方案】创建可编辑副本。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, "系统预置默认方案受保护不可删除。如需自定义修改，可点击【➕ 新建方案】创建可编辑副本。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
-		var result = MessageBox.Show(this, $"确定要删除自定义音效方案「{_currentProfile.Name}」吗？\n删除后不可撤销。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question);
+		var result = AppMessageBox.Show(this, $"确定要删除自定义音效方案「{_currentProfile.Name}」吗？\n删除后不可撤销。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question);
 		if (result == MessageBoxResult.Yes)
 		{
 			string deletedName = _currentProfile.Name;
@@ -504,7 +504,7 @@ public partial class CustomSoundEditorWindow : Window
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(this, $"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+				AppMessageBox.Show(this, $"导入失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 	}
@@ -528,7 +528,7 @@ public partial class CustomSoundEditorWindow : Window
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(this, $"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+				AppMessageBox.Show(this, $"导出失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 		}
 	}

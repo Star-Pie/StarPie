@@ -402,12 +402,7 @@ public partial class App : Application
 
 	private static bool IsCurrentThemeDark()
 	{
-		string theme = ConfigManager.CurrentConfig?.AppTheme ?? "System";
-		if (string.Equals(theme, "System", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(theme))
-		{
-			return AppThemeManager.IsWindowsInDarkTheme();
-		}
-		return !string.Equals(theme, "Light", StringComparison.OrdinalIgnoreCase);
+		return AppThemeManager.IsEffectiveDark(ConfigManager.CurrentConfig?.AppTheme);
 	}
 
 	private static void TogglePauseGestures()

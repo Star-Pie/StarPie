@@ -1,0 +1,41 @@
+<Window x:Class="WinPieGestures.AppMessageDialog" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="460" MinWidth="360" SizeToContent="Height" ResizeMode="NoResize"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}">
+  <Window.Resources>
+    <Style x:Key="PromptButton" TargetType="Button">
+      <Setter Property="MinWidth" Value="84"/><Setter Property="Height" Value="34"/>
+      <Setter Property="Margin" Value="8,0,0,0"/><Setter Property="Padding" Value="14,0"/>
+      <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}"/>
+      <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}"/>
+      <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}">
+          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+        </Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.85"/></Trigger>
+          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/><Setter TargetName="Frame" Property="BorderThickness" Value="2"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+  </Window.Resources>
+  <Grid>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Grid Margin="24,24,24,22">
+      <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+      <Border x:Name="StatusIconFrame" Width="34" Height="34" Margin="0,0,16,0" VerticalAlignment="Top" CornerRadius="{DynamicResource ControlCornerRadius}" Background="{DynamicResource NavTabActiveBgBrush}">
+        <Path x:Name="StatusIcon" Width="18" Height="18" Stroke="{DynamicResource AccentPrimaryBrush}" StrokeThickness="1.6" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+      </Border>
+      <ScrollViewer x:Name="MessageScroll" Grid.Column="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <TextBlock x:Name="MessageText" FontSize="14" TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+      </ScrollViewer>
+    </Grid>
+    <Border Grid.Row="1" Background="{DynamicResource SidebarBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="16">
+      <StackPanel x:Name="ResultButtons" Orientation="Horizontal" HorizontalAlignment="Right"/>
+    </Border>
+  </Grid>
+</Window>

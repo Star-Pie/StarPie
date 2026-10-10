@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.CodeDom.Compiler;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -44,7 +44,7 @@ public partial class InputDialog : Window
 		string text = InputTextBox.Text.Trim();
 		if (string.IsNullOrEmpty(text))
 		{
-			MessageBox.Show(I18n.T("InputDialogEmpty"), I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			AppMessageBox.Show(I18n.T("InputDialogEmpty"), I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Exclamation);
 			InputTextBox.Focus();
 			return;
 		}
@@ -53,7 +53,7 @@ public partial class InputDialog : Window
 			var (flag, messageBoxText) = _validator(text);
 			if (!flag)
 			{
-				MessageBox.Show(messageBoxText, I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Exclamation);
+				AppMessageBox.Show(messageBoxText, I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Exclamation);
 				InputTextBox.Focus();
 				InputTextBox.SelectAll();
 				return;

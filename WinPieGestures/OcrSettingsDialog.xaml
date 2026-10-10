@@ -17,7 +17,7 @@
             <Setter Property="Background" Value="{DynamicResource SubtleCardBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -97,7 +97,7 @@
                             <ComboBoxItem Tag="ja-JP" Content="日本語 (ja-JP)" />
                         </ComboBox>
                     </Grid>
-                    <Border Name="LocalLangStatusAlertBorder" Background="#25F59E0B" BorderBrush="#80F59E0B" BorderThickness="1" CornerRadius="6" Padding="8,6" Margin="0,8,0,0" Visibility="Collapsed">
+                    <Border Name="LocalLangStatusAlertBorder" Background="#25F59E0B" BorderBrush="#80F59E0B" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,6" Margin="0,8,0,0" Visibility="Collapsed">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

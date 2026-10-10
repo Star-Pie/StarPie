@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -270,7 +270,7 @@ public partial class IconPickerWindow : Window
 		}
 		catch (Exception ex)
 		{
-			MessageBox.Show("导入图标失败:\n" + ex.Message, "StarPie", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			AppMessageBox.Show("导入图标失败:\n" + ex.Message, "StarPie", MessageBoxButton.OK, MessageBoxImage.Exclamation);
 		}
 	}
 

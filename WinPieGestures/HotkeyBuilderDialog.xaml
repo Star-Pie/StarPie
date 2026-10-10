@@ -14,7 +14,7 @@
       <Style x:Key="DlgBtnStyle" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="Medium" />
@@ -24,7 +24,7 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" SnapsToDevicePixels="True">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <ControlTemplate.Triggers>
@@ -48,7 +48,7 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" SnapsToDevicePixels="True">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <ControlTemplate.Triggers>
@@ -66,7 +66,7 @@
       <Style x:Key="QuickChipStyle" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{DynamicResource SubtleCardBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="Padding" Value="8,4" />
@@ -312,7 +312,7 @@
 
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <TextBlock Text="当前组合预览: " FontSize="12" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-        <Border Background="{DynamicResource ItemHoverBrush}" CornerRadius="6" Padding="8,3" Margin="6,0,0,0">
+        <Border Background="{DynamicResource ItemHoverBrush}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,3" Margin="6,0,0,0">
           <TextBlock Name="PreviewResultText" Text="(空)" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
         </Border>
       </StackPanel>

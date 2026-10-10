@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -9,6 +10,8 @@ namespace WinPieGestures;
 
 public static class AppThemeManager
 {
+	private static readonly ConditionalWeakTable<Window, object> ThemedWindows = new();
+	public static bool IsHostThemeWindow(Window window) => window.GetType().Assembly == typeof(AppThemeManager).Assembly || ThemedWindows.TryGetValue(window, out _);
 	public static string CurrentEffectiveTheme { get; private set; } = "Light";
 
 	[DllImport("dwmapi.dll")]
@@ -18,6 +21,20 @@ public static class AppThemeManager
 	{
 		if (rootElement != null)
 		{
+			Window? themedWindow = rootElement as Window ?? Window.GetWindow(rootElement);
+			if (themedWindow != null) ThemedWindows.GetValue(themedWindow, _ => new object());
+			var art = ArtStyles.ArtStyleResolver.Resolve(ConfigManager.CurrentConfig);
+			if (art != null)
+			{
+				ArtStyles.ArtStyleResources.Apply(rootElement, art);
+				UiTypography.Apply(rootElement, ConfigManager.CurrentConfig);
+				CurrentEffectiveTheme = art.IsDark ? "Dark" : "Light";
+				Window? artWindow = rootElement as Window ?? Window.GetWindow(rootElement);
+				if (artWindow != null) SetWindowDarkMode(artWindow, art.IsDark);
+				if (themedWindow != null) HostWindowFrame.Apply(themedWindow);
+				return;
+			}
+			ArtStyles.ArtStyleResources.ResetMetrics(rootElement);
 			string text = themeName;
 			if (string.Equals(themeName, "System", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(themeName))
 			{
@@ -41,9 +58,11 @@ public static class AppThemeManager
 				break;
 			}
 			Window window = (rootElement as Window) ?? Window.GetWindow((DependencyObject)(object)rootElement);
+			UiTypography.Apply(rootElement, ConfigManager.CurrentConfig);
 			if (window != null)
 			{
 				SetWindowDarkMode(window, isDark);
+				HostWindowFrame.Apply(window);
 			}
 		}
 	}
@@ -139,5 +158,13 @@ public static class AppThemeManager
 		{
 		}
 		return false;
+	}
+
+	public static bool IsEffectiveDark(string? themeName)
+	{
+		var art = ArtStyles.ArtStyleResolver.Resolve(ConfigManager.CurrentConfig);
+		if (art != null) return art.IsDark;
+		if (string.IsNullOrEmpty(themeName) || string.Equals(themeName, "System", StringComparison.OrdinalIgnoreCase)) return IsWindowsInDarkTheme();
+		return !string.Equals(themeName, "Light", StringComparison.OrdinalIgnoreCase);
 	}
 }

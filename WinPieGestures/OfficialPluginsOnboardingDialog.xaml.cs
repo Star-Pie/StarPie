@@ -348,7 +348,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
                         if (!IsLoaded || _isCancellingAndClosing) return false;
                         string title = I18n.T("OfficialPluginsOnboardingExtraCapPromptTitle");
                         string msg = I18n.TF("OfficialPluginsOnboardingExtraCapPrompt", pluginName, string.Join(", ", extraCaps));
-                        return MessageBox.Show(this, msg, title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+                        return AppMessageBox.Show(this, msg, title, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
                     });
                 },
                 progress: progressReporter,

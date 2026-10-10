@@ -855,12 +855,12 @@ public partial class RadialWindow : Window
 				System.Windows.Shapes.Path? icon = (i < _contentIconElements.Count) ? _contentIconElements[i] : null;
 				if (text != null)
 				{
-					text.Foreground = _textColorBrush;
+					text.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, text, false, _textColorBrush);
 					text.FontWeight = FontWeights.Medium;
 				}
 				if (icon != null)
 				{
-					icon.Fill = _textColorBrush;
+					icon.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, icon, false, _textColorBrush);
 				}
 			}
 		}
@@ -996,7 +996,7 @@ public partial class RadialWindow : Window
 		{
 			_innerRadius = Math.Max(0.0, _outerRadius - 20.0);
 		}
-		_styleRenderer = StyleRendererFactory.CreateRenderer(text2);
+		_styleRenderer = StyleRendererFactory.CreateRenderer(text2, ConfigManager.CurrentConfig);
 		_styleRenderer.Initialize(text, ConfigManager.CurrentConfig);
 		_defaultSectorBrush = _styleRenderer.DefaultSectorBrush;
 		_highlightSectorBrush = _styleRenderer.HighlightSectorBrush;
@@ -1021,7 +1021,7 @@ public partial class RadialWindow : Window
 		{
 			try
 			{
-				_subStyleRenderer = StyleRendererFactory.CreateRenderer(text3);
+				_subStyleRenderer = StyleRendererFactory.CreateRenderer(text3, ConfigManager.CurrentConfig, true);
 				_subStyleRenderer.Initialize(text4, ConfigManager.CurrentConfig);
 				_subDefaultSectorBrush = _subStyleRenderer.DefaultSectorBrush;
 				_subHighlightSectorBrush = _subStyleRenderer.HighlightSectorBrush;
@@ -2006,7 +2006,7 @@ public partial class RadialWindow : Window
 				};
 				string sectorFont = (currentAction != null && !string.IsNullOrWhiteSpace(currentAction.CustomFontFamily))
 					? currentAction.CustomFontFamily
-					: (ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
+					: ArtStyles.ArtStyleRenderer.ResolveFont(_styleRenderer, ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
 				textElement = new TextBlock
 				{
 					Text = formattedSectorText,
@@ -2077,7 +2077,9 @@ public partial class RadialWindow : Window
 			Panel.SetZIndex(grid, 10);
 			WheelCanvas.Children.Add(grid);
 			_contentPanels.Add(stackPanel);
-			_contentTextBlocks.Add(textElement);
+			ArtStyles.ArtStyleRenderer.RememberContent(textElement, sectorTextColorBrush, !string.IsNullOrWhiteSpace(currentAction?.CustomTextColor));
+            ArtStyles.ArtStyleRenderer.RememberContent(frameworkElement2, sectorTextColorBrush, !string.IsNullOrWhiteSpace(currentAction?.CustomTextColor));
+            _contentTextBlocks.Add(textElement);
 			_contentIconElements.Add(frameworkElement2 as System.Windows.Shapes.Path);
 			_containerTransforms.Add(translateTransform2);
 		}
@@ -2532,7 +2534,7 @@ public partial class RadialWindow : Window
 					: fontSize;
 				string subFontFamily = (actionItem2 != null && !string.IsNullOrWhiteSpace(actionItem2.CustomFontFamily))
 					? actionItem2.CustomFontFamily
-					: (ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
+					: ArtStyles.ArtStyleRenderer.ResolveFont(_subStyleRenderer, ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
 				double subFinalFontSize = (subLayout == "TextOnly") ? (subFontSize + 1.0) : subFontSize;
 				string subFormattedText = SectorTextFormatter.FormatSectorText(text2, sectorCount, isSubWheel: true);
 				string[] subLines = subFormattedText.Split('\n');
@@ -2549,7 +2551,7 @@ public partial class RadialWindow : Window
 					Foreground = subTextColor,
 					FontSize = subFinalFontSize,
 					FontFamily = new FontFamily(subFontFamily),
-					FontWeight = (subLayout == "TextOnly") ? FontWeights.SemiBold : FontWeights.Medium,
+					FontWeight = FontWeights.Medium,
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,
 					TextTrimming = TextTrimming.CharacterEllipsis,
@@ -2608,7 +2610,8 @@ public partial class RadialWindow : Window
 			Canvas.SetTop(grid, num15 - grid.Height / 2.0);
 			Panel.SetZIndex(grid, 30);
 			WheelCanvas.Children.Add(grid);
-			_subContentContainers.Add(grid);
+			foreach (FrameworkElement content in stackPanel.Children) ArtStyles.ArtStyleRenderer.RememberContent(content, subTextColor, !string.IsNullOrWhiteSpace(actionItem2?.CustomTextColor));
+            _subContentContainers.Add(grid);
 			_subContainerTransforms.Add(translateTransform2);
 			if (animateEntrance)
 			{
@@ -2778,12 +2781,12 @@ public partial class RadialWindow : Window
 			System.Windows.Shapes.Path path2 = obj?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
 			if (textBlock != null)
 			{
-				textBlock.Foreground = _textColorBrush;
+				textBlock.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, textBlock, false, _textColorBrush);
 				textBlock.FontWeight = FontWeights.Medium;
 			}
 			if (path2 != null)
 			{
-				path2.Fill = _textColorBrush;
+				path2.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, path2, false, _textColorBrush);
 			}
 			if (_styleRenderer != null)
 			{
@@ -2829,12 +2832,12 @@ public partial class RadialWindow : Window
 			System.Windows.Shapes.Path path4 = obj2?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
 			if (textBlock2 != null)
 			{
-				textBlock2.Foreground = Brushes.White;
+				textBlock2.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, textBlock2, true, Brushes.White);
 				textBlock2.FontWeight = FontWeights.Bold;
 			}
 			if (path4 != null)
 			{
-				path4.Fill = Brushes.White;
+				path4.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, path4, true, Brushes.White);
 			}
 			if (_styleRenderer != null)
 			{
@@ -2882,12 +2885,12 @@ public partial class RadialWindow : Window
 				ApplySubSectorGlow(path5, isHighlighted: true);
 				if (textBlock3 != null)
 				{
-					textBlock3.Foreground = Brushes.White;
+					textBlock3.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, textBlock3, true, Brushes.White);
 					textBlock3.FontWeight = FontWeights.Bold;
 				}
 				if (path6 != null)
 				{
-					path6.Fill = Brushes.White;
+					path6.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, path6, true, Brushes.White);
 				}
 				double toValue4 = Math.Cos(num5) * 4.0;
 				double toValue5 = Math.Sin(num5) * 4.0;
@@ -2923,12 +2926,12 @@ public partial class RadialWindow : Window
 				ApplySubSectorGlow(path5, isHighlighted: false);
 				if (textBlock3 != null)
 				{
-					textBlock3.Foreground = _subTextColorBrush;
+					textBlock3.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, textBlock3, false, _subTextColorBrush);
 					textBlock3.FontWeight = FontWeights.Medium;
 				}
 				if (path6 != null)
 				{
-					path6.Fill = _subTextColorBrush;
+					path6.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, path6, false, _subTextColorBrush);
 				}
 				if (translateTransform5 != null && (translateTransform5.X != 0.0 || translateTransform5.Y != 0.0))
 				{
@@ -2963,6 +2966,7 @@ public partial class RadialWindow : Window
 
 	private void ApplySubSectorGlow(System.Windows.Shapes.Path path, bool isHighlighted)
 	{
+        if (_subStyleRenderer is ArtStyles.ArtStyleRenderer art) { art.ApplySectorHighlight(path, isHighlighted); return; }
 		if (!isHighlighted)
 		{
 			path.Effect = null;
@@ -3576,7 +3580,7 @@ public partial class RadialWindow : Window
 					: fontSize;
 				string subFontFamily = (actionItem2 != null && !string.IsNullOrWhiteSpace(actionItem2.CustomFontFamily))
 					? actionItem2.CustomFontFamily
-					: (ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
+					: ArtStyles.ArtStyleRenderer.ResolveFont(_subStyleRenderer, ConfigManager.CurrentConfig.WheelFontFamily ?? "Microsoft YaHei UI, Segoe UI");
 				double honeyFinalFontSize = (subLayout == "TextOnly") ? (subFontSize + 1.0) : subFontSize;
 				string honeyFormattedText = SectorTextFormatter.FormatSectorText(text2, sectorCount, isSubWheel: true);
 				string[] honeyLines = honeyFormattedText.Split('\n');
@@ -3593,7 +3597,7 @@ public partial class RadialWindow : Window
 					Foreground = subTextColor,
 					FontSize = honeyFinalFontSize,
 					FontFamily = new FontFamily(subFontFamily),
-					FontWeight = (subLayout == "TextOnly") ? FontWeights.SemiBold : FontWeights.Medium,
+					FontWeight = FontWeights.Medium,
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,
 					TextTrimming = TextTrimming.CharacterEllipsis,
@@ -3654,7 +3658,8 @@ public partial class RadialWindow : Window
 			Canvas.SetTop(grid, py - grid.Height / 2.0);
 			Panel.SetZIndex(grid, 35);
 			WheelCanvas.Children.Add(grid);
-			_subContentContainers.Add(grid);
+			foreach (FrameworkElement content in stackPanel.Children) ArtStyles.ArtStyleRenderer.RememberContent(content, subTextColor, !string.IsNullOrWhiteSpace(actionItem2?.CustomTextColor));
+            _subContentContainers.Add(grid);
 			_subContainerTransforms.Add(translateTransform2);
 
 			int durationMs = (ConfigManager.CurrentConfig?.AnimationSpeed == "Custom" && ConfigManager.CurrentConfig.CustomAnimationDurationMs > 0) 

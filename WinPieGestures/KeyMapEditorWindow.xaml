@@ -31,7 +31,7 @@
       <Style x:Key="DlgBtnStyle" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontWeight" Value="Medium" />
@@ -41,7 +41,7 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" SnapsToDevicePixels="True">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
               </Border>
               <ControlTemplate.Triggers>
@@ -65,7 +65,7 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <Border Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" SnapsToDevicePixels="True">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
               </Border>
               <ControlTemplate.Triggers>
@@ -124,7 +124,7 @@
           </Trigger>
           <Trigger Property="IsKeyboardFocusWithin" Value="True">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
           </Trigger>
           <Trigger Property="IsEnabled" Value="False">
             <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
@@ -202,7 +202,7 @@
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Name="kBd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" SnapsToDevicePixels="True">
+              <Border Name="kBd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" SnapsToDevicePixels="True">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
               <ControlTemplate.Triggers>
@@ -219,12 +219,12 @@
         <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Height" Value="28" />
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type local:SingleKeyRecorderBox}">
-              <Border Name="PART_Border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="6" Padding="8,2" SnapsToDevicePixels="True">
+              <Border Name="PART_Border" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,2" SnapsToDevicePixels="True">
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -310,7 +310,7 @@
         </Grid>
 
         <!-- Diagram Viewport (Clips content, handles wheel zoom and mouse drag) -->
-        <Border Name="DiagramViewport" Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="6" ClipToBounds="True" BorderThickness="1" BorderBrush="{DynamicResource BorderSubtleBrush}"
+        <Border Name="DiagramViewport" Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="{DynamicResource ControlCornerRadius}" ClipToBounds="True" BorderThickness="{DynamicResource ArtBorderThickness}" BorderBrush="{DynamicResource BorderSubtleBrush}"
                 MouseWheel="DiagramViewport_MouseWheel"
                 MouseDown="DiagramViewport_MouseDown"
                 MouseMove="DiagramViewport_MouseMove"
@@ -453,7 +453,7 @@
         <!-- New Mapping Entry Bar -->
         <StackPanel Grid.Row="1" Margin="0,8,0,0">
           <TextBlock Name="ListEditHintTextBlock" Text="提示：列表为只读视图。选中行可载入下方录键框修改，完成后点击“更新映射”或直接“保存”。" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="2,0,0,4" TextWrapping="Wrap" />
-          <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="8,6">
+          <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,6">
             <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

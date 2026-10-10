@@ -27,14 +27,14 @@
       <Style x:Key="ModernBtn" TargetType="{x:Type Button}">
         <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Foreground" Value="{DynamicResource ButtonDefaultFgBrush}" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+              <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
               </Border>
               <ControlTemplate.Triggers>
@@ -53,12 +53,12 @@
         <Setter Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type Button}">
-              <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+              <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}">
                 <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}" />
               </Border>
               <ControlTemplate.Triggers>
@@ -80,7 +80,7 @@
       <Style x:Key="ModernContextMenu" TargetType="{x:Type ContextMenu}">
         <Setter Property="Background" Value="{DynamicResource WindowBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="{DynamicResource ArtBorderThickness}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Padding" Value="4,4" />
         <Setter Property="HasDropShadow" Value="True" />
@@ -203,7 +203,7 @@
           <Button Name="ClearInputBtn" Grid.Column="1" Content="✕" Width="26" Height="26" FontSize="11" Margin="0,0,6,0" Style="{StaticResource ModernBtn}" Visibility="Collapsed" Click="ClearInputBtn_Click" ToolTip="清空输入内容" />
 
           <!-- 正在搜索状态提示 (动态显隐) -->
-          <Border Name="SearchingIndicator" Grid.Column="2" Visibility="Collapsed" Background="#143B82F6" BorderBrush="#303B82F6" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,0,8,0" VerticalAlignment="Center">
+          <Border Name="SearchingIndicator" Grid.Column="2" Visibility="Collapsed" Background="#143B82F6" BorderBrush="#303B82F6" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8,4" Margin="0,0,8,0" VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <TextBlock Text="⏳" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center" />
               <TextBlock Text="正在搜索..." FontSize="11.5" Foreground="{DynamicResource AccentPrimaryBrush}" FontWeight="Medium" VerticalAlignment="Center" />

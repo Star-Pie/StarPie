@@ -110,7 +110,7 @@
                     <TextBox Grid.Column="2" Height="32" FontSize="12" VerticalContentAlignment="Center" Margin="0,0,10,0" ToolTip="子动作显示名称 (Action Name)" Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
                     <!-- 动作类型胶囊徽标 -->
-                    <Border Grid.Column="3" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Height="28" Padding="8,0" VerticalAlignment="Center" Margin="0,0,10,0">
+                    <Border Grid.Column="3" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Height="28" Padding="8,0" VerticalAlignment="Center" Margin="0,0,10,0">
                       <TextBlock Text="{Binding TypeBadgeText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
                     </Border>
 
@@ -316,28 +316,28 @@
 
                       <!-- 子模式 2: 循环平铺 -->
                       <StackPanel Visibility="{Binding IsCycleSubMode, Converter={StaticResource BoolToVis}}" Margin="0,2,0,0">
-                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,6">
                           <TextBlock Text="💡 触发手势时，自动在平铺窗口设置中勾选的排布列表中循环轮换下一个布局。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                         </Border>
                       </StackPanel>
 
                       <!-- 子模式 3: 还原平铺快照 -->
                       <StackPanel Visibility="{Binding IsRestoreSubMode, Converter={StaticResource BoolToVis}}" Margin="0,2,0,0">
-                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,6">
                           <TextBlock Text="⏪ 还原所有窗口到平铺前的初始大小与屏幕坐标位置。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                         </Border>
                       </StackPanel>
 
                       <!-- 子模式 4: 窗口置顶 -->
                       <StackPanel Visibility="{Binding IsTopmostSubMode, Converter={StaticResource BoolToVis}}" Margin="0,2,0,0">
-                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,6">
                           <TextBlock Text="📌 将当前鼠标所在窗口或前台活动窗口固定置顶于最前（再次触发即可恢复）。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                         </Border>
                       </StackPanel>
 
                       <!-- 子模式 5: 移到下一屏 -->
                       <StackPanel Visibility="{Binding IsMoveMonitorSubMode, Converter={StaticResource BoolToVis}}" Margin="0,2,0,0">
-                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,6">
                           <TextBlock Text="🖥️ 将当前活动窗口移动至下一个物理显示器对应的工作区位置。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
                         </Border>
                       </StackPanel>
@@ -398,7 +398,7 @@
                           <ColumnDefinition Width="Auto" />
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,6" VerticalAlignment="Center">
                           <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="✂️" FontSize="14" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                             <TextBlock Text="默认调用 Windows 本地原生 OCR 离线引擎 (0延迟 · 隐私安全)" FontSize="11.5" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
@@ -416,7 +416,7 @@
                           <ColumnDefinition Width="*" />
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="10,6" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10,6" VerticalAlignment="Center">
                           <Grid>
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />

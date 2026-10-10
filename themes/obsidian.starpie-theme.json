@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "id": "obsidian",
+    "name": "Obsidian",
+    "isDark": true,
+    "colors": {
+      "background": "#11171B",
+      "surface": "#1A242A",
+      "sidebar": "#0D1317",
+      "text": "#E8F0EF",
+      "muted": "#A5BAB7",
+      "accent": "#63D9CA",
+      "border": "#35484D",
+      "wheelBackground": "#1A242A",
+      "wheelBorder": "#456267",
+      "wheelHighlight": "#63D9CA",
+      "wheelText": "#E8F0EF",
+      "wheelHighlightText": "#102421"
+    },
+    "fontFamily": "Microsoft YaHei UI, Segoe UI",
+    "cornerRadius": 8,
+    "strokeWidth": 1,
+    "shadowBlur": 14,
+    "shadowDepth": 2,
+    "shadowOpacity": 0.22,
+    "wheelOpacity": 0.96,
+    "decoration": "Orbit",
+    "decorationStrength": 0.8
+  }
+}
