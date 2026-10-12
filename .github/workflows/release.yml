@@ -193,6 +193,9 @@ jobs:
             [Parameter(Mandatory)][string]$Destination
           )
           $ErrorActionPreference = 'Stop'
+          if ($env:SIGNING_POLICY -notin @('test-signing', 'release-signing')) {
+            throw "Unsupported signing policy: $env:SIGNING_POLICY"
+          }
           $files = @(Get-ChildItem -LiteralPath $SignedDirectory -File)
           if ($files.Count -ne 1 -or $files[0].Extension -ne '.exe') {
             throw "Expected exactly one signed executable in $SignedDirectory."
@@ -201,23 +204,56 @@ jobs:
           if ($null -eq $signature.SignerCertificate) {
             throw "Signed artifact has no signer certificate: $($files[0].Name)"
           }
-          $allowedStatuses = @('Valid')
-          if ($env:SIGNING_POLICY -eq 'test-signing') {
-            # Self-signed test certificates are intentionally not Windows-trusted.
-            # HashMismatch, NotSigned and UnknownError must still fail closed.
-            $allowedStatuses += 'NotTrusted'
-          } elseif ($env:SIGNING_POLICY -ne 'release-signing') {
-            throw "Unsupported signing policy: $env:SIGNING_POLICY"
+          $signerFile = 'signing/signer-thumbprint.txt'
+          $thumbprint = $signature.SignerCertificate.Thumbprint
+          if ([string]::IsNullOrWhiteSpace($thumbprint)) {
+            throw 'Signed artifact has no signer certificate thumbprint.'
           }
-          if ([string]$signature.Status -notin $allowedStatuses) {
-            throw "Signature verification failed: $($signature.Status) - $($signature.StatusMessage)"
+          if ((Test-Path -LiteralPath $signerFile) -and
+              (Get-Content -LiteralPath $signerFile -Raw).Trim() -ne $thumbprint) {
+            throw 'All release executables must use the same signing certificate.'
           }
-          if ($env:SIGNING_POLICY -eq 'release-signing' -and $null -eq $signature.TimeStamperCertificate) {
-            throw 'Production signatures must include a trusted timestamp.'
-          }
-          if ($env:SIGNING_POLICY -eq 'release-signing') {
-            # Check the embedded signature and Windows trust policy, not only
-            # the presence of a certificate returned by PowerShell.
+
+          $rootStore = $null
+          $addedTestCertificate = $false
+          $testCertificate = $null
+          try {
+            if ($env:SIGNING_POLICY -eq 'test-signing') {
+              # Never change the trust store on a developer PC or a persistent runner.
+              if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
+                throw 'Temporary test certificate trust is restricted to GitHub-hosted Actions runners.'
+              }
+              $testCertificate = $signature.SignerCertificate
+              if ($testCertificate.Subject -ne $testCertificate.Issuer) {
+                throw 'The test-signing policy must use a self-signed test certificate.'
+              }
+              $rootStore = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList @(
+                [System.Security.Cryptography.X509Certificates.StoreName]::Root,
+                [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
+              )
+              $rootStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+              $alreadyTrusted = @($rootStore.Certificates | Where-Object { $_.Thumbprint -eq $thumbprint }).Count -gt 0
+              if (-not $alreadyTrusted) {
+                # Mark ownership before Add so even a partially failed import is cleaned up.
+                $addedTestCertificate = $true
+                $rootStore.Add($testCertificate)
+                Write-Host "Temporarily trusted test signer $thumbprint on the ephemeral runner."
+              }
+              # An untrusted root can surface as UnknownError. Re-verify after establishing
+              # explicit test trust rather than accepting UnknownError or NotTrusted.
+              $signature = Get-AuthenticodeSignature -LiteralPath $files[0].FullName
+              if ($null -eq $signature.SignerCertificate -or $signature.SignerCertificate.Thumbprint -ne $thumbprint) {
+                throw 'Signer certificate changed during signature verification.'
+              }
+            }
+            if ([string]$signature.Status -ne 'Valid') {
+              throw "Signature verification failed: $($signature.Status) - $($signature.StatusMessage)"
+            }
+            if ($env:SIGNING_POLICY -eq 'release-signing' -and $null -eq $signature.TimeStamperCertificate) {
+              throw 'Production signatures must include a trusted timestamp.'
+            }
+            # Native verification checks the embedded signature and Windows trust policy
+            # for both modes. Only production requires a timestamp; test trust is temporary.
             $signTool = Get-Command signtool.exe -ErrorAction SilentlyContinue
             $signToolPath = if ($null -ne $signTool) { $signTool.Source } else {
               $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
@@ -227,20 +263,29 @@ jobs:
                 Select-Object -First 1 -ExpandProperty FullName
             }
             if ([string]::IsNullOrWhiteSpace($signToolPath)) {
-              throw 'Windows SDK SignTool is required for production signature verification.'
+              throw 'Windows SDK SignTool is required for signature verification.'
             }
-            & $signToolPath verify /pa /all /tw $files[0].FullName
+            $verifyArguments = @('verify', '/pa', '/all')
+            if ($env:SIGNING_POLICY -eq 'release-signing') {
+              $verifyArguments += '/tw'
+            }
+            & $signToolPath @verifyArguments $files[0].FullName
             if ($LASTEXITCODE -ne 0) {
               throw "SignTool trust verification failed with exit code $LASTEXITCODE."
             }
-          }
-          $signerFile = 'signing/signer-thumbprint.txt'
-          $thumbprint = $signature.SignerCertificate.Thumbprint
-          if (Test-Path -LiteralPath $signerFile) {
-            if ((Get-Content -LiteralPath $signerFile -Raw).Trim() -ne $thumbprint) {
-              throw 'All release executables must use the same signing certificate.'
+          } finally {
+            if ($null -ne $rootStore) {
+              try {
+                if ($addedTestCertificate) {
+                  $rootStore.Remove($testCertificate)
+                  Write-Host "Removed temporary test signer $thumbprint."
+                }
+              } finally {
+                $rootStore.Dispose()
+              }
             }
-          } else {
+          }
+          if (-not (Test-Path -LiteralPath $signerFile)) {
             $thumbprint | Set-Content -LiteralPath $signerFile -Encoding utf8
           }
           Copy-Item -LiteralPath $files[0].FullName -Destination $Destination -Force
