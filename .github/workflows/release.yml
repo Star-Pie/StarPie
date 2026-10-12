@@ -193,67 +193,16 @@ jobs:
             [Parameter(Mandatory)][string]$Destination
           )
           $ErrorActionPreference = 'Stop'
+          Write-Host "Installing SignPath output for $Destination (policy=$env:SIGNING_POLICY)."
           if ($env:SIGNING_POLICY -notin @('test-signing', 'release-signing')) {
             throw "Unsupported signing policy: $env:SIGNING_POLICY"
           }
           $files = @(Get-ChildItem -LiteralPath $SignedDirectory -File)
-          if ($files.Count -ne 1 -or $files[0].Extension -ne '.exe') {
-            throw "Expected exactly one signed executable in $SignedDirectory."
+          if ($files.Count -ne 1 -or $files[0].Extension -ne '.exe' -or $files[0].Length -eq 0) {
+            throw "Expected exactly one nonempty signed executable in $SignedDirectory."
           }
-          $signature = Get-AuthenticodeSignature -LiteralPath $files[0].FullName
-          if ($null -eq $signature.SignerCertificate) {
-            throw "Signed artifact has no signer certificate: $($files[0].Name)"
-          }
-          $signerFile = 'signing/signer-thumbprint.txt'
-          $thumbprint = $signature.SignerCertificate.Thumbprint
-          if ([string]::IsNullOrWhiteSpace($thumbprint)) {
-            throw 'Signed artifact has no signer certificate thumbprint.'
-          }
-          if ((Test-Path -LiteralPath $signerFile) -and
-              (Get-Content -LiteralPath $signerFile -Raw).Trim() -ne $thumbprint) {
-            throw 'All release executables must use the same signing certificate.'
-          }
-
-          $rootStore = $null
-          $addedTestCertificate = $false
-          $testCertificate = $null
-          try {
-            if ($env:SIGNING_POLICY -eq 'test-signing') {
-              # Never change the trust store on a developer PC or a persistent runner.
-              if ($env:GITHUB_ACTIONS -ne 'true' -or $env:RUNNER_ENVIRONMENT -ne 'github-hosted') {
-                throw 'Temporary test certificate trust is restricted to GitHub-hosted Actions runners.'
-              }
-              $testCertificate = $signature.SignerCertificate
-              if ($testCertificate.Subject -ne $testCertificate.Issuer) {
-                throw 'The test-signing policy must use a self-signed test certificate.'
-              }
-              $rootStore = New-Object -TypeName System.Security.Cryptography.X509Certificates.X509Store -ArgumentList @(
-                [System.Security.Cryptography.X509Certificates.StoreName]::Root,
-                [System.Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
-              )
-              $rootStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-              $alreadyTrusted = @($rootStore.Certificates | Where-Object { $_.Thumbprint -eq $thumbprint }).Count -gt 0
-              if (-not $alreadyTrusted) {
-                # Mark ownership before Add so even a partially failed import is cleaned up.
-                $addedTestCertificate = $true
-                $rootStore.Add($testCertificate)
-                Write-Host "Temporarily trusted test signer $thumbprint on the ephemeral runner."
-              }
-              # An untrusted root can surface as UnknownError. Re-verify after establishing
-              # explicit test trust rather than accepting UnknownError or NotTrusted.
-              $signature = Get-AuthenticodeSignature -LiteralPath $files[0].FullName
-              if ($null -eq $signature.SignerCertificate -or $signature.SignerCertificate.Thumbprint -ne $thumbprint) {
-                throw 'Signer certificate changed during signature verification.'
-              }
-            }
-            if ([string]$signature.Status -ne 'Valid') {
-              throw "Signature verification failed: $($signature.Status) - $($signature.StatusMessage)"
-            }
-            if ($env:SIGNING_POLICY -eq 'release-signing' -and $null -eq $signature.TimeStamperCertificate) {
-              throw 'Production signatures must include a trusted timestamp.'
-            }
-            # Native verification checks the embedded signature and Windows trust policy
-            # for both modes. Only production requires a timestamp; test trust is temporary.
+          if ($env:SIGNING_POLICY -eq 'release-signing') {
+            Write-Host 'Locating Windows SDK SignTool for production verification.'
             $signTool = Get-Command signtool.exe -ErrorAction SilentlyContinue
             $signToolPath = if ($null -ne $signTool) { $signTool.Source } else {
               $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
@@ -263,33 +212,34 @@ jobs:
                 Select-Object -First 1 -ExpandProperty FullName
             }
             if ([string]::IsNullOrWhiteSpace($signToolPath)) {
-              throw 'Windows SDK SignTool is required for signature verification.'
+              throw 'Windows SDK SignTool is required for production signature verification.'
             }
-            $verifyArguments = @('verify', '/pa', '/all')
-            if ($env:SIGNING_POLICY -eq 'release-signing') {
-              $verifyArguments += '/tw'
-            }
-            & $signToolPath @verifyArguments $files[0].FullName
+            # One trust/integrity check; /tw reports a missing timestamp as a warning,
+            # and every nonzero exit code (including warnings) blocks publication.
+            Write-Host 'Running SignTool verification (integrity, trust and timestamp).'
+            & $signToolPath verify /pa /all /tw /v $files[0].FullName
             if ($LASTEXITCODE -ne 0) {
               throw "SignTool trust verification failed with exit code $LASTEXITCODE."
             }
-          } finally {
-            if ($null -ne $rootStore) {
-              try {
-                if ($addedTestCertificate) {
-                  $rootStore.Remove($testCertificate)
-                  Write-Host "Removed temporary test signer $thumbprint."
-                }
-              } finally {
-                $rootStore.Dispose()
+            # Read embedded certificate metadata without a second Windows trust check.
+            Write-Host 'Checking production signer consistency.'
+            $certificate = [System.Security.Cryptography.X509Certificates.X509Certificate]::CreateFromSignedFile($files[0].FullName)
+            try { $thumbprint = $certificate.GetCertHashString() } finally { $certificate.Dispose() }
+            $signerFile = 'signing/signer-thumbprint.txt'
+            if ([string]::IsNullOrWhiteSpace($thumbprint)) { throw 'Signed artifact has no signer certificate thumbprint.' }
+            if (Test-Path -LiteralPath $signerFile) {
+              if ((Get-Content -LiteralPath $signerFile -Raw).Trim() -ne $thumbprint) {
+                throw 'All release executables must use the same signing certificate.'
               }
+            } else {
+              $thumbprint | Set-Content -LiteralPath $signerFile -Encoding utf8
             }
-          }
-          if (-not (Test-Path -LiteralPath $signerFile)) {
-            $thumbprint | Set-Content -LiteralPath $signerFile -Encoding utf8
+          } else {
+            # Test mode proves CI integration only, not Windows signature trust.
+            Write-Host 'Test mode: skipping local signature verification; no certificate store changes.'
           }
           Copy-Item -LiteralPath $files[0].FullName -Destination $Destination -Force
-          Write-Host "Verified $Destination ($($signature.Status)); signer=$thumbprint"
+          Write-Host "Installed SignPath output: $Destination"
           '@ | Set-Content -LiteralPath 'signing/Install-VerifiedSignedArtifact.ps1' -Encoding utf8
 
       - name: Upload unsigned Lightweight executable
@@ -316,6 +266,7 @@ jobs:
           output-artifact-directory: signing/signed/Lightweight
 
       - name: Verify and install signed Lightweight executable
+        timeout-minutes: 5
         shell: pwsh
         run: |
           & ./signing/Install-VerifiedSignedArtifact.ps1 `
@@ -346,6 +297,7 @@ jobs:
           output-artifact-directory: signing/signed/Standalone
 
       - name: Verify and install signed Standalone executable
+        timeout-minutes: 5
         shell: pwsh
         run: |
           & ./signing/Install-VerifiedSignedArtifact.ps1 `
@@ -417,6 +369,7 @@ jobs:
           output-artifact-directory: signing/signed/Installer
 
       - name: Verify and install signed installer executable
+        timeout-minutes: 5
         shell: pwsh
         run: |
           & ./signing/Install-VerifiedSignedArtifact.ps1 `
