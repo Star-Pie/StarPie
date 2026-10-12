@@ -375,6 +375,21 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 - **Stable release**: [v1.7.4](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4), released September 19, 2026.
 - **Testing line**: v1.8.0 Beta; the plugin system is still under testing. See [Releases](https://github.com/Star-Pie/StarPie/releases) and [CHANGELOG.md](CHANGELOG.md) for preview packages and version history.
 
+### Windows Code Signing Support
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center">
+        <img src="https://signpath.org/assets/favicon-50x50.png" width="50" height="50" alt="SignPath" />
+      </td>
+      <td>
+        Free code signing on Windows provided by <a href="https://signpath.io">SignPath.io</a>, certificate by <a href="https://signpath.org/">SignPath Foundation</a>.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ---
 
 <a id="community"></a>

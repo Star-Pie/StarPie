@@ -8,19 +8,32 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: '要发布的 Git 标签，例如 v1.4.4 或 v1.4.4-beta.1'
-        required: true
+        description: '正式发布必填 Git 标签；测试签名可留空，使用所选分支'
+        required: false
         type: string
+      signing_mode:
+        description: '测试签名只保存 Actions 产物；正式签名才发布 Release'
+        required: true
+        type: choice
+        default: test-signing
+        options:
+          - test-signing
+          - release-signing
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
   release:
     name: Build and Publish StarPie Release
     runs-on: windows-latest
+    timeout-minutes: 150
     env:
       RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+      SIGNING_POLICY: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_mode || 'release-signing' }}
+      SIGNPATH_ORGANIZATION_ID: a5196baf-a533-4b1e-aff8-be32f05fa7b3
+      SIGNPATH_PROJECT_SLUG: StarPie
 
     steps:
       - name: Checkout repository
@@ -29,7 +42,32 @@ jobs:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
+      - name: Validate signing configuration
+        shell: pwsh
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          REQUESTED_TAG: ${{ inputs.tag }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SIGNPATH_API_TOKEN)) {
+            throw "Repository secret SIGNPATH_API_TOKEN is required; unsigned releases are not allowed."
+          }
+          if ($env:SIGNING_POLICY -notin @('test-signing', 'release-signing')) {
+            throw "Unsupported signing policy: $env:SIGNING_POLICY"
+          }
+          if ($env:SIGNING_POLICY -eq 'release-signing' -and
+              $env:GITHUB_EVENT_NAME -eq 'workflow_dispatch' -and
+              [string]::IsNullOrWhiteSpace($env:REQUESTED_TAG)) {
+            throw "A Git tag is required for a production release."
+          }
+          if ($env:SIGNING_POLICY -eq 'test-signing' -and
+              [string]::IsNullOrWhiteSpace($env:REQUESTED_TAG)) {
+            [xml]$project = Get-Content 'WinPieGestures/WinPieGestures.csproj'
+            $version = [string]$project.Project.PropertyGroup.Version
+            "RELEASE_TAG=v$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
       - name: Verify tag points to latest commit of an allowed release branch
+        if: ${{ env.SIGNING_POLICY == 'release-signing' }}
         shell: pwsh
         run: |
           # Release tags may only point to the current tip of main, dev-* or dev/**.
@@ -140,6 +178,135 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish/Standalone
 
+      - name: Prepare single-file signing inputs and verification helper
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path 'signing/unsigned' | Out-Null
+          # Non-archived uploads can ignore artifact names. Unique basenames avoid
+          # collisions between the two StarPie.exe files within the same run.
+          Copy-Item -LiteralPath 'publish/Lightweight/StarPie.exe' -Destination 'signing/unsigned/StarPie-Lightweight.exe'
+          Copy-Item -LiteralPath 'publish/Standalone/StarPie.exe' -Destination 'signing/unsigned/StarPie-Standalone.exe'
+
+          @'
+          param(
+            [Parameter(Mandatory)][string]$SignedDirectory,
+            [Parameter(Mandatory)][string]$Destination
+          )
+          $ErrorActionPreference = 'Stop'
+          $files = @(Get-ChildItem -LiteralPath $SignedDirectory -File)
+          if ($files.Count -ne 1 -or $files[0].Extension -ne '.exe') {
+            throw "Expected exactly one signed executable in $SignedDirectory."
+          }
+          $signature = Get-AuthenticodeSignature -LiteralPath $files[0].FullName
+          if ($null -eq $signature.SignerCertificate) {
+            throw "Signed artifact has no signer certificate: $($files[0].Name)"
+          }
+          $allowedStatuses = @('Valid')
+          if ($env:SIGNING_POLICY -eq 'test-signing') {
+            # Self-signed test certificates are intentionally not Windows-trusted.
+            # HashMismatch, NotSigned and UnknownError must still fail closed.
+            $allowedStatuses += 'NotTrusted'
+          } elseif ($env:SIGNING_POLICY -ne 'release-signing') {
+            throw "Unsupported signing policy: $env:SIGNING_POLICY"
+          }
+          if ([string]$signature.Status -notin $allowedStatuses) {
+            throw "Signature verification failed: $($signature.Status) - $($signature.StatusMessage)"
+          }
+          if ($env:SIGNING_POLICY -eq 'release-signing' -and $null -eq $signature.TimeStamperCertificate) {
+            throw 'Production signatures must include a trusted timestamp.'
+          }
+          if ($env:SIGNING_POLICY -eq 'release-signing') {
+            # Check the embedded signature and Windows trust policy, not only
+            # the presence of a certificate returned by PowerShell.
+            $signTool = Get-Command signtool.exe -ErrorAction SilentlyContinue
+            $signToolPath = if ($null -ne $signTool) { $signTool.Source } else {
+              $sdkBin = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits/10/bin'
+              Get-ChildItem -LiteralPath $sdkBin -Filter signtool.exe -File -Recurse |
+                Where-Object { $_.Directory.Name -eq 'x64' } |
+                Sort-Object FullName -Descending |
+                Select-Object -First 1 -ExpandProperty FullName
+            }
+            if ([string]::IsNullOrWhiteSpace($signToolPath)) {
+              throw 'Windows SDK SignTool is required for production signature verification.'
+            }
+            & $signToolPath verify /pa /all /tw $files[0].FullName
+            if ($LASTEXITCODE -ne 0) {
+              throw "SignTool trust verification failed with exit code $LASTEXITCODE."
+            }
+          }
+          $signerFile = 'signing/signer-thumbprint.txt'
+          $thumbprint = $signature.SignerCertificate.Thumbprint
+          if (Test-Path -LiteralPath $signerFile) {
+            if ((Get-Content -LiteralPath $signerFile -Raw).Trim() -ne $thumbprint) {
+              throw 'All release executables must use the same signing certificate.'
+            }
+          } else {
+            $thumbprint | Set-Content -LiteralPath $signerFile -Encoding utf8
+          }
+          Copy-Item -LiteralPath $files[0].FullName -Destination $Destination -Force
+          Write-Host "Verified $Destination ($($signature.Status)); signer=$thumbprint"
+          '@ | Set-Content -LiteralPath 'signing/Install-VerifiedSignedArtifact.ps1' -Encoding utf8
+
+      - name: Upload unsigned Lightweight executable
+        id: upload-lightweight
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-lightweight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: signing/unsigned/StarPie-Lightweight.exe
+          archive: false
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Sign Lightweight executable with SignPath
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNING_POLICY }}
+          github-artifact-id: ${{ steps.upload-lightweight.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1800
+          skip-decompress: true
+          output-artifact-directory: signing/signed/Lightweight
+
+      - name: Verify and install signed Lightweight executable
+        shell: pwsh
+        run: |
+          & ./signing/Install-VerifiedSignedArtifact.ps1 `
+            -SignedDirectory 'signing/signed/Lightweight' `
+            -Destination 'publish/Lightweight/StarPie.exe'
+
+      - name: Upload unsigned Standalone executable
+        id: upload-standalone
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-standalone-${{ github.run_id }}-${{ github.run_attempt }}
+          path: signing/unsigned/StarPie-Standalone.exe
+          archive: false
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Sign Standalone executable with SignPath
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNING_POLICY }}
+          github-artifact-id: ${{ steps.upload-standalone.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1800
+          skip-decompress: true
+          output-artifact-directory: signing/signed/Standalone
+
+      - name: Verify and install signed Standalone executable
+        shell: pwsh
+        run: |
+          & ./signing/Install-VerifiedSignedArtifact.ps1 `
+            -SignedDirectory 'signing/signed/Standalone' `
+            -Destination 'publish/Standalone/StarPie.exe'
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
@@ -147,6 +314,7 @@ jobs:
           echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build Inno Setup Installer
+        id: build-installer
         shell: pwsh
         run: |
           $tag = $env:RELEASE_TAG
@@ -178,6 +346,37 @@ jobs:
             throw "Expected installer binary dist\$outputBaseFilename.exe was not found!"
           }
           Write-Host "Successfully generated Inno Setup installer: dist\$outputBaseFilename.exe"
+          "artifact-path=dist/$outputBaseFilename.exe" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload unsigned installer executable
+        id: upload-installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-installer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.build-installer.outputs.artifact-path }}
+          archive: false
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Sign installer executable with SignPath
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNING_POLICY }}
+          github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1800
+          skip-decompress: true
+          output-artifact-directory: signing/signed/Installer
+
+      - name: Verify and install signed installer executable
+        shell: pwsh
+        run: |
+          & ./signing/Install-VerifiedSignedArtifact.ps1 `
+            -SignedDirectory 'signing/signed/Installer' `
+            -Destination "dist/StarPie-$env:RELEASE_TAG-Setup-win-x64.exe"
 
       - name: Package release assets
         shell: pwsh
@@ -204,7 +403,28 @@ jobs:
             throw "Standalone package does not contain StarPie.exe"
           }
 
+      - name: Save test-signed packages (not for distribution)
+        if: ${{ env.SIGNING_POLICY == 'test-signing' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: TEST-SIGNED-DO-NOT-DISTRIBUTE-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Summarize test signing
+        if: ${{ env.SIGNING_POLICY == 'test-signing' }}
+        shell: pwsh
+        run: |
+          @'
+          ## SignPath test signing completed
+          Lightweight, Standalone and Setup were signed with the test-signing policy.
+          These artifacts use a test certificate and must not be distributed as a production release.
+          No GitHub Release was created or deleted. Request SignPath's configuration review before production signing.
+          '@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
       - name: Extract Release Notes from CHANGELOG.md
+        if: ${{ env.SIGNING_POLICY == 'release-signing' }}
         shell: pwsh
         run: |
           $tag = $env:RELEASE_TAG
@@ -238,6 +458,7 @@ jobs:
           }
 
       - name: Create GitHub Release
+        if: ${{ env.SIGNING_POLICY == 'release-signing' }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
@@ -268,7 +489,7 @@ jobs:
           }
 
       - name: Retain latest three beta releases
-        if: ${{ contains(env.RELEASE_TAG, '-beta.') }}
+        if: ${{ env.SIGNING_POLICY == 'release-signing' && contains(env.RELEASE_TAG, '-beta.') }}
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}

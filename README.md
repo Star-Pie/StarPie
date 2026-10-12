@@ -381,6 +381,21 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 - **正式版**：[v1.7.4](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4)，发布于 2026-09-19。
 - **测试线**：v1.8.0 Beta；插件系统仍处于测试，预发布资产与记录见 [Releases](https://github.com/Star-Pie/StarPie/releases) 和 [CHANGELOG.md](CHANGELOG.md)。
 
+### Windows 代码签名支持
+
+<table>
+  <tbody>
+    <tr>
+      <td align="center">
+        <img src="https://signpath.org/assets/favicon-50x50.png" width="50" height="50" alt="SignPath" />
+      </td>
+      <td>
+        Windows 免费代码签名由 <a href="https://signpath.io">SignPath.io</a> 提供，证书由 <a href="https://signpath.org/">SignPath Foundation</a> 提供。
+      </td>
+    </tr>
+  </tbody>
+</table>
+
 ---
 
 <a id="community"></a>
