@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "demo.audit.opt.fixture",
+  "name": "Audit Opt Fixture",
+  "description": "Regression fixture for failed Initialize subscription cleanup.",
+  "author": "StarPie tests",
+  "version": "1.0.0",
+  "apiVersion": "1.10",
+  "minHostVersion": "0.0.0",
+  "targetFramework": "net8.0-windows",
+  "platform": "win-x64",
+  "assembly": "StarPie.AuditOptFixture.dll",
+  "entryType": "AuditOptFixture.FixturePlugin",
+  "capabilities": []
+}

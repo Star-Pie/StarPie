@@ -165,17 +165,16 @@ public partial class QuickSearchWindow : Window
 		_currentCategory = "All";
 		_lastSearchedQuery = "";
 		UpdateFilterChipsStyle();
-		TriggerSearch(immediate: true);
 
 		Show();
 		Activate();
 		SearchInputBox.Focus();
+		TriggerSearch(immediate: true);
 	}
 
 	private void Window_Loaded(object sender, RoutedEventArgs e)
 	{
 		UpdatePinVisual();
-		TriggerSearch(immediate: true);
 	}
 
 	private void Window_Deactivated(object? sender, EventArgs e)
@@ -380,15 +379,7 @@ public partial class QuickSearchWindow : Window
 
 		try
 		{
-			List<SearchResultItem> results;
-			if (string.IsNullOrEmpty(query))
-			{
-				results = NativeSearchEngine.GetInitialRecommendations(category);
-			}
-			else
-			{
-				results = await NativeSearchEngine.SearchAsync(query, category, 120, cts.Token);
-			}
+			List<SearchResultItem> results = await NativeSearchEngine.SearchAsync(query, category, 120, cts.Token);
 
 			if (cts.Token.IsCancellationRequested) return;
 

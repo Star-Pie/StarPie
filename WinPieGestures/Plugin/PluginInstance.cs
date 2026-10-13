@@ -226,6 +226,8 @@ internal sealed class PluginInstance
         }
     }
 
+    public const int MaxConcurrentInvocations = 32;
+
     internal bool TryAcquireInvocation(
         PluginCallKind kind,
         out PluginInvocationLease? lease,
@@ -244,6 +246,13 @@ internal sealed class PluginInstance
             {
                 lease = null;
                 error = $"插件「{Entry.Name}」当前状态为 {State}，不能执行调用。";
+                return false;
+            }
+
+            if (_activeCallCount >= MaxConcurrentInvocations)
+            {
+                lease = null;
+                error = $"插件「{Entry.Name}」并发或超时滞留调用已达上限（{MaxConcurrentInvocations}），已拒绝新的调用。";
                 return false;
             }
 
@@ -303,9 +312,12 @@ internal sealed class PluginInstance
             cancellation = _stoppingCts;
         }
 
-        try { cancellation.Cancel(); } catch { }
         try { StickyWheelSession.RevokePluginCallbacks(PluginId, this, GenerationId); } catch { }
-        return drainTask;
+        Task cancelTask = Task.Run(() =>
+        {
+            try { cancellation.Cancel(); } catch { }
+        });
+        return Task.WhenAll(cancelTask, drainTask);
     }
 
     internal void MarkStopPending(string error)
@@ -427,141 +439,30 @@ internal sealed class PluginInstance
             // ② 提交动作必须在「触碰任何插件代码」之前完成：它才是真正会执行不可信代码的那一步
             var stopwatch = Stopwatch.StartNew();
 
-            _loadContext = new PluginLoadContext(PluginId, Directory, scan.DllPath);
-            Assembly assembly = _loadContext.LoadFromAssemblyPath(Path.GetFullPath(scan.DllPath));
-
-            // ③ 定位入口类型
-            string entryTypeName = scan.EntryTypeFullName
-                                   ?? manifest.EntryType
-                                   ?? "";
-
-            Type? entryType = assembly.GetType(entryTypeName, throwOnError: false, ignoreCase: false);
-            if (entryType == null)
+            if (!TryLoadAndInitializeInAlc(
+                    scan,
+                    manifest,
+                    out string entryTypeFullName,
+                    out string? initError,
+                    out bool recordInitHealthFailure))
             {
-                // 依次在已加载类型里模糊匹配，便于给出更有用的报错
-                Type? found = null;
-                try
+                LastError = initError ?? "加载插件失败。";
+                failureReason = LastError;
+                Teardown();
+                SetState(PluginRuntimeState.Failed);
+                if (recordInitHealthFailure)
                 {
-                    foreach (Type type in assembly.GetTypes())
+                    PluginRegistryStore.MutateHealth(PluginId, h =>
                     {
-                        if (typeof(IStarPiePlugin).IsAssignableFrom(type) && !type.IsAbstract)
-                        {
-                            found ??= type;
-                        }
-                    }
+                        h.ConsecutiveFailures++;
+                        h.LastError = LastError;
+                    });
                 }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    LastError = BuildTypeLoadError(ex);
-                    failureReason = LastError;
-                    Teardown();
-                    SetState(PluginRuntimeState.Failed);
-                    return false;
-                }
-
-                if (found == null)
-                {
-                    LastError = $"找不到入口类型 \"{entryTypeName}\"。";
-                    failureReason = LastError;
-                    Teardown();
-                    SetState(PluginRuntimeState.Failed);
-                    return false;
-                }
-                entryType = found;
-            }
-
-            // ④ 类型身份校验 —— 这一步是「共享程序集放行」是否真正生效的最终验证
-            if (!typeof(IStarPiePlugin).IsAssignableFrom(entryType))
-            {
-                LastError =
-                    $"入口类型 {entryType.FullName} 未实现 IStarPiePlugin。若插件本身确实实现了，" +
-                    "则说明出现了 SDK 程序集类型身份分裂（插件目录里多半带了一份 StarPie.Plugin.Abstractions.dll）。";
-                failureReason = LastError;
-                Teardown();
-                SetState(PluginRuntimeState.Failed);
-                return false;
-            }
-
-            object? created;
-            try
-            {
-                created = Activator.CreateInstance(entryType);
-            }
-            catch (Exception ex)
-            {
-                LastError = $"实例化入口类型失败：{ex.GetBaseException().Message}";
-                failureReason = LastError;
-                Teardown();
-                SetState(PluginRuntimeState.Failed);
-                return false;
-            }
-
-            // 运行时再次强转。若这里得到 null，就是最典型的「插件加载成功但什么都没注册」
-            _plugin = created as IStarPiePlugin;
-            if (_plugin == null)
-            {
-                LastError =
-                    "入口类型无法转换为 IStarPiePlugin —— 典型的 SDK 类型身份分裂。" +
-                    "请确认插件目录里没有自带 StarPie.Plugin.Abstractions.dll。";
-                failureReason = LastError;
-                Teardown();
-                SetState(PluginRuntimeState.Failed);
-                return false;
-            }
-
-            // ⑤ 构造上下文与服务
-            string dataDirectory = PluginPaths.GetDataDirectory(PluginId);
-            try
-            {
-                if (!System.IO.Directory.Exists(dataDirectory)) System.IO.Directory.CreateDirectory(dataDirectory);
-            }
-            catch
-            {
-                // 数据目录创建失败不阻断加载，插件自己写文件时会看到真实错误
-            }
-
-            var metadata = new PluginMetadata
-            {
-                Id = manifest.Id,
-                Name = manifest.Name,
-                Version = manifest.Version,
-                Author = manifest.Author,
-                Description = manifest.Description,
-                Homepage = manifest.Homepage,
-                License = manifest.License,
-                ApiVersion = manifest.ApiVersion,
-                Capabilities = manifest.ResolveCapabilities(),
-                InstallDirectory = Directory,
-                DataDirectory = dataDirectory,
-            };
-
-            _session = PluginHost.Catalog.BeginSession(PluginId);
-            _events = new PluginEventService(this);
-            _pluginContext = new PluginContext(
-                metadata, Directory, dataDirectory, _session, Logger, Settings, _events, this);
-
-            // ⑥ 交给插件注册贡献点。这是唯一一次执行插件代码的初始化时机。
-            try
-            {
-                _plugin.Initialize(_pluginContext);
-            }
-            catch (Exception ex)
-            {
-                LastError = $"Initialize 抛出异常：{ex.GetBaseException().Message}";
-                failureReason = LastError;
-                Logger.Error("Initialize 失败", ex);
-                Teardown();
-                SetState(PluginRuntimeState.Failed);
-                PluginRegistryStore.MutateHealth(PluginId, h =>
-                {
-                    h.ConsecutiveFailures++;
-                    h.LastError = LastError;
-                });
                 return false;
             }
 
             // ⑦ 原子提交贡献点：冲突即整体拒绝，不留半残状态
-            if (!_session.Commit(out string conflictError))
+            if (!_session!.Commit(out string conflictError))
             {
                 LastError = $"贡献点注册冲突，已整体拒绝：{conflictError}";
                 failureReason = LastError;
@@ -578,7 +479,7 @@ internal sealed class PluginInstance
             LastLoadMs = stopwatch.Elapsed.TotalMilliseconds;
 
             Logger.Info(
-                $"已启用：v{manifest.Version}，入口 {entryType.FullName}，" +
+                $"已启用：v{manifest.Version}，入口 {entryTypeFullName}，" +
                 $"贡献点 动作 {_session.StagedActions.Count} / 图标 {_session.StagedIcons.Count} / 词条 {_session.StagedI18n.Count}，" +
                 $"加载耗时 {LastLoadMs:F1} ms，宿主 {PluginManifestReader.HostVersion}");
 
@@ -599,6 +500,141 @@ internal sealed class PluginInstance
             Logger.Error("加载失败", ex);
             Teardown();
             SetState(PluginRuntimeState.Failed);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 在独立栈帧中执行 ALC 程序集加载、反射实例化与 <c>Initialize</c> 调用。
+    /// <para>
+    /// 禁止内联：当 <c>Initialize</c> 抛出异常或反射失败时，栈帧中的 <see cref="Assembly"/>、
+    /// <see cref="Type"/>、插件实例与异常对象随本方法返回立即弹出，避免在调用 <see cref="Teardown"/>
+    /// 做 GC 卸载探测时仍被上层栈帧保守持有。
+    /// </para>
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private bool TryLoadAndInitializeInAlc(
+        PluginScanResult scan,
+        PluginManifest manifest,
+        out string entryTypeFullName,
+        out string? errorMessage,
+        out bool recordInitHealthFailure)
+    {
+        entryTypeFullName = "";
+        errorMessage = null;
+        recordInitHealthFailure = false;
+
+        _loadContext = new PluginLoadContext(PluginId, Directory, scan.DllPath!);
+        Assembly assembly = _loadContext.LoadFromAssemblyPath(Path.GetFullPath(scan.DllPath!));
+
+        // ③ 定位入口类型
+        string entryTypeName = scan.EntryTypeFullName
+                               ?? manifest.EntryType
+                               ?? "";
+
+        Type? entryType = assembly.GetType(entryTypeName, throwOnError: false, ignoreCase: false);
+        if (entryType == null)
+        {
+            // 依次在已加载类型里模糊匹配，便于给出更有用的报错
+            Type? found = null;
+            try
+            {
+                foreach (Type type in assembly.GetTypes())
+                {
+                    if (typeof(IStarPiePlugin).IsAssignableFrom(type) && !type.IsAbstract)
+                    {
+                        found ??= type;
+                    }
+                }
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                errorMessage = BuildTypeLoadError(ex);
+                return false;
+            }
+
+            if (found == null)
+            {
+                errorMessage = $"找不到入口类型 \"{entryTypeName}\"。";
+                return false;
+            }
+            entryType = found;
+        }
+
+        // ④ 类型身份校验 —— 这一步是「共享程序集放行」是否真正生效的最终验证
+        if (!typeof(IStarPiePlugin).IsAssignableFrom(entryType))
+        {
+            errorMessage =
+                $"入口类型 {entryType.FullName} 未实现 IStarPiePlugin。若插件本身确实实现了，" +
+                "则说明出现了 SDK 程序集类型身份分裂（插件目录里多半带了一份 StarPie.Plugin.Abstractions.dll）。";
+            return false;
+        }
+
+        object? created;
+        try
+        {
+            created = Activator.CreateInstance(entryType);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"实例化入口类型失败：{ex.GetBaseException().Message}";
+            return false;
+        }
+
+        // 运行时再次强转。若这里得到 null，就是最典型的「插件加载成功但什么都没注册」
+        _plugin = created as IStarPiePlugin;
+        if (_plugin == null)
+        {
+            errorMessage =
+                "入口类型无法转换为 IStarPiePlugin —— 典型的 SDK 类型身份分裂。" +
+                "请确认插件目录里没有自带 StarPie.Plugin.Abstractions.dll。";
+            return false;
+        }
+
+        entryTypeFullName = entryType.FullName ?? entryType.Name;
+
+        // ⑤ 构造上下文与服务
+        string dataDirectory = PluginPaths.GetDataDirectory(PluginId);
+        try
+        {
+            if (!System.IO.Directory.Exists(dataDirectory)) System.IO.Directory.CreateDirectory(dataDirectory);
+        }
+        catch
+        {
+            // 数据目录创建失败不阻断加载，插件自己写文件时会看到真实错误
+        }
+
+        var metadata = new PluginMetadata
+        {
+            Id = manifest.Id,
+            Name = manifest.Name,
+            Version = manifest.Version,
+            Author = manifest.Author,
+            Description = manifest.Description,
+            Homepage = manifest.Homepage,
+            License = manifest.License,
+            ApiVersion = manifest.ApiVersion,
+            Capabilities = manifest.ResolveCapabilities(),
+            InstallDirectory = Directory,
+            DataDirectory = dataDirectory,
+        };
+
+        _session = PluginHost.Catalog.BeginSession(PluginId);
+        _events = new PluginEventService(this);
+        _pluginContext = new PluginContext(
+            metadata, Directory, dataDirectory, _session, Logger, Settings, _events, this);
+
+        // ⑥ 交给插件注册贡献点。这是唯一一次执行插件代码的初始化时机。
+        try
+        {
+            _plugin.Initialize(_pluginContext);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Initialize 抛出异常：{ex.GetBaseException().Message}";
+            recordInitHealthFailure = true;
+            Logger.Error("Initialize 失败", ex);
             return false;
         }
     }
@@ -724,6 +760,14 @@ internal sealed class PluginInstance
     /// </summary>
     private void Teardown()
     {
+        // 无论来自正常 Unload 还是 Initialize / Commit 失败回滚，都必须幂等撤销所有已登记贡献、
+        // 事件订阅与注册令牌，防止半初始化插件把委托留在宿主侧并钉死 ALC。
+        RevokeContributions();
+        RevokeEventSubscriptions();
+        DisposeTokens();
+        OwnedActions = Array.Empty<PluginActionRegistration>();
+        ActionCount = 0;
+
         // Initialize 异常也必须关闭注册事务，不能只把本实例字段置空。
         _session?.Discard();
         // 配置服务是宿主对象，必须在卸载 ALC 前剪断它持有的插件回调。
@@ -748,7 +792,8 @@ internal sealed class PluginInstance
 
         if (context == null)
         {
-            // 从未加载过：没有 ALC 需要回收，直接给出最终结论
+            // 从未加载过或无独立 ALC：没有 ALC 需要回收，直接给出最终结论
+            RequiresRestart = false;
             FireUnloadVerdict(true);
             return;
         }
@@ -965,9 +1010,13 @@ internal sealed class PluginInstance
     // 计数刻意留在内存里，**每次调用都写 health.json 是不可接受的**：
     // 动作最多每秒触发数十次，等于把磁盘当计数器用。
     // 落盘时机是「状态变化 + 宿主退出 + 每 50 次调用」这三种低频场景。
+    private readonly object _healthGate = new();
     private long _invokeCount;
     private long _invokeFailureCount;
     private long _totalInvokeMsBits;
+    private long _pendingInvokeCount;
+    private long _pendingInvokeFailureCount;
+    private double _pendingTotalInvokeMs;
     private int _consecutiveFailures;
     private int _windowFailures;
     private int _dirtyCounter;
@@ -1010,6 +1059,16 @@ internal sealed class PluginInstance
                    BitConverter.DoubleToInt64Bits(accumulated),
                    previousBits) != previousBits);
 
+        lock (_healthGate)
+        {
+            _pendingInvokeCount++;
+            _pendingTotalInvokeMs += elapsedMs;
+            if (!success)
+            {
+                _pendingInvokeFailureCount++;
+            }
+        }
+
         bool quarantine = false;
 
         if (success)
@@ -1047,14 +1106,25 @@ internal sealed class PluginInstance
         return quarantine;
     }
 
-    /// <summary>把内存计数落到 <c>health.json</c>。低频调用，失败也不影响运行。</summary>
+    /// <summary>把内存增量计数落到 <c>health.json</c>。低频调用，失败也不影响运行。</summary>
     public void FlushHealth()
     {
+        long pendingCount;
+        long pendingFailures;
+        double pendingTotalMs;
+
+        lock (_healthGate)
+        {
+            pendingCount = _pendingInvokeCount;
+            pendingFailures = _pendingInvokeFailureCount;
+            pendingTotalMs = _pendingTotalInvokeMs;
+            _pendingInvokeCount = 0;
+            _pendingInvokeFailureCount = 0;
+            _pendingTotalInvokeMs = 0.0;
+        }
+
         try
         {
-            long count = InvokeCount;
-            long failures = InvokeFailureCount;
-            double average = AverageInvokeMs;
             int consecutive = ConsecutiveFailures;
             int window = WindowFailures;
             string? lastError = LastError;
@@ -1062,22 +1132,23 @@ internal sealed class PluginInstance
 
             PluginRegistryStore.MutateHealth(PluginId, h =>
             {
-                h.InvokeCount += count;
-                h.InvokeFailureCount += failures;
-                h.TotalInvokeMs += average * count;
+                h.InvokeCount += pendingCount;
+                h.InvokeFailureCount += pendingFailures;
+                h.TotalInvokeMs += pendingTotalMs;
                 h.ConsecutiveFailures = consecutive;
                 h.WindowFailures = window;
                 h.LastError = lastError;
                 h.RequiresRestart = requiresRestart;
             });
-
-            // 已落盘的部分从内存计数里扣掉，避免重复累加
-            Interlocked.Add(ref _invokeCount, -count);
-            Interlocked.Add(ref _invokeFailureCount, -failures);
-            Interlocked.Exchange(ref _totalInvokeMsBits, BitConverter.DoubleToInt64Bits(average * count));
         }
         catch (Exception ex)
         {
+            lock (_healthGate)
+            {
+                _pendingInvokeCount += pendingCount;
+                _pendingInvokeFailureCount += pendingFailures;
+                _pendingTotalInvokeMs += pendingTotalMs;
+            }
             Logger.Warn($"写入健康度数据失败：{ex.Message}");
         }
     }

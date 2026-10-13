@@ -104,7 +104,13 @@ public static class ConfigManager
 					AllowTrailingCommas = true,
 					ReadCommentHandling = JsonCommentHandling.Skip
 				};
-				CurrentConfig = JsonSerializer.Deserialize<AppConfig>(json, options) ?? CreateDefaultConfig();
+				AppConfig? deserialized = JsonSerializer.Deserialize<AppConfig>(json, options);
+				if (deserialized == null)
+				{
+					throw new JsonException("Deserialized configuration was null.");
+				}
+				IsFallbackConfig = false;
+				CurrentConfig = deserialized;
 				EnsureConfigHealth(CurrentConfig);
 				AppLogger.LogInfo($"Loaded configuration from '{ConfigPath}'");
 				if (hasLegacyBase64)
@@ -115,9 +121,10 @@ public static class ConfigManager
 			}
 			else
 			{
+				IsFallbackConfig = false;
 				CurrentConfig = CreateDefaultConfig();
 				EnsureConfigHealth(CurrentConfig);
-				SaveConfig();
+				SaveConfig(allowOverwriteFallback: true);
 				AppLogger.LogInfo($"Created and saved default configuration at '{ConfigPath}'");
 			}
 			I18n.SetLanguage(CurrentConfig.Language);
@@ -148,8 +155,8 @@ public static class ConfigManager
 			CurrentConfig = CreateDefaultConfig();
 			EnsureConfigHealth(CurrentConfig);
 			I18n.SetLanguage(CurrentConfig.Language);
+			IconHelper.PinIconsForConfig(CurrentConfig);
 			MarkConfigurationChanged();
-			EnsureConfigsFolder();
 		}
 	}
 
@@ -332,27 +339,60 @@ public static class ConfigManager
 		}
 	}
 
-	// 返回是否保存成功，调用方据此决定提示文案，避免无条件宣称“已保存”。
-	public static bool SaveConfig()
+	private static void WriteTextAtomically(string targetPath, string contents, string? backupPath = null)
 	{
-		// 配置即使因磁盘故障保存失败，当前进程中的内存态也已经改变；
-		// 先失效轮盘渲染缓存，确保下一次呼出展示最新状态。
+		string? directory = Path.GetDirectoryName(targetPath);
+		if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+		{
+			Directory.CreateDirectory(directory);
+		}
+		string tempPath = targetPath + ".tmp";
+		File.WriteAllText(tempPath, contents);
+		if (File.Exists(targetPath) && !string.IsNullOrEmpty(backupPath))
+		{
+			try
+			{
+				File.Replace(tempPath, targetPath, backupPath, ignoreMetadataErrors: true);
+				return;
+			}
+			catch
+			{
+			}
+		}
+		File.Move(tempPath, targetPath, overwrite: true);
+	}
+
+	// 返回是否保存成功，调用方据此决定提示文案，避免无条件宣称“已保存”。
+	public static bool SaveConfig() => SaveConfig(allowOverwriteFallback: false);
+
+	public static bool SaveConfig(bool allowOverwriteFallback)
+	{
+		// 配置即使因磁盘故障或降级保护跳过写盘，当前进程中的内存态也已经改变；
+		// 先失效轮盘渲染缓存并同步内存图标锁定，确保下一次呼出展示最新状态。
 		MarkConfigurationChanged();
+		if (CurrentConfig != null)
+		{
+			if (CurrentConfig.Profiles != null)
+			{
+				foreach (var p in CurrentConfig.Profiles)
+				{
+					p?.SyncRootPropertiesFromActiveLayer();
+				}
+			}
+			IconHelper.PinIconsForConfig(CurrentConfig);
+		}
+
+		if (IsFallbackConfig && !allowOverwriteFallback)
+		{
+			AppLogger.LogInfo("Skipped automatic SaveConfig because configuration is currently in fallback mode after a load error.");
+			return false;
+		}
+
 		try
 		{
 			if (!Directory.Exists(AppDataFolder))
 			{
 				Directory.CreateDirectory(AppDataFolder);
-			}
-			if (CurrentConfig != null)
-			{
-				if (CurrentConfig.Profiles != null)
-				{
-					foreach (var p in CurrentConfig.Profiles)
-					{
-						p?.SyncRootPropertiesFromActiveLayer();
-					}
-				}
 			}
 			JsonSerializerOptions options = new JsonSerializerOptions
 			{
@@ -361,17 +401,8 @@ public static class ConfigManager
 			string contents = JsonSerializer.Serialize(CurrentConfig, options);
 			// 原子写：先落临时文件再替换。直接 WriteAllText 一旦中途被中断（退出/崩溃/断电）
 			// 会留下截断的 config.json，下次启动即被判为损坏并回落默认配置。
-			string tempPath = ConfigPath + ".tmp";
-			File.WriteAllText(tempPath, contents);
-			if (File.Exists(ConfigPath))
-			{
-				// 保留上一份完好配置，替换失败时仍可人工回退
-				File.Replace(tempPath, ConfigPath, ConfigPath + ".bak");
-			}
-			else
-			{
-				File.Move(tempPath, ConfigPath, overwrite: true);
-			}
+			WriteTextAtomically(ConfigPath, contents, ConfigPath + ".bak");
+			IsFallbackConfig = false;
 
 			// 同步保存至方案子目录对应的配置文件
 			try
@@ -387,7 +418,7 @@ public static class ConfigManager
 					if (!string.IsNullOrWhiteSpace(clean))
 					{
 						string profilePath = Path.Combine(ConfigsFolder, $"{clean}.json");
-						File.WriteAllText(profilePath, contents);
+						WriteTextAtomically(profilePath, contents);
 					}
 				}
 			}
@@ -396,7 +427,6 @@ public static class ConfigManager
 				AppLogger.LogError("Failed to mirror save profile config", exSync);
 			}
 
-			IconHelper.PinIconsForConfig(CurrentConfig);
 			return true;
 		}
 		catch (Exception ex)
@@ -742,9 +772,14 @@ public static class ConfigManager
 			if (appConfig != null)
 			{
 				EnsureConfigHealth(appConfig);
+				AppConfig? previousConfig = CurrentConfig;
 				CurrentConfig = appConfig;
+				if (!SaveConfig(allowOverwriteFallback: true))
+				{
+					CurrentConfig = previousConfig!;
+					return false;
+				}
 				I18n.SetLanguage(CurrentConfig.Language);
-				SaveConfig();
 				return true;
 			}
 		}
@@ -766,6 +801,11 @@ public static class ConfigManager
 				Directory.CreateDirectory(ConfigsFolder);
 			}
 
+			if (IsFallbackConfig)
+			{
+				return;
+			}
+
 			string activeName = CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
 			if (string.IsNullOrWhiteSpace(activeName))
 			{
@@ -785,7 +825,7 @@ public static class ConfigManager
 				if (CurrentConfig != null)
 				{
 					JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
-					File.WriteAllText(activeFile, JsonSerializer.Serialize(CurrentConfig, options));
+					WriteTextAtomically(activeFile, JsonSerializer.Serialize(CurrentConfig, options));
 				}
 				else if (File.Exists(ConfigPath))
 				{
@@ -838,6 +878,7 @@ public static class ConfigManager
 		if (string.IsNullOrWhiteSpace(cleanName)) return false;
 
 		EnsureConfigsFolder();
+		string? previousProfileName = CurrentConfig?.ActiveConfigProfileName;
 		if (CurrentConfig != null)
 		{
 			CurrentConfig.ActiveConfigProfileName = cleanName;
@@ -848,13 +889,24 @@ public static class ConfigManager
 		{
 			JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
 			string json = JsonSerializer.Serialize(CurrentConfig, options);
-			File.WriteAllText(targetFile, json);
-			SaveConfig();
+			WriteTextAtomically(targetFile, json);
+			if (!SaveConfig(allowOverwriteFallback: true))
+			{
+				if (CurrentConfig != null && previousProfileName != null)
+				{
+					CurrentConfig.ActiveConfigProfileName = previousProfileName;
+				}
+				return false;
+			}
 			MarkConfigurationChanged();
 			return true;
 		}
 		catch (Exception ex)
 		{
+			if (CurrentConfig != null && previousProfileName != null)
+			{
+				CurrentConfig.ActiveConfigProfileName = previousProfileName;
+			}
 			AppLogger.LogError($"Failed to save config as '{cleanName}'", ex);
 			return false;
 		}
@@ -881,9 +933,14 @@ public static class ConfigManager
 			{
 				loaded.ActiveConfigProfileName = cleanName;
 				EnsureConfigHealth(loaded);
+				AppConfig? previousConfig = CurrentConfig;
 				CurrentConfig = loaded;
+				if (!SaveConfig(allowOverwriteFallback: true))
+				{
+					CurrentConfig = previousConfig!;
+					return false;
+				}
 				I18n.SetLanguage(CurrentConfig.Language);
-				SaveConfig();
 				MarkConfigurationChanged();
 				return true;
 			}
@@ -913,8 +970,11 @@ public static class ConfigManager
 			File.Move(oldFile, newFile);
 			if (string.Equals(CurrentConfig?.ActiveConfigProfileName, cleanOld, StringComparison.OrdinalIgnoreCase))
 			{
-				CurrentConfig.ActiveConfigProfileName = cleanNew;
-				SaveConfig();
+				CurrentConfig!.ActiveConfigProfileName = cleanNew;
+				if (!SaveConfig(allowOverwriteFallback: true))
+				{
+					return false;
+				}
 			}
 			return true;
 		}
@@ -946,7 +1006,7 @@ public static class ConfigManager
 			if (string.Equals(CurrentConfig?.ActiveConfigProfileName, clean, StringComparison.OrdinalIgnoreCase))
 			{
 				fallbackName = all.FirstOrDefault(x => !string.Equals(x, clean, StringComparison.OrdinalIgnoreCase)) ?? "默认配置";
-				SwitchToConfig(fallbackName);
+				return SwitchToConfig(fallbackName);
 			}
 			else
 			{
@@ -994,9 +1054,12 @@ public static class ConfigManager
 
 			string targetFile = Path.Combine(ConfigsFolder, $"{targetName}.json");
 			JsonSerializerOptions saveOpts = new JsonSerializerOptions { WriteIndented = true };
-			File.WriteAllText(targetFile, JsonSerializer.Serialize(loaded, saveOpts));
+			WriteTextAtomically(targetFile, JsonSerializer.Serialize(loaded, saveOpts));
 
-			SwitchToConfig(targetName);
+			if (!SwitchToConfig(targetName))
+			{
+				return false;
+			}
 			importedName = targetName;
 			return true;
 		}
@@ -1047,7 +1110,7 @@ public static class ConfigManager
 		EnsureConfigHealth(defaultConf);
 		CurrentConfig = defaultConf;
 		I18n.SetLanguage(CurrentConfig.Language);
-		SaveConfig();
+		SaveConfig(allowOverwriteFallback: true);
 		MarkConfigurationChanged();
 	}
 

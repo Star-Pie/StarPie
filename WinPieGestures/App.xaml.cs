@@ -281,13 +281,13 @@ public partial class App : Application
 			else
 			{
 				AppLogger.LogInfo("Silent launch: SettingsWindow creation deferred until first use");
-				// 静默启动或开机自启时，在挂载完轻量级钩子后等待后台就绪（1.5秒后）执行一次工作集规整，将静默占用压至极限
+				// 静默启动或开机自启时，在挂载完轻量级钩子后等待后台就绪（1.5秒后）执行一次温和垃圾回收，避免 EmptyWorkingSet 导致首次呼出轮盘硬缺页卡顿
 				_ = System.Threading.Tasks.Task.Run(async () =>
 				{
 					try
 					{
 						await System.Threading.Tasks.Task.Delay(1500).ConfigureAwait(false);
-						MemoryOptimizer.TrimMemory(force: true);
+						MemoryOptimizer.TrimMemory(force: false);
 					}
 					catch
 					{
@@ -371,7 +371,7 @@ public partial class App : Application
 		if (!_isExiting && Application.Current != null)
 		{
 			Application.Current.Dispatcher.BeginInvoke(
-				(Action)(() => MemoryOptimizer.TrimMemory(force: true)),
+				(Action)(() => MemoryOptimizer.TrimMemory(force: false)),
 				DispatcherPriority.ApplicationIdle);
 		}
 	}

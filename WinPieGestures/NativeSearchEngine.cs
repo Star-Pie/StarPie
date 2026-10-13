@@ -327,7 +327,7 @@ public static class NativeSearchEngine
 			}
 			catch { }
 
-			_cachedApps = apps;
+			Volatile.Write(ref _cachedApps, apps);
 			_lastCacheTime = DateTime.Now;
 			_isInitialized = true;
 		}
@@ -345,7 +345,8 @@ public static class NativeSearchEngine
 		// 1. 优先放入高频应用程序与系统工具
 		if (category == "All" || category == "App" || category == "System")
 		{
-			var apps = _cachedApps.Where(a => category == "All" || a.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).Take(15);
+			var cachedApps = Volatile.Read(ref _cachedApps);
+			var apps = cachedApps.Where(a => category == "All" || a.Category.Equals(category, StringComparison.OrdinalIgnoreCase)).Take(15);
 			list.AddRange(apps);
 		}
 
@@ -479,8 +480,7 @@ public static class NativeSearchEngine
 	{
 		lock (_initLock)
 		{
-			_cachedApps.Clear();
-			_cachedApps.TrimExcess();
+			Volatile.Write(ref _cachedApps, new List<SearchResultItem>());
 			_isInitialized = false;
 			_lastCacheTime = DateTime.MinValue;
 		}
@@ -507,7 +507,8 @@ public static class NativeSearchEngine
 			// 第一层：从已缓存的应用和系统级预设中毫秒级匹配 (0ms ~ 1ms)
 			if (category == "All" || category == "App" || category == "System")
 			{
-				var matchedApps = _cachedApps.Where(a =>
+				var cachedApps = Volatile.Read(ref _cachedApps);
+				var matchedApps = cachedApps.Where(a =>
 				{
 					if (category != "All" && !a.Category.Equals(category, StringComparison.OrdinalIgnoreCase))
 					{

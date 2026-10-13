@@ -153,25 +153,34 @@ internal static class PluginInvoker
     {
         var stopwatch = Stopwatch.StartNew();
         PluginInvocationLease? ownedLease = lease;
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
+        CancellationTokenSource? timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+        CancellationTokenSource? linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             timeoutCts.Token,
             lease.CancellationToken);
 
         try
         {
-            Task<ActionResult>? task = registration.Contribution.ExecuteAsync(input, linkedCts.Token);
-            if (task == null)
+            bool returnedNullTask = false;
+            CancellationToken invokeToken = linkedCts.Token;
+            Task<ActionResult?> task = Task.Run(async () =>
             {
-                stopwatch.Stop();
-                return Fail(instance, registration, "ExecuteAsync 返回了 null。", stopwatch.Elapsed.TotalMilliseconds);
-            }
+                Task<ActionResult>? innerTask = registration.Contribution.ExecuteAsync(input, invokeToken);
+                if (innerTask == null)
+                {
+                    returnedNullTask = true;
+                    return null;
+                }
+                return await innerTask.ConfigureAwait(false);
+            });
 
             if (!task.Wait(TimeSpan.FromSeconds(timeoutSeconds + TimeoutGraceMs / 1000.0)))
             {
                 stopwatch.Stop();
-                ObserveTimedOutTask(task, ownedLease, instance, registration);
+                try { timeoutCts.Cancel(); } catch { }
+                ObserveTimedOutTask(task, ownedLease, timeoutCts, linkedCts, instance, registration);
                 ownedLease = null;
+                timeoutCts = null;
+                linkedCts = null;
                 if (lease.CancellationToken.IsCancellationRequested)
                 {
                     return CancelledByStop(registration);
@@ -185,8 +194,12 @@ internal static class PluginInvoker
             }
 
             stopwatch.Stop();
-            ActionResult result = task.Result;
-            return Interpret(instance, registration, result, stopwatch.Elapsed.TotalMilliseconds);
+            ActionResult? result = task.Result;
+            if (returnedNullTask)
+            {
+                return Fail(instance, registration, "ExecuteAsync 返回了 null。", stopwatch.Elapsed.TotalMilliseconds);
+            }
+            return Interpret(instance, registration, result!, stopwatch.Elapsed.TotalMilliseconds);
         }
         catch (AggregateException aggregate)
         {
@@ -210,13 +223,17 @@ internal static class PluginInvoker
         }
         finally
         {
+            linkedCts?.Dispose();
+            timeoutCts?.Dispose();
             ownedLease?.Dispose();
         }
     }
 
     private static void ObserveTimedOutTask(
-        Task<ActionResult> task,
+        Task task,
         PluginInvocationLease lease,
+        CancellationTokenSource? timeoutCts,
+        CancellationTokenSource? linkedCts,
         PluginInstance instance,
         PluginActionRegistration registration)
     {
@@ -233,6 +250,8 @@ internal static class PluginInvoker
             }
             finally
             {
+                try { linkedCts?.Dispose(); } catch { }
+                try { timeoutCts?.Dispose(); } catch { }
                 lease.Dispose();
             }
         });

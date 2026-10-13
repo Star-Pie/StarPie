@@ -2433,18 +2433,36 @@ public class GestureController : IDisposable
 			}
 		}
 
-		RadialWindow window;
-		PluginInteractionSession interaction;
+		RadialWindow? existingWindow;
 		lock (_uiUpdateSync)
 		{
 			if (_disposed || !_isGestureActive || gestureVersion != _gestureVersion || (focusSession != null && focusSession.IsCancelled))
 			{
 				return false;
 			}
-			window = _radialWindow ??= new RadialWindow(center, profile);
+			existingWindow = _radialWindow;
+		}
+
+		RadialWindow? createdWindow = existingWindow == null ? new RadialWindow(center, profile) : null;
+		RadialWindow window;
+		PluginInteractionSession interaction;
+		lock (_uiUpdateSync)
+		{
+			if (_disposed || !_isGestureActive || gestureVersion != _gestureVersion || (focusSession != null && focusSession.IsCancelled))
+			{
+				createdWindow?.CloseFast();
+				return false;
+			}
+			if (_radialWindow == null && createdWindow != null)
+			{
+				_radialWindow = createdWindow;
+				createdWindow = null;
+			}
+			window = _radialWindow!;
 			interaction = _interactionSession ??= new PluginInteractionSession(InteractionSource.NormalGesture, profile.ProcessName);
 			interaction.Update(_selectedSectorIndex, _selectedSubSectorIndex, _lastShowSubTier, _lastEscapedState);
 		}
+		createdWindow?.CloseFast();
 
 		try
 		{

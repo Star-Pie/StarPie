@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>StarPie.AuditOptFixture</AssemblyName>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Update="plugin.json" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\..\..\plugin\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj" Private="false" />
+    <AssemblyMetadata Include="StarPiePluginId" Value="demo.audit.opt.fixture" />
+    <AssemblyMetadata Include="StarPiePluginName" Value="Audit Opt Fixture" />
+    <AssemblyMetadata Include="StarPiePluginVersion" Value="1.0.0" />
+    <AssemblyMetadata Include="StarPiePluginApiVersion" Value="1.10" />
+    <AssemblyMetadata Include="StarPiePluginCapabilities" Value="None" />
+  </ItemGroup>
+</Project>

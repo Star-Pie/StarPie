@@ -69,6 +69,9 @@ public static class IconHelper
 		_pinnedIcons.Clear();
 	}
 	private const int MaxDynamicIcons = 120;
+	private const long MaxDynamicIconBytes = 16L * 1024 * 1024;
+	private static long _dynamicIconTotalBytes;
+	private static readonly Dictionary<string, long> _dynamicIconSizes = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
 	public static readonly List<VectorIconItem> VectorIconList;
 
@@ -835,21 +838,48 @@ public static class IconHelper
 		}
 	}
 
+	private static long EstimateBitmapBytes(BitmapSource icon)
+	{
+		try
+		{
+			long w = Math.Max(1, icon.PixelWidth);
+			long h = Math.Max(1, icon.PixelHeight);
+			long bpp = Math.Max(8, icon.Format.BitsPerPixel);
+			return (w * h * bpp + 7) / 8;
+		}
+		catch
+		{
+			return 16384L;
+		}
+	}
+
 	private static void CacheDynamicIcon(string key, BitmapSource icon)
 	{
+		long iconBytes = EstimateBitmapBytes(icon);
 		lock (_dynamicLruLock)
 		{
-			if (_dynamicIcons.Count >= MaxDynamicIcons)
+			if (_dynamicIconSizes.TryGetValue(key, out long prevBytes))
 			{
-				var oldest = _dynamicLruList.First;
-				if (oldest != null)
+				_dynamicIconTotalBytes = Math.Max(0L, _dynamicIconTotalBytes - prevBytes);
+				_dynamicIconSizes.Remove(key);
+				_dynamicLruList.Remove(key);
+			}
+
+			while ((_dynamicIcons.Count >= MaxDynamicIcons || (_dynamicIconTotalBytes + iconBytes > MaxDynamicIconBytes && _dynamicLruList.Count > 0))
+			       && _dynamicLruList.First != null)
+			{
+				string oldestKey = _dynamicLruList.First.Value;
+				_dynamicLruList.RemoveFirst();
+				_dynamicIcons.TryRemove(oldestKey, out _);
+				if (_dynamicIconSizes.Remove(oldestKey, out long evictedBytes))
 				{
-					_dynamicLruList.RemoveFirst();
-					_dynamicIcons.TryRemove(oldest.Value, out _);
+					_dynamicIconTotalBytes = Math.Max(0L, _dynamicIconTotalBytes - evictedBytes);
 				}
 			}
+
 			_dynamicIcons[key] = icon;
-			_dynamicLruList.Remove(key);
+			_dynamicIconSizes[key] = iconBytes;
+			_dynamicIconTotalBytes += iconBytes;
 			_dynamicLruList.AddLast(key);
 		}
 	}
@@ -863,6 +893,8 @@ public static class IconHelper
 		{
 			_dynamicIcons.Clear();
 			_dynamicLruList.Clear();
+			_dynamicIconSizes.Clear();
+			_dynamicIconTotalBytes = 0L;
 		}
 	}
 
@@ -1654,6 +1686,11 @@ public static class IconHelper
 
 	public static ImageSource? GetCustomImageSource(string iconKeyOrPath)
 	{
+		return GetCustomImageSource(iconKeyOrPath, 256);
+	}
+
+	public static ImageSource? GetCustomImageSource(string iconKeyOrPath, int maxDecodePixels)
+	{
 		if (string.IsNullOrWhiteSpace(iconKeyOrPath))
 		{
 			return null;
@@ -1663,27 +1700,65 @@ public static class IconHelper
 			string text = iconKeyOrPath;
 			if (iconKeyOrPath.StartsWith("custom:", StringComparison.OrdinalIgnoreCase))
 			{
-				CustomIconItem customIconItem = GetCustomIcons().FirstOrDefault((CustomIconItem i) => string.Equals(i.Key, iconKeyOrPath, StringComparison.OrdinalIgnoreCase));
+				CustomIconItem? customIconItem = GetCustomIcons().FirstOrDefault((CustomIconItem i) => string.Equals(i.Key, iconKeyOrPath, StringComparison.OrdinalIgnoreCase));
 				if (customIconItem != null)
 				{
 					text = customIconItem.FilePath;
 				}
 			}
-			if (File.Exists(text) && Path.GetExtension(text).ToLower() != ".svg")
+			if (File.Exists(text) && Path.GetExtension(text).ToLowerInvariant() != ".svg")
 			{
-				string cacheKey = "custom_img:" + text;
+				int normalizedMaxPixels = maxDecodePixels > 0 ? maxDecodePixels : 0;
+				string cacheKey = $"custom_img:{normalizedMaxPixels}:{text}";
 				if (_pinnedIcons.TryGetValue(cacheKey, out var pinned))
 				{
 					return pinned;
 				}
 				if (_dynamicIcons.TryGetValue(cacheKey, out var cached))
 				{
+					lock (_dynamicLruLock)
+					{
+						_dynamicLruList.Remove(cacheKey);
+						_dynamicLruList.AddLast(cacheKey);
+					}
 					return cached;
 				}
+
+				int origWidth = 0;
+				int origHeight = 0;
+				if (normalizedMaxPixels > 0)
+				{
+					try
+					{
+						using FileStream probeStream = new FileStream(text, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+						BitmapDecoder decoder = BitmapDecoder.Create(probeStream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+						if (decoder.Frames.Count > 0)
+						{
+							origWidth = decoder.Frames[0].PixelWidth;
+							origHeight = decoder.Frames[0].PixelHeight;
+						}
+					}
+					catch
+					{
+					}
+				}
+
+				using FileStream decodeStream = new FileStream(text, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 				BitmapImage bitmapImage = new BitmapImage();
 				bitmapImage.BeginInit();
 				bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-				bitmapImage.UriSource = new Uri(text, UriKind.Absolute);
+				if (normalizedMaxPixels > 0 && Math.Max(origWidth, origHeight) > normalizedMaxPixels)
+				{
+					if (origWidth >= origHeight)
+					{
+						bitmapImage.DecodePixelWidth = normalizedMaxPixels;
+					}
+					else
+					{
+						bitmapImage.DecodePixelHeight = normalizedMaxPixels;
+					}
+				}
+				bitmapImage.StreamSource = decodeStream;
 				bitmapImage.EndInit();
 				((Freezable)bitmapImage).Freeze();
 				CacheDynamicIcon(cacheKey, bitmapImage);
