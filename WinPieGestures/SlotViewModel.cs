@@ -809,7 +809,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 	public void PopulateTileSubActions()
 	{
 		List<ActionItem> list = new List<ActionItem>();
-		foreach (string key in WindowTiler.LayoutKeys)
+		foreach (string key in WindowTiler.LayoutKeys.Take(7))
 		{
 			list.Add(new ActionItem { Type = "Tile", Parameter = key, Name = WindowTiler.LayoutDisplayName(key), IconKey = "Tile" });
 		}

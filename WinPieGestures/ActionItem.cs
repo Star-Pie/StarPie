@@ -117,6 +117,9 @@ public class ActionItem
 			ExtensionData = this.ExtensionData == null
 				? null
 				: new Dictionary<string, string>(this.ExtensionData, StringComparer.OrdinalIgnoreCase),
+			Extras = this.Extras == null
+				? null
+				: new Dictionary<string, System.Text.Json.JsonElement>(this.Extras),
 			SubActions = new List<ActionItem>()
 		};
 		if (this.SubActions != null)
