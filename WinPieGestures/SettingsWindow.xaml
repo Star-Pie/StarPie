@@ -2802,6 +2802,58 @@
                       </StackPanel>
                     </Border>
 
+                    <!-- 模块 0：二级级联子动作管理 (仅一级扇区呈现，置于参数区上方持续可见) -->
+                    <Border Name="FocusSubActionsBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                      <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="FocusSubActionsSectionLabel" Text="二级级联子动作:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" />
+                            <TextBlock Name="FocusSubActionsCountLabel" Text="(0 项)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Name="FocusCopyActionBtn" Content="📋 复制" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" Margin="0,0,4,0" FontSize="11" ToolTip="复制当前选中的动作或扇区 (Ctrl+C)" Click="FocusCopyActionBtn_Click">
+                              <Button.ContextMenu>
+                                <ContextMenu>
+                                  <MenuItem x:Name="FocusCopyCurrentActionMenuItem" Header="📋 复制当前动作 (单动作)" Click="FocusCopyCurrentAction_Click" />
+                                  <MenuItem x:Name="FocusCopyEntireSectorMenuItem" Header="📦 复制整个扇区 (含全部子动作)" Click="FocusCopyEntireSector_Click" />
+                                </ContextMenu>
+                              </Button.ContextMenu>
+                            </Button>
+                            <Button Name="FocusPasteActionBtn" Content="📥 粘贴" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" Margin="0,0,4,0" FontSize="11" ToolTip="粘贴动作至当前位置 (Ctrl+V)" IsEnabled="False" Click="FocusPasteActionBtn_Click" />
+                            <Button Name="FocusAddSubActionBtn" Content="➕ 添加二级动作" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" FontSize="11" Click="FocusAddSubActionBtn_Click" />
+                            <Button Name="FocusClearSubActionsBtn" Content="🗑️ 清空" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" FontSize="11" Click="FocusClearSubActionsBtn_Click" />
+                            <Button Name="FocusUndoSubActionsBtn" Content="↩️ 撤销" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" Margin="4,0,0,0" FontSize="11" ToolTip="撤销上一次的修改或清空 (Ctrl+Z)" IsEnabled="False" Click="FocusUndoSubActionsBtn_Click" />
+                            <Button Name="FocusRedoSubActionsBtn" Content="↪️ 重做" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" Margin="4,0,0,0" FontSize="11" ToolTip="重做上一步操作 (Ctrl+Y)" IsEnabled="False" Click="FocusRedoSubActionsBtn_Click" />
+                          </StackPanel>
+                        </Grid>
+
+                        <!-- 面包屑导航与当前编辑路径指示 -->
+                        <Border Name="FocusActionBreadcrumbBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
+                          <Grid>
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Name="FocusActionBreadcrumbText" Text="📍 [主扇区 1 - 向上]" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <Button Name="FocusRestoreInheritanceBtn" Grid.Column="1" Content="🌐 恢复继承" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" FontSize="10.5" Visibility="Collapsed" Click="FocusRestoreInheritanceBtn_Click" />
+                          </Grid>
+                        </Border>
+
+                        <!-- 二级子动作有序列表 (有序编号、图标、名称、参数摘要与操作按钮) -->
+                        <StackPanel Name="FocusSubActionsOrderedListPanel" Margin="0,0,0,6">
+                        </StackPanel>
+
+                        <!-- 二级子动作芯片列表 -->
+                        <WrapPanel Name="FocusSubActionsChipsPanel" Margin="0,2,0,0">
+                          <!-- 动态注入二级子动作芯片 (可点击选中进行精调，或点击小叉删除) -->
+                        </WrapPanel>
+                      </StackPanel>
+                    </Border>
+
                     <!-- 模块 1：图标与显示名称配置 -->
                     <Border Name="FocusNameAndIconBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,12">
                       <Grid>
@@ -3215,32 +3267,6 @@
                         </Border>
                       </StackPanel>
                     </Border>
-
-                    <!-- 模块 3：二级级联子动作管理 (仅一级扇区呈现) -->
-                    <Border Name="FocusSubActionsBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12">
-                      <StackPanel>
-                        <Grid Margin="0,0,0,8">
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock x:Name="FocusSubActionsSectionLabel" Text="二级级联子动作:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" />
-                            <TextBlock Name="FocusSubActionsCountLabel" Text="(0 项)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                          </StackPanel>
-                          <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <Button Name="FocusAddSubActionBtn" Content="➕ 添加二级动作" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" FontSize="11" Click="FocusAddSubActionBtn_Click" />
-                            <Button Name="FocusClearSubActionsBtn" Content="🗑️ 清空" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" FontSize="11" Click="FocusClearSubActionsBtn_Click" />
-                            <Button Name="FocusUndoSubActionsBtn" Content="↩️ 撤销" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" Margin="4,0,0,0" FontSize="11" ToolTip="撤销上一次的修改或清空，恢复二级动作列表" IsEnabled="False" Click="FocusUndoSubActionsBtn_Click" />
-                          </StackPanel>
-                        </Grid>
-
-                        <!-- 二级子动作芯片列表 -->
-                        <WrapPanel Name="FocusSubActionsChipsPanel" Margin="0,2,0,0">
-                          <!-- 动态注入二级子动作芯片 (可点击选中进行精调，或点击小叉删除) -->
-                        </WrapPanel>
-                      </StackPanel>
-                    </Border>
                   </StackPanel>
 
                   <!-- 批量修改模式卡片 (Batch Mode) -->
@@ -3462,8 +3488,17 @@
                   </Grid>
                 </Border>
 
-                <!-- 底部保存/提示 -->
-                <TextBlock x:Name="MappingsSaveNoticeText" Grid.Row="2" Text="💡 修改在内存中即时生效，点击主窗口右下角【保存并生效】持久化至硬盘。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+                <!-- 底部保存/提示与自动保存状态 -->
+                <Grid Grid.Row="2" Margin="0,4,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock x:Name="MappingsSaveNoticeText" Text="💡 配置已启用自动保存，修改即时生效并持久化至硬盘。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                  <Border Name="AutoSaveStatusBadge" Grid.Column="1" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="6,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Name="AutoSaveStatusText" Text="✅ 已自动保存" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </Border>
+                </Grid>
               </Grid>
             </Border>
           </Grid>

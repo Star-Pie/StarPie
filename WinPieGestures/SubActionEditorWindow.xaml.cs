@@ -35,22 +35,7 @@ public partial class SubActionEditorWindow : Window
 				{
 					IndexNumber = num++,
 					IsExpanded = true,
-					Action = new ActionItem
-					{
-						Name = existingSubAction.Name,
-						Type = existingSubAction.Type,
-						Parameter = existingSubAction.Parameter,
-						Arguments = existingSubAction.Arguments,
-						IconKey = existingSubAction.IconKey,
-						CustomIconSvg = existingSubAction.CustomIconSvg,
-						InheritAppIconPath = existingSubAction.InheritAppIconPath,
-						CommandTerminal = existingSubAction.CommandTerminal,
-						RunAsStandardUser = existingSubAction.RunAsStandardUser,
-						BrowserChoice = existingSubAction.BrowserChoice,
-						BrowserPath = existingSubAction.BrowserPath,
-						PluginActionRef = existingSubAction.PluginActionRef,
-						ExtensionData = existingSubAction.ExtensionData != null ? new Dictionary<string, string>(existingSubAction.ExtensionData) : null
-					}
+					Action = existingSubAction.Clone()
 				});
 			}
 		}
@@ -507,7 +492,7 @@ public partial class SubActionEditorWindow : Window
                 return;
             }
         }
-		ResultSubActions = SubSlots.Select((SubSlotViewModel s) => s.Action).ToList();
+		ResultSubActions = SubSlots.Select((SubSlotViewModel s) => s.Action.Clone()).ToList();
 		DialogResult = true;
 		Close();
 	}
