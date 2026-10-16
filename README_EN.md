@@ -1,5 +1,4 @@
 <div align="center">
-
 <img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&amp;forks=1&amp;issues=1&amp;logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&amp;name=1&amp;owner=1&amp;pattern=Floating+Cogs&amp;pulls=1&amp;stargazers=1&amp;theme=Auto" width="100%" alt="StarPie Floating Cogs banner: project logo and Stars, Forks, Issues, and Pull Requests" />
 
 # StarPie
@@ -14,6 +13,8 @@
 [![Language](https://img.shields.io/badge/Language-zh--CN%20%7C%20zh--TW%20%7C%20en%20%7C%20ja-8B5CF6.svg?style=flat-square)](#i18n)
 [![Downloads](https://img.shields.io/github/downloads/Star-Pie/StarPie/total?style=flat-square&logo=github)](https://github.com/Star-Pie/StarPie/releases)
 [![QQ Public Testing Group: 1079199287](https://img.shields.io/badge/QQ-1079199287-12B7F5?style=flat-square&logo=qq&logoColor=white&labelColor=555555)](https://qm.qq.com/q/y1J4gxkUTu)
+[![Homepage](https://img.shields.io/badge/Homepage-StarPie-6554C8?style=flat-square&logo=githubpages&logoColor=white)](https://star-pie.github.io/)
+[![Sponsors](https://img.shields.io/badge/Sponsors-Support-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white)](https://star-pie.github.io/sponsor/)
 
 <br/>
 
@@ -21,9 +22,9 @@
 
 <br/>
 
-[🌟 Highlights](#highlights) • [🚀 Quick Start](#download) • [✨ Features](#features) • [🎨 Visual Customization](#visuals) • [🌐 Languages](#i18n) • [🛠️ Build & Development](#build) • [📋 Changelog](CHANGELOG.md) • [🧪 Beta Testing](#beta)
+[🌟 Highlights](#highlights) • [✨ Features](#features) • [🎨 Visual Customization](#visuals) • [🌐 Languages](#i18n) • [🧪 Beta Testing](#beta) • [🚀 Quick Start](#download) • [🛠️ Build & Development](#build)
 
-[🤝 Contributing](#contributing) • [⭐ Star History](#star-history) • [💬 Community](#community) • [❤️ Support](#support) • [📌 Project Status](#project-status) • [🙏 Special Thanks](#special-thanks)
+[📌 Project Status](#project-status) • [💬 Community](#community) • [🤝 Contributing](#contributing) • [🙏 Special Thanks](#special-thanks) • [⭐ Star History](#star-history) • [❤️ Support](#support) • [📋 Changelog](CHANGELOG.md)
 
 </div>
 
@@ -425,18 +426,6 @@ Be kind, respectful, and patient. Provide reproducible details where possible, a
 
 ---
 
-<a id="support"></a>
-
-## ❤️ Support
-
-If StarPie helps you, you can support the project by:
-
-- Giving the [repository](https://github.com/Star-Pie/StarPie) a Star or sharing it with someone who could use a mouse-gesture productivity tool.
-- Sharing themes, use cases, and demo assets in [Discussions](https://github.com/Star-Pie/StarPie/discussions).
-- Providing reproducible feedback or improving code, translations, and documentation through the [contributing guide](CONTRIBUTING.md).
-
----
-
 <a id="contributing"></a>
 
 ## 🤝 Contributing
@@ -472,5 +461,27 @@ Thank you to all [project contributors](https://github.com/Star-Pie/StarPie/grap
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date&amp;theme=dark" />
     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" />
     <img alt="StarPie GitHub Star history chart" src="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" width="100%" />
+  </picture>
+</a>
+
+---
+
+<a id="support"></a>
+
+## ❤️ Support
+
+If StarPie helps you, you can support the project by:
+
+- Giving the [repository](https://github.com/Star-Pie/StarPie) a Star or sharing it with someone who could use a mouse-gesture productivity tool.
+- Sharing themes, use cases, and demo assets in [Discussions](https://github.com/Star-Pie/StarPie/discussions).
+- Providing reproducible feedback or improving code, translations, and documentation through the [contributing guide](CONTRIBUTING.md).
+
+Thank you to everyone who supports StarPie. Click the list below to visit the full sponsors page.
+
+<a href="https://star-pie.github.io/sponsor/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
+    <img alt="StarPie sponsors" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
   </picture>
 </a>

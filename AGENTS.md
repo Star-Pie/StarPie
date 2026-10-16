@@ -72,14 +72,35 @@ StarPie（原 WinPieGestures）是基于 **.NET 8、WPF 与 Win32** 的 Windows 
 
 ## 5. Build 与 Test 命令
 
+### 5.1 固定主程序编译输出
+
+- 主程序 Release 候选的输出父目录固定为 `StarPie\WinPieGestures\bin\Release\`。
+- 每轮构建使用 `build-out-yyyyMMdd-HHmm\` 子目录，即 `build-out-年月日-时分\`；例如 `build-out-20261013-1630\`。
+- 主程序 `StarPie.exe`、`StarPie.dll`、SDK 依赖与运行配置直接放在该时间目录下，不得回退覆盖常规 `bin/Release/<TFM>` 输出。
+- 同一轮候选的构建、自检和人工验收复用同一个输出目录；源码候选变更后使用新的时间目录。若同分钟重名，不覆盖已有候选，应等待下一分钟或先向用户确认复用。
+- 构建必须显式指定输出目录；自检必须直接运行该目录下的候选，禁止使用默认路径的 `dotnet run` 误测旧产物。完成报告须给出候选 EXE 的绝对路径。
+- 官方插件仍独立构建，不得将官方插件 DLL 或其私有 SDK 副本混入主程序候选目录。此约定只改变产物位置，不授权安装、替换运行中实例、打包或发布。
+
+### 5.2 构建与验证示例
+
 在仓库根目录运行：
 
 ```powershell
-# 主程序 Release 构建；必须 0 error，新增 warning 也要解释
-dotnet build .\WinPieGestures\WinPieGestures.csproj -c Release --nologo
+# 使用香港时间生成本轮目录；不要覆盖已存在的候选
+$buildTime = [TimeZoneInfo]::ConvertTimeBySystemTimeZoneId([DateTime]::UtcNow, 'China Standard Time')
+$buildParent = '.\WinPieGestures\bin\Release'
+$buildDir = Join-Path $buildParent ('build-out-' + $buildTime.ToString('yyyyMMdd-HHmm'))
+if (Test-Path -LiteralPath $buildDir) { throw "候选目录已存在，禁止覆盖：$buildDir" }
+New-Item -ItemType Directory -Path $buildDir | Out-Null
 
-# 插件无界面自检；不得触发真实动作
-dotnet run --project .\WinPieGestures\WinPieGestures.csproj -c Release -- --plugin-selftest --skip-invoke
+# 主程序 Release 构建；必须 0 error，新增 warning 也要解释
+# 末尾双反斜杠避免带空格路径经 Windows 命令行转义时丢失引号边界
+dotnet build .\WinPieGestures\WinPieGestures.csproj -c Release --nologo "-p:OutDir=$buildDir\\"
+if ($LASTEXITCODE -ne 0) { throw "Release 构建失败：$LASTEXITCODE" }
+
+# 插件无界面自检：先指定已构建的测试插件 DLL，不得省略该位置参数
+$testPluginDll = '<待验证插件 DLL 的绝对路径>'
+dotnet (Join-Path $buildDir 'StarPie.dll') --plugin-selftest $testPluginDll --skip-invoke
 
 # 静态与差异卫生
 git diff --check

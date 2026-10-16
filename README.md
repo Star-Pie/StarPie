@@ -16,6 +16,8 @@
 [![Language](https://img.shields.io/badge/Language-zh--CN%20%7C%20zh--TW%20%7C%20en%20%7C%20ja-8B5CF6.svg?style=flat-square)](#i18n)
 [![Downloads](https://img.shields.io/github/downloads/Star-Pie/StarPie/total?style=flat-square&logo=github)](https://github.com/Star-Pie/StarPie/releases)
 [![QQ 公测群：1079199287](https://img.shields.io/badge/QQ-1079199287-12B7F5?style=flat-square&logo=qq&logoColor=white&labelColor=555555)](https://qm.qq.com/q/y1J4gxkUTu)
+[![项目主页](https://img.shields.io/badge/Homepage-StarPie-6554C8?style=flat-square&logo=githubpages&logoColor=white)](https://star-pie.github.io/)
+[![赞助页面](https://img.shields.io/badge/Sponsors-Support-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white)](https://star-pie.github.io/sponsor/)
 
 <br/>
 
@@ -23,9 +25,9 @@
 
 <br/>
 
-[🌟 功能概览](#highlights) • [🚀 快速开始](#download) • [✨ 功能特性](#features) • [🎨 外观定制](#visuals) • [🌐 多语言](#i18n) • [🛠️ 本地构建](#build) • [📋 更新日志](CHANGELOG.md) • [🧪 Beta 测试](#beta)
+[🌟 功能概览](#highlights) • [✨ 功能特性](#features) • [🎨 外观定制](#visuals) • [🌐 多语言](#i18n) • [🧪 Beta 测试](#beta) • [🚀 快速开始](#download) • [🛠️ 本地构建](#build)
 
-[🤝 参与贡献](#contributing) • [⭐ Star 历史](#star-history) • [💬 社区交流](#community) • [❤️ 支持项目](#support) • [📌 项目状态](#project-status) • [🙏 特别鸣谢](#special-thanks)
+[📌 项目状态](#project-status) • [💬 社区交流](#community) • [🤝 参与贡献](#contributing) • [🙏 特别鸣谢](#special-thanks) • [⭐ Star 历史](#star-history) • [❤️ 支持项目](#support) • [📋 更新日志](CHANGELOG.md)
 
 </div>
 
@@ -431,18 +433,6 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 
 ---
 
-<a id="support"></a>
-
-## ❤️ 支持项目 (Support)
-
-如果 StarPie 对你有帮助，你可以通过以下方式支持项目：
-
-- 给 [项目仓库](https://github.com/Star-Pie/StarPie) 一颗 Star，或分享给需要鼠标手势与效率工具的朋友。
-- 在 [Discussions](https://github.com/Star-Pie/StarPie/discussions) 分享你的主题、使用场景和演示素材。
-- 提交有复现步骤的反馈，或按照 [贡献指南](CONTRIBUTING.md) 帮助完善代码、翻译和文档。
-
----
-
 <a id="contributing"></a>
 
 ## 🤝 参与贡献 (Contributing)
@@ -478,5 +468,27 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date&amp;theme=dark" />
     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" />
     <img alt="StarPie 的 GitHub Star 历史图表" src="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" width="100%" />
+  </picture>
+</a>
+
+---
+
+<a id="support"></a>
+
+## ❤️ 支持项目 (Support)
+
+如果 StarPie 对你有帮助，你可以通过以下方式支持项目：
+
+- 给 [项目仓库](https://github.com/Star-Pie/StarPie) 一颗 Star，或分享给需要鼠标手势与效率工具的朋友。
+- 在 [Discussions](https://github.com/Star-Pie/StarPie/discussions) 分享你的主题、使用场景和演示素材。
+- 提交有复现步骤的反馈，或按照 [贡献指南](CONTRIBUTING.md) 帮助完善代码、翻译和文档。
+
+感谢每一位支持 StarPie 的朋友。点击下方名单可查看完整赞助页面。
+
+<a href="https://star-pie.github.io/sponsor/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
+    <img alt="StarPie 赞助者名单" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
   </picture>
 </a>
