@@ -482,6 +482,7 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 - 给 [项目仓库](https://github.com/Star-Pie/StarPie) 一颗 Star，或分享给需要鼠标手势与效率工具的朋友。
 - 在 [Discussions](https://github.com/Star-Pie/StarPie/discussions) 分享你的主题、使用场景和演示素材。
 - 提交有复现步骤的反馈，或按照 [贡献指南](CONTRIBUTING.md) 帮助完善代码、翻译和文档。
+- **赞助开发**：前往 [StarPie 赞助页面](https://star-pie.github.io/sponsor/)，通过微信、支付宝或爱发电支持项目的持续开发。
 
 感谢每一位支持 StarPie 的朋友。点击下方名单可查看完整赞助页面。
 

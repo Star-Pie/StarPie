@@ -475,6 +475,7 @@ If StarPie helps you, you can support the project by:
 - Giving the [repository](https://github.com/Star-Pie/StarPie) a Star or sharing it with someone who could use a mouse-gesture productivity tool.
 - Sharing themes, use cases, and demo assets in [Discussions](https://github.com/Star-Pie/StarPie/discussions).
 - Providing reproducible feedback or improving code, translations, and documentation through the [contributing guide](CONTRIBUTING.md).
+- **Sponsoring development** through the [StarPie sponsors page](https://star-pie.github.io/sponsor/), using WeChat, Alipay, or Afdian.
 
 Thank you to everyone who supports StarPie. Click the list below to visit the full sponsors page.
 
