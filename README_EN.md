@@ -24,7 +24,7 @@
 
 [🌟 Highlights](#highlights) • [✨ Features](#features) • [🎨 Visual Customization](#visuals) • [🌐 Languages](#i18n) • [🧪 Beta Testing](#beta) • [🚀 Quick Start](#download) • [🛠️ Build & Development](#build)
 
-[📌 Project Status](#project-status) • [💬 Community](#community) • [🤝 Contributing](#contributing) • [🙏 Special Thanks](#special-thanks) • [⭐ Star History](#star-history) • [❤️ Support](#support) • [📋 Changelog](CHANGELOG.md)
+[📌 Project Status](#project-status) • [💬 Community](#community) • [🤝 Contributing](#contributing) • [🙏 Special Thanks](#special-thanks) • [❤️ Support & Thanks](#support) • [⭐ Star History](#star-history) • [📋 Changelog](CHANGELOG.md)
 
 </div>
 
@@ -451,6 +451,26 @@ Thank you to all [project contributors](https://github.com/Star-Pie/StarPie/grap
 
 ---
 
+<a id="support"></a>
+
+## ❤️ Support & Thanks
+
+Thank you to everyone who supports StarPie. Your support helps us maintain the code, test compatibility, and improve the documentation. Core features remain free and open source.
+
+[Support on Afdian](https://afdian.com/a/starpieproject) · [WeChat, Alipay, and the full sponsors page](https://star-pie.github.io/sponsor/)
+
+<a href="https://star-pie.github.io/sponsor/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
+    <img alt="Thank you to StarPie supporters. Open the full supporters list." src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
+  </picture>
+</a>
+
+Sharing your experience, reporting issues, testing changes, and contributing code are valuable support, too. Public listing is entirely optional. To join, update, or leave the list, contact the maintainer as explained on the sponsors page.
+
+---
+
 <a id="star-history"></a>
 
 ## ⭐ Star History
@@ -461,28 +481,5 @@ Thank you to all [project contributors](https://github.com/Star-Pie/StarPie/grap
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date&amp;theme=dark" />
     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" />
     <img alt="StarPie GitHub Star history chart" src="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" width="100%" />
-  </picture>
-</a>
-
----
-
-<a id="support"></a>
-
-## ❤️ Support
-
-If StarPie helps you, you can support the project by:
-
-- Giving the [repository](https://github.com/Star-Pie/StarPie) a Star or sharing it with someone who could use a mouse-gesture productivity tool.
-- Sharing themes, use cases, and demo assets in [Discussions](https://github.com/Star-Pie/StarPie/discussions).
-- Providing reproducible feedback or improving code, translations, and documentation through the [contributing guide](CONTRIBUTING.md).
-- **Sponsoring development** through the [StarPie sponsors page](https://star-pie.github.io/sponsor/), using WeChat, Alipay, or Afdian.
-
-Thank you to everyone who supports StarPie. Click the list below to visit the full sponsors page.
-
-<a href="https://star-pie.github.io/sponsor/">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
-    <img alt="StarPie sponsors" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
   </picture>
 </a>

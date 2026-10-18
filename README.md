@@ -27,7 +27,7 @@
 
 [🌟 功能概览](#highlights) • [✨ 功能特性](#features) • [🎨 外观定制](#visuals) • [🌐 多语言](#i18n) • [🧪 Beta 测试](#beta) • [🚀 快速开始](#download) • [🛠️ 本地构建](#build)
 
-[📌 项目状态](#project-status) • [💬 社区交流](#community) • [🤝 参与贡献](#contributing) • [🙏 特别鸣谢](#special-thanks) • [⭐ Star 历史](#star-history) • [❤️ 支持项目](#support) • [📋 更新日志](CHANGELOG.md)
+[📌 项目状态](#project-status) • [💬 社区交流](#community) • [🤝 参与贡献](#contributing) • [🙏 特别鸣谢](#special-thanks) • [❤️ 支持与致谢](#support) • [⭐ Star 历史](#star-history) • [📋 更新日志](CHANGELOG.md)
 
 </div>
 
@@ -458,6 +458,26 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 
 ---
 
+<a id="support"></a>
+
+## ❤️ 支持与致谢 (Support & Thanks)
+
+感谢每一位支持 StarPie 的朋友。你的支持帮助我们持续维护代码、测试兼容性并完善文档。核心功能保持免费开源。
+
+[在爱发电支持](https://afdian.com/a/starpieproject) · [微信、支付宝与完整赞助页](https://star-pie.github.io/sponsor/)
+
+<a href="https://star-pie.github.io/sponsor/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
+    <img alt="感谢 StarPie 的公开支持者，点击查看完整名单" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
+  </picture>
+</a>
+
+分享使用体验、反馈问题、参与测试或贡献代码，同样是珍贵的支持。公开展示完全自愿；希望加入、修改或移除资料，请按赞助页说明联系维护者。
+
+---
+
 <a id="star-history"></a>
 
 ## ⭐ Star 历史 (Star History)
@@ -468,28 +488,5 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date&amp;theme=dark" />
     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" />
     <img alt="StarPie 的 GitHub Star 历史图表" src="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" width="100%" />
-  </picture>
-</a>
-
----
-
-<a id="support"></a>
-
-## ❤️ 支持项目 (Support)
-
-如果 StarPie 对你有帮助，你可以通过以下方式支持项目：
-
-- 给 [项目仓库](https://github.com/Star-Pie/StarPie) 一颗 Star，或分享给需要鼠标手势与效率工具的朋友。
-- 在 [Discussions](https://github.com/Star-Pie/StarPie/discussions) 分享你的主题、使用场景和演示素材。
-- 提交有复现步骤的反馈，或按照 [贡献指南](CONTRIBUTING.md) 帮助完善代码、翻译和文档。
-- **赞助开发**：前往 [StarPie 赞助页面](https://star-pie.github.io/sponsor/)，通过微信、支付宝或爱发电支持项目的持续开发。
-
-感谢每一位支持 StarPie 的朋友。点击下方名单可查看完整赞助页面。
-
-<a href="https://star-pie.github.io/sponsor/">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
-    <img alt="StarPie 赞助者名单" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
   </picture>
 </a>
