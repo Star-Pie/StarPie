@@ -353,6 +353,9 @@ public class AppConfig
 		? "Beta"
 		: "Stable";
 
+	/// <summary>Application release source, independent from the shared GitHub download proxy.</summary>
+	public string UpdateReleaseSource { get; set; } = "github";
+
 	public string UpdateProxySource { get; set; } = "ghproxy";
 
 	public string CustomProxyUrl { get; set; } = "";
