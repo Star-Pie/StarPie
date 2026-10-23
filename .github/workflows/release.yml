@@ -619,5 +619,6 @@ jobs:
     uses: ./.github/workflows/atomgit-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
+      upload_client: curl
     secrets:
       ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}

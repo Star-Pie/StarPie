@@ -89,6 +89,22 @@ dotnet publish .\WinPieGestures\WinPieGestures.csproj `
 - 不使用独立的 `release: published` 事件串联，避免 `GITHUB_TOKEN` 创建事件不触发下游工作流的问题。失败后手动重跑同步入口即可，无需重跑构建、签名或发布步骤。
 - 工作流使用 Node.js 24 的内置模块，无 npm 依赖；只授予 GitHub `contents: read`，不向被调用工作流透传 SignPath 等其它密钥。
 
+### 上传客户端与超时对照
+
+手动执行同步工作流时可设置以下输入；可复用工作流也接受同名参数，发布工作流显式选择 `curl`；其它调用不传入时也默认使用 `curl`：
+
+| 输入 | 默认值 | 含义 |
+| --- | --- | --- |
+| `upload_client` | `curl` | `node` 使用现有 Fetch 上传；`curl` 仅替换对象存储 PUT 客户端，便于在同一 Runner 上对照速度 |
+| `upload_timeout_minutes` | 留空 | 不主动设置上传超时；填写时要求正整数分钟，不设置人为上限 |
+| `job_timeout_minutes` | 留空，按 360 分钟执行 | 可填写正整数分钟；GitHub 托管 Runner 单个任务始终受 6 小时的平台上限约束，不是真正无限运行 |
+
+通常保持 `curl`，两项超时均留空即可；需要更早停止时再填写时限。留空会移除上传客户端的主动超时和 curl 子进程的父级超时，不移除平台任务上限。延长超时不能提高带宽；curl 是否提速仍需实际对照，不能据本地测试声称解决跨境网络问题。GitHub 下载、AtomGit 回读的既有超时不受单文件上传参数影响；总任务上限仍可能先于某个文件超时。
+
+curl 使用 Runner 已有的可执行文件，不经 shell；关闭用户 curlrc、自动重试和重定向，固定 HTTPS 和 Content-Length。临时上传 URL 与回调请求头保存在私有临时配置文件，不写入命令行或日志；子进程不继承 GitHub/AtomGit Token 环境变量。上传时限留空时不设置 curl 的连接/总传输超时或父进程计时器；结束后清理配置、流和进程。进度统计请求体已交给 curl 的字节，不代表远端已收妥；仍需成功 HTTP 状态、附件登记和原有 SHA-256 回读校验。失败不自动切换客户端或重传，同 Tag 的下次手动执行会复用已校验附件；复用耗时不能当作客户端上传速度对照，不为测速删除或重传已有正确附件。
+
+选择 curl 时，工作流额外执行只连接回环地址的真实 curl 传输测试，不访问 GitHub/AtomGit 发布 API。
+
 ### 校验与重试
 
 1. 按明确 Tag 读取非草稿、已发布且有附件的 GitHub Release，分页读取附件；递归解析附注 Tag，取得最终提交 SHA。
@@ -99,6 +115,8 @@ dotnet publish .\WinPieGestures\WinPieGestures.csproj `
 6. GET 对临时错误有限重试；POST/PATCH/PUT 不盲目重试。写入成功但响应丢失时，下次运行重新读取远端并核对内容。目标中与源无关的附件保持原状。
 7. 跨 Tag 及手动重试使用同一仓库级并发组，不取消正在进行的上传。GitHub concurrency 不是持久任务队列，连续多次触发可能替换尚未开始的 pending 运行；被替换版本可用手动入口补同步。
 
+传输日志分别标识 GitHub 源附件下载、AtomGit 上传和 AtomGit 回读校验，记录文件名、已传输/总字节数、百分比、耗时及平均速率；传输过程中每 30 秒输出一次，即使没有新字节也会报告当前阶段。上传字节表示请求体已被传输层读取，不代表服务端已确认；请求体送完后单独提示等待服务端确认，之后仍需附件登记和 SHA-256 回读校验。日志同时标识上传地址申请、附件登记轮询、复用与元数据检查，不输出 Token、临时签名 URL、请求头或原始网络异常；成功或失败后清理进度定时器。
+
 预发布映射为 AtomGit `pre`；GitHub 当前最新正式版显式设置 `latest`。补传旧正式版时省略该字段，避免主动请求提升；AtomGit 文档仅暴露 `pre/latest`，不保证与 GitHub 独立的 latest 指针完全等价，历史版本排序需在线验收，不声称已验证服务端默认行为。
 
 ### 本地验证与在线门禁
@@ -106,12 +124,14 @@ dotnet publish .\WinPieGestures\WinPieGestures.csproj `
 ```powershell
 node --check .github/scripts/sync-atomgit-release.mjs
 node --test .github/scripts/sync-atomgit-release.test.mjs
+# 可选 curl 客户端验证，仅连接本机回环服务器：
+node --test .github/scripts/upload-with-curl.test.mjs
 # 若已有 actionlint：
 actionlint -shellcheck= -pyflakes= .github/workflows/atomgit-release.yml .github/workflows/release.yml
 git -c core.whitespace=cr-at-eol diff --check
 ```
 
-测试使用内存中的模拟 HTTP 响应和临时文件，不调用发布 API、不读取真实 Token。覆盖新建、幂等重试、部分成功、同名冲突、Tag 缺失/分叉、附注 Tag、损坏下载、分页、预发布、权限错误、跳转凭据隔离和上传响应丢失。工作流字符串检查只作为结构护栏，不能替代 actionlint 或托管 Actions 验收。
+测试使用内存中的模拟 HTTP 响应和临时文件，不调用发布 API、不读取真实 Token。覆盖新建、幂等重试、部分成功、同名冲突、Tag 缺失/分叉、附注 Tag、损坏下载、分页、预发布、权限错误、跳转凭据隔离、上传响应丢失，以及传输进度、等待服务端响应、失败后定时器清理和日志脱敏。工作流字符串检查只作为结构护栏，不能替代 actionlint 或托管 Actions 验收。
 
 首次在线验收须由用户批准并手动执行：确认目标组织仓库、Token 权限、API 实际响应、附件上传回调与公开下载的 SHA-256；再运行同一 Tag，确认不重复上传。自动调用正式发布链路和托管平台的 job 失败/输出传播也须在 GitHub 上验收。本地离线通过不代表已经完成线上镜像或独立发布审查。
 
