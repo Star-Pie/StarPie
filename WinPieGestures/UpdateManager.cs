@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -127,6 +128,10 @@ internal sealed class ReleaseVersion : IComparable<ReleaseVersion>
 
 public class ReleaseInfo
 {
+	public string Source { get; set; } = "github";
+
+	public string? ChecksumsAssetUrl { get; set; }
+
 	public string TagName { get; set; } = "";
 
 	public Version? ParsedVersion { get; set; }
@@ -176,7 +181,7 @@ public class UpdateProgressInfo
 		: $"{BytesReceived / (1024.0 * 1024.0):F1} MB";
 }
 
-public class UpdateManager
+public partial class UpdateManager
 {
 	private static readonly Lazy<UpdateManager> _instance = new Lazy<UpdateManager>(() => new UpdateManager());
 	public static UpdateManager Instance => _instance.Value;
@@ -196,11 +201,22 @@ public class UpdateManager
 		{
 			Timeout = TimeSpan.FromSeconds(15)
 		};
+		_atomGitHttpClient = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
+		{
+			Timeout = TimeSpan.FromSeconds(15)
+		};
+		_atomGitHttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("StarPie-Updater", AppVersionInfo.DisplayVersion));
 		// User-Agent 里的版本号从 AppVersionInfo 取，不要再写一份字面量：
 		// 那份字面量不在任何发版检查清单上，发版时必然漏改，而且
 		// 这里原来取的是 AssemblyVersion（1.8.0.0 → "1.8.0"），会把预发布标识丢掉，
 		// 与设置页里另一个 UA 的写法也不一致。
 		_httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("StarPie-Updater", AppVersionInfo.DisplayVersion));
+	}
+
+	internal UpdateManager(HttpClient client)
+	{
+		_httpClient = client;
+		_atomGitHttpClient = client;
 	}
 
 	public bool IsCurrentInstallationStandalone()
@@ -250,8 +266,11 @@ public class UpdateManager
 		};
 	}
 
-	public async Task<List<ReleaseInfo>> FetchAllReleasesAsync(string proxySource = "ghfast", string customProxy = "", CancellationToken ct = default)
+	public async Task<List<ReleaseInfo>> FetchAllReleasesAsync(string proxySource = "ghfast", string customProxy = "", CancellationToken ct = default, string releaseSource = "github")
 	{
+		if (NormalizeReleaseSource(releaseSource) == "atomgit")
+			return await FetchAtomGitReleasesAsync(ct).ConfigureAwait(false);
+		ct.ThrowIfCancellationRequested();
 		List<ReleaseInfo> allReleases = new List<ReleaseInfo>();
 		try
 		{
@@ -415,9 +434,9 @@ public class UpdateManager
 		}
 	}
 
-	public async Task<ReleaseInfo?> CheckForUpdateAsync(string channel = "Stable", string proxySource = "ghfast", string customProxy = "", CancellationToken ct = default)
+	public async Task<ReleaseInfo?> CheckForUpdateAsync(string channel = "Stable", string proxySource = "ghfast", string customProxy = "", CancellationToken ct = default, string releaseSource = "github")
 	{
-		var all = await FetchAllReleasesAsync(proxySource, customProxy, ct).ConfigureAwait(false);
+		var all = await FetchAllReleasesAsync(proxySource, customProxy, ct, releaseSource).ConfigureAwait(false);
 		return GetLatestUpdateRelease(all, channel);
 	}
 
@@ -643,8 +662,12 @@ public class UpdateManager
 		return comparison > 0 || (comparison == 0 && candidate.PublishedAt > currentBest.PublishedAt);
 	}
 
-	public async Task DownloadAssetAsync(string downloadUrl, string destinationZipPath, IProgress<UpdateProgressInfo>? progress, CancellationToken ct)
+	public async Task DownloadAssetAsync(string downloadUrl, string destinationZipPath, IProgress<UpdateProgressInfo>? progress, CancellationToken ct, string releaseSource = "github", string? expectedSha256 = null)
 	{
+		bool isAtomGit = NormalizeReleaseSource(releaseSource) == "atomgit";
+		if (isAtomGit && (!IsAtomGitAssetUrl(downloadUrl) || !Regex.IsMatch(expectedSha256 ?? "", "^[a-fA-F0-9]{64}$")))
+			throw new InvalidDataException("AtomGit download requires a valid mirrored URL and SHA-256 checksum.");
+		ct.ThrowIfCancellationRequested();
 		string tempDir = Path.GetDirectoryName(destinationZipPath)!;
 		if (!Directory.Exists(tempDir))
 		{
@@ -666,7 +689,7 @@ public class UpdateManager
 			rawGithubUrl = downloadUrl.Substring(ghIndex);
 		}
 
-		if (rawGithubUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
+		if (!isAtomGit && rawGithubUrl.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase))
 		{
 			string m1 = $"https://ghfast.top/{rawGithubUrl}";
 			string m2 = $"https://gh-proxy.com/{rawGithubUrl}";
@@ -685,7 +708,9 @@ public class UpdateManager
 				AppLogger.LogInfo($"Attempting to download update asset from: {currentUrl}");
 				using var downloadReq = new HttpRequestMessage(HttpMethod.Get, currentUrl);
 				downloadReq.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*"));
-				using HttpResponseMessage response = await _httpClient.SendAsync(downloadReq, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+				using HttpResponseMessage response = isAtomGit
+					? await SendAtomGitGetAsync(currentUrl, ct).ConfigureAwait(false)
+					: await _httpClient.SendAsync(downloadReq, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
 				if (!response.IsSuccessStatusCode)
 				{
 					AppLogger.LogWarn($"Download attempt failed with status {response.StatusCode} for URL: {currentUrl}");
@@ -698,6 +723,7 @@ public class UpdateManager
 				await using Stream contentStream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
 				await using FileStream fileStream = new FileStream(destinationZipPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
 
+				using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 				byte[] buffer = new byte[65536];
 				long totalRead = 0;
 				int read;
@@ -710,6 +736,7 @@ public class UpdateManager
 				{
 					await fileStream.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
 					totalRead += read;
+					hash.AppendData(buffer, 0, read);
 
 					DateTime now = DateTime.UtcNow;
 					double elapsedSeconds = (now - lastSpeedTime).TotalSeconds;
@@ -729,6 +756,10 @@ public class UpdateManager
 						SpeedBytesPerSecond = lastSpeed
 					});
 				}
+
+				if ((totalBytes.HasValue && totalRead != totalBytes.Value) ||
+					(expectedSha256 != null && !string.Equals(Convert.ToHexString(hash.GetHashAndReset()), expectedSha256, StringComparison.OrdinalIgnoreCase)))
+					throw new InvalidDataException("Update package size or SHA-256 did not match.");
 
 				progress?.Report(new UpdateProgressInfo
 				{
@@ -755,7 +786,9 @@ public class UpdateManager
 			catch (Exception ex)
 			{
 				lastEx = ex;
-				AppLogger.LogWarn($"Download from {currentUrl} failed ({ex.Message}), trying next mirror...");
+				AppLogger.LogWarn(isAtomGit
+					? $"AtomGit download failed ({ex.Message}); no source fallback."
+					: $"Download from {currentUrl} failed ({ex.Message}), trying next mirror...");
 				if (File.Exists(destinationZipPath))
 				{
 					try { File.Delete(destinationZipPath); } catch { }

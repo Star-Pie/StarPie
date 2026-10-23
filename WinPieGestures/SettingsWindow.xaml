@@ -4142,264 +4142,6 @@
           </Grid>
           <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,10,36">
-              <!-- Card 0: 系统在线更新与版本管理 -->
-              <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="20" Margin="0,0,0,14">
-                <UIElement.Effect>
-                  <DynamicResource ResourceKey="CardShadowEffect" />
-                </UIElement.Effect>
-                <StackPanel>
-                  <!-- 顶部状态栏 -->
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="🚀" FontSize="15" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                        <TextBlock Name="UpdateSectionTitleText" Text="软件更新" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        <Border Name="UpdateStatusBadge" Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="4" Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center">
-                          <TextBlock Name="UpdateStatusBadgeText" Text="已是最新版本" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
-                        </Border>
-                      </StackPanel>
-                      <TextBlock Name="UpdateStatusDescText" Text="当前运行版本: StarPie v2.0.1-beta.1 (64位)。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                      <Button Name="CheckUpdateNowBtn" Content="🔄 立即检查更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="14,0" Margin="0,0,8,0" VerticalAlignment="Center" Click="CheckUpdateNowBtn_Click" />
-                      <Button Name="ViewReleasesWebBtn" Content="🌐 网页发布页" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" VerticalAlignment="Center" Click="OpenWebReleaseBtn_Click" ToolTip="直接在默认浏览器中打开 GitHub Releases 发布页" />
-                    </StackPanel>
-                  </Grid>
-
-                  <!-- 状态区 A: 发现新版本 -->
-                  <Border Name="UpdateNewVersionPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,14,0,0">
-                    <StackPanel>
-                      <Grid Margin="0,0,0,10">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                          <StackPanel Orientation="Horizontal">
-                            <TextBlock Name="UpdateNewVersionTagText" Text="🎉 发现新版本 v1.7.3" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
-                            <Border Background="#25F59E0B" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                              <TextBlock Name="UpdateReleaseChannelTag" Text="正式稳定版" FontSize="10" FontWeight="SemiBold" Foreground="#F59E0B" />
-                            </Border>
-                          </StackPanel>
-                          <TextBlock Name="UpdateReleaseDateText" Text="发布于 GitHub Releases" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
-                        </StackPanel>
-                        <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                          <Button Name="StartDownloadUpdateBtn" Content="⬇️ 立即下载更新" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" Margin="0,0,8,0" Click="StartDownloadUpdateBtn_Click" />
-                          <Button Name="OpenWebReleaseBtn" Content="🌐 前往网页" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="10,0" Click="OpenWebReleaseBtn_Click" />
-                        </WrapPanel>
-                      </Grid>
-
-                      <!-- 发行包选择 -->
-                      <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,4,0,8">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                          <TextBlock Name="UpdateDownloadPkgLabel" Text="📦 下载版本:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                          <RadioButton Name="UpdatePkgStandaloneRadio" Content="独立免安装单文件版 (~68 MB, 推荐)" IsChecked="True" GroupName="UpdatePkgGroup" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" />
-                          <RadioButton Name="UpdatePkgLightweightRadio" Content="依赖 .NET 8 运行时轻量版 (~2.7 MB)" GroupName="UpdatePkgGroup" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        </StackPanel>
-                      </Border>
-
-                      <!-- 更新日志预览 -->
-                      <TextBlock Name="UpdateChangelogLabel" Text="📋 详细更新日志:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,4" />
-                      <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
-                        <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                          <TextBlock Name="UpdateChangelogTextBlock" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18" />
-                        </ScrollViewer>
-                      </Border>
-                    </StackPanel>
-                  </Border>
-
-                  <!-- 状态区 B: 下载进度条 -->
-                  <Border Name="UpdateDownloadProgressPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,14,0,0">
-                    <StackPanel>
-                      <Grid Margin="0,0,0,8">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Name="UpdateDownloadingTitleText" Text="正在下载更新安装包..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                        <TextBlock Name="UpdateDownloadPercentText" Grid.Column="1" Text="0%" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
-                      </Grid>
-                      <ProgressBar Name="UpdateDownloadProgressBar" Height="8" Minimum="0" Maximum="100" Value="0" Margin="0,0,0,8" />
-                      <Grid>
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*" />
-                          <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                          <TextBlock Name="UpdateDownloadSpeedText" Text="⚡ 计算中..." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0" />
-                          <TextBlock Name="UpdateDownloadSizeText" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </StackPanel>
-                        <Button Name="CancelDownloadBtn" Grid.Column="1" Content="✖ 取消下载" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="10,0" FontSize="11" Click="CancelDownloadBtn_Click" />
-                      </Grid>
-                    </StackPanel>
-                  </Border>
-
-                  <!-- 状态区 C: 下载完成就绪重启 -->
-                  <Border Name="UpdateReadyToInstallPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="#10B981" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,14,0,0">
-                    <Grid>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
-                      <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                        <StackPanel Orientation="Horizontal">
-                          <TextBlock Text="✅" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" />
-                          <TextBlock Name="UpdateReadyTitleText" Text="新版本已完整下载就绪" FontSize="13" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Name="UpdateReadyDescText" Text="点击立即重启，将优雅保存当前配置并静默更新覆盖程序，完成后自动唤起新版本。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <WrapPanel Grid.Column="1" VerticalAlignment="Center">
-                        <Button Name="ApplyRestartUpdateBtn" Content="🚀 立即退出并重启更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="14,0" Margin="0,0,8,0" Click="ApplyRestartUpdateBtn_Click" />
-                        <Button Name="OpenUpdateFolderBtn" Content="📂 打开文件位置" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Click="OpenUpdateFolderBtn_Click" />
-                      </WrapPanel>
-                    </Grid>
-                  </Border>
-
-                  <!-- 下方偏好、加速与历史版本回退高级选项 (默认折叠收纳) -->
-                  <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,12,0,0">
-                    <Expander Name="UpdateAdvancedSettingsExpander" IsExpanded="False" Background="#00FFFFFF" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}">
-                      <HeaderedContentControl.Header>
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,3,0,3">
-                          <TextBlock Text="⚙️" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                          <TextBlock Name="UpdateAdvancedSettingsExpanderTitle" Text="更新偏好、下载加速与历史版本回退" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                          <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Name="UpdateAdvancedOptionsBadge" Text="高级选项" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
-                          </Border>
-                        </StackPanel>
-                      </HeaderedContentControl.Header>
-                      <StackPanel Margin="0,8,0,0">
-                        <!-- 下方偏好与加速策略 -->
-                        <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,6,0,0">
-                          <Grid>
-                            <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                              <RowDefinition Height="Auto" />
-                              <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-
-                            <!-- 自动检查更新开关 -->
-                            <Grid Grid.Column="0" Margin="0,0,10,10">
-                              <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                              </Grid.ColumnDefinitions>
-                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
-                                <TextBlock Name="UpdateSilentCheckTitleText" Text="开机静默检查更新" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <TextBlock Name="UpdateSilentCheckDescText" Text="程序启动后在后台静默查询 GitHub Releases" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
-                              </StackPanel>
-                              <CheckBox Name="AutoCheckUpdateCheckBox" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center" Checked="AutoCheckUpdateCheckBox_Changed" Unchecked="AutoCheckUpdateCheckBox_Changed" />
-                            </Grid>
-
-                            <!-- 推送通道选择 -->
-                            <Grid Grid.Column="1" Margin="10,0,0,10">
-                              <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="150" />
-                              </Grid.ColumnDefinitions>
-                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
-                                <TextBlock Name="UpdateChannelTitleText" Text="更新推送通道" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <TextBlock Name="UpdateChannelDescText" Text="选择稳定版或尝鲜版" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
-                              </StackPanel>
-                              <ComboBox Name="UpdateChannelComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateChannelComboBox_SelectionChanged">
-                                <ComboBoxItem x:Name="UpdateChannelStableItem" Tag="Stable" Content="🌟 正式稳定版" />
-                                <ComboBoxItem x:Name="UpdateChannelBetaItem" Tag="Beta" Content="🚀 尝鲜测试版" />
-                              </ComboBox>
-                            </Grid>
-
-                            <!-- 国内加速下载镜像源 -->
-                            <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,0">
-                              <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="220" />
-                              </Grid.ColumnDefinitions>
-                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
-                                <StackPanel Orientation="Horizontal">
-                                  <TextBlock Text="⚡" FontSize="13" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center" />
-                                  <TextBlock Name="UpdateProxyTitleText" Text="GitHub 下载加速镜像源" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                                  <Border Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Name="ChinaFastDownloadBadge" Text="国内极速下载" FontSize="10" Foreground="{DynamicResource AccentPrimaryBrush}" />
-                                  </Border>
-                                </StackPanel>
-                                <TextBlock Name="UpdateProxyDescText" Text="解决国内访问 GitHub Releases 丢包或限速问题，自动加速代理下载" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
-                              </StackPanel>
-                              <ComboBox Name="UpdateProxyComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateProxyComboBox_SelectionChanged">
-                                <ComboBoxItem x:Name="UpdateProxyGhfastItem" Tag="ghfast" Content="⚡ 镜像源 1 (ghfast.top 推荐)" />
-                                <ComboBoxItem x:Name="UpdateProxyGhproxyItem" Tag="gh-proxy" Content="⚡ 镜像源 2 (gh-proxy.com 备用)" />
-                                <ComboBoxItem x:Name="UpdateProxyMirrorItem" Tag="mirror" Content="⚡ 镜像源 3 (mirror.ghproxy.com)" />
-                                <ComboBoxItem x:Name="UpdateProxyDirectItem" Tag="direct" Content="🌐 官方直连" />
-                              </ComboBox>
-                            </Grid>
-                          </Grid>
-                        </Border>
-
-                        <!-- 版本回退专区 (Version Rollback) -->
-                        <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,12,0,0">
-                          <StackPanel>
-                            <Grid>
-                              <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                              </Grid.ColumnDefinitions>
-                              <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                  <TextBlock Text="⏮️" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                  <TextBlock Name="RollbackSectionTitleText" Text="历史版本回退" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                                  <Border Name="RollbackCountBadge" Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                                    <TextBlock Name="RollbackCountBadgeText" Text="🚀 测试版最多回退5个版本" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
-                                  </Border>
-                                </StackPanel>
-                                <TextBlock Name="RollbackSectionDescText" Text="若当前版本发生兼容性或配置异常，可选择历史版本一键覆盖回退安装。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
-                              </StackPanel>
-
-                              <!-- 选择历史版本下拉框与回退按钮 -->
-                              <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <ComboBox Name="RollbackVersionComboBox" Style="{StaticResource FlatComboBoxStyle}" Width="210" Height="32" Margin="0,0,8,0" VerticalAlignment="Center" SelectionChanged="RollbackVersionComboBox_SelectionChanged" />
-                                <Button Name="StartRollbackBtn" Content="⬇️ 回退至此版本" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" VerticalAlignment="Center" IsEnabled="False" Click="StartRollbackBtn_Click" />
-                              </StackPanel>
-                            </Grid>
-
-                            <!-- 选中回退版本的详情卡片 (折叠展开) -->
-                            <Border Name="RollbackDetailCard" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,10,0,0">
-                              <StackPanel>
-                                <Grid Margin="0,0,0,6">
-                                  <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                  </Grid.ColumnDefinitions>
-                                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Name="RollbackDetailTagText" Text="V1.7.3-beta.1" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
-                                    <Border Name="RollbackDetailChannelBorder" Background="#25F59E0B" CornerRadius="3" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                      <TextBlock Name="RollbackDetailChannelText" Text="尝鲜测试版" FontSize="10" FontWeight="SemiBold" Foreground="#F59E0B" />
-                                    </Border>
-                                    <TextBlock Name="RollbackDetailDateText" Text="· 发布于 2026-09-08" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
-                                  </StackPanel>
-                                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Name="RollbackPackageArchLabel" Text="安装包架构:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                    <TextBlock Name="RollbackInstallTypeText" Text="独立免安装版" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                                  </StackPanel>
-                                </Grid>
-                                <TextBlock Name="RollbackChangelogHeaderLabel" Text="📋 历史更新日志摘要:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,4" />
-                                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8">
-                                  <ScrollViewer MaxHeight="90" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                    <TextBlock Name="RollbackChangelogText" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="16" />
-                                  </ScrollViewer>
-                                </Border>
-                              </StackPanel>
-                            </Border>
-                          </StackPanel>
-                        </Border>
-                      </StackPanel>
-                    </Expander>
-                  </Border>
-                </StackPanel>
-              </Border>
 
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="20" Margin="0,0,0,14">
                 <UIElement.Effect>
@@ -4654,10 +4396,284 @@
                     <TextBlock Name="Tab4_AppSloganText" Text="高质感、极速现代 Windows 鼠标轮盘笔势工具" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
                   </StackPanel>
                   <WrapPanel Grid.Column="2" VerticalAlignment="Center">
-                    <Button Name="AboutCheckUpdateBtn" Content="🔄 检查更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Margin="0,0,8,0" Click="AboutCheckUpdateBtn_Click" />
                     <Button Name="OpenChangelogButton" Content="查看完整 CHANGELOG" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Click="OpenChangelogButton_Click" />
                   </WrapPanel>
                 </Grid>
+              </Border>
+              <!-- 关于页：软件更新与更新偏好，无需先检查即可访问。 -->
+              <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="20" Margin="0,0,0,14">
+                <UIElement.Effect>
+                  <DynamicResource ResourceKey="CardShadowEffect" />
+                </UIElement.Effect>
+                <StackPanel>
+                  <!-- 顶部状态栏 -->
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="🚀" FontSize="15" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <TextBlock Name="UpdateSectionTitleText" Text="软件更新" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                        <Border Name="UpdateStatusBadge" Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="4" Padding="7,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                          <TextBlock Name="UpdateStatusBadgeText" Text="已是最新版本" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
+                        </Border>
+                      </StackPanel>
+                      <TextBlock Name="UpdateStatusDescText" Text="当前运行版本: StarPie v2.0.1-beta.1 (64位)。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Name="CheckUpdateNowBtn" Content="🔄 立即检查更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="14,0" Margin="0,0,8,0" VerticalAlignment="Center" Click="CheckUpdateNowBtn_Click" />
+                      <Button Name="ViewReleasesWebBtn" Content="🌐 网页发布页" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" VerticalAlignment="Center" Click="OpenWebReleaseBtn_Click" ToolTip="直接在默认浏览器中打开 GitHub Releases 发布页" />
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- 状态区 A: 发现新版本 -->
+                  <Border Name="UpdateNewVersionPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource AccentPrimaryBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,14,0,0">
+                    <StackPanel>
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                          <StackPanel Orientation="Horizontal">
+                            <TextBlock Name="UpdateNewVersionTagText" Text="🎉 发现新版本 v1.7.3" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
+                            <Border Background="#25F59E0B" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                              <TextBlock Name="UpdateReleaseChannelTag" Text="正式稳定版" FontSize="10" FontWeight="SemiBold" Foreground="#F59E0B" />
+                            </Border>
+                          </StackPanel>
+                          <TextBlock Name="UpdateReleaseDateText" Text="发布于 GitHub Releases" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                          <Button Name="StartDownloadUpdateBtn" Content="⬇️ 立即下载更新" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" Margin="0,0,8,0" Click="StartDownloadUpdateBtn_Click" />
+                          <Button Name="OpenWebReleaseBtn" Content="🌐 前往网页" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="10,0" Click="OpenWebReleaseBtn_Click" />
+                        </WrapPanel>
+                      </Grid>
+
+                      <!-- 发行包选择 -->
+                      <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,4,0,8">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                          <TextBlock Name="UpdateDownloadPkgLabel" Text="📦 下载版本:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                          <RadioButton Name="UpdatePkgStandaloneRadio" Content="独立免安装单文件版 (~68 MB, 推荐)" IsChecked="True" GroupName="UpdatePkgGroup" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,16,0" VerticalAlignment="Center" />
+                          <RadioButton Name="UpdatePkgLightweightRadio" Content="依赖 .NET 8 运行时轻量版 (~2.7 MB)" GroupName="UpdatePkgGroup" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                      </Border>
+
+                      <!-- 更新日志预览 -->
+                      <TextBlock Name="UpdateChangelogLabel" Text="📋 详细更新日志:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,4" />
+                      <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10">
+                        <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                          <TextBlock Name="UpdateChangelogTextBlock" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18" />
+                        </ScrollViewer>
+                      </Border>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- 状态区 B: 下载进度条 -->
+                  <Border Name="UpdateDownloadProgressPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,14,0,0">
+                    <StackPanel>
+                      <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Name="UpdateDownloadingTitleText" Text="正在下载更新安装包..." FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Name="UpdateDownloadPercentText" Grid.Column="1" Text="0%" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
+                      </Grid>
+                      <ProgressBar Name="UpdateDownloadProgressBar" Height="8" Minimum="0" Maximum="100" Value="0" Margin="0,0,0,8" />
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                          <TextBlock Name="UpdateDownloadSpeedText" Text="⚡ 计算中..." FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0" />
+                          <TextBlock Name="UpdateDownloadSizeText" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                        <Button Name="CancelDownloadBtn" Grid.Column="1" Content="✖ 取消下载" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="10,0" FontSize="11" Click="CancelDownloadBtn_Click" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- 状态区 C: 下载完成就绪重启 -->
+                  <Border Name="UpdateReadyToInstallPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="#10B981" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,14,0,0">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                      </Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal">
+                          <TextBlock Text="✅" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+                          <TextBlock Name="UpdateReadyTitleText" Text="新版本已完整下载就绪" FontSize="13" FontWeight="Bold" Foreground="#10B981" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Name="UpdateReadyDescText" Text="点击立即重启，将优雅保存当前配置并静默更新覆盖程序，完成后自动唤起新版本。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Button Name="ApplyRestartUpdateBtn" Content="🚀 立即退出并重启更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="14,0" Margin="0,0,8,0" Click="ApplyRestartUpdateBtn_Click" />
+                        <Button Name="OpenUpdateFolderBtn" Content="📂 打开文件位置" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="12,0" Click="OpenUpdateFolderBtn_Click" />
+                      </WrapPanel>
+                    </Grid>
+                  </Border>
+
+                  <!-- 更新偏好在检查前默认展开，用户仍可手动折叠。 -->
+                  <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,12,0,0">
+                    <Expander Name="UpdateAdvancedSettingsExpander" IsExpanded="True" Background="#00FFFFFF" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}">
+                      <HeaderedContentControl.Header>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,3,0,3">
+                          <TextBlock Text="⚙️" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                          <TextBlock Name="UpdateAdvancedSettingsExpanderTitle" Text="更新偏好、下载加速与历史版本回退" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                          <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="3" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Name="UpdateAdvancedOptionsBadge" Text="高级选项" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                          </Border>
+                        </StackPanel>
+                      </HeaderedContentControl.Header>
+                      <StackPanel Margin="0,8,0,0">
+                        <!-- 下方偏好与加速策略 -->
+                        <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,6,0,0">
+                          <Grid>
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                              <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- 自动检查更新开关 -->
+                            <Grid Grid.Column="0" Margin="0,0,10,10">
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
+                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                <TextBlock Name="UpdateSilentCheckTitleText" Text="开机静默检查更新" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Name="UpdateSilentCheckDescText" Text="程序启动后在后台静默查询 GitHub Releases" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <CheckBox Name="AutoCheckUpdateCheckBox" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center" Checked="AutoCheckUpdateCheckBox_Changed" Unchecked="AutoCheckUpdateCheckBox_Changed" />
+                            </Grid>
+
+                            <!-- 推送通道选择 -->
+                            <Grid Grid.Column="1" Margin="10,0,0,10">
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="150" />
+                              </Grid.ColumnDefinitions>
+                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                <TextBlock Name="UpdateChannelTitleText" Text="更新推送通道" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Name="UpdateChannelDescText" Text="选择稳定版或尝鲜版" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <ComboBox Name="UpdateChannelComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateChannelComboBox_SelectionChanged">
+                                <ComboBoxItem x:Name="UpdateChannelStableItem" Tag="Stable" Content="🌟 正式稳定版" />
+                                <ComboBoxItem x:Name="UpdateChannelBetaItem" Tag="Beta" Content="🚀 尝鲜测试版" />
+                              </ComboBox>
+                            </Grid>
+
+                            <!-- Independent application release source; GitHub proxy preferences are retained. -->
+                            <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,4,0,8">
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="220" />
+                              </Grid.ColumnDefinitions>
+                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                <TextBlock Name="UpdateSourceTitleText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Name="UpdateSourceDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <ComboBox Name="UpdateSourceComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateSourceComboBox_SelectionChanged">
+                                <ComboBoxItem x:Name="UpdateSourceGitHubItem" Tag="github" />
+                                <ComboBoxItem x:Name="UpdateSourceAtomGitItem" Tag="atomgit" />
+                              </ComboBox>
+                            </Grid>
+
+                            <!-- 国内加速下载镜像源 -->
+                            <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,4,0,0">
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="220" />
+                              </Grid.ColumnDefinitions>
+                              <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal">
+                                  <TextBlock Text="⚡" FontSize="13" FontFamily="Segoe UI Emoji, Segoe UI Symbol, Segoe UI" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="0,0,4,0" VerticalAlignment="Center" />
+                                  <TextBlock Name="UpdateProxyTitleText" Text="GitHub 下载加速镜像源" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                  <Border Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="3" Padding="4,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Name="ChinaFastDownloadBadge" Text="国内极速下载" FontSize="10" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                  </Border>
+                                </StackPanel>
+                                <TextBlock Name="UpdateProxyDescText" Text="解决国内访问 GitHub Releases 丢包或限速问题，自动加速代理下载" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                              </StackPanel>
+                              <ComboBox Name="UpdateProxyComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateProxyComboBox_SelectionChanged">
+                                <ComboBoxItem x:Name="UpdateProxyGhfastItem" Tag="ghfast" Content="⚡ 镜像源 1 (ghfast.top 推荐)" />
+                                <ComboBoxItem x:Name="UpdateProxyGhproxyItem" Tag="gh-proxy" Content="⚡ 镜像源 2 (gh-proxy.com 备用)" />
+                                <ComboBoxItem x:Name="UpdateProxyMirrorItem" Tag="mirror" Content="⚡ 镜像源 3 (mirror.ghproxy.com)" />
+                                <ComboBoxItem x:Name="UpdateProxyDirectItem" Tag="direct" Content="🌐 官方直连" />
+                              </ComboBox>
+                            </Grid>
+                          </Grid>
+                        </Border>
+
+                        <!-- 版本回退专区 (Version Rollback) -->
+                        <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0" Margin="0,12,0,0">
+                          <StackPanel>
+                            <Grid>
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
+                              <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                  <TextBlock Text="⏮️" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                  <TextBlock Name="RollbackSectionTitleText" Text="历史版本回退" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                  <Border Name="RollbackCountBadge" Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Name="RollbackCountBadgeText" Text="🚀 测试版最多回退5个版本" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
+                                  </Border>
+                                </StackPanel>
+                                <TextBlock Name="RollbackSectionDescText" Text="若当前版本发生兼容性或配置异常，可选择历史版本一键覆盖回退安装。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                              </StackPanel>
+
+                              <!-- 选择历史版本下拉框与回退按钮 -->
+                              <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <ComboBox Name="RollbackVersionComboBox" Style="{StaticResource FlatComboBoxStyle}" Width="210" Height="32" Margin="0,0,8,0" VerticalAlignment="Center" SelectionChanged="RollbackVersionComboBox_SelectionChanged" />
+                                <Button Name="StartRollbackBtn" Content="⬇️ 回退至此版本" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" VerticalAlignment="Center" IsEnabled="False" Click="StartRollbackBtn_Click" />
+                              </StackPanel>
+                            </Grid>
+
+                            <!-- 选中回退版本的详情卡片 (折叠展开) -->
+                            <Border Name="RollbackDetailCard" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,10,0,0">
+                              <StackPanel>
+                                <Grid Margin="0,0,0,6">
+                                  <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                  </Grid.ColumnDefinitions>
+                                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Name="RollbackDetailTagText" Text="V1.7.3-beta.1" FontSize="13" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" />
+                                    <Border Name="RollbackDetailChannelBorder" Background="#25F59E0B" CornerRadius="3" Padding="5,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                      <TextBlock Name="RollbackDetailChannelText" Text="尝鲜测试版" FontSize="10" FontWeight="SemiBold" Foreground="#F59E0B" />
+                                    </Border>
+                                    <TextBlock Name="RollbackDetailDateText" Text="· 发布于 2026-09-08" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                  </StackPanel>
+                                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Name="RollbackPackageArchLabel" Text="安装包架构:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Name="RollbackInstallTypeText" Text="独立免安装版" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                                  </StackPanel>
+                                </Grid>
+                                <TextBlock Name="RollbackChangelogHeaderLabel" Text="📋 历史更新日志摘要:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,4" />
+                                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="8">
+                                  <ScrollViewer MaxHeight="90" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <TextBlock Name="RollbackChangelogText" Text="" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="16" />
+                                  </ScrollViewer>
+                                </Border>
+                              </StackPanel>
+                            </Border>
+                          </StackPanel>
+                        </Border>
+                      </StackPanel>
+                    </Expander>
+                  </Border>
+                </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="20" Margin="0,0,0,14" SnapsToDevicePixels="True" UseLayoutRounding="True" RenderOptions.ClearTypeHint="Enabled">
                 <UIElement.Effect>

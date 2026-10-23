@@ -34,6 +34,16 @@ target = argmin(abs(NormalizeAngle(mouseAngle - leafAngle)))
 - 新增 DataTemplate 文案优先绑定视图模型的本地化属性。`Name` 不能跨 DataTemplate 命名域充当可靠 i18n 护栏。
 - 插件动作 UI 固定为一个顶层“插件动作”选项和一个按插件分组的子下拉；分组头不可选择。
 
+### 关于页更新源
+
+- 软件更新卡片直接放在“关于软件”顶部版本信息卡下方，不再放在系统设置页。关于页的检查按钮原地检查，不切换页面；更新偏好默认展开，首次检查之前即可选择来源、通道和下载加速，仍可手动折叠。
+- `UpdateReleaseSource` 独立保存主程序发行版来源：`github`（默认，兼容旧配置）或 `atomgit`（`Star-Pie/StarPie` 国内镜像）。`UpdateProxySource` / `CustomProxyUrl` 的含义和插件下载行为不变；选择 AtomGit 时仅禁用关于页的 GitHub 加速下拉，保留原选择。
+- 检查、包下载、历史回退和发行版网页跟随所选来源。切换来源只保存配置并清除旧候选、已下载待安装引用和上次检查时间，不立即联网；取消旧请求并使用修订号丢弃旧检查结果及进度回调，切回原来源也不复活旧结果。
+- AtomGit 只访问公开 Release API，无客户端 Token，不回退 GitHub；缺少对应 ZIP 或 `SHA256SUMS.txt` 的未完整镜像版本不作为候选。附件仅使用 API 实际返回的 HTTPS 地址，不推测文件地址。镜像可落后，界面只能表述“所选源暂无更新”，不能据此断言官方最新版。
+- AtomGit 下载必须读取对应文件的 SHA-256 并校验完整包；失败不进入安装就绪态。重定向仅允许 AtomGit/GitCode/OBS 的 HTTPS 主机，不跟随至 GitHub。每次下载使用独立临时路径，避免取消旧下载时删除新任务的文件。
+- 选择 AtomGit 后的更新检查不额外启动 GitHub 贡献者名单同步。原有更新覆盖与重启过程不在本功能内重写。
+- 离线护栏：`dotnet run --project scratch/update-source-tests/UpdateSourceTests.csproj -c Release -- --candidate <本轮候选 StarPie.dll 的绝对路径>`。仅使用模拟 HTTP、临时文件、配置往返和无 Window 的控件资源探针；不下载真实包，不执行更新、回退或重启。源切换、语言/主题/DPI 和真实镜像接口仍需人工验收。
+
 ### 二级菜单父扇区锁定
 
 - 触发设置中的“进入二级菜单后锁定父级扇区”默认关闭，适用于按住鼠标或键盘触发键的普通轮盘；桌宠粘滞轮盘不在此开关范围内。

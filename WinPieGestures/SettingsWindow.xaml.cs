@@ -1542,6 +1542,7 @@ public partial class SettingsWindow : Window
 			AutoCheckUpdateCheckBox.IsChecked = ConfigManager.CurrentConfig.AutoCheckUpdate;
 		}
 		SetComboBoxSelectedValue(UpdateChannelComboBox, ConfigManager.CurrentConfig.UpdateChannel ?? "Stable");
+		RefreshUpdateReleaseSourceUi();
 		string savedProxy = ConfigManager.CurrentConfig.UpdateProxySource ?? "ghfast";
 		if (savedProxy == "ghproxy" || savedProxy == "moeyy") savedProxy = "ghfast";
 		else if (savedProxy == "akams") savedProxy = "gh-proxy";
@@ -1631,24 +1632,24 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateReleaseDateText != null)
 				{
-					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{_latestReleaseInfo.PublishedAt:yyyy-MM-dd HH:mm}");
+					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{_latestReleaseInfo.PublishedAt:yyyy-MM-dd HH:mm}", UpdateSourceDisplayName);
 				}
 			}
 			else
 			{
-				UpdateStatusBadgeText.Text = I18n.T("UpdateStatusUpToDate");
+				UpdateStatusBadgeText.Text = I18n.T("UpdateSourceNoNewer");
 				UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
 				if (UpdateStatusBadge != null)
 				{
 					UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 16, 185, 129));
 				}
-				UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusUpToDateDesc"), AppVersionInfo.DisplayVersion, _latestReleaseInfo.TagName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
+				UpdateStatusDescText.Text = I18n.TF("UpdateSourceUpToDateDesc", AppVersionInfo.DisplayVersion, _latestReleaseInfo.TagName, UpdateSourceDisplayName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
 			}
 		}
 		else
 		{
 			// 初始默认状态（未在本次运行检查线上版本，使用上次持久化的检查时间）
-			UpdateStatusBadgeText.Text = I18n.T("UpdateStatusLatest");
+			UpdateStatusBadgeText.Text = I18n.T("UpdateSourceNeedsCheck");
 			if (UpdateStatusBadge != null)
 			{
 				UpdateStatusBadge.SetResourceReference(Border.BackgroundProperty, "NavTabActiveBgBrush");
@@ -2496,6 +2497,7 @@ public partial class SettingsWindow : Window
 			if (UpdateProxyComboBox.Items[2] is ComboBoxItem itemAk) itemAk.Content = I18n.T("UpdateProxyAkams");
 			if (UpdateProxyComboBox.Items[3] is ComboBoxItem itemDir) itemDir.Content = I18n.T("UpdateProxyDirect");
 		}
+		LocalizeUpdateReleaseSources();
 		if (RollbackSectionTitleText != null)
 		{
 			RollbackSectionTitleText.Text = I18n.T("RollbackSectionTitle");
@@ -2914,10 +2916,6 @@ public partial class SettingsWindow : Window
 		if (OpenUpdateFolderBtn != null)
 		{
 			OpenUpdateFolderBtn.Content = I18n.T("OpenUpdateFolder");
-		}
-		if (AboutCheckUpdateBtn != null)
-		{
-			AboutCheckUpdateBtn.Content = I18n.T("AboutCheckUpdate");
 		}
 		if (OpenChangelogButton != null)
 		{
@@ -3491,7 +3489,7 @@ public partial class SettingsWindow : Window
 		if (UpdateProxyDirectItem != null) UpdateProxyDirectItem.Content = I18n.T("UpdateProxyDirect");
 
 		if (ContributorsRefreshText != null) ContributorsRefreshText.ToolTip = I18n.T("ContributorsRefreshTip");
-		if (ViewReleasesWebBtn != null) { ViewReleasesWebBtn.Content = I18n.T("ViewReleasesWebBtnText"); ViewReleasesWebBtn.ToolTip = I18n.T("ViewReleasesWebBtnToolTip"); }
+		if (ViewReleasesWebBtn != null) { ViewReleasesWebBtn.Content = I18n.T("ViewReleasesWebBtnText"); ViewReleasesWebBtn.ToolTip = I18n.TF("UpdateSourceWebHint", UpdateSourceDisplayName); }
 		if (StartDownloadUpdateBtn != null) StartDownloadUpdateBtn.Content = I18n.T("StartDownloadUpdateBtnText");
 		if (OpenWebReleaseBtn != null) OpenWebReleaseBtn.Content = I18n.T("OpenWebReleaseBtnText");
 		if (UpdateDownloadPkgLabel != null) UpdateDownloadPkgLabel.Text = I18n.T("UpdateDownloadPkgLabel");
@@ -3539,7 +3537,6 @@ public partial class SettingsWindow : Window
 		if (ViewTodayLogButton != null) ViewTodayLogButton.ToolTip = I18n.T("TipViewTodayLog");
 
 		// --- Phase 5: Tab 4 (About & Milestones / 关于与版本演进) ---
-		if (AboutCheckUpdateBtn != null) AboutCheckUpdateBtn.Content = I18n.T("BtnCheckUpdate");
 		if (OpenChangelogButton != null) OpenChangelogButton.Content = I18n.T("BtnViewChangelog");
 		if (OlderMilestonesExpander != null) OlderMilestonesExpander.Header = I18n.T("MilestonesOlderExpander");
 		if (Tab4_AboutTitleText != null) Tab4_AboutTitleText.Text = I18n.T("Tab4_AboutTitleText");
@@ -4261,6 +4258,7 @@ public partial class SettingsWindow : Window
 
 		UnhookRawInputForSensorAndRecorder();
 
+		_updateCheckCts?.Cancel();
 		_lifetimeCts.Cancel();
 		_lifetimeCts.Dispose();
 
@@ -15596,6 +15594,15 @@ public partial class SettingsWindow : Window
 
 	private async Task CheckForUpdateInternalAsync(bool silent = false)
 	{
+		if (_resourcesReleased || App.IsExiting) return;
+		_updateCheckCts?.Cancel();
+		using var checkCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
+		_updateCheckCts = checkCts;
+		int revision = ++_updateCheckRevision;
+		int sourceRevision = _updateSourceState.Revision;
+		string source = CurrentUpdateReleaseSource;
+		bool IsCurrent() => revision == _updateCheckRevision && _updateSourceState.IsCurrent(sourceRevision) &&
+			!_resourcesReleased && !App.IsExiting;
 		try
 		{
 			if (CheckUpdateNowBtn != null)
@@ -15618,9 +15625,11 @@ public partial class SettingsWindow : Window
 			string customProxy = ConfigManager.CurrentConfig?.CustomProxyUrl ?? "";
 
 			// 仅在检查应用更新时同步一次 GitHub 贡献者名单，平时默认离线
-			_ = SyncContributorsFromGitHubAsync();
+			if (source == "github") _ = SyncContributorsFromGitHubAsync();
 
-			_allFetchedReleases = await UpdateManager.Instance.FetchAllReleasesAsync(proxy, customProxy);
+			var releases = await UpdateManager.Instance.FetchAllReleasesAsync(proxy, customProxy, checkCts.Token, source);
+			if (!IsCurrent()) return;
+			_allFetchedReleases = releases;
 			ReleaseInfo? rel = UpdateManager.Instance.GetLatestUpdateRelease(_allFetchedReleases, channel);
 			UpdateRollbackBadgeAndCandidates();
 
@@ -15658,7 +15667,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateReleaseDateText != null)
 				{
-					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{rel.PublishedAt:yyyy-MM-dd HH:mm}");
+					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{rel.PublishedAt:yyyy-MM-dd HH:mm}", UpdateSourceDisplayName);
 				}
 				if (UpdateChangelogTextBlock != null)
 				{
@@ -15683,7 +15692,7 @@ public partial class SettingsWindow : Window
 				_latestReleaseInfo = rel;
 				if (UpdateStatusBadgeText != null)
 				{
-					UpdateStatusBadgeText.Text = I18n.T("UpdateStatusUpToDate");
+					UpdateStatusBadgeText.Text = I18n.T("UpdateSourceNoNewer");
 					UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(16, 185, 129));
 				}
 				if (UpdateStatusBadge != null)
@@ -15692,7 +15701,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateStatusDescText != null)
 				{
-					UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusUpToDateDesc"), AppVersionInfo.DisplayVersion, rel.TagName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
+					UpdateStatusDescText.Text = I18n.TF("UpdateSourceUpToDateDesc", AppVersionInfo.DisplayVersion, rel.TagName, UpdateSourceDisplayName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
 				}
 				if (UpdateNewVersionPanel != null)
 				{
@@ -15701,31 +15710,22 @@ public partial class SettingsWindow : Window
 			}
 			else
 			{
-				if (!silent)
-				{
-					if (UpdateStatusBadgeText != null)
-					{
-						UpdateStatusBadgeText.Text = I18n.T("UpdateStatusError");
-						UpdateStatusBadgeText.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(239, 68, 68));
-					}
-					if (UpdateStatusBadge != null)
-					{
-						UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 239, 68, 68));
-					}
-					if (UpdateStatusDescText != null)
-					{
-						UpdateStatusDescText.Text = I18n.T("UpdateStatusErrorDesc");
-					}
-				}
+				ShowUpdateSourceError();
 			}
+		}
+		catch (OperationCanceledException)
+		{
+			if (IsCurrent() && !checkCts.IsCancellationRequested) ShowUpdateSourceError();
 		}
 		catch (Exception ex)
 		{
 			AppLogger.LogError("CheckForUpdateInternalAsync error", ex);
+			if (IsCurrent()) ShowUpdateSourceError();
 		}
 		finally
 		{
-			if (CheckUpdateNowBtn != null)
+			if (ReferenceEquals(_updateCheckCts, checkCts)) _updateCheckCts = null;
+			if (IsCurrent() && CheckUpdateNowBtn != null)
 			{
 				CheckUpdateNowBtn.IsEnabled = true;
 				CheckUpdateNowBtn.Content = I18n.T("BtnCheckUpdate");
@@ -15735,10 +15735,12 @@ public partial class SettingsWindow : Window
 
 	private async void StartDownloadUpdateBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if (_latestReleaseInfo == null) return;
+		if (_latestReleaseInfo == null || _latestReleaseInfo.Source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		ReleaseInfo release = _latestReleaseInfo;
+		string source = CurrentUpdateReleaseSource;
 
 		bool isStandalone = (UpdatePkgStandaloneRadio?.IsChecked == true);
-		string? rawAssetUrl = isStandalone ? _latestReleaseInfo.StandaloneAssetUrl : _latestReleaseInfo.LightweightAssetUrl;
+		string? rawAssetUrl = isStandalone ? release.StandaloneAssetUrl : release.LightweightAssetUrl;
 
 		if (string.IsNullOrEmpty(rawAssetUrl))
 		{
@@ -15748,14 +15750,15 @@ public partial class SettingsWindow : Window
 
 		string proxy = ConfigManager.CurrentConfig?.UpdateProxySource ?? "ghproxy";
 		string customProxy = ConfigManager.CurrentConfig?.CustomProxyUrl ?? "";
-		string downloadUrl = UpdateManager.Instance.GetProxiedDownloadUrl(rawAssetUrl, proxy, customProxy);
 
 		string fileName = isStandalone
-			? $"StarPie-{_latestReleaseInfo.TagName}-Standalone-win-x64.zip"
-			: $"StarPie-{_latestReleaseInfo.TagName}-Lightweight-win-x64.zip";
+			? $"StarPie-{release.TagName}-Standalone-win-x64.zip"
+			: $"StarPie-{release.TagName}-Lightweight-win-x64.zip";
 
-		string destPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "StarPie_Updates", fileName);
-		_downloadedZipPath = destPath;
+		if (source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		int revision = ++_updateDownloadRevision;
+		string destPath = CreateUpdateDownloadPath(fileName);
+		_downloadedZipPath = null;
 
 		if (UpdateNewVersionPanel != null) UpdateNewVersionPanel.Visibility = Visibility.Collapsed;
 		if (UpdateReadyToInstallPanel != null) UpdateReadyToInstallPanel.Visibility = Visibility.Collapsed;
@@ -15766,11 +15769,13 @@ public partial class SettingsWindow : Window
 		if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = 0;
 		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedConnecting");
 
-		_downloadCts?.Dispose();
-		_downloadCts = new CancellationTokenSource();
+		_downloadCts?.Cancel();
+		using var downloadCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
+		_downloadCts = downloadCts;
 
 		Progress<UpdateProgressInfo> progress = new Progress<UpdateProgressInfo>(info =>
 		{
+			if (!CanApplyUpdateDownload(revision)) return;
 			if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = info.Percent;
 			if (UpdateDownloadPercentText != null) UpdateDownloadPercentText.Text = $"{info.Percent}%";
 			if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = $"⚡ {info.FormattedSpeed}";
@@ -15779,7 +15784,13 @@ public partial class SettingsWindow : Window
 
 		try
 		{
-			await UpdateManager.Instance.DownloadAssetAsync(downloadUrl, destPath, progress, _downloadCts.Token);
+			await UpdateManager.Instance.DownloadReleaseAssetAsync(release, isStandalone, destPath, progress, downloadCts.Token, proxy, customProxy, source);
+			if (!CanApplyUpdateDownload(revision))
+			{
+				try { System.IO.File.Delete(destPath); } catch { }
+				return;
+			}
+			_downloadedZipPath = destPath;
 
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
 			if (UpdateReadyToInstallPanel != null) UpdateReadyToInstallPanel.Visibility = Visibility.Visible;
@@ -15794,17 +15805,23 @@ public partial class SettingsWindow : Window
 				UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 16, 185, 129));
 			}
 		}
-		catch (OperationCanceledException)
+		catch (OperationCanceledException) when (downloadCts.IsCancellationRequested)
 		{
+			if (!CanApplyUpdateDownload(revision)) return;
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
 			if (UpdateNewVersionPanel != null) UpdateNewVersionPanel.Visibility = Visibility.Visible;
 		}
 		catch (Exception ex)
 		{
+			if (!CanApplyUpdateDownload(revision)) return;
 			AppLogger.LogError("DownloadUpdate failed", ex);
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
 			if (UpdateNewVersionPanel != null) UpdateNewVersionPanel.Visibility = Visibility.Visible;
-			AppMessageBox.Show($"下载更新包失败：{ex.Message}\n建议切换加速镜像源重试或点击前往网页下载。", "StarPie 更新", MessageBoxButton.OK, MessageBoxImage.Warning);
+			if (IsVisible) AppMessageBox.Show(I18n.TF("UpdateSourceDownloadFailed", UpdateSourceDisplayName), I18n.T("UpdateSourceDownloadTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+		}
+		finally
+		{
+			if (ReferenceEquals(_downloadCts, downloadCts)) _downloadCts = null;
 		}
 	}
 
@@ -15850,7 +15867,7 @@ public partial class SettingsWindow : Window
 	{
 		try
 		{
-			string url = _latestReleaseInfo?.HtmlUrl ?? "https://github.com/SoftBlack42/StarPie/releases";
+			string url = UpdateManager.GetReleasePageUrl(_latestReleaseInfo, CurrentUpdateReleaseSource);
 			Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 		}
 		catch (Exception ex)
@@ -15995,33 +16012,36 @@ public partial class SettingsWindow : Window
 
 	private async void StartRollbackBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if (_selectedRollbackRelease == null) return;
+		if (_selectedRollbackRelease == null || _selectedRollbackRelease.Source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		ReleaseInfo release = _selectedRollbackRelease;
+		string source = CurrentUpdateReleaseSource;
 
-		string confirmMsg = string.Format(I18n.T("RollbackConfirmMsg"), _selectedRollbackRelease.TagName);
+		string confirmMsg = string.Format(I18n.T("RollbackConfirmMsg"), release.TagName);
 		string confirmTitle = I18n.T("RollbackConfirmTitle");
 
 		MessageBoxResult result = AppMessageBox.Show(confirmMsg, confirmTitle, MessageBoxButton.YesNo, MessageBoxImage.Question);
 		if (result != MessageBoxResult.Yes) return;
 
 		bool isStandalone = UpdateManager.Instance.IsCurrentInstallationStandalone();
-		string? rawAssetUrl = isStandalone ? _selectedRollbackRelease.StandaloneAssetUrl : _selectedRollbackRelease.LightweightAssetUrl;
+		string? rawAssetUrl = isStandalone ? release.StandaloneAssetUrl : release.LightweightAssetUrl;
 
 		if (string.IsNullOrEmpty(rawAssetUrl))
 		{
-			Process.Start(new ProcessStartInfo(_selectedRollbackRelease.HtmlUrl) { UseShellExecute = true });
+			Process.Start(new ProcessStartInfo(UpdateManager.GetReleasePageUrl(release, source)) { UseShellExecute = true });
 			return;
 		}
 
 		string proxy = ConfigManager.CurrentConfig?.UpdateProxySource ?? "ghfast";
 		string customProxy = ConfigManager.CurrentConfig?.CustomProxyUrl ?? "";
-		string downloadUrl = UpdateManager.Instance.GetProxiedDownloadUrl(rawAssetUrl, proxy, customProxy);
 
 		string fileName = isStandalone
-			? $"StarPie-{_selectedRollbackRelease.TagName}-Standalone-win-x64.zip"
-			: $"StarPie-{_selectedRollbackRelease.TagName}-Lightweight-win-x64.zip";
+			? $"StarPie-{release.TagName}-Standalone-win-x64.zip"
+			: $"StarPie-{release.TagName}-Lightweight-win-x64.zip";
 
-		string destPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "StarPie_Updates", fileName);
-		_downloadedZipPath = destPath;
+		if (source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		int revision = ++_updateDownloadRevision;
+		string destPath = CreateUpdateDownloadPath(fileName);
+		_downloadedZipPath = null;
 
 		if (UpdateNewVersionPanel != null) UpdateNewVersionPanel.Visibility = Visibility.Collapsed;
 		if (RollbackDetailCard != null) RollbackDetailCard.Visibility = Visibility.Collapsed;
@@ -16033,11 +16053,13 @@ public partial class SettingsWindow : Window
 		if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = 0;
 		if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = I18n.T("UpdateDownloadSpeedConnecting");
 
-		_downloadCts?.Dispose();
-		_downloadCts = new CancellationTokenSource();
+		_downloadCts?.Cancel();
+		using var downloadCts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeCts.Token);
+		_downloadCts = downloadCts;
 
 		Progress<UpdateProgressInfo> progress = new Progress<UpdateProgressInfo>(info =>
 		{
+			if (!CanApplyUpdateDownload(revision)) return;
 			if (UpdateDownloadProgressBar != null) UpdateDownloadProgressBar.Value = info.Percent;
 			if (UpdateDownloadPercentText != null) UpdateDownloadPercentText.Text = $"{info.Percent}%";
 			if (UpdateDownloadSpeedText != null) UpdateDownloadSpeedText.Text = $"⚡ {info.FormattedSpeed}";
@@ -16046,7 +16068,13 @@ public partial class SettingsWindow : Window
 
 		try
 		{
-			await UpdateManager.Instance.DownloadAssetAsync(downloadUrl, destPath, progress, _downloadCts.Token);
+			await UpdateManager.Instance.DownloadReleaseAssetAsync(release, isStandalone, destPath, progress, downloadCts.Token, proxy, customProxy, source);
+			if (!CanApplyUpdateDownload(revision))
+			{
+				try { System.IO.File.Delete(destPath); } catch { }
+				return;
+			}
+			_downloadedZipPath = destPath;
 
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
 			if (UpdateReadyToInstallPanel != null) UpdateReadyToInstallPanel.Visibility = Visibility.Visible;
@@ -16061,15 +16089,21 @@ public partial class SettingsWindow : Window
 				UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 16, 185, 129));
 			}
 		}
-		catch (OperationCanceledException)
+		catch (OperationCanceledException) when (downloadCts.IsCancellationRequested)
 		{
+			if (!CanApplyUpdateDownload(revision)) return;
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
 		}
 		catch (Exception ex)
 		{
+			if (!CanApplyUpdateDownload(revision)) return;
 			AppLogger.LogError("Rollback download failed", ex);
 			if (UpdateDownloadProgressPanel != null) UpdateDownloadProgressPanel.Visibility = Visibility.Collapsed;
-			AppMessageBox.Show($"下载历史回退包失败：{ex.Message}\n建议切换加速镜像源重试或前往网页下载。", "StarPie 版本回退", MessageBoxButton.OK, MessageBoxImage.Warning);
+			if (IsVisible) AppMessageBox.Show(I18n.TF("UpdateSourceDownloadFailed", UpdateSourceDisplayName), I18n.T("UpdateSourceDownloadTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+		}
+		finally
+		{
+			if (ReferenceEquals(_downloadCts, downloadCts)) _downloadCts = null;
 		}
 	}
 
@@ -16282,12 +16316,6 @@ public partial class SettingsWindow : Window
 		};
 
 		return border;
-	}
-
-	private async void AboutCheckUpdateBtn_Click(object sender, RoutedEventArgs e)
-	{
-		SwitchToTab(3);
-		await CheckForUpdateInternalAsync(silent: false);
 	}
 
 	private void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
