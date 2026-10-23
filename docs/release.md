@@ -85,7 +85,7 @@ dotnet publish .\WinPieGestures\WinPieGestures.csproj `
 - GitHub 仓库 `Settings → Secrets and variables → Actions → Secrets` 中添加 `ATOMGIT_TOKEN`。使用有目标组织仓库发布权限的 AtomGit 用户访问令牌，不写入源码或日志。
 - 默认目标与 GitHub 的 `owner/repo` 相同。若组织路径或仓库名不同，在同处的 `Variables` 中设置 `ATOMGIT_REPOSITORY`，例如 `Star-Pie/StarPie`，不要填写 URL。
 - `.github/workflows/atomgit-release.yml` 同时提供 `workflow_call` 和 `workflow_dispatch`。手动执行选择 `Actions → Sync Release to AtomGit → Run workflow`，选包含同步代码的可信分支（通常为 `main`），输入已发布的完整 Tag。
-- `.github/workflows/release.yml` 在正式发布步骤成功后输出 `published` 与 `tag`，再调用同步工作流。测试签名不调用；后续 Beta 清理失败不抑制已成功发布版本的同步，取消运行则不启动下游同步。同步失败使对应任务报错，但不回滚 GitHub Release。
+- `.github/workflows/release.yml` 在正式签名或显式未签名发布成功后输出 `published` 与 `tag`，再调用同步工作流。测试签名不调用；后续 Beta 清理失败不抑制已成功发布版本的同步，取消运行则不启动下游同步。同步失败使对应任务报错，但不回滚 GitHub Release。
 - 不使用独立的 `release: published` 事件串联，避免 `GITHUB_TOKEN` 创建事件不触发下游工作流的问题。失败后手动重跑同步入口即可，无需重跑构建、签名或发布步骤。
 - 工作流使用 Node.js 24 的内置模块，无 npm 依赖；只授予 GitHub `contents: read`，不向被调用工作流透传 SignPath 等其它密钥。
 
@@ -124,3 +124,29 @@ git -c core.whitespace=cr-at-eol diff --check
 - Tag 与提交列表：https://atomgit-api-doc.atomgit.com/7.tag/142.list_all_tags_of_the_project.html
 
 Release 创建/上传文档明确使用 `access_token` 查询参数；脚本只向固定 AtomGit API 主机添加，不记录请求 URL、服务端错误正文、签名 URL 或底层网络异常，以免凭据出现在日志中。
+
+## 8. 手动未签名发布模式
+
+Release 工作流的 `signing_mode` 增加 `unsigned`。这是显式的手动选择；默认仍为 `test-signing`，推送标签自动触发时仍为 `release-signing`，不改变精确 `v2.0.0` / `V2.0.0` 的历史自动触发排除。
+
+| 模式 | SignPath Token | 产物与发布行为 |
+| --- | --- | --- |
+| `test-signing` | 必需 | 沿用测试签名流程，只保存 `TEST-SIGNED-DO-NOT-DISTRIBUTE` Actions 产物，不创建 Release |
+| `release-signing` | 必需 | 沿用 SignPath、SignTool 信任/时间戳及三种 EXE 签名者一致性校验，再发布 Release |
+| `unsigned` | 不要求，也不向验证步骤传入 | 跳过 SignPath 输入上传、请求与签名安装；验证三种目标 EXE 均为 `NotSigned` 且无签名者证书，再打包和发布 |
+
+### 使用与安全边界
+
+1. 将包含本工作流、校验脚本及其测试的修改整合到发布分支，再使用明确 Git Tag 手动执行 `Build and Publish Release`，选择 `unsigned`。未签名模式不能省略标签，也不能用于覆盖已有公开版本。
+2. 未签名模式保留允许分支（`main`、`dev-*`、`dev/**`）顶端提交、标签格式和版本字段检查，不修改主程序、SDK 或配置版本。
+3. 打包前，对 `publish/Lightweight/StarPie.exe`、`publish/Standalone/StarPie.exe` 和该 Tag 的 Setup EXE 逐一执行只读 Authenticode 检查。路径必须为三个不同、非空的 EXE；签名状态不是 `NotSigned` 或存在签名者证书都会阻止发布，包括测试证书、无效或不受信任的签名。
+4. 正常生成两种 ZIP、Setup 和最终文件的 `SHA256SUMS.txt`；Release 说明强制附加中英双语未签名警告，即使没有匹配日志也保留警告。不声称具备 Windows 发布者信任，不更改证书存储。
+5. 发布成功后沿用 Beta 保留与 AtomGit 镜像链路。`ATOMGIT_TOKEN` 的既有要求不受 SignPath 可选化影响；镜像失败不回滚 GitHub 已创建的 Release。
+6. 手动选择 `unsigned` 不会取消其他已启动的同标签工作流；避免同标签并行发布。已有 Release 创建失败时停止，不替换旧附件或改写标签。
+7. 此处的 `test-signing` 仍是测试证书集成验证模式，不是新增的 `test` 发布渠道；标签仍只支持原来的稳定版和 `beta.N` 格式。
+
+### 离线验证
+
+`node --test .github/scripts/release-signing.test.mjs` 读取真实工作流条件，执行三模式矩阵、实际 PowerShell 参数验证与说明生成，并以模拟签名元数据验证拒绝路径；仅写测试临时文件，不请求 SignPath、不修改证书存储，也不构建、打包、创建 Release 或执行真实 EXE。
+
+工作流同时在签名前运行此离线护栏。YAML 使用 actionlint 检查，PowerShell 脚本进行语法解析；托管 Windows Runner 的真实构建、Inno Setup、签名服务及远端发布仍须单独授权验收。
