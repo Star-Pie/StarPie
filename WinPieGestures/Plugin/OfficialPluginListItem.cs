@@ -13,6 +13,7 @@ internal sealed class OfficialPluginListItem
     public string InstallButtonText { get; }
     public string DetailsText => I18n.T("PluginsDetailButton");
     public string SavePackageText => I18n.T("PluginsOfflineSave");
+    public string MoreActionsText => I18n.T("PluginsOfficialMoreActions");
     public bool CanSavePackage => OfficialPluginVersionSelector.Evaluate(Module).IsCompatible;
     public bool CanInstall { get; }
     public bool IsInstalled { get; }

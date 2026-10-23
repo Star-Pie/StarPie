@@ -7244,6 +7244,30 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	private static void ResizeOfficialPluginList(System.Windows.Controls.ScrollViewer list, double delta)
+	{
+		list.MaxHeight = Math.Clamp(list.MaxHeight + delta, 160, 800);
+	}
+
+	private void OfficialPluginsResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
+	{
+		ResizeOfficialPluginList(OfficialPluginsScrollViewer, e.VerticalChange);
+		e.Handled = true;
+	}
+
+	private void OfficialPluginsResizeThumb_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+	{
+		double delta = e.Key switch
+		{
+			Key.Up => -20,
+			Key.Down => 20,
+			_ => 0,
+		};
+		if (delta == 0) return;
+		ResizeOfficialPluginList(OfficialPluginsScrollViewer, delta);
+		e.Handled = true;
+	}
+
 	private void RenderOfficialPluginItems()
 	{
 		if (OfficialPluginItemsControl == null || _officialPluginCatalog == null) return;
@@ -7427,6 +7451,12 @@ public partial class SettingsWindow : Window
 			InstallPluginButton.Content = I18n.T("PluginsInstallButton");
 		}
 		if (PluginsOfflineGuideText != null) PluginsOfflineGuideText.Text = I18n.T("PluginsOfflineGuide");
+		if (OfficialPluginsResizeThumb != null)
+		{
+			string resizeHint = I18n.T("PluginsOfficialResizeHint");
+			OfficialPluginsResizeThumb.ToolTip = resizeHint;
+			System.Windows.Automation.AutomationProperties.SetName(OfficialPluginsResizeThumb, resizeHint);
+		}
 		LocalizePluginDownloadChannels();
 		if (RescanPluginsButton != null)
 		{
@@ -7435,10 +7465,6 @@ public partial class SettingsWindow : Window
 		if (OpenPluginsFolderButton != null)
 		{
 			OpenPluginsFolderButton.Content = I18n.T("PluginsOpenDataFolderButton");
-		}
-		if (OpenPluginScanFolderButton != null)
-		{
-			OpenPluginScanFolderButton.Content = I18n.T("PluginsOpenScanFolderButton");
 		}
 		if (PluginSystemEnabledCheckBox != null)
 		{
@@ -7490,30 +7516,12 @@ public partial class SettingsWindow : Window
 			candidates = Array.Empty<PluginCandidate>();
 		}
 
-		int installable = candidates.Count(c => c.CanInstall);
-
-		if (PluginCandidatesHeaderText != null)
-		{
-			PluginCandidatesHeaderText.Text = PluginPaths.ScanRootExists
-				? (installable > 0
-					? I18n.TF("PluginsScanHeaderFound", candidates.Count, installable)
-					: I18n.T("PluginsScanHeaderNone"))
-				: I18n.T("PluginsScanHeaderMissing");
-		}
-
-		if (PluginCandidatesPathText != null)
-		{
-			PluginCandidatesPathText.Text = PluginPaths.ScanRootExists
-				? PluginPaths.ScanRoot
-				: PluginPaths.ScanRoot + "　—　" + I18n.T("PluginsScanPathHint");
-		}
-
 		if (PluginCandidateItemsControl != null)
 		{
 			PluginCandidateItemsControl.ItemsSource = candidates.Count == 0 ? null : candidates;
 		}
 
-		PluginCandidatesPanel.Visibility = Visibility.Visible;
+		PluginCandidatesPanel.Visibility = candidates.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
 	}
 
 	/// <summary>点候选卡片上的「安装 / 更新 / 降级安装」。</summary>
@@ -7561,34 +7569,6 @@ public partial class SettingsWindow : Window
 		}
 
 		if (!App.IsExiting) RefreshPluginManagerUi();
-	}
-
-	/// <summary>打开只读扫描目录。目录不存在时只提示路径，绝不代为创建。</summary>
-	private void OpenPluginScanFolderButton_Click(object sender, RoutedEventArgs e)
-	{
-		string scanRoot = PluginPaths.ScanRoot;
-
-		if (!PluginPaths.ScanRootExists)
-		{
-			AppMessageBox.Show(this,
-				I18n.TF("PluginsScanFolderMissing", scanRoot),
-				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
-			return;
-		}
-
-		try
-		{
-			System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-			{
-				FileName = scanRoot,
-				UseShellExecute = true,
-			});
-		}
-		catch (Exception ex)
-		{
-			AppMessageBox.Show(this, I18n.TF("PluginsOpenScanFolderFailed", ex.Message),
-				I18n.T("PluginsMsgTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
-		}
 	}
 
 	private void PluginListContainer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)

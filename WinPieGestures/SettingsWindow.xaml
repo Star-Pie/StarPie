@@ -3831,86 +3831,150 @@
 
           <!-- 官方插件在线目录 -->
           <Border Grid.Row="3" Name="OfficialPluginsPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
-            <StackPanel>
-              <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                  <TextBlock Name="OfficialPluginsHeaderText" Text="官方插件" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-                  <TextBlock Name="OfficialPluginsStatusText" Text="从 StarPie-Official-Plugins 下载经过 SHA-256 校验的官方模块" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                  <ComboBox Name="PluginDownloadChannelComboBox" Style="{StaticResource FlatComboBoxStyle}" Width="160" Margin="0,0,0,6">
-                    <ComboBoxItem Tag="ghfast" />
-                    <ComboBoxItem Tag="gh-proxy" />
-                    <ComboBoxItem Tag="mirror" />
-                    <ComboBoxItem Tag="direct" />
-                  </ComboBox>
-                  <Button Name="RefreshOfficialPluginsButton" Content="🌐 刷新目录" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="11" Click="RefreshOfficialPluginsButton_Click" />
-                </StackPanel>
-              </Grid>
-              <TextBlock Name="PluginsOfflineGuideText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
-              <ScrollViewer Name="OfficialPluginsScrollViewer" MaxHeight="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="NestedScrollViewer_PreviewMouseWheel">
-                <ItemsControl Name="OfficialPluginItemsControl">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
-                        <Grid>
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel>
-                            <StackPanel Orientation="Horizontal">
-                              <TextBlock Text="🔌" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0" />
-                              <TextBlock Text="{Binding DisplayName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-                              <TextBlock Text="{Binding VersionText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" />
-                              <Border Background="{DynamicResource SubtleCardBrush}" CornerRadius="8" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding StateText}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" />
-                              </Border>
-                            </StackPanel>
-                            <TextBlock Text="{Binding SummaryText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
-                          </StackPanel>
-                          <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="8,0,0,0">
-                            <Button Content="{Binding SavePackageText}" IsEnabled="{Binding CanSavePackage}" Tag="{Binding Module}" Click="SaveOfficialPluginPackageButton_Click" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" FontSize="11" Margin="0,0,0,4" />
-                            <Button Content="{Binding DetailsText}" Tag="{Binding Module}" Click="OpenOfficialPluginDetailsButton_Click" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="10,0" FontSize="11.5" />
-                            <Button Content="{Binding InstallButtonText}" Tag="{Binding Module}" Click="InstallOfficialPluginButton_Click" Height="28" Padding="10,0" FontSize="11.5" Margin="0,4,0,0">
-                              <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                  <Style.Triggers>
-                                    <DataTrigger Binding="{Binding CanInstall}" Value="False">
-                                      <Setter Property="IsEnabled" Value="False" />
-                                    </DataTrigger>
-                                  </Style.Triggers>
-                                </Style>
-                              </Button.Style>
-                            </Button>
-                          </StackPanel>
-                        </Grid>
-                      </Border>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </ScrollViewer>
-            </StackPanel>
+            <Expander Name="OfficialPluginsExpander" IsExpanded="True" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalContentAlignment="Stretch">
+              <Expander.Header>
+                <TextBlock Name="OfficialPluginsHeaderText" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Expander.Header>
+              <StackPanel Margin="0,8,0,0">
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Name="OfficialPluginsStatusText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,12,0" TextWrapping="Wrap" />
+                  <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <ComboBox Name="PluginDownloadChannelComboBox" Style="{StaticResource FlatComboBoxStyle}" Width="160" Margin="0,0,8,0">
+                      <ComboBoxItem Tag="ghfast" />
+                      <ComboBoxItem Tag="gh-proxy" />
+                      <ComboBoxItem Tag="mirror" />
+                      <ComboBoxItem Tag="direct" />
+                    </ComboBox>
+                    <Button Name="RefreshOfficialPluginsButton" Style="{StaticResource ModernButtonStyle}" MinHeight="28" Padding="10,4" FontSize="11.5" Click="RefreshOfficialPluginsButton_Click" />
+                  </StackPanel>
+                </Grid>
+                <TextBlock Name="PluginsOfflineGuideText" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="0,2">
+                  <DockPanel>
+                    <Thumb Name="OfficialPluginsResizeThumb" DockPanel.Dock="Bottom" Height="14" Cursor="SizeNS" Focusable="True" DragDelta="OfficialPluginsResizeThumb_DragDelta" KeyDown="OfficialPluginsResizeThumb_KeyDown">
+                      <Thumb.Template>
+                        <ControlTemplate TargetType="Thumb">
+                          <Border Background="Transparent">
+                            <Border Name="Grip" Background="{DynamicResource CardBorderBrush}" Width="36" Height="3" CornerRadius="1.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Border>
+                          <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                              <Setter TargetName="Grip" Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                              <Setter TargetName="Grip" Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                              <Setter TargetName="Grip" Property="Background" Value="{DynamicResource AccentPrimaryBrush}" />
+                            </Trigger>
+                          </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                      </Thumb.Template>
+                    </Thumb>
+                    <ScrollViewer Name="OfficialPluginsScrollViewer" MaxHeight="360" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="NestedScrollViewer_PreviewMouseWheel">
+                      <ItemsControl Name="OfficialPluginItemsControl">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <DataTemplate.Resources>
+                              <Style x:Key="OfficialPluginQuietButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                              </Style>
+                            </DataTemplate.Resources>
+                            <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+                              <Grid>
+                                <Grid.ColumnDefinitions>
+                                  <ColumnDefinition Width="Auto" />
+                                  <ColumnDefinition Width="*" />
+                                  <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="🔌" FontSize="13" VerticalAlignment="Top" Margin="0,2,10,0" />
+                                <StackPanel Grid.Column="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                  <WrapPanel>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding VersionText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                    <TextBlock Text="{Binding StateText}" FontSize="11" VerticalAlignment="Center" TextWrapping="Wrap">
+                                      <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                          <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                          <Style.Triggers>
+                                            <MultiDataTrigger>
+                                              <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsInstalled}" Value="True" />
+                                                <Condition Binding="{Binding CanInstall}" Value="True" />
+                                              </MultiDataTrigger.Conditions>
+                                              <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                              <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsInstalled}" Value="False" />
+                                                <Condition Binding="{Binding CanInstall}" Value="False" />
+                                              </MultiDataTrigger.Conditions>
+                                              <Setter Property="Foreground" Value="{DynamicResource AccentPrimaryBrush}" />
+                                            </MultiDataTrigger>
+                                          </Style.Triggers>
+                                        </Style>
+                                      </TextBlock.Style>
+                                    </TextBlock>
+                                  </WrapPanel>
+                                  <TextBlock Text="{Binding SummaryText}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                  <Button Content="{Binding DetailsText}" Tag="{Binding Module}" Click="OpenOfficialPluginDetailsButton_Click" Style="{StaticResource OfficialPluginQuietButtonStyle}" MinHeight="28" Padding="8,4" FontSize="11.5" Margin="0,0,6,0" />
+                                  <Button Content="{Binding InstallButtonText}" IsEnabled="{Binding CanInstall}" Tag="{Binding Module}" Click="InstallOfficialPluginButton_Click" MinHeight="28" Padding="10,4" FontSize="11.5">
+                                    <Button.Style>
+                                      <Style TargetType="Button" BasedOn="{StaticResource PrimaryButtonStyle}">
+                                        <Style.Triggers>
+                                          <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Background" Value="{DynamicResource ButtonDefaultBgBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
+                                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                            <Setter Property="Opacity" Value="0.55" />
+                                            <Setter Property="Cursor" Value="Arrow" />
+                                          </Trigger>
+                                        </Style.Triggers>
+                                      </Style>
+                                    </Button.Style>
+                                  </Button>
+                                  <Button Content="⋯" ToolTip="{Binding MoreActionsText}" AutomationProperties.Name="{Binding MoreActionsText}" Click="OpenOfficialPluginMenu_Click" Style="{StaticResource OfficialPluginQuietButtonStyle}" Width="28" MinHeight="28" Padding="0" FontSize="16" Margin="4,0,0,0">
+                                    <Button.ContextMenu>
+                                      <ContextMenu Style="{StaticResource ModernContextMenuStyle}" DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                        <MenuItem Header="{Binding SavePackageText}" IsEnabled="{Binding CanSavePackage}" Tag="{Binding Module}" Click="SaveOfficialPluginPackageMenuItem_Click">
+                                          <MenuItem.Style>
+                                            <Style TargetType="MenuItem" BasedOn="{StaticResource ModernMenuItemStyle}">
+                                              <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                  <Setter Property="Opacity" Value="0.38" />
+                                                  <Setter Property="Cursor" Value="Arrow" />
+                                                </Trigger>
+                                              </Style.Triggers>
+                                            </Style>
+                                          </MenuItem.Style>
+                                        </MenuItem>
+                                      </ContextMenu>
+                                    </Button.ContextMenu>
+                                  </Button>
+                                </StackPanel>
+                              </Grid>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </DockPanel>
+                </Border>
+              </StackPanel>
+            </Expander>
           </Border>
 
           <!-- 只读扫描目录里的待安装候选 -->
           <Border Grid.Row="4" Name="PluginCandidatesPanel" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,12" Visibility="Collapsed">
             <StackPanel>
-              <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="*" />
-                  <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                  <TextBlock Name="PluginCandidatesHeaderText" Text="扫描目录" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
-                  <TextBlock Name="PluginCandidatesPathText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap" Opacity="0.85" />
-                </StackPanel>
-                <Button Name="OpenPluginScanFolderButton" Grid.Column="1" Content="📂 打开扫描目录" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="11" VerticalAlignment="Center" Click="OpenPluginScanFolderButton_Click" />
-              </Grid>
               <ScrollViewer Name="PluginCandidateScrollViewer" MaxHeight="180" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="NestedScrollViewer_PreviewMouseWheel">
                 <ItemsControl Name="PluginCandidateItemsControl">
                   <ItemsControl.ItemTemplate>

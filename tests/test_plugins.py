@@ -189,82 +189,56 @@ def _open_plugin_page(win):
     time.sleep(1.2)
 
 
+def _assert_scan_summary_absent(win):
+    """目录状态、路径和打开目录按钮已从插件页移除。"""
+    for auto_id in (
+        "PluginCandidatesHeaderText",
+        "PluginCandidatesPathText",
+        "OpenPluginScanFolderButton",
+    ):
+        assert not win.child_window(auto_id=auto_id).exists(timeout=1), (
+            f"不应再显示扫描目录摘要控件：{auto_id}"
+        )
+
+
 def test_plugin_page_renders_core_controls(scan_dir, app):
-    """
-    插件页的基本控件必须能渲染出来（缺一个都说明 XAML 绑定或事件接线断了）。
-
-    ⚠️ 这一条曾经真的抓到一个缺陷：候选区块的「📂 打开扫描目录」按钮写成了
-
-        <Button Content="📂 打开扫描目录" Click="OpenPluginScanFolderButton_Click" />
-
-    —— ``OpenPluginScanFolderButton_Click`` 是**事件处理器**的名字，不是控件名。
-    控件没写 ``Name`` 就没有 AutomationId，WPF 也不给它建带标识的 peer，
-    于是它虽然能正常点击，却永远不出现在自动化树里。所以下面这组断言不是走过场：
-    它们同时守着「控件在不在」和「有没有被正确地命名到可寻址」这两件事。
-    """
+    """保留已命名、可寻址的导入、重新扫描和数据目录入口。"""
     scan_dir(create=True)
     win, _ = app
     _open_plugin_page(win)
 
     for auto_id, control_type in (
-        # 页面骨架
         ("PluginSystemEnabledCheckBox", "CheckBox"),
         ("PluginListBox", "List"),
-        # 三枚主操作入口（安装 / 重扫 / 打开数据目录）
         ("InstallPluginButton", "Button"),
         ("RescanPluginsButton", "Button"),
         ("OpenPluginsFolderButton", "Button"),
-        # 候选区块自己的入口
-        ("OpenPluginScanFolderButton", "Button"),
     ):
         element = win.child_window(auto_id=auto_id, control_type=control_type)
         assert element.exists(timeout=5), f"{auto_id}({control_type}) 未渲染出来"
 
-    # 候选区块的可见性靠「里面的 TextBlock 能不能被找到」来判定。
-    # 刻意不断言包裹它的 Border：WPF 的 Border 没有对应的 UIA peer，压根不出现在自动化树里，
-    # 断言它只会得到一个与被测行为无关的失败。而 Collapsed 的元素同样不进自动化树，
-    # 所以「找得到标题文本」本身就等价于「这一块确实渲染且可见了」。
-    header = win.child_window(auto_id="PluginCandidatesHeaderText", control_type="Text")
-    assert header.exists(timeout=3), "候选区块未渲染（标题 TextBlock 找不到）"
-    assert header.window_text().strip(), "候选区块标题不应为空"
+    _assert_scan_summary_absent(win)
 
 
-def test_empty_scan_dir_reports_nothing_to_install(scan_dir, app):
-    """空扫描目录要明确说「没有可安装的插件」，而不是让用户对着空白猜。"""
+def test_empty_scan_dir_has_no_summary_or_candidate_cards(scan_dir, app):
+    """空扫描目录不显示摘要或无内容的候选区块。"""
     scan_dir(create=True)
     win, _ = app
     _open_plugin_page(win)
 
-    header = win.child_window(auto_id="PluginCandidatesHeaderText", control_type="Text")
-    assert header.exists(timeout=3)
-    text = header.window_text()
-    assert "没有可安装" in text, f"空目录的标题文案不符：{text!r}"
+    _assert_scan_summary_absent(win)
+    assert _find_text(win, "📦 安装") is None, "空扫描目录不应出现候选安装按钮"
 
 
-def test_missing_scan_dir_is_reported_and_never_created(scan_dir, app):
-    """
-    扫描目录不存在时：界面如实说明路径，并且**宿主绝不去创建它**。
-
-    这条是 C6 的 UI 级回归断言。宿主如果手贱创建这个目录，程序装在
-    Program Files 这类只读位置时用户会直接撞上一次权限错误 —— 而那是个
-    只有在「装在只读位置」的机器上才会复现的缺陷，平时根本测不出来。
-    """
+def test_missing_scan_dir_is_not_created_or_shown(scan_dir, app):
+    """不再显示缺失目录提示，但继续保证宿主不会创建扫描目录。"""
     target = scan_dir(create=False)
     assert not os.path.exists(target)
 
     win, _ = app
     _open_plugin_page(win)
 
-    header = win.child_window(auto_id="PluginCandidatesHeaderText", control_type="Text")
-    assert header.exists(timeout=3)
-    text = header.window_text()
-    assert "不存在" in text, f"目录缺失时的标题文案不符：{text!r}"
-
-    path_text = win.child_window(auto_id="PluginCandidatesPathText", control_type="Text")
-    if path_text.exists(timeout=2):
-        hint = path_text.window_text()
-        assert SCAN_DIR_NAME in hint, f"应把实际路径写给用户看，实际：{hint!r}"
-
+    _assert_scan_summary_absent(win)
     assert not os.path.exists(target), (
         f"宿主不应创建扫描目录，但它出现了：{target}"
     )
@@ -283,12 +257,7 @@ def test_candidate_card_renders_for_dll_in_scan_dir(scan_dir, app):
     win, _ = app
     _open_plugin_page(win)
 
-    header = win.child_window(auto_id="PluginCandidatesHeaderText", control_type="Text")
-    assert header.exists(timeout=3)
-    text = header.window_text()
-    assert "发现 1 个" in text and "1 个可以安装" in text, (
-        f"扫描目录里有一枚可安装插件，标题应据此说明，实际：{text!r}"
-    )
+    _assert_scan_summary_absent(win)
 
     # 卡片内容：插件名取自程序集元数据/清单，状态为「可安装」，按钮为「📦 安装」
     assert _find_text(win, "Hello 示例插件") is not None, "候选卡片上应出现插件显示名"

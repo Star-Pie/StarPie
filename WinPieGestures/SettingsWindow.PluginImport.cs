@@ -94,11 +94,20 @@ public partial class SettingsWindow
         }
     }
 
-    private async void SaveOfficialPluginPackageButton_Click(object sender, RoutedEventArgs e)
+    private void OpenOfficialPluginMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.Button { ContextMenu: { } menu } button) return;
+        menu.PlacementTarget = button;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    private async void SaveOfficialPluginPackageMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (_resourcesReleased || App.IsExiting) return;
         CancellationToken lifetime = _lifetimeCts.Token;
-        if (sender is not System.Windows.Controls.Button { Tag: OfficialPluginModule module } button) return;
+        if (sender is not System.Windows.Controls.MenuItem { Tag: OfficialPluginModule module } item) return;
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = I18n.T("PluginsOfflineSave"),
@@ -107,8 +116,8 @@ public partial class SettingsWindow
             DefaultExt = ".spkg",
         };
         if (dialog.ShowDialog(this) != true) return;
-        button.IsEnabled = false;
-        button.SetCurrentValue(System.Windows.Controls.ContentControl.ContentProperty, I18n.T("PluginsOfflineDownloading"));
+        item.SetCurrentValue(IsEnabledProperty, false);
+        item.SetCurrentValue(System.Windows.Controls.HeaderedItemsControl.HeaderProperty, I18n.T("PluginsOfflineDownloading"));
         try
         {
             await OfficialPluginClient.SaveOfflinePackageAsync(module, dialog.FileName,
@@ -128,8 +137,8 @@ public partial class SettingsWindow
         {
             if (!App.IsExiting && !_resourcesReleased)
             {
-                button.IsEnabled = true;
-                button.GetBindingExpression(System.Windows.Controls.ContentControl.ContentProperty)?.UpdateTarget();
+                item.GetBindingExpression(IsEnabledProperty)?.UpdateTarget();
+                item.GetBindingExpression(System.Windows.Controls.HeaderedItemsControl.HeaderProperty)?.UpdateTarget();
             }
         }
     }
