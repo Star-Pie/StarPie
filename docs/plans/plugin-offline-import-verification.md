@@ -8,7 +8,8 @@
 - 离线客户端、UI partial、可信目录、首次引导 XAML/代码、官方客户端与列表模型共七个核心文件，与此前用户人工通过的版本逐字节一致。设置窗口整合仅有新增入口、通道参数与本地目录回退，启动资源仍使用实际存在的 `FlatComboBoxStyle`。
 - v2.0.0 下重新验证：Release 构建 0 warning/0 error；实际 XAML 控件资源加载通过；离线护栏 66 项、插件管理 57 项、目录发现 70 项、级联编辑 42 项全部通过；安全插件自检 PASS；全局 i18n 与测试按钮线程护栏均退出 0。旧 Beta 的 `SingleActionCopied` 缺失不再出现在 v2.0.0 源码中。
 - 本轮完整日志、原始差异、用户脏文件备份和文件指纹放在系统临时目录 `codex-plugin-offline-v2-20261023`，不进入功能提交。实际命令包括 `dotnet build WinPieGestures/WinPieGestures.csproj -c Release --nologo`、`scratch/plugin-offline-tests`、`scratch/plugin-manager-tests`、`scratch/onboarding-download-tests --release-discovery-only`、`scratch/action-editing-tests` 对应工程，以及夹具 DLL 的 `--plugin-selftest --skip-invoke`。
-- 人工验收沿用用户已确认的功能表现，整合没有增加交互语义变更；本轮 AI 未启动 GUI 套件或真实插件动作，也不声称重新完成了 v2.0.0 的人工整体验收。
+- 2026-10-23，用户从 `H:\design\WinPieGestures\bin\Release\net8.0-windows10.0.19041.0` 启动合并后的 v2.0.0，明确反馈“验收没问题”。此次人工验收绑定功能提交 `14b6e0e0ef7b8f949915ec91d8503690c4b4eb64`、合并提交 `7e46366f27e8e1125209792822d72b37df1c9cb7`；不再仅沿用旧 Beta 候选的验收。AI 未代为执行实机操作。
+- 功能已在本地 `main` 完成提交与合并，本次只补记上述新版人工验收结果，不改变产品源码或已验收的程序。远端推送、PR、打包与发布仍不在本轮授权范围内。
 - 本地旧 `main` 与 v2.0.0 存在历史分叉，级联编辑的对应改动已在 v2.0.0 中进一步修复。合并需保留 v2.0.0 的这些修复。主工作区 README、支持者素材及 WPF 临时工程不进入提交，合并前后按 SHA-256 核验原内容保留。
 
 以下为此前 Beta 候选的历史验收与失败复现记录，其中旧状态、路径和未交付说明仅对应当时版本，不代表本次 v2.0.0 的状态。
