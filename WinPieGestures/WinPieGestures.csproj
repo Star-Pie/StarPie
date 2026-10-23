@@ -30,6 +30,7 @@
     若插件目录里出现第二份 Abstractions.dll，会造成类型身份分裂，所有强转都会失败。
   -->
   <ItemGroup>
+    <EmbeddedResource Include="..\CHANGELOG.md" Link="CHANGELOG.md" LogicalName="WinPieGestures.Changelog.md" />
     <EmbeddedResource Include="Plugin\OfficialPluginCatalogSeed.json" LogicalName="WinPieGestures.Plugins.OfficialPluginCatalogSeed.json" />
     <ProjectReference Include="..\plugin\sdk\StarPie.Plugin.Abstractions\StarPie.Plugin.Abstractions.csproj" />
   </ItemGroup>

@@ -2241,10 +2241,6 @@ public partial class SettingsWindow : Window
 		{
 			ShowSelectedActionTextCheckBox.Content = I18n.T("ShowSelectedActionText");
 		}
-		if (FindName("OlderMilestonesExpander") is Expander expander)
-		{
-			expander.Header = I18n.T("MilestonesOlderExpander");
-		}
 		if (AppearancePageHeader != null)
 		{
 			AppearancePageHeader.Text = I18n.T("AppearanceHeader");
@@ -2921,10 +2917,6 @@ public partial class SettingsWindow : Window
 		{
 			OpenChangelogButton.Content = I18n.T("BtnOpenChangelog");
 		}
-		if (OlderMilestonesExpander != null)
-		{
-			OlderMilestonesExpander.Header = I18n.T("MilestonesOlderExpander");
-		}
 
 		// --- Phase 1: Sidebar Theme & Buttons ---
 		if (SidebarThemeSystemText != null) SidebarThemeSystemText.Text = I18n.T("SidebarThemeSystem");
@@ -3536,119 +3528,12 @@ public partial class SettingsWindow : Window
 		if (OpenLogFolderButton != null) OpenLogFolderButton.ToolTip = I18n.T("TipOpenLogFolder");
 		if (ViewTodayLogButton != null) ViewTodayLogButton.ToolTip = I18n.T("TipViewTodayLog");
 
-		// --- Phase 5: Tab 4 (About & Milestones / 关于与版本演进) ---
+		// --- Phase 5: Tab 4 (About & embedded changelog) ---
 		if (OpenChangelogButton != null) OpenChangelogButton.Content = I18n.T("BtnViewChangelog");
-		if (OlderMilestonesExpander != null) OlderMilestonesExpander.Header = I18n.T("MilestonesOlderExpander");
 		if (Tab4_AboutTitleText != null) Tab4_AboutTitleText.Text = I18n.T("Tab4_AboutTitleText");
 		if (Tab4_AboutDescText != null) Tab4_AboutDescText.Text = I18n.T("Tab4_AboutDescText");
 		if (Tab4_AppSloganText != null) Tab4_AppSloganText.Text = I18n.T("Tab4_AppSloganText");
-		if (Tab4_MilestonesHeaderTitle != null) Tab4_MilestonesHeaderTitle.Text = I18n.T("Tab4_MilestonesHeaderTitle");
-		if (Tab4_Ms_180b2_Title != null) Tab4_Ms_180b2_Title.Text = I18n.T("Tab4_Ms_180b2_Title");
-		if (Tab4_Ms_180b2_P1 != null) Tab4_Ms_180b2_P1.Text = I18n.T("Tab4_Ms_180b2_P1");
-		if (Tab4_Ms_180b2_P2 != null) Tab4_Ms_180b2_P2.Text = I18n.T("Tab4_Ms_180b2_P2");
-		if (Tab4_Ms_180b2_P3 != null) Tab4_Ms_180b2_P3.Text = I18n.T("Tab4_Ms_180b2_P3");
-		if (Tab4_Ms_180b2_P4 != null) Tab4_Ms_180b2_P4.Text = I18n.T("Tab4_Ms_180b2_P4");
-		if (Tab4_Ms_180b1_Title != null) Tab4_Ms_180b1_Title.Text = I18n.T("Tab4_Ms_180b1_Title");
-		if (Tab4_Ms_180b1_P1 != null) Tab4_Ms_180b1_P1.Text = I18n.T("Tab4_Ms_180b1_P1");
-		if (Tab4_Ms_180b1_P2 != null) Tab4_Ms_180b1_P2.Text = I18n.T("Tab4_Ms_180b1_P2");
-		if (Tab4_Ms_180b1_P3 != null) Tab4_Ms_180b1_P3.Text = I18n.T("Tab4_Ms_180b1_P3");
-		if (Tab4_Ms_180b1_P4 != null) Tab4_Ms_180b1_P4.Text = I18n.T("Tab4_Ms_180b1_P4");
-		if (Tab4_Ms_174_Title != null) Tab4_Ms_174_Title.Text = I18n.T("Tab4_Ms_174_Title");
-		if (Tab4_Ms_174_P1 != null) Tab4_Ms_174_P1.Text = I18n.T("Tab4_Ms_174_P1");
-		if (Tab4_Ms_174_P2 != null) Tab4_Ms_174_P2.Text = I18n.T("Tab4_Ms_174_P2");
-		if (Tab4_Ms_174_P3 != null) Tab4_Ms_174_P3.Text = I18n.T("Tab4_Ms_174_P3");
-		if (Tab4_Ms_174_P4 != null) Tab4_Ms_174_P4.Text = I18n.T("Tab4_Ms_174_P4");
-		if (Tab4_Ms_174b4_Title != null) Tab4_Ms_174b4_Title.Text = I18n.T("Tab4_Ms_174b4_Title");
-		if (Tab4_Ms_174b4_P1 != null) Tab4_Ms_174b4_P1.Text = I18n.T("Tab4_Ms_174b4_P1");
-		if (Tab4_Ms_174b4_P2 != null) Tab4_Ms_174b4_P2.Text = I18n.T("Tab4_Ms_174b4_P2");
-		if (Tab4_Ms_174b4_P3 != null) Tab4_Ms_174b4_P3.Text = I18n.T("Tab4_Ms_174b4_P3");
-		if (Tab4_Ms_174b4_P4 != null) Tab4_Ms_174b4_P4.Text = I18n.T("Tab4_Ms_174b4_P4");
-		if (Tab4_Ms_174b3_Title != null) Tab4_Ms_174b3_Title.Text = I18n.T("Tab4_Ms_174b3_Title");
-		if (Tab4_Ms_174b3_P1 != null) Tab4_Ms_174b3_P1.Text = I18n.T("Tab4_Ms_174b3_P1");
-		if (Tab4_Ms_174b3_P2 != null) Tab4_Ms_174b3_P2.Text = I18n.T("Tab4_Ms_174b3_P2");
-		if (Tab4_Ms_174b3_P3 != null) Tab4_Ms_174b3_P3.Text = I18n.T("Tab4_Ms_174b3_P3");
-		if (Tab4_Ms_174b2_Title != null) Tab4_Ms_174b2_Title.Text = I18n.T("Tab4_Ms_174b2_Title");
-		if (Tab4_Ms_174b2_P1 != null) Tab4_Ms_174b2_P1.Text = I18n.T("Tab4_Ms_174b2_P1");
-		if (Tab4_Ms_174b2_P2 != null) Tab4_Ms_174b2_P2.Text = I18n.T("Tab4_Ms_174b2_P2");
-		if (Tab4_Ms_174b2_P3 != null) Tab4_Ms_174b2_P3.Text = I18n.T("Tab4_Ms_174b2_P3");
-		if (Tab4_Ms_174b2_P4 != null) Tab4_Ms_174b2_P4.Text = I18n.T("Tab4_Ms_174b2_P4");
-		if (Tab4_Ms_174b1_Title != null) Tab4_Ms_174b1_Title.Text = I18n.T("Tab4_Ms_174b1_Title");
-		if (Tab4_Ms_174b1_P1 != null) Tab4_Ms_174b1_P1.Text = I18n.T("Tab4_Ms_174b1_P1");
-		if (Tab4_Ms_174b1_P2 != null) Tab4_Ms_174b1_P2.Text = I18n.T("Tab4_Ms_174b1_P2");
-		if (Tab4_Ms_174b1_P3 != null) Tab4_Ms_174b1_P3.Text = I18n.T("Tab4_Ms_174b1_P3");
-		if (Tab4_Ms_174b1_P4 != null) Tab4_Ms_174b1_P4.Text = I18n.T("Tab4_Ms_174b1_P4");
-		if (Tab4_Ms_173_Title != null) Tab4_Ms_173_Title.Text = I18n.T("Tab4_Ms_173_Title");
-		if (Tab4_Ms_173_P1 != null) Tab4_Ms_173_P1.Text = I18n.T("Tab4_Ms_173_P1");
-		if (Tab4_Ms_173_P2 != null) Tab4_Ms_173_P2.Text = I18n.T("Tab4_Ms_173_P2");
-		if (Tab4_Ms_173_P3 != null) Tab4_Ms_173_P3.Text = I18n.T("Tab4_Ms_173_P3");
-		if (Tab4_Ms_173_P4 != null) Tab4_Ms_173_P4.Text = I18n.T("Tab4_Ms_173_P4");
-		if (Tab4_Ms_173_P5 != null) Tab4_Ms_173_P5.Text = I18n.T("Tab4_Ms_173_P5");
-		if (Tab4_Ms_173b8_Title != null) Tab4_Ms_173b8_Title.Text = I18n.T("Tab4_Ms_173b8_Title");
-		if (Tab4_Ms_173b8_P1 != null) Tab4_Ms_173b8_P1.Text = I18n.T("Tab4_Ms_173b8_P1");
-		if (Tab4_Ms_173b8_P2 != null) Tab4_Ms_173b8_P2.Text = I18n.T("Tab4_Ms_173b8_P2");
-		if (Tab4_Ms_173b8_P3 != null) Tab4_Ms_173b8_P3.Text = I18n.T("Tab4_Ms_173b8_P3");
-		if (Tab4_Ms_173b8_P4 != null) Tab4_Ms_173b8_P4.Text = I18n.T("Tab4_Ms_173b8_P4");
-		if (Tab4_Ms_173b8_P5 != null) Tab4_Ms_173b8_P5.Text = I18n.T("Tab4_Ms_173b8_P5");
-		if (Tab4_Ms_173b7_Title != null) Tab4_Ms_173b7_Title.Text = I18n.T("Tab4_Ms_173b7_Title");
-		if (Tab4_Ms_173b7_P1 != null) Tab4_Ms_173b7_P1.Text = I18n.T("Tab4_Ms_173b7_P1");
-		if (Tab4_Ms_173b7_P2 != null) Tab4_Ms_173b7_P2.Text = I18n.T("Tab4_Ms_173b7_P2");
-		if (Tab4_Ms_173b7_P3 != null) Tab4_Ms_173b7_P3.Text = I18n.T("Tab4_Ms_173b7_P3");
-		if (Tab4_Ms_173b7_P4 != null) Tab4_Ms_173b7_P4.Text = I18n.T("Tab4_Ms_173b7_P4");
-		if (Tab4_Ms_173b6_Title != null) Tab4_Ms_173b6_Title.Text = I18n.T("Tab4_Ms_173b6_Title");
-		if (Tab4_Ms_173b6_P1 != null) Tab4_Ms_173b6_P1.Text = I18n.T("Tab4_Ms_173b6_P1");
-		if (Tab4_Ms_173b6_P2 != null) Tab4_Ms_173b6_P2.Text = I18n.T("Tab4_Ms_173b6_P2");
-		if (Tab4_Ms_173b5_Title != null) Tab4_Ms_173b5_Title.Text = I18n.T("Tab4_Ms_173b5_Title");
-		if (Tab4_Ms_173b5_P1 != null) Tab4_Ms_173b5_P1.Text = I18n.T("Tab4_Ms_173b5_P1");
-		if (Tab4_Ms_173b5_P2 != null) Tab4_Ms_173b5_P2.Text = I18n.T("Tab4_Ms_173b5_P2");
-		if (Tab4_Ms_173b5_P3 != null) Tab4_Ms_173b5_P3.Text = I18n.T("Tab4_Ms_173b5_P3");
-		if (Tab4_Ms_173b5_P4 != null) Tab4_Ms_173b5_P4.Text = I18n.T("Tab4_Ms_173b5_P4");
-		if (Tab4_Ms_173b4_Title != null) Tab4_Ms_173b4_Title.Text = I18n.T("Tab4_Ms_173b4_Title");
-		if (Tab4_Ms_173b4_P1 != null) Tab4_Ms_173b4_P1.Text = I18n.T("Tab4_Ms_173b4_P1");
-		if (Tab4_Ms_173b4_P2 != null) Tab4_Ms_173b4_P2.Text = I18n.T("Tab4_Ms_173b4_P2");
-		if (Tab4_Ms_173b4_P3 != null) Tab4_Ms_173b4_P3.Text = I18n.T("Tab4_Ms_173b4_P3");
-		if (Tab4_Ms_173b4_P4 != null) Tab4_Ms_173b4_P4.Text = I18n.T("Tab4_Ms_173b4_P4");
-		if (Tab4_Ms_173b3_Title != null) Tab4_Ms_173b3_Title.Text = I18n.T("Tab4_Ms_173b3_Title");
-		if (Tab4_Ms_173b3_Desc != null) Tab4_Ms_173b3_Desc.Text = I18n.T("Tab4_Ms_173b3_Desc");
-		if (Tab4_Ms_173b2_Title != null) Tab4_Ms_173b2_Title.Text = I18n.T("Tab4_Ms_173b2_Title");
-		if (Tab4_Ms_173b2_Desc != null) Tab4_Ms_173b2_Desc.Text = I18n.T("Tab4_Ms_173b2_Desc");
-		if (Tab4_Ms_172b5_Title != null) Tab4_Ms_172b5_Title.Text = I18n.T("Tab4_Ms_172b5_Title");
-		if (Tab4_Ms_172b5_Desc != null) Tab4_Ms_172b5_Desc.Text = I18n.T("Tab4_Ms_172b5_Desc");
-		if (Tab4_Ms_172b2_Title != null) Tab4_Ms_172b2_Title.Text = I18n.T("Tab4_Ms_172b2_Title");
-		if (Tab4_Ms_172b2_Desc != null) Tab4_Ms_172b2_Desc.Text = I18n.T("Tab4_Ms_172b2_Desc");
-		if (Tab4_Ms_171_Title != null) Tab4_Ms_171_Title.Text = I18n.T("Tab4_Ms_171_Title");
-		if (Tab4_Ms_171_Desc != null) Tab4_Ms_171_Desc.Text = I18n.T("Tab4_Ms_171_Desc");
-		if (Tab4_Ms_170_Title != null) Tab4_Ms_170_Title.Text = I18n.T("Tab4_Ms_170_Title");
-		if (Tab4_Ms_170_Desc != null) Tab4_Ms_170_Desc.Text = I18n.T("Tab4_Ms_170_Desc");
-		if (Tab4_Ms_169_Title != null) Tab4_Ms_169_Title.Text = I18n.T("Tab4_Ms_169_Title");
-		if (Tab4_Ms_169_Desc != null) Tab4_Ms_169_Desc.Text = I18n.T("Tab4_Ms_169_Desc");
-		if (Tab4_Ms_168_Title != null) Tab4_Ms_168_Title.Text = I18n.T("Tab4_Ms_168_Title");
-		if (Tab4_Ms_168_Desc != null) Tab4_Ms_168_Desc.Text = I18n.T("Tab4_Ms_168_Desc");
-		if (Tab4_Ms_167_Title != null) Tab4_Ms_167_Title.Text = I18n.T("Tab4_Ms_167_Title");
-		if (Tab4_Ms_167_Desc != null) Tab4_Ms_167_Desc.Text = I18n.T("Tab4_Ms_167_Desc");
-		if (Tab4_Ms_158_Title != null) Tab4_Ms_158_Title.Text = I18n.T("Tab4_Ms_158_Title");
-		if (Tab4_Ms_158_Desc != null) Tab4_Ms_158_Desc.Text = I18n.T("Tab4_Ms_158_Desc");
-		if (Tab4_Ms_157_Title != null) Tab4_Ms_157_Title.Text = I18n.T("Tab4_Ms_157_Title");
-		if (Tab4_Ms_157_Desc != null) Tab4_Ms_157_Desc.Text = I18n.T("Tab4_Ms_157_Desc");
-		if (Tab4_Ms_156_Title != null) Tab4_Ms_156_Title.Text = I18n.T("Tab4_Ms_156_Title");
-		if (Tab4_Ms_156_Desc != null) Tab4_Ms_156_Desc.Text = I18n.T("Tab4_Ms_156_Desc");
-		if (Tab4_Ms_145_Title != null) Tab4_Ms_145_Title.Text = I18n.T("Tab4_Ms_145_Title");
-		if (Tab4_Ms_145_Desc != null) Tab4_Ms_145_Desc.Text = I18n.T("Tab4_Ms_145_Desc");
-		if (Tab4_Ms_144_Title != null) Tab4_Ms_144_Title.Text = I18n.T("Tab4_Ms_144_Title");
-		if (Tab4_Ms_144_Desc != null) Tab4_Ms_144_Desc.Text = I18n.T("Tab4_Ms_144_Desc");
-		if (Tab4_Ms_139_Title != null) Tab4_Ms_139_Title.Text = I18n.T("Tab4_Ms_139_Title");
-		if (Tab4_Ms_139_Desc != null) Tab4_Ms_139_Desc.Text = I18n.T("Tab4_Ms_139_Desc");
-		if (Tab4_Ms_138_Title != null) Tab4_Ms_138_Title.Text = I18n.T("Tab4_Ms_138_Title");
-		if (Tab4_Ms_138_Desc != null) Tab4_Ms_138_Desc.Text = I18n.T("Tab4_Ms_138_Desc");
-		if (Tab4_Ms_134_Title != null) Tab4_Ms_134_Title.Text = I18n.T("Tab4_Ms_134_Title");
-		if (Tab4_Ms_134_Desc != null) Tab4_Ms_134_Desc.Text = I18n.T("Tab4_Ms_134_Desc");
-		if (Tab4_Ms_133_Title != null) Tab4_Ms_133_Title.Text = I18n.T("Tab4_Ms_133_Title");
-		if (Tab4_Ms_133_Desc != null) Tab4_Ms_133_Desc.Text = I18n.T("Tab4_Ms_133_Desc");
-		if (Tab4_Ms_132_Title != null) Tab4_Ms_132_Title.Text = I18n.T("Tab4_Ms_132_Title");
-		if (Tab4_Ms_132_Desc != null) Tab4_Ms_132_Desc.Text = I18n.T("Tab4_Ms_132_Desc");
-		if (Tab4_Ms_131_Title != null) Tab4_Ms_131_Title.Text = I18n.T("Tab4_Ms_131_Title");
-		if (Tab4_Ms_131_Desc != null) Tab4_Ms_131_Desc.Text = I18n.T("Tab4_Ms_131_Desc");
-		if (Tab4_Ms_130_Title != null) Tab4_Ms_130_Title.Text = I18n.T("Tab4_Ms_130_Title");
-		if (Tab4_Ms_130_Desc != null) Tab4_Ms_130_Desc.Text = I18n.T("Tab4_Ms_130_Desc");
+		LocalizeEmbeddedChangelog();
 		if (BrowseBlacklistButton != null) BrowseBlacklistButton.ToolTip = I18n.T("TipBrowseBlacklist");
 		if (AddBlacklistButton != null) AddBlacklistButton.ToolTip = I18n.T("TipAddBlacklist");
 		if (DuplicateProfileBtn != null) DuplicateProfileBtn.ToolTip = I18n.T("TipDuplicateProfile");
@@ -3803,6 +3688,7 @@ public partial class SettingsWindow : Window
 		MappingsSettingsGrid.Visibility = ((index != 2) ? Visibility.Collapsed : Visibility.Visible);
 		SystemSettingsGrid.Visibility = ((index != 3) ? Visibility.Collapsed : Visibility.Visible);
 		AboutSettingsGrid.Visibility = ((index != 4) ? Visibility.Collapsed : Visibility.Visible);
+		if (index == 4) EnsureEmbeddedChangelogLoaded();
 		PluginsSettingsGrid.Visibility = ((index != 5) ? Visibility.Collapsed : Visibility.Visible);
 		_isUpdatingUi = true;
 		try
@@ -16796,25 +16682,7 @@ public partial class SettingsWindow : Window
 
 	private void OpenChangelogButton_Click(object sender, RoutedEventArgs e)
 	{
-		try
-		{
-			string text = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
-			if (File.Exists(text))
-			{
-				Process.Start(new ProcessStartInfo(text)
-				{
-					UseShellExecute = true
-				});
-			}
-			else
-			{
-				AppMessageBox.Show("CHANGELOG.md 文件位于根目录。", "提示");
-			}
-		}
-		catch (Exception ex)
-		{
-			AppMessageBox.Show("无法打开文件: " + ex.Message);
-		}
+		OpenEmbeddedChangelog();
 	}
 
 	private void SaveButton_Click(object sender, RoutedEventArgs e)
