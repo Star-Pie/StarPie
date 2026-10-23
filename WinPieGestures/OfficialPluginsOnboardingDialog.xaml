@@ -216,6 +216,8 @@
       </Border>
 
       <!-- 进度条与状态文字 -->
+      <TextBlock Name="OfflineHintTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
+      <Button Name="OfflineImportButton" HorizontalAlignment="Left" Style="{StaticResource DialogButtonStyle}" Margin="0,0,0,12" Click="OfflineImportButton_Click" />
       <StackPanel Name="ProgressArea" Margin="0,0,0,14" Visibility="Collapsed">
         <ProgressBar Name="InstallProgressBar" Height="4" Minimum="0" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource SubtleCardBrush}" BorderThickness="0" Margin="0,0,0,6" />
         <TextBlock Name="StatusTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />

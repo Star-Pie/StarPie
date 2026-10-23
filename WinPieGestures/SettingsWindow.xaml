@@ -3788,7 +3788,7 @@
               <TextBlock Name="PluginsPageSubheader" Text="官方插件从 StarPie-Official-Plugins 下载并校验；社区插件仍可手动选择 .dll 安装。插件以 StarPie 当前权限在进程内运行，请只安装你信任的来源。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-              <Button Name="InstallPluginButton" Content="➕ 手动安装社区插件 (.dll)..." Style="{StaticResource PrimaryButtonStyle}" Height="32" Padding="12,0" Click="InstallPluginButton_Click" />
+              <Button Name="InstallPluginButton" Style="{StaticResource PrimaryButtonStyle}" Height="32" Padding="12,0" Click="InstallPluginButton_Click" />
               <Button Name="RescanPluginsButton" Content="🔄 重新扫描" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" Margin="8,0,0,0" ToolTip="重新读取扫描目录与插件数据目录，识别新增、手工拷入或外部修改过的插件" Click="RescanPluginsButton_Click" />
               <Button Name="OpenPluginsFolderButton" Content="📂 打开数据目录" Style="{StaticResource ModernButtonStyle}" Height="32" Padding="12,0" Margin="8,0,0,0" ToolTip="打开 StarPie 的可写插件目录：安装副本、启用记录与插件私有数据都在这里" Click="OpenPluginsFolderButton_Click" />
             </StackPanel>
@@ -3841,8 +3841,17 @@
                   <TextBlock Name="OfficialPluginsHeaderText" Text="官方插件" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
                   <TextBlock Name="OfficialPluginsStatusText" Text="从 StarPie-Official-Plugins 下载经过 SHA-256 校验的官方模块" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,0" TextWrapping="Wrap" />
                 </StackPanel>
-                <Button Name="RefreshOfficialPluginsButton" Grid.Column="1" Content="🌐 刷新目录" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="11" VerticalAlignment="Center" Click="RefreshOfficialPluginsButton_Click" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <ComboBox Name="PluginDownloadChannelComboBox" Style="{StaticResource FlatComboBoxStyle}" Width="160" Margin="0,0,0,6">
+                    <ComboBoxItem Tag="ghfast" />
+                    <ComboBoxItem Tag="gh-proxy" />
+                    <ComboBoxItem Tag="mirror" />
+                    <ComboBoxItem Tag="direct" />
+                  </ComboBox>
+                  <Button Name="RefreshOfficialPluginsButton" Content="🌐 刷新目录" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" FontSize="11" Click="RefreshOfficialPluginsButton_Click" />
+                </StackPanel>
               </Grid>
+              <TextBlock Name="PluginsOfflineGuideText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap" />
               <ScrollViewer Name="OfficialPluginsScrollViewer" MaxHeight="220" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" PreviewMouseWheel="NestedScrollViewer_PreviewMouseWheel">
                 <ItemsControl Name="OfficialPluginItemsControl">
                   <ItemsControl.ItemTemplate>
@@ -3864,9 +3873,10 @@
                             </StackPanel>
                             <TextBlock Text="{Binding SummaryText}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
                           </StackPanel>
-                          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                          <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="8,0,0,0">
+                            <Button Content="{Binding SavePackageText}" IsEnabled="{Binding CanSavePackage}" Tag="{Binding Module}" Click="SaveOfficialPluginPackageButton_Click" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" FontSize="11" Margin="0,0,0,4" />
                             <Button Content="{Binding DetailsText}" Tag="{Binding Module}" Click="OpenOfficialPluginDetailsButton_Click" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="10,0" FontSize="11.5" />
-                            <Button Content="{Binding InstallButtonText}" Tag="{Binding Module}" Click="InstallOfficialPluginButton_Click" Height="28" Padding="10,0" FontSize="11.5" Margin="6,0,0,0">
+                            <Button Content="{Binding InstallButtonText}" Tag="{Binding Module}" Click="InstallOfficialPluginButton_Click" Height="28" Padding="10,0" FontSize="11.5" Margin="0,4,0,0">
                               <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
                                   <Style.Triggers>

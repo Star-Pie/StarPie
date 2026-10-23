@@ -26,6 +26,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
     private bool _isUpdatingLocalization;
 
     internal bool HasBeenDisplayed => _hasBeenDisplayed;
+    internal bool OfflineImportRequested { get; private set; }
 
     public OfficialPluginsOnboardingDialog()
     {
@@ -138,6 +139,8 @@ public partial class OfficialPluginsOnboardingDialog : Window
         if (RetryButton != null) RetryButton.Content = I18n.T("OfficialPluginsOnboardingRetryBtn");
         if (DoneButton != null) DoneButton.Content = I18n.T("OfficialPluginsOnboardingDoneBtn");
         if (HintTextBlock != null) HintTextBlock.Text = I18n.T("OfficialPluginsOnboardingHint");
+        if (OfflineImportButton != null) OfflineImportButton.Content = I18n.T("PluginsOfflineImport");
+        if (OfflineHintTextBlock != null) OfflineHintTextBlock.Text = I18n.T("PluginsOfflineGuide");
 
         if (ChannelLabelTextBlock != null) ChannelLabelTextBlock.Text = I18n.T("OfficialPluginsOnboardingChannelLabel");
         if (ChannelHintTextBlock != null) ChannelHintTextBlock.Text = I18n.T("OfficialPluginsOnboardingChannelHint");
@@ -320,6 +323,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         InstallButton.IsEnabled = false;
         LaterButton.IsEnabled = false;
         RetryButton.IsEnabled = false;
+        OfflineImportButton.IsEnabled = false;
         if (ChannelComboBox != null) ChannelComboBox.IsEnabled = false;
 
         ProgressArea.Visibility = Visibility.Visible;
@@ -432,6 +436,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         finally
         {
             _isInstalling = false;
+            OfflineImportButton.IsEnabled = true;
             if (ChannelComboBox != null) ChannelComboBox.IsEnabled = true;
         }
     }
@@ -439,6 +444,13 @@ public partial class OfficialPluginsOnboardingDialog : Window
     private void LaterButton_Click(object sender, RoutedEventArgs e)
     {
         OfficialPluginOnboarding.MarkPrompted();
+        Close();
+    }
+
+    private void OfflineImportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isInstalling) return;
+        OfflineImportRequested = true;
         Close();
     }
 

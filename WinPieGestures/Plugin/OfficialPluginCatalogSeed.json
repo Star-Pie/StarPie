@@ -1,0 +1,1386 @@
+{
+  "schemaVersion": 2,
+  "catalogVersion": "2026.10.15.040312",
+  "releaseTag": "modules-2026.10.15.1",
+  "releaseChannel": "beta",
+  "sdkApiVersion": "1.4",
+  "minimumHostVersion": "1.8.0-beta.1",
+  "generatedAt": "2026-10-15T04:03:12.5649597+00:00",
+  "modules": [
+    {
+      "id": "starpie.plugin.cadcommand",
+      "versions": [
+        {
+          "name": "CAD 模拟按键与命令输入",
+          "description": "StarPie 官方插件：专为 CAD 设计师优化的文本与模拟按键输入工具。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "plugin"
+          ],
+          "features": [
+            {
+              "id": "cadCommand",
+              "name": "CAD 模拟按键 / 命令输入",
+              "description": "向当前窗口输入 CAD 命令文本与按键，支持宏、取消前缀与 Unicode 输入。",
+              "category": "CAD 工具"
+            }
+          ],
+          "version": "1.0.3",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.CadCommand-1.0.3.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.CadCommand-1.0.3.spkg",
+          "sha256": "dc513a839e02a84877be81020631068b2143e564dc26498ae390d592d6e455d1",
+          "size": 20015,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "InputSimulation"
+          ],
+          "signature": null
+        },
+        {
+          "name": "CAD 模拟按键与命令输入",
+          "version": "1.0.2",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.CadCommand-1.0.2.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.CadCommand-1.0.2.spkg",
+          "sha256": "f87beca1faf71cefac5d922cd3ebd9c49f280cedcc6eeafe2ac54c8d55b1bf19",
+          "size": 19862,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "InputSimulation"
+          ],
+          "signature": null,
+          "description": "StarPie 官方插件：专为 CAD 设计师优化的文本与模拟按键输入工具。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "plugin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.command",
+      "versions": [
+        {
+          "name": "运行命令",
+          "description": "随 StarPie 分发的内置动作：在指定终端中执行命令行。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "command",
+              "name": "运行命令",
+              "description": "在指定终端中执行一条命令行语句。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.1.1",
+          "releaseTag": "modules-2026.10.13.1",
+          "assetName": "StarPie.Plugin.Command-1.1.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.13.1/StarPie.Plugin.Command-1.1.1.spkg",
+          "sha256": "031c59a44b4167203d76353c9473974487ad2f10417e0c146727343f3ad75a07",
+          "size": 16596,
+          "apiVersion": "1.8",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.5",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Command"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "运行命令",
+          "description": "随 StarPie 分发的内置动作：在指定终端中执行命令行。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "command",
+              "name": "运行命令",
+              "description": "在指定终端中执行一条命令行语句。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.1.0",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.Command-1.1.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.Command-1.1.0.spkg",
+          "sha256": "d32fb6289d27082493571f9f19921fc2fe9196ab624ac6d2d638688a3145d466",
+          "size": 16616,
+          "apiVersion": "1.8",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.5",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Command"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "运行命令",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.Command-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.Command-1.0.0.spkg",
+          "sha256": "54b8b89c6ccb6c3adafe329960ef4a033f8f30ab8c02199ff5cd138cae7fbbae",
+          "size": 14550,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Command"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：在指定终端中执行命令行。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.plugin.desktoppet",
+      "versions": [
+        {
+          "name": "桌宠",
+          "description": "屏幕上的桌宠，轻点呼出轮盘，支持拖动与自定义素材。",
+          "author": "SoftBlack42",
+          "homepage": "https://github.com/Star-Pie/StarPie-Official-Plugins",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "桌宠",
+            "桌面伙伴",
+            "轮盘入口"
+          ],
+          "features": [
+            {
+              "id": "togglePet",
+              "name": "桌宠",
+              "description": "显示或隐藏桌宠，点击呼出宿主轮盘。",
+              "category": "交互形态"
+            },
+            {
+              "id": "managePet",
+              "name": "管理桌宠",
+              "description": "导入、切换、排序及软删除用户自己的形象素材。",
+              "category": "交互形态"
+            }
+          ],
+          "version": "0.1.6",
+          "releaseTag": "modules-2026.10.11.1",
+          "assetName": "StarPie.Plugin.DesktopPet-0.1.6.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.11.1/StarPie.Plugin.DesktopPet-0.1.6.spkg",
+          "sha256": "75b8dfcf7d43905b8aab10ec88cef83c905a736bf835819de0cc56eefeb0bc44",
+          "size": 97450,
+          "apiVersion": "1.11",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.7",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "Ui",
+            "Wheel"
+          ],
+          "signature": null
+        }
+      ]
+    },
+    {
+      "id": "starpie.plugin.floatingball",
+      "versions": [
+        {
+          "name": "悬浮球",
+          "description": "在屏幕上放一颗常驻悬浮球：点它呼出你自己的轮盘，选哪个扇区执行哪个。拖动改位置，可通过插件设置或动作收起。球由插件画，轮盘整体归宿主 —— 外观、扇区、体积、多屏 DPI 永远和你配的那一套一致。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "plugin",
+            "悬浮球",
+            "轮盘",
+            "常驻",
+            "快捷入口"
+          ],
+          "features": [
+            {
+              "id": "showBall",
+              "name": "呼出悬浮球",
+              "description": "在屏幕上显示常驻悬浮球，并从悬浮球呼出轮盘。",
+              "category": "交互形态"
+            },
+            {
+              "id": "hideBall",
+              "name": "收起悬浮球",
+              "description": "隐藏当前显示的悬浮球。",
+              "category": "交互形态"
+            }
+          ],
+          "version": "1.0.3",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.FloatingBall-1.0.3.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.FloatingBall-1.0.3.spkg",
+          "sha256": "2aa2bb22a2b7ab3e959935a75896f2bb882e50f1067c9e3a2b15c690e185d5f5",
+          "size": 33411,
+          "apiVersion": "1.6",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.3",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "Ui",
+            "Wheel"
+          ],
+          "signature": null
+        },
+        {
+          "name": "悬浮球",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.FloatingBall-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.FloatingBall-1.0.0.spkg",
+          "sha256": "41b67da1849e3294af280fbe7de55dc304c739fb7c7de8e1c94231946df0f72e",
+          "size": 29368,
+          "apiVersion": "1.6",
+          "minHostVersion": "1.8.0-beta.3",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "Ui",
+            "Wheel"
+          ],
+          "signature": null,
+          "description": "在屏幕上放一颗常驻悬浮球：点它呼出你自己的轮盘，选哪个扇区执行哪个。拖动改位置，右键收起。球由插件画，轮盘整体归宿主 —— 外观、扇区、体积、多屏 DPI 永远和你配的那一套一致。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "tags": [
+            "official",
+            "plugin",
+            "悬浮球",
+            "轮盘",
+            "常驻",
+            "快捷入口"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.folder",
+      "versions": [
+        {
+          "name": "打开文件夹",
+          "description": "随 StarPie 分发的内置动作：打开文件夹或定位到文件。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "folder",
+              "name": "打开文件夹",
+              "description": "打开文件夹或定位到指定文件。",
+              "category": "文件管理"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.Folder-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.Folder-1.0.1.spkg",
+          "sha256": "0b0c8d93af12e0cc8ee96675de304ad7a5a7269ba796b37c15be5ff0524708a2",
+          "size": 14040,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Folder",
+            "OpenFolder"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "打开文件夹",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.Folder-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.Folder-1.0.0.spkg",
+          "sha256": "8ac1e919459ff8c9cbf97f352fe0f44ce284683b40646e19ee664ab30617f395",
+          "size": 13962,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Folder",
+            "OpenFolder"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：打开文件夹或定位到文件。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.plugin.keypadlayer",
+      "versions": [
+        {
+          "name": "按键映射",
+          "description": "通过轮盘开启或关闭自定义按键映射，将物理按键映射为目标按键；支持可视化配置，并在切换应用或长按 Esc 时安全释放。默认提供左手数字小键盘预设。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "plugin"
+          ],
+          "features": [
+            {
+              "id": "keypadLayer",
+              "name": "按键映射",
+              "description": "开启或关闭自定义按键映射，并支持可视化编辑与预设。",
+              "category": "输入工具"
+            }
+          ],
+          "version": "1.0.2",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.KeypadLayer-1.0.2.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.KeypadLayer-1.0.2.spkg",
+          "sha256": "9f1cbc973f538d6bd4e45e711103a099945b4594f39596255f3674cae2409004",
+          "size": 17987,
+          "apiVersion": "1.7",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.3",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "InputRemapping"
+          ],
+          "signature": null
+        },
+        {
+          "name": "按键映射",
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.KeypadLayer-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.KeypadLayer-1.0.1.spkg",
+          "sha256": "a99211ab9a0ee27b9a632481750868fdb13906430d48428e93d5115b2c65910f",
+          "size": 17871,
+          "apiVersion": "1.7",
+          "minHostVersion": "1.8.0-beta.3",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "InputRemapping"
+          ],
+          "signature": null,
+          "description": "通过轮盘开启或关闭自定义按键映射，将物理按键映射为目标按键；支持可视化配置，并在切换应用或长按 Esc 时安全释放。默认提供左手数字小键盘预设。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "plugin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.launch",
+      "versions": [
+        {
+          "name": "启动程序",
+          "description": "随 StarPie 分发的内置动作：启动程序或应用。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "launch",
+              "name": "启动程序",
+              "description": "启动应用程序或其他可执行文件。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.1.1",
+          "releaseTag": "modules-2026.10.13.1",
+          "assetName": "StarPie.Plugin.Launch-1.1.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.13.1/StarPie.Plugin.Launch-1.1.1.spkg",
+          "sha256": "645ed0e73c9941eb1c05b385507474196c3fb17940d27ed5b8399c0305606ef5",
+          "size": 16474,
+          "apiVersion": "1.8",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.5",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Launch"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "启动程序",
+          "description": "随 StarPie 分发的内置动作：启动程序或应用。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "launch",
+              "name": "启动程序",
+              "description": "启动应用程序或其他可执行文件。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.1.0",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.Launch-1.1.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.Launch-1.1.0.spkg",
+          "sha256": "2c003ba89ebfbcd3641da926e4e6861a2d30584f4c89761924323a71a5d8c5f7",
+          "size": 16459,
+          "apiVersion": "1.8",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.5",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Launch"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "启动程序",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.Launch-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.Launch-1.0.0.spkg",
+          "sha256": "e1b30d2bf600bf6fad835641192b9983428f9fec83df61a4835334775f064cd5",
+          "size": 14380,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Launch"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：启动程序或应用。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.plugin.macro",
+      "versions": [
+        {
+          "name": "按键宏与多步骤脚本",
+          "description": "StarPie 官方插件：按顺序执行多步组合键、单键、文本输入、剪贴板与延时等待，解决无单一快捷键的多步操作。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "plugin",
+            "macro",
+            "automation"
+          ],
+          "features": [
+            {
+              "id": "macro",
+              "name": "按键宏 / 多步骤脚本",
+              "description": "按顺序执行多步组合键、按键、文本输入与延时等待。",
+              "category": "效率工具"
+            }
+          ],
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.10.12.1",
+          "assetName": "StarPie.Plugin.Macro-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.12.1/StarPie.Plugin.Macro-1.0.0.spkg",
+          "sha256": "6f6b709a41ccaf49b503d6c62b09ccd35f5904936b3d8b6eacb0639a422b2eae",
+          "size": 63778,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "InputSimulation",
+            "Clipboard"
+          ],
+          "signature": null
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.movemonitor",
+      "versions": [
+        {
+          "name": "窗口移到下一屏",
+          "description": "随 StarPie 分发的内置动作：窗口移到下一屏。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "moveMonitor",
+              "name": "窗口移到下一屏",
+              "description": "将当前窗口移动到下一个显示器。",
+              "category": "窗口管理"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.MoveMonitor-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.MoveMonitor-1.0.1.spkg",
+          "sha256": "fa5944f1a66cc1a0e409a82c5e9bec665b0b7ed553b708098ee65c5ac652e461",
+          "size": 13608,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "MoveMonitor"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null
+        },
+        {
+          "name": "窗口移到下一屏",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.MoveMonitor-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.MoveMonitor-1.0.0.spkg",
+          "sha256": "78e22983922bc865dfc6794842070c0bab6ab86d83c7c7d0d7a04cd3768b723a",
+          "size": 13505,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "MoveMonitor"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：窗口移到下一屏。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.ocr",
+      "versions": [
+        {
+          "name": "截屏识字 (OCR)",
+          "description": "随 StarPie 分发的内置动作：框选屏幕区域并识别其中的文字。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "ocr",
+              "name": "截屏识字",
+              "description": "框选屏幕区域并识别其中的文字。",
+              "category": "效率工具"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.Ocr-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.Ocr-1.0.1.spkg",
+          "sha256": "813bd2ae327d7399b7781fb1c45017b0bae3db417a5b934289589f3711ab757b",
+          "size": 13587,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Ocr",
+            "ScreenOcr"
+          ],
+          "capabilities": [
+            "ScreenCapture"
+          ],
+          "signature": null
+        },
+        {
+          "name": "截屏识字 (OCR)",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.Ocr-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.Ocr-1.0.0.spkg",
+          "sha256": "4ef600d615d2e550eaed7df7b36d160205509b1267af163d30e0de5994f7df76",
+          "size": 13538,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Ocr",
+            "ScreenOcr"
+          ],
+          "capabilities": [
+            "ScreenCapture"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：框选屏幕区域并识别其中的文字。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.plugin.qrscanner",
+      "versions": [
+        {
+          "name": "二维码扫描",
+          "description": "框选或识别鼠标附近二维码，本地解码后预览、复制或打开网页链接。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie-Official-Plugins",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "二维码",
+            "扫码",
+            "效率工具"
+          ],
+          "features": [
+            {
+              "id": "scanRegion",
+              "name": "框选扫码",
+              "description": "框选屏幕区域并识别其中的二维码。",
+              "category": "效率工具"
+            },
+            {
+              "id": "scanPointer",
+              "name": "识别鼠标附近二维码",
+              "description": "扫描鼠标周围区域并预览识别结果。",
+              "category": "效率工具"
+            }
+          ],
+          "version": "0.1.0",
+          "releaseTag": "modules-2026.10.15.1",
+          "assetName": "StarPie.Plugin.QrScanner-0.1.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.15.1/StarPie.Plugin.QrScanner-0.1.0.spkg",
+          "sha256": "7c21e28586cb9670e7d92c32b14c9f826453a348a605bfe3ce093e2d72d6c61d",
+          "size": 268752,
+          "apiVersion": "1.12",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.7",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "ScreenCapture",
+            "Ui",
+            "Clipboard",
+            "Process"
+          ],
+          "signature": null
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.shelltool",
+      "versions": [
+        {
+          "name": "系统与右键工具",
+          "description": "随 StarPie 分发的内置动作：执行系统工具与右键菜单功能。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "shellTool",
+              "name": "系统与右键工具",
+              "description": "调用系统工具与常用右键菜单功能。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.1.1",
+          "releaseTag": "modules-2026.10.13.1",
+          "assetName": "StarPie.Plugin.ShellTool-1.1.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.13.1/StarPie.Plugin.ShellTool-1.1.1.spkg",
+          "sha256": "c41272900a125d1da7a7179811dc964dbb4b508a3f0290fbf18aa061355c1d36",
+          "size": 16155,
+          "apiVersion": "1.8",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.5",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "ShellTool"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "系统与右键工具",
+          "description": "随 StarPie 分发的内置动作：执行系统工具与右键菜单功能。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "shellTool",
+              "name": "系统与右键工具",
+              "description": "调用系统工具与常用右键菜单功能。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.1.0",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.ShellTool-1.1.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.ShellTool-1.1.0.spkg",
+          "sha256": "4dba7c2615325ca62f483e6dc48398963381a06dfc745c535ad95ed5635047aa",
+          "size": 16153,
+          "apiVersion": "1.8",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.5",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "ShellTool"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "系统与右键工具",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.ShellTool-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.ShellTool-1.0.0.spkg",
+          "sha256": "da162ebfdb5ccaf93e073dc8527f9b1c5b9f5f5b30538f88bea8d3dbf2eee87b",
+          "size": 14051,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "ShellTool"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：执行系统工具与右键菜单功能。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.plugin.sound",
+      "versions": [
+        {
+          "name": "轮盘音效",
+          "description": "通过交互事件提供轮盘音效；在插件设置页选择各事件的自定义 WAV，管理静音、音量和主题。需要用户安装、启用并按需开启预加载。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/Star-Pie/StarPie-Official-Plugins",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "sound",
+            "interaction"
+          ],
+          "features": [
+            {
+              "id": "feedback",
+              "name": "轮盘反馈",
+              "description": "观察轮盘语义，不改变动作或导航。",
+              "category": "交互反馈"
+            },
+            {
+              "id": "custom-wav",
+              "name": "自定义音效文件",
+              "description": "在设置页为呈现、选择、展开、确认和取消选择 WAV；主题需设为自定义，留空沿用所选方案。",
+              "category": "音效"
+            }
+          ],
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.10.10.1",
+          "assetName": "StarPie.Plugin.Sound-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.10.1/StarPie.Plugin.Sound-1.0.0.spkg",
+          "sha256": "40bc94c83b59437385cf0c4a92447fd1fccc05e1a441b1bba615d0685a8c8a6a",
+          "size": 88672,
+          "apiVersion": "1.10",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.7",
+          "maxHostVersion": null,
+          "typeClaims": [],
+          "capabilities": [
+            "FileSystem"
+          ],
+          "signature": null
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.switchwindow",
+      "versions": [
+        {
+          "name": "切换窗口",
+          "description": "随 StarPie 分发的内置动作：切换到任务栏指定位置的窗口。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "switchWindow",
+              "name": "切换窗口",
+              "description": "切换到任务栏指定位置的窗口。",
+              "category": "窗口管理"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.SwitchWindow-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.SwitchWindow-1.0.1.spkg",
+          "sha256": "93d8d4a6c3ef684a450114597c1dc9d52fb25e1fc3bb0cecc09c6c9e7af047ce",
+          "size": 15046,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "SwitchWindow"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null
+        },
+        {
+          "name": "切换窗口",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.SwitchWindow-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.SwitchWindow-1.0.0.spkg",
+          "sha256": "59b24c1caba3fe3493e6eb29d3ac3c4dc09d5278fc1f957ae1604fc36cb887f9",
+          "size": 14992,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "SwitchWindow"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：切换到任务栏指定位置的窗口。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.system",
+      "versions": [
+        {
+          "name": "系统控制",
+          "description": "随 StarPie 分发的内置动作：最小化 / 任务视图 / 音量 / 锁屏 / 关机等系统功能。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "system",
+              "name": "系统控制",
+              "description": "提供最小化、任务视图、音量、锁屏、关机等系统操作。",
+              "category": "系统工具"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.System-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.System-1.0.1.spkg",
+          "sha256": "c1f66349ecc4dcbccfc6f1ba0fad2801082fdbee2a532002fb0cbfaa0986569f",
+          "size": 15476,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "System"
+          ],
+          "capabilities": [
+            "InputSimulation",
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "系统控制",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.System-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.System-1.0.0.spkg",
+          "sha256": "bfecda3f37cac821efb7307a9e429774b43fc1c2c5e5605824277c2177af166a",
+          "size": 15350,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "System"
+          ],
+          "capabilities": [
+            "InputSimulation",
+            "Process"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：最小化 / 任务视图 / 音量 / 锁屏 / 关机等系统功能。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.tile",
+      "versions": [
+        {
+          "name": "平铺窗口",
+          "description": "随 StarPie 分发的内置动作：平铺窗口。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "tile",
+              "name": "平铺窗口",
+              "description": "按宿主提供的布局平铺窗口，并支持循环布局与恢复。",
+              "category": "窗口管理"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.Tile-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.Tile-1.0.1.spkg",
+          "sha256": "059377ab155ddeb70460450058d7c6176991ac0ca8a25e4e2037e5ab285f54cc",
+          "size": 15156,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Tile"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null
+        },
+        {
+          "name": "平铺窗口",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.Tile-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.Tile-1.0.0.spkg",
+          "sha256": "efbeb20fe0ca6e035175dfe4c4f0dd43eacb987e13d710ace0c1ea79302e2cee",
+          "size": 15020,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Tile"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：平铺窗口。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.toggletopmost",
+      "versions": [
+        {
+          "name": "窗口置顶/取消置顶",
+          "description": "随 StarPie 分发的内置动作：窗口置顶/取消置顶。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "toggleTopmost",
+              "name": "窗口置顶 / 取消置顶",
+              "description": "切换当前窗口的始终置顶状态。",
+              "category": "窗口管理"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.ToggleTopmost-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.ToggleTopmost-1.0.1.spkg",
+          "sha256": "707744e5fb67f4fc98db1373e76da05c70ec66eb01a5f5c33144a516897dd908",
+          "size": 13633,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "ToggleTopmost"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null
+        },
+        {
+          "name": "窗口置顶/取消置顶",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.ToggleTopmost-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.ToggleTopmost-1.0.0.spkg",
+          "sha256": "efe7ddd043012d15bf974db9f06fa8d1b289a153d34c98d1b809e43c3a0d26ff",
+          "size": 13531,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "ToggleTopmost"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：窗口置顶/取消置顶。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.weburl",
+      "versions": [
+        {
+          "name": "打开网址",
+          "description": "随 StarPie 分发的内置动作：用默认或指定浏览器打开网址。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "webUrl",
+              "name": "打开网址",
+              "description": "使用默认或指定浏览器打开网址。",
+              "category": "网络工具"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.WebUrl-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.WebUrl-1.0.1.spkg",
+          "sha256": "6b93fa730f4ba08e3db5818f807d36b1c078c2fd21ef5f3f55d6a7a4590a4163",
+          "size": 14938,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Url",
+            "WebUrl"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null
+        },
+        {
+          "name": "打开网址",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.WebUrl-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.WebUrl-1.0.0.spkg",
+          "sha256": "d6e26ebbb1b7e2ade2c404da275ea3cdb52af178f03f79885ee3b375011cbe18",
+          "size": 14857,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "Url",
+            "WebUrl"
+          ],
+          "capabilities": [
+            "Process"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：用默认或指定浏览器打开网址。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    },
+    {
+      "id": "starpie.builtin.windowopacity",
+      "versions": [
+        {
+          "name": "窗口透明度",
+          "description": "随 StarPie 分发的内置动作：窗口透明度。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "features": [
+            {
+              "id": "windowOpacity",
+              "name": "窗口透明度",
+              "description": "设置当前窗口的透明度。",
+              "category": "窗口管理"
+            }
+          ],
+          "version": "1.0.1",
+          "releaseTag": "modules-2026.10.01.1",
+          "assetName": "StarPie.Plugin.WindowOpacity-1.0.1.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.10.01.1/StarPie.Plugin.WindowOpacity-1.0.1.spkg",
+          "sha256": "0bdc314806e9127fa924a04798bdc6215ed8100beb60ee6f558be3f13acf60f3",
+          "size": 14954,
+          "apiVersion": "1.4",
+          "targetFramework": "net8.0-windows",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "WindowOpacity"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null
+        },
+        {
+          "name": "窗口透明度",
+          "version": "1.0.0",
+          "releaseTag": "modules-2026.09.25.2",
+          "assetName": "StarPie.Plugin.WindowOpacity-1.0.0.spkg",
+          "packageUrl": "https://github.com/Star-Pie/StarPie-Official-Plugins/releases/download/modules-2026.09.25.2/StarPie.Plugin.WindowOpacity-1.0.0.spkg",
+          "sha256": "dc363977856781a56349f5d46576c2572aed2d9bd9006b94a6b8427de39631ad",
+          "size": 14852,
+          "apiVersion": "1.4",
+          "minHostVersion": "1.8.0-beta.1",
+          "maxHostVersion": null,
+          "typeClaims": [
+            "WindowOpacity"
+          ],
+          "capabilities": [
+            "WindowControl"
+          ],
+          "signature": null,
+          "description": "随 StarPie 分发的内置动作：窗口透明度。可在「插件」页单独停用。",
+          "author": "StarPie Studio",
+          "homepage": "https://github.com/SoftBlack42/StarPie",
+          "license": "MIT",
+          "icon": null,
+          "tags": [
+            "official",
+            "builtin"
+          ],
+          "targetFramework": "net8.0-windows"
+        }
+      ]
+    }
+  ]
+}

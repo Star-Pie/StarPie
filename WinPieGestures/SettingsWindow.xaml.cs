@@ -7284,6 +7284,11 @@ public partial class SettingsWindow : Window
 		{
 			AppLogger.LogWarn($"[plugin] 读取官方插件目录缓存失败：{cacheError}");
 		}
+		if (_officialPluginCatalog == null)
+		{
+			_officialPluginCatalog = OfficialPluginClient.LoadBundledCatalog();
+			RenderOfficialPluginItems();
+		}
 
 		RenderOfficialPluginsStatus();
 	}
@@ -7302,7 +7307,7 @@ public partial class SettingsWindow : Window
 
 		try
 		{
-			_officialPluginCatalog = await OfficialPluginClient.FetchCatalogAsync();
+			_officialPluginCatalog = await OfficialPluginClient.FetchCatalogAsync(CapturePluginDownloadOptions());
 			_officialCatalogCachedAt = OfficialPluginClient.GetCachedCatalogTimestamp();
 			_officialPluginsError = null;
 			RenderOfficialPluginItems();
@@ -7399,7 +7404,7 @@ public partial class SettingsWindow : Window
 		button.IsEnabled = false;
 		try
 		{
-			OfficialPluginInstallResult result = await OfficialPluginClient.InstallAsync(module);
+			OfficialPluginInstallResult result = await OfficialPluginClient.InstallAsync(module, downloadOptions: CapturePluginDownloadOptions());
 			string title = I18n.T("PluginsOfficialMsgTitle");
 			if (!result.Success)
 			{
@@ -7537,6 +7542,8 @@ public partial class SettingsWindow : Window
 		{
 			InstallPluginButton.Content = I18n.T("PluginsInstallButton");
 		}
+		if (PluginsOfflineGuideText != null) PluginsOfflineGuideText.Text = I18n.T("PluginsOfflineGuide");
+		LocalizePluginDownloadChannels();
 		if (RescanPluginsButton != null)
 		{
 			RescanPluginsButton.Content = I18n.T("PluginsRescanButton");
@@ -7746,22 +7753,17 @@ public partial class SettingsWindow : Window
 
 	private async void InstallPluginButton_Click(object sender, RoutedEventArgs e)
 	{
+		await ImportPluginFileAsync();
+	}
+
+	private async Task InstallCommunityPluginAsync(string fileName)
+	{
 		if (!EnsurePluginSystemReady()) return;
-
-		var dialog = new Microsoft.Win32.OpenFileDialog
-		{
-			Title = I18n.T("PluginsPickDllTitle"),
-			Filter = I18n.T("PluginsPickDllFilter"),
-			CheckFileExists = true,
-			Multiselect = false,
-		};
-
-		if (dialog.ShowDialog(this) != true) return;
 
 		PluginScanResult scan;
 		try
 		{
-			scan = PluginHost.PrepareInstall(dialog.FileName);
+			scan = PluginHost.PrepareInstall(fileName);
 		}
 		catch (Exception ex)
 		{
@@ -20051,6 +20053,11 @@ public partial class SettingsWindow : Window
 				WindowStartupLocation = WindowStartupLocation.CenterOwner
 			};
 			dialog.ShowDialog();
+			if (dialog.OfflineImportRequested)
+			{
+				SwitchToTab(5);
+				InstallPluginButton_Click(this, new RoutedEventArgs());
+			}
 		}
 		catch (Exception ex)
 		{
@@ -20115,6 +20122,11 @@ public partial class SettingsWindow : Window
 				WindowStartupLocation = WindowStartupLocation.CenterOwner
 			};
 			dialog.ShowDialog();
+			if (dialog.OfflineImportRequested)
+			{
+				SwitchToTab(5);
+				InstallPluginButton_Click(this, new RoutedEventArgs());
+			}
 		}
 		catch (Exception ex)
 		{

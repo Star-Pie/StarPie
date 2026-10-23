@@ -12,6 +12,8 @@ internal sealed class OfficialPluginListItem
     public string StateText { get; }
     public string InstallButtonText { get; }
     public string DetailsText => I18n.T("PluginsDetailButton");
+    public string SavePackageText => I18n.T("PluginsOfflineSave");
+    public bool CanSavePackage => OfficialPluginVersionSelector.Evaluate(Module).IsCompatible;
     public bool CanInstall { get; }
     public bool IsInstalled { get; }
 

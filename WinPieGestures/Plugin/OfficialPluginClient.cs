@@ -99,7 +99,7 @@ internal sealed class OfficialPluginInstallResult
 /// 官方插件在线目录与 .spkg 下载器。
 /// <para>下载只在插件管理页显式触发，绝不进入鼠标钩子或动作执行热路径。</para>
 /// </summary>
-internal static class OfficialPluginClient
+internal static partial class OfficialPluginClient
 {
     internal const string RepositoryUrl = "https://github.com/Star-Pie/StarPie-Official-Plugins";
     internal const string ReleasesFeedUrl = RepositoryUrl + "/releases.atom";
@@ -613,12 +613,18 @@ internal static class OfficialPluginClient
     {
         string root = Path.GetFullPath(destination) + Path.DirectorySeparatorChar;
         using ZipArchive archive = ZipFile.OpenRead(packagePath);
+        long expandedSize = 0;
+        var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (archive.Entries.Count > 512)
+            throw new InvalidDataException(I18n.T("PluginsOfflineArchiveInvalid"));
         foreach (ZipArchiveEntry entry in archive.Entries)
         {
             string relative = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
             string target = Path.GetFullPath(Path.Combine(destination, relative));
-            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("插件包包含非法路径。");
+            expandedSize = checked(expandedSize + entry.Length);
+            if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase) || relative.Contains(':') ||
+                !targets.Add(target) || expandedSize > MaxPackageSize)
+                throw new InvalidDataException(I18n.T("PluginsOfflineArchiveInvalid"));
 
             if (string.IsNullOrEmpty(entry.Name))
             {
