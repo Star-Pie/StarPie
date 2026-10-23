@@ -1,15 +1,6 @@
 name: Build and Publish Release
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
-      - 'V*.*.*'
-      # v2.0.0 is published locally without signing while the production CA
-      # certificate is pending. Keep this exact-tag auto-trigger exception;
-      # unsigned mode is an explicit manual choice, not the tag-push default.
-      - '!v2.0.0'
-      - '!V2.0.0'
   workflow_dispatch:
     inputs:
       tag:
@@ -39,8 +30,8 @@ jobs:
       published: ${{ steps.publish.outputs.published }}
       tag: ${{ steps.publish.outputs.tag }}
     env:
-      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-      SIGNING_POLICY: ${{ github.event_name == 'workflow_dispatch' && inputs.signing_mode || 'release-signing' }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      SIGNING_POLICY: ${{ inputs.signing_mode }}
       SIGNPATH_ORGANIZATION_ID: a5196baf-a533-4b1e-aff8-be32f05fa7b3
       SIGNPATH_PROJECT_SLUG: StarPie
 
@@ -48,7 +39,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Validate signing configuration
@@ -75,20 +66,30 @@ jobs:
             "RELEASE_TAG=v$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
 
-      - name: Verify tag points to latest commit of an allowed release branch
+      - name: Verify tag belongs to an allowed release branch
         if: ${{ env.SIGNING_POLICY == 'release-signing' || env.SIGNING_POLICY == 'unsigned' }}
         shell: pwsh
         run: |
-          # Release tags may only point to the current tip of main, dev-* or dev/**.
-          # A tag push does not carry the source branch, so compare the tagged commit
-          # with every remote branch that matches the allowed release-branch policy.
+          # Allow older tags, but only if their commit belongs to an allowed branch's history.
+          # A non-ancestor returns 1; check native exit codes explicitly instead of treating it as an error.
+          $PSNativeCommandUseErrorActionPreference = $false
           git fetch origin "+refs/heads/*:refs/remotes/origin/*" --prune
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to fetch release branches (exit code $LASTEXITCODE)."
+          }
 
-          $tagCommit = (git rev-parse "$env:RELEASE_TAG^{commit}").Trim()
+          $tagCommit = git rev-parse --verify "$env:RELEASE_TAG^{commit}"
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tagCommit)) {
+            throw "Failed to resolve release tag: $env:RELEASE_TAG"
+          }
+          $tagCommit = $tagCommit.Trim()
           $allowedBranches = @(
             git for-each-ref --format="%(refname:strip=3)" refs/remotes/origin |
               Where-Object { $_ -match '^(main|dev-.*|dev/.*)$' }
           )
+          if ($LASTEXITCODE -ne 0) {
+            throw "Failed to list remote release branches (exit code $LASTEXITCODE)."
+          }
 
           if ($allowedBranches.Count -eq 0) {
             throw "No release branches matched the allowed patterns: main, dev-* or dev/**"
@@ -96,28 +97,28 @@ jobs:
 
           $matchingBranches = [System.Collections.Generic.List[string]]::new()
           foreach ($branch in $allowedBranches) {
-            $branchCommit = (git rev-parse "origin/$branch").Trim()
-            if ($tagCommit -eq $branchCommit) {
+            git merge-base --is-ancestor $tagCommit "refs/remotes/origin/$branch"
+            $ancestryExitCode = $LASTEXITCODE
+            if ($ancestryExitCode -eq 0) {
               $matchingBranches.Add($branch)
+              # Stop on success so an expected nonmatch cannot become the step's final exit code.
+              break
+            }
+            if ($ancestryExitCode -ne 1) {
+              throw "Failed to check tag ancestry for $branch (exit code $ancestryExitCode)."
             }
           }
 
           if ($matchingBranches.Count -eq 0) {
-            $allowedTips = @($allowedBranches | ForEach-Object {
-              $branchCommit = (git rev-parse "origin/$_").Trim()
-              "$_=$branchCommit"
-            })
             throw @"
-          Release tag must point to the latest commit of an allowed release branch.
-          Allowed branches: main, dev-* or dev/**
+          Release tag must belong to the history of an allowed release branch.
+          Allowed branches: $($allowedBranches -join ', ')
           Tag=$tagCommit
-          Allowed branch tips:
-          $($allowedTips -join [Environment]::NewLine)
           "@
           }
 
           Write-Host "Verified release commit: $tagCommit"
-          Write-Host "Matching release branch(es): $($matchingBranches -join ', ')"
+          Write-Host "Containing release branch(es): $($matchingBranches -join ', ')"
       - name: Verify compiled version fields
         shell: pwsh
         run: |

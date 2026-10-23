@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, copyFileSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, copyFileSync, rmSync, realpathSync, symlinkSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -100,12 +100,12 @@ test('unsigned skips all signing inputs/actions/verifiers; both signed modes ret
 });
 test('unsigned and production signing preserve branch/version and publication paths', () => {
   for (const mode of ['unsigned', 'release-signing']) {
-    for (const name of ['Verify tag points to latest commit of an allowed release branch', 'Verify compiled version fields',
+    for (const name of ['Verify tag belongs to an allowed release branch', 'Verify compiled version fields',
       'Package release assets', 'Extract Release Notes from CHANGELOG.md', 'Create GitHub Release', 'Retain latest three beta releases'])
       assert.equal(runs(name, mode), true, `${mode}: ${name}`);
     assert.equal(runs('Retain latest three beta releases', mode, 'v2.0.1'), false);
   }
-  for (const name of ['Verify tag points to latest commit of an allowed release branch', 'Extract Release Notes from CHANGELOG.md', 'Create GitHub Release', 'Retain latest three beta releases'])
+  for (const name of ['Verify tag belongs to an allowed release branch', 'Extract Release Notes from CHANGELOG.md', 'Create GitHub Release', 'Retain latest three beta releases'])
     assert.equal(runs(name, 'test-signing'), false, name);
 });
 test('test-signing remains artifacts only, and unsigned has its own verification and summary', () => {
@@ -125,15 +125,79 @@ test('the validation step does not receive the SignPath secret in unsigned mode'
 });
 test('credential, allowed-tag and version gates precede repository-script execution', () => {
   const tests = workflow.indexOf('- name: Test release signing policy offline');
-  for (const name of ['Validate signing configuration', 'Verify tag points to latest commit of an allowed release branch', 'Verify compiled version fields'])
+  for (const name of ['Validate signing configuration', 'Verify tag belongs to an allowed release branch', 'Verify compiled version fields'])
     assert.ok(workflow.indexOf('- name: ' + name) < tests, name);
 });
-test('manual default and tag-push signing policy stay unchanged', () => {
+test('release workflow can only be started manually', () => {
+  const triggers = workflow.match(/^on:\n([\s\S]*?)^permissions:/m)?.[1];
+  assert.ok(triggers, 'Missing workflow trigger configuration');
+  assert.deepEqual([...triggers.matchAll(/^  ([\w-]+):/gm)].map(match => match[1]), ['workflow_dispatch']);
+});
+test('manual signing selection and publication gate stay explicit', () => {
   assert.match(workflow, /default: test-signing\n        options:\n          - test-signing\n          - release-signing\n          - unsigned/);
-  assert.match(workflow, /SIGNING_POLICY: \$\{\{ github.event_name == 'workflow_dispatch' && inputs.signing_mode \|\| 'release-signing' \}\}/);
+  assert.match(workflow, /^      RELEASE_TAG: \$\{\{ inputs.tag \}\}$/m);
+  assert.match(workflow, /^      SIGNING_POLICY: \$\{\{ inputs.signing_mode \}\}$/m);
+  assert.match(step('Checkout repository'), /^          ref: \$\{\{ inputs.tag \|\| github.ref \}\}$/m);
   assert.match(workflow, /published: \$\{\{ steps.publish.outputs.published \}\}/);
   assert.match(workflow, /needs.release.outputs.published == 'true'/);
 });
+// Run the actual workflow guard with offline Git results; never fetch or change refs.
+function validateReleaseBranch({ branches = ['main'], ancestry = { main: 0 }, atTip = false, fail = '' } = {}) {
+  return powershell(String.raw`$fixture = ConvertFrom-Json $env:FIXTURE_BRANCH_GIT -AsHashtable
+function git {
+  $global:LASTEXITCODE = 0
+  if ($args[0] -eq $fixture.fail) { $global:LASTEXITCODE = 128; return }
+  switch ($args[0]) {
+    'fetch' { return }
+    'rev-parse' {
+      if ($args[-1] -eq "$env:RELEASE_TAG^{commit}" -or $fixture.atTip) { 'a' * 40 } else { 'b' * 40 }
+      return
+    }
+    'for-each-ref' { $fixture.branches; return }
+    'merge-base' {
+      if ($args.Count -ne 4 -or $args[1] -ne '--is-ancestor' -or $args[2] -ne ('a' * 40) -or
+          $args[3] -notlike 'refs/remotes/origin/*') { throw 'Unexpected ancestry arguments.' }
+      $branch = $args[3].Substring('refs/remotes/origin/'.Length)
+      if (-not $fixture.ancestry.ContainsKey($branch)) { throw "Unexpected branch: $branch" }
+      $global:LASTEXITCODE = [int]$fixture.ancestry[$branch]
+      return
+    }
+    default { throw "Unexpected Git command: $($args[0])" }
+  }
+}
+${script('Verify tag belongs to an allowed release branch')}
+if ($LASTEXITCODE -ne 0) { throw "Expected Git result leaked into step exit code: $LASTEXITCODE" }`, {
+    env: { FIXTURE_BRANCH_GIT: JSON.stringify({ branches, ancestry, atTip, fail }) },
+  });
+}
+for (const [name, fixture] of [
+  ['branch tip', { atTip: true }],
+  ['older main commit', {}],
+  ['older dev-* commit', { branches: ['dev-release'], ancestry: { 'dev-release': 0 } }],
+  ['older dev/** commit', { branches: ['dev/plugin'], ancestry: { 'dev/plugin': 0 } }],
+  ['later matching branch', { branches: ['main', 'dev/plugin'], ancestry: { main: 1, 'dev/plugin': 0 } }],
+  ['matching branch before a nonmatch', { branches: ['main', 'dev/plugin'], ancestry: { main: 0, 'dev/plugin': 1 } }],
+]) {
+  test('actual release branch guard accepts ' + name, () => {
+    const result = validateReleaseBranch(fixture);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /Verified release commit/);
+  });
+}
+for (const [name, fixture, message] of [
+  ['commit outside allowed history', { ancestry: { main: 1 } }, /must belong to the history/],
+  ['disallowed branch', { branches: ['readme-only'], ancestry: { 'readme-only': 0 }, atTip: true }, /No release branches matched/],
+  ['fetch failure', { fail: 'fetch', atTip: true }, /Failed to fetch release branches/],
+  ['tag resolution failure', { fail: 'rev-parse' }, /Failed to resolve release tag/],
+  ['branch listing failure', { fail: 'for-each-ref' }, /Failed to list remote release branches/],
+  ['ancestry command failure', { fail: 'merge-base' }, /Failed to check tag ancestry/],
+]) {
+  test('actual release branch guard rejects ' + name, () => {
+    const result = validateReleaseBranch(fixture);
+    assert.notEqual(result.status, 0);
+    assert.match(result.output, message);
+  });
+}
 test('actual validation allows unsigned without a token', () => {
   const result = powershell(script('Validate signing configuration'));
   assert.equal(result.status, 0, result.output);
@@ -213,6 +277,41 @@ for (const mode of ['unsigned', 'release-signing']) {
     if (mode === 'unsigned') assert.ok(notes.includes('SHA256SUMS.txt'));
   });
 }
+function assertReleaseTargets(directory, targets, paths) {
+  // Node's temp path may use an 8.3 alias while PowerShell reports the long path.
+  const canonicalRoot = realpathSync.native(directory);
+  assert.deepEqual(targets.map(path => relative(canonicalRoot, realpathSync.native(path)).replaceAll('\\', '/')), paths);
+}
+test('release target comparison accepts a directory alias for the same files', () => {
+  const directory = mkdtempSync(join(scratch, 'path-alias-'));
+  const alias = join(directory, 'alias');
+  const actual = join(directory, 'actual');
+  const path = 'publish/Lightweight/StarPie.exe';
+  mkdirSync(dirname(join(actual, path)), { recursive: true });
+  writeFileSync(join(actual, path), 'fixture only');
+  symlinkSync(actual, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  try {
+    const target = realpathSync.native(join(alias, path));
+    assert.notEqual(relative(alias, target).replaceAll('\\', '/'), path);
+    assertReleaseTargets(alias, [target], [path]);
+    assertReleaseTargets(actual, [join(alias, path)], [path]);
+  } finally {
+    unlinkSync(alias);
+  }
+});
+test('release target comparison rejects same-named files outside the fixture', () => {
+  const directory = mkdtempSync(join(scratch, 'path-boundary-'));
+  const expected = join(directory, 'expected');
+  const outside = join(directory, 'outside');
+  const paths = ['publish/Lightweight/StarPie.exe', 'publish/Standalone/StarPie.exe', 'dist/StarPie-v2.0.1-beta.1-Setup-win-x64.exe'];
+  for (const root of [expected, outside]) {
+    for (const path of paths) {
+      mkdirSync(dirname(join(root, path)), { recursive: true });
+      writeFileSync(join(root, path), 'fixture only');
+    }
+  }
+  assert.throws(() => assertReleaseTargets(expected, paths.map(path => join(outside, path)), paths), { code: 'ERR_ASSERTION' });
+});
 test('actual unsigned workflow step verifies the three intended packaging targets', () => {
   const directory = mkdtempSync(join(scratch, 'workflow-'));
   const paths = ['publish/Lightweight/StarPie.exe', 'publish/Standalone/StarPie.exe', 'dist/StarPie-v2.0.1-beta.1-Setup-win-x64.exe'];
@@ -230,7 +329,7 @@ Write-Output ('FIXTURE_TARGETS=' + (ConvertTo-Json -InputObject @($global:Verifi
   const result = powershell(body, { cwd: directory });
   assert.equal(result.status, 0, result.output);
   const targets = JSON.parse(result.output.match(/FIXTURE_TARGETS=(\[[^\r\n]*\])/)[1]);
-  assert.deepEqual(targets.map(path => relative(directory, path).replaceAll('\\', '/')), paths);
+  assertReleaseTargets(directory, targets, paths);
 });
 test('unsigned warning is present even when the changelog is absent', () => {
   const directory = mkdtempSync(join(scratch, 'missing-notes-'));
