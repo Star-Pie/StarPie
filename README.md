@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&amp;forks=1&amp;issues=1&amp;logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&amp;name=1&amp;owner=1&amp;pattern=Floating+Cogs&amp;pulls=1&amp;stargazers=1&amp;theme=Auto" width="100%" alt="StarPie 齿轮背景横幅：项目 Logo 与 Stars、Forks、Issues、Pull Requests 统计" />
+<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto" width="100%" alt="StarPie 齿轮背景横幅：项目 Logo 与 Stars、Forks、Issues、Pull Requests 统计" />
 
 # StarPie (星盘)
 
@@ -15,19 +15,22 @@
 [![GUI Tests](https://img.shields.io/badge/GUI%20Tests-manual%20verification-64748B.svg?style=flat-square&logo=pytest)](tests/)
 [![Language](https://img.shields.io/badge/Language-zh--CN%20%7C%20zh--TW%20%7C%20en%20%7C%20ja-8B5CF6.svg?style=flat-square)](#i18n)
 [![Downloads](https://img.shields.io/github/downloads/Star-Pie/StarPie/total?style=flat-square&logo=github)](https://github.com/Star-Pie/StarPie/releases)
+[![官方插件](https://img.shields.io/badge/Plugins-Official-0EA5E9?style=flat-square&logo=github)](https://github.com/Star-Pie/StarPie-Official-Plugins)
 [![QQ 公测群：1079199287](https://img.shields.io/badge/QQ-1079199287-12B7F5?style=flat-square&logo=qq&logoColor=white&labelColor=555555)](https://qm.qq.com/q/y1J4gxkUTu)
 [![项目主页](https://img.shields.io/badge/Homepage-StarPie-6554C8?style=flat-square&logo=githubpages&logoColor=white)](https://star-pie.github.io/)
 [![赞助页面](https://img.shields.io/badge/Sponsors-Support-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white)](https://star-pie.github.io/sponsor/)
 
 <br/>
 
+**项目仓库：[GitHub](https://github.com/Star-Pie/StarPie) · [AtomGit](https://atomgit.com/Star-Pie/StarPie)**
+
 **[简体中文](README.md)** • **[English](README_EN.md)**
 
 <br/>
 
-[🌟 功能概览](#highlights) • [✨ 功能特性](#features) • [🎨 外观定制](#visuals) • [🌐 多语言](#i18n) • [🧪 Beta 测试](#beta) • [🚀 快速开始](#download) • [🛠️ 本地构建](#build)
+[🌟 功能概览](#highlights) • [✨ 功能特性](#features) • [🎨 外观定制](#visuals) • [🌐 多语言](#i18n) • [🧩 插件与主题](#extensions) • [🚀 快速开始](#download) • [🛠️ 本地构建](#build)
 
-[📌 项目状态](#project-status) • [💬 社区交流](#community) • [🤝 参与贡献](#contributing) • [🙏 特别鸣谢](#special-thanks) • [⭐ Star 历史](#star-history) • [❤️ 支持项目](#support) • [📋 更新日志](CHANGELOG.md)
+[📌 项目状态](#project-status) • [💬 社区交流](#community) • [🤝 参与贡献](#contributing) • [🙏 特别鸣谢](#special-thanks) • [❤️ 支持与致谢](#support) • [⭐ Star 历史](#star-history) • [📋 更新日志](CHANGELOG.md)
 
 </div>
 
@@ -40,9 +43,9 @@
 **StarPie (星盘)** 是一款专为 Windows 10 / 11 打造的轻量级鼠标轮盘手势（Radial / Pie Menu）效率工具。
 
 > [!NOTE]
-> **正式版：v1.7.4（2026-09-19）**。日常功能与下载说明以 [v1.7.4 Release](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4) 为准；[插件系统](#plugins) 和主题工作室等标注 **v1.8.0 Beta** 的内容仍处于测试阶段，不属于 v1.7.4 正式版。
+> **正式版：v2.0.0（2026-10-17）**。[插件系统](#plugins) 与[主题工作室](#theme-studio)已纳入正式版。功能、升级与下载说明以 [v2.0.0 Release](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0) 为准。
 
-在日常使用中可通过**鼠标右键 / 中键 / 侧键或键盘触发键**呼出快捷轮盘，也可使用独立的轨迹手势直接执行动作。v1.7.4 正式版支持 4 / 8 / 12 方位轮盘、多级子动作、专属程序配置（Per-App Profiles）、窗口管理与平铺、屏幕 OCR、快捷键录制、网址与命令调度，以及更完整的视觉形态定制，帮助将高频操作转化为自然的肌肉记忆。
+在日常使用中可通过**鼠标右键 / 中键 / 侧键或键盘触发键**呼出快捷轮盘，也可使用独立的轨迹手势直接执行动作。v2.0.0 正式版支持 4 / 8 / 12 方位轮盘、多级子动作、专属程序配置（Per-App Profiles）、快捷键录制与主题工作室，并通过独立安装的官方插件提供程序、网址、命令、窗口管理与屏幕 OCR 等能力，帮助将高频操作转化为自然的肌肉记忆。
 
 > 💡 **设计重点**：
 > - **低资源占用**：基于原生 C# WPF 构建，无浏览器内核打包，后台常驻内存以轻量化为目标，静默后台工作集目标为 **15 ～ 30 MB**（实际占用随环境与使用情况变化）；
@@ -79,9 +82,9 @@
 
 <a id="highlights"></a>
 
-## 🌟 v1.7.4 正式版功能概览
+## 🌟 v2.0.0 正式版功能概览
 
-StarPie **v1.7.4** 延续轮盘、轨迹手势、窗口管理与屏幕 OCR 等能力，重点带来 **纯原生极速搜索、专属方案隔离与多层继承优化、自定义交互音效、精简控制台、渲染性能优化和安装版**。
+StarPie **v2.0.0** 汇总 v1.7.4 之后的改进，结束 v1.8.0 Beta 开发线，重点带来 **独立插件体系、主题工作室、级联动作编辑与撤销/重做、统一轮盘交互事件、独立音效插件，以及配置与运行稳定性改进**。官方插件按需下载安装，不随主程序发行包附带。
 
 | 功能方向 | 当前能力 |
 | :--- | :--- |
@@ -89,10 +92,11 @@ StarPie **v1.7.4** 延续轮盘、轨迹手势、窗口管理与屏幕 OCR 等�
 | **轨迹手势** | 最多 3 段、8 方向组合、轨迹浮层、分段灵敏度与释放提示 |
 | **动作与窗口** | 快捷键、程序、网址、文件夹、命令、系统控制，以及窗口切换、平铺、跨屏、置顶与透明度 |
 | **屏幕 OCR** | Windows 本地离线识别、AI 视觉接口与自定义 HTTP OCR |
-| **配置体验** | 双栏聚焦编辑、实时轮盘画布、扇区拖拽换位、运行窗口捕捉与紧凑全览列表 |
-| **外观定制** | 多种轮盘形态、独立一二级主题、单扇区字体 / 图标 / 文字位置覆盖与屏幕边缘适配 |
+| **配置体验** | 双栏聚焦编辑、实时轮盘画布、级联动作编辑、复制粘贴、列表排序与撤销 / 重做 |
+| **外观定制** | 多种轮盘形态、独立一二级主题、单扇区覆盖，以及五套主题工作室风格与主题导入 / 导出 |
 | **原生极速搜索** | 不再依赖 Everything；应用预索引、分类过滤、搜索按钮与键盘操作 |
-| **交互音效** | 高级模式中配置五类事件的合成音效或本地 WAV，支持方案导入 / 导出 |
+| **插件扩展** | 统一安装确认、能力说明、参数校验、按需加载与预加载；官方插件独立安装 |
+| **交互音效** | 由独立音效插件提供事件音效、本地 WAV 与方案导入 / 导出；需单独安装并启用 |
 | **安装与升级** | Setup 安装版、Standalone 独立便携版与 Lightweight 轻量版 |
 
 > 📋 更完整的版本变化请查看 [CHANGELOG.md](CHANGELOG.md)。
@@ -176,7 +180,7 @@ StarPie **v1.7.4** 延续轮盘、轨迹手势、窗口管理与屏幕 OCR 等�
 - 支持针对 Chrome、VS Code、Photoshop、SolidWorks 等不同前台程序分别设置专属轮盘配置；
 - StarPie 会根据当前活动程序自动匹配对应方案，没有专属方案时回退到全局配置；
 - 支持配置方案的新建、复制、删除与一键重命名，方便复用和维护不同工作流。
-- **v1.7.4 继承规则**：新建专属方案默认关闭「继承全局方案未配置槽位」；按需开启后，第 N 层优先继承全局第 N 层，超出全局层数的部分回退到全局第 1 层。
+- **方案继承规则**：新建专属方案默认关闭「继承全局方案未配置槽位」；按需开启后，第 N 层优先继承全局第 N 层，超出全局层数的部分回退到全局第 1 层。
 - 中心核圆动作随当前活跃层同步，切层时同步更新外圈子轮盘与高亮状态。
 
 <div align="center">
@@ -244,36 +248,37 @@ StarPie **v1.7.4** 延续轮盘、轨迹手势、窗口管理与屏幕 OCR 等�
 | **窗口管理** | 切换窗口、平铺、跨屏移动、置顶与透明度控制 |
 | **系统控制** | 锁屏、音量、媒体、任务视图、虚拟桌面等系统功能 |
 
-动作执行与显示图标已经解耦，同一动作可独立选择内置矢量图标、程序图标或自定义图片，不再被动作类型限制。
+除内建快捷键外，上述程序、网址、文件夹、命令、OCR、窗口管理与系统控制等能力由对应官方插件提供，需要在「插件与扩展」中单独安装并启用。动作执行与显示图标已经解耦，同一动作可独立选择内置矢量图标、程序图标或自定义图片，不再被动作类型限制。
 
 ---
 
+<a id="extensions"></a>
 <a id="beta"></a>
 
-## 🧪 v1.8.0 Beta 测试
+## 🧩 v2.0.0 关键变动
 
-本节集中介绍仍在测试中的插件系统与主题工作室；这些内容不属于 v1.7.4 正式版。
+插件系统与主题工作室已随 v2.0.0 正式发布；原 v1.8.0 Beta 开发线的功能与改进已汇总到本版。
 
 <a id="plugins"></a>
 
 ### 🧩 插件系统
 
 > [!IMPORTANT]
-> 本节描述 **仍处于 v1.8.0 Beta 测试阶段**的插件系统，不属于 v1.7.4 正式版。正式版的内置动作在测试线中正逐步拆分为官方插件，升级 Beta 后可能需要安装对应模块。测试功能与 SDK 契约以所使用的 Beta 版本及 [插件文档](plugin/README.md) 为准。
+> **原有多项内置动作已迁入官方插件，升级后需单独安装并启用所需模块**；主程序发行包不附带官方插件。
 
 StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用独立的
 `StarPie.Plugin.Abstractions` 契约程序集，通过 `Initialize` 注册动作等贡献；主程序则为每个插件创建
 宿主包装实例，统一管理扫描、加载、惰性激活、调用租约、异常隔离、异步停用和程序集卸载。
 
-Beta 开发线的动作执行路径已具备从注册、配置、参数校验到 Sequential / Background 调度的完整基础闭环；
+动作执行路径覆盖从注册、配置、参数校验到 Sequential / Background 调度的完整闭环；
 交互事件与轮盘结构路径也已建立可扩展入口，后续可以继续扩展而不复制整套插件生命周期代码。
 
 > 📖 **插件开发入口**：开发文档、当前 API、架构说明、示例工程和历史资料统一收录在 [《StarPie 插件开发资源》](plugin/README.md)。
 > 🔗 **官方插件仓库**：[StarPie-Official-Plugins](https://github.com/Star-Pie/StarPie-Official-Plugins)。主仓库中的 `plugin/StarPie-Official-Plugins/` 是该仓库的 Git 子模块检出目录；官方插件的源码、打包和发布流程均在这个独立仓库中维护，StarPie 主仓库不重复引用、构建或随发行包携带官方插件 DLL。
 
-- **官方插件手动安装与一次性引导例外 (v1.8.0 Beta)**：
+- **官方插件手动安装与首次引导**：
   - **发行包零预置**：StarPie 发行包不随包携带官方插件 DLL，启动与后台运行保持零自动网络请求。
-  - **一次性引导知情同意例外**：为了提升新用户上手体验，v1.8.0 Beta 在用户首次交互式打开设置窗口时（非静默启动、非自检模式，且插件系统正常开启），会弹出一次性知情引导弹窗。弹窗展示 5 项核心官方插件（`folder`, `weburl`, `launch`, `system`, `shelltool`）、官方仓库来源及所需权限（`Process` 启动进程、`InputSimulation` 按键模拟）。
+  - **一次性引导知情同意例外**：为了提升新用户上手体验，用户首次交互式打开设置窗口时（非静默启动、非自检模式，且插件系统正常开启），会弹出一次性知情引导弹窗。弹窗展示 5 项核心官方插件（`folder`, `weburl`, `launch`, `system`, `shelltool`）、官方仓库来源及所需权限（`Process` 启动进程、`InputSimulation` 按键模拟）。
   - **零网络请求原则**：用户点击“一键安装”前，宿主绝对不发起任何网络请求（不拉取 catalog、不下载包）；用户点击“一键安装”后，仅下载安装缺失项；已安装项跳过（不覆盖、不升级、保留禁用状态）；若官方目录中包含超出预告范围的权限，暂停并请求用户确认。
   - **常驻重试入口**：若用户选择“暂不安装”或部分项下载失败，在「插件与扩展」页面顶部常驻提供一键重试/安装横幅，已成功项保留，随时可补全缺失项。
 - **社区插件仍可本地安装**：把社区插件 `.dll` 放进**程序目录的 `plugin` 文件夹**后点「重新扫描」，在候选卡片上点安装；或在设置里点「手动安装社区插件 (.dll)」直接挑文件。
@@ -299,12 +304,13 @@ Beta 开发线的动作执行路径已具备从注册、配置、参数校验到
   全链路自检（不会碰你已装好的插件），或用 `StarPie.exe --plugin-paths` 查看当前生效的目录。
 
 
+<a id="theme-studio"></a>
 <a id="art-style-beta"></a>
 
 ### 🎨 主题工作室
 
 > [!IMPORTANT]
-> 主题工作室属于 v1.8.0 Beta 开发线，不包含在 v1.7.4 正式版中；正式版的轮盘形态与配色见 [外观定制](#visuals)。
+> 主题工作室可与既有轮盘形态及独立配色一起使用，详见 [外观定制](#visuals)。
 
 「外观样式 → 主题工作室」提供纸感极简、曜石科技、森林柔和、冰川玻璃、复古像素五套风格，可复制编辑配色、字体、圆角与轮盘材质，支持即时预览和主题文件导入／导出。
 
@@ -320,23 +326,27 @@ Beta 开发线的动作执行路径已具备从注册、配置、参数校验到
 
 ## 🚀 快速开始与下载
 
-**当前正式版：[v1.7.4](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4)（2026-09-19）**。安装版和独立便携版内置 .NET 8；轻量版需要目标电脑已安装 .NET 8 Desktop Runtime。
+**当前正式版：[v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0)（2026-10-17）**。安装版和独立便携版内置 .NET 8；轻量版需要目标电脑已安装 .NET 8 Desktop Runtime x64。
+
+> [!WARNING]
+> **v2.0.0 的三个发行包均未签名**，正式 CA 证书仍在办理，Windows 可能显示「未知发布者」。请仅从官方 Release 下载并核对同页的 `SHA256SUMS.txt`；本版未使用测试证书发行。
 
 | 版本包 | 适用场景 | 说明 | 下载入口 |
 | :--- | :--- | :--- | :--- |
-| **Setup 安装版** | 安装向导、卸载与版本升级 | 内置 .NET，安装时检测运行中的 StarPie | [下载 Setup](https://github.com/Star-Pie/StarPie/releases/download/v1.7.4/StarPie-v1.7.4-Setup-win-x64.exe) |
-| **Standalone 独立便携版** | 无需安装，解压即用 | 内置 .NET 运行时 | [下载 Standalone](https://github.com/Star-Pie/StarPie/releases/download/v1.7.4/StarPie-v1.7.4-Standalone-win-x64.zip) |
-| **Lightweight 轻量便携版** | 已安装 .NET 8 Desktop Runtime | 不携带 .NET 运行时 | [下载 Lightweight](https://github.com/Star-Pie/StarPie/releases/download/v1.7.4/StarPie-v1.7.4-Lightweight-win-x64.zip) |
-| **测试版与历史版本** | 体验 Beta 或回溯旧版本 | v1.8.0 属于 Beta 测试线，请区分 Pre-release 与正式版 | [浏览 Releases](https://github.com/Star-Pie/StarPie/releases) |
+| **Setup 安装版** | 安装向导、卸载与版本升级 | 内置 .NET，安装时检测运行中的 StarPie | [下载 Setup](https://github.com/Star-Pie/StarPie/releases/download/v2.0.0/StarPie-v2.0.0-Setup-win-x64.exe) |
+| **Standalone 独立便携版** | 无需安装，解压即用 | 内置 .NET 运行时 | [下载 Standalone](https://github.com/Star-Pie/StarPie/releases/download/v2.0.0/StarPie-v2.0.0-Standalone-win-x64.zip) |
+| **Lightweight 轻量便携版** | 已安装 .NET 8 Desktop Runtime | 不携带 .NET 运行时 | [下载 Lightweight](https://github.com/Star-Pie/StarPie/releases/download/v2.0.0/StarPie-v2.0.0-Lightweight-win-x64.zip) |
+| **历史版本与预发布** | 回溯旧版本或查看预发布 | v1.8.0 Beta 为历史开发线，当前正式版为 v2.0.0 | [浏览 Releases](https://github.com/Star-Pie/StarPie/releases) |
 
-同一发布页提供 `SHA256SUMS.txt`，可用于核验下载文件。升级 v1.7.4 后，建议检查专属方案继承、多层动作、中心核圆动作和自定义音效方案。
+升级前请备份配置和插件数据。从 v1.7.4 升级后，请在「插件与扩展」安装并启用所需官方模块；缺少模块时保留动作数据，但对应动作暂不可用。交互音效需要独立音效插件，不再由宿主内置播放；请检查已有方案、插件启用与预加载偏好。显式限制最高宿主版本的旧插件可能需要作者更新兼容声明。
 
 ### 基础使用流程：
 1. 下载并运行 `StarPie.exe`，程序会在系统托盘中后台运行；
 2. 双击托盘图标打开设置窗口，在「触发设置」中录制轮盘触发键；
-3. 按住触发键拖动超过阈值，或按配置长按，即可在光标附近唤出轮盘；
-4. 滑至目标扇区后松开触发键执行动作，向外甩出则可取消或执行自定义取消动作；
-5. 如需轨迹手势，可启用独立手势触发键，并在动作页映射 1～3 段方向组合。
+3. 按需在「插件与扩展」安装并启用所需官方插件，再配置相应动作；
+4. 按住触发键拖动超过阈值，或按配置长按，即可在光标附近唤出轮盘；
+5. 滑至目标扇区后松开触发键执行动作，向外甩出则可取消或执行自定义取消动作；
+6. 如需轨迹手势，可启用独立手势触发键，并在动作页映射 1～3 段方向组合。
 
 ---
 
@@ -344,7 +354,7 @@ Beta 开发线的动作执行路径已具备从注册、配置、参数校验到
 
 ## 🛠️ 本地构建与开发
 
-以下命令检出 **v1.7.4 正式版标签**。如需参与 **v1.8.0 Beta** 开发，克隆默认 `main` 分支并参阅 [插件文档](plugin/README.md)；主线源码可能领先于正式发布。
+以下命令检出 **v2.0.0 正式版标签**。如需参与后续开发，克隆默认 `main` 分支并参阅 [插件文档](plugin/README.md)；主线源码可能领先于正式发布。
 
 ### 环境要求
 
@@ -356,7 +366,7 @@ Beta 开发线的动作执行路径已具备从注册、配置、参数校验到
 
 ```bash
 # 1. 克隆代码仓库
-git clone --branch v1.7.4 https://github.com/Star-Pie/StarPie.git
+git clone --branch v2.0.0 https://github.com/Star-Pie/StarPie.git
 cd StarPie
 
 # 2. 编译项目 (Release)
@@ -380,8 +390,8 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 
 ![StarPie 仓库活动统计](https://repobeats.axiom.co/api/embed/29a1f2c3c5afeb2863ba5e71e72828420d645c14.svg "Repobeats analytics image")
 
-- **正式版**：[v1.7.4](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4)，发布于 2026-09-19。
-- **测试线**：v1.8.0 Beta；插件系统仍处于测试，预发布资产与记录见 [Releases](https://github.com/Star-Pie/StarPie/releases) 和 [CHANGELOG.md](CHANGELOG.md)。
+- **正式版**：[v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0)，发布于 2026-10-17。
+- **版本沿革**：原计划的 v1.8.0 正式版因改动规模升级为 v2.0.0，结束 v1.8.0 Beta 系列；插件系统与主题工作室已正式发布。版本记录见 [Releases](https://github.com/Star-Pie/StarPie/releases) 和 [CHANGELOG.md](CHANGELOG.md)。
 
 ### Windows 代码签名支持
 
@@ -419,7 +429,9 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
   </tbody>
 </table>
 
-欢迎使用 QQ 扫描二维码加入 **StarPie 公测群**，群号：**1079199287**。
+欢迎使用 QQ 扫描二维码或点击链接加入 [![QQ 公测群：1079199287](https://img.shields.io/badge/QQ-1079199287-12B7F5?style=flat-square&logo=qq&logoColor=white&labelColor=555555)](https://qm.qq.com/q/y1J4gxkUTu)
+
+也可通过邮箱联系开发者：[![开发者1：erisnebula09@gmail.com](https://img.shields.io/badge/%E5%BC%80%E5%8F%91%E8%80%851-erisnebula09%40gmail.com-EA4335?style=flat-square&logo=gmail&logoColor=white&labelColor=555555)](mailto:erisnebula09@gmail.com) [![开发者2：ztzastra@gmail.com](https://img.shields.io/badge/%E5%BC%80%E5%8F%91%E8%80%852-ztzastra%40gmail.com-EA4335?style=flat-square&logo=gmail&logoColor=white&labelColor=555555)](mailto:ztzastra@gmail.com)
 
 也欢迎在 GitHub 中与我们交流：
 
@@ -458,6 +470,26 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 
 ---
 
+<a id="support"></a>
+
+## ❤️ 支持与致谢 (Support & Thanks)
+
+感谢每一位支持 StarPie 的朋友。你的支持帮助我们持续维护代码、测试兼容性并完善文档。核心功能保持免费开源。
+
+[在爱发电支持](https://afdian.com/a/starpieproject) · [微信、支付宝与完整赞助页](https://star-pie.github.io/sponsor/)
+
+<a href="https://star-pie.github.io/sponsor/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
+    <img alt="感谢 StarPie 的公开支持者，点击查看完整名单" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
+  </picture>
+</a>
+
+分享使用体验、反馈问题、参与测试或贡献代码，同样是珍贵的支持。公开展示完全自愿；希望加入、修改或移除资料，请按赞助页说明联系维护者。
+
+---
+
 <a id="star-history"></a>
 
 ## ⭐ Star 历史 (Star History)
@@ -468,28 +500,5 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date&amp;theme=dark" />
     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" />
     <img alt="StarPie 的 GitHub Star 历史图表" src="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" width="100%" />
-  </picture>
-</a>
-
----
-
-<a id="support"></a>
-
-## ❤️ 支持项目 (Support)
-
-如果 StarPie 对你有帮助，你可以通过以下方式支持项目：
-
-- 给 [项目仓库](https://github.com/Star-Pie/StarPie) 一颗 Star，或分享给需要鼠标手势与效率工具的朋友。
-- 在 [Discussions](https://github.com/Star-Pie/StarPie/discussions) 分享你的主题、使用场景和演示素材。
-- 提交有复现步骤的反馈，或按照 [贡献指南](CONTRIBUTING.md) 帮助完善代码、翻译和文档。
-- **赞助开发**：前往 [StarPie 赞助页面](https://star-pie.github.io/sponsor/)，通过微信、支付宝或爱发电支持项目的持续开发。
-
-感谢每一位支持 StarPie 的朋友。点击下方名单可查看完整赞助页面。
-
-<a href="https://star-pie.github.io/sponsor/">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
-    <img alt="StarPie 赞助者名单" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
   </picture>
 </a>

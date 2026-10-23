@@ -1,5 +1,5 @@
 <div align="center">
-<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&amp;forks=1&amp;issues=1&amp;logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&amp;name=1&amp;owner=1&amp;pattern=Floating+Cogs&amp;pulls=1&amp;stargazers=1&amp;theme=Auto" width="100%" alt="StarPie Floating Cogs banner: project logo and Stars, Forks, Issues, and Pull Requests" />
+<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto" width="100%" alt="StarPie Floating Cogs banner: project logo and Stars, Forks, Issues, and Pull Requests" />
 
 # StarPie
 
@@ -12,19 +12,22 @@
 [![GUI Tests](https://img.shields.io/badge/GUI%20Tests-manual%20verification-64748B.svg?style=flat-square&logo=pytest)](tests/)
 [![Language](https://img.shields.io/badge/Language-zh--CN%20%7C%20zh--TW%20%7C%20en%20%7C%20ja-8B5CF6.svg?style=flat-square)](#i18n)
 [![Downloads](https://img.shields.io/github/downloads/Star-Pie/StarPie/total?style=flat-square&logo=github)](https://github.com/Star-Pie/StarPie/releases)
+[![Official Plugins](https://img.shields.io/badge/Plugins-Official-0EA5E9?style=flat-square&logo=github)](https://github.com/Star-Pie/StarPie-Official-Plugins)
 [![QQ Public Testing Group: 1079199287](https://img.shields.io/badge/QQ-1079199287-12B7F5?style=flat-square&logo=qq&logoColor=white&labelColor=555555)](https://qm.qq.com/q/y1J4gxkUTu)
 [![Homepage](https://img.shields.io/badge/Homepage-StarPie-6554C8?style=flat-square&logo=githubpages&logoColor=white)](https://star-pie.github.io/)
 [![Sponsors](https://img.shields.io/badge/Sponsors-Support-EA4AAA?style=flat-square&logo=githubsponsors&logoColor=white)](https://star-pie.github.io/sponsor/)
 
 <br/>
 
+**Repositories: [GitHub](https://github.com/Star-Pie/StarPie) · [AtomGit](https://atomgit.com/Star-Pie/StarPie)**
+
 **[简体中文](README.md)** • **[English](README_EN.md)**
 
 <br/>
 
-[🌟 Highlights](#highlights) • [✨ Features](#features) • [🎨 Visual Customization](#visuals) • [🌐 Languages](#i18n) • [🧪 Beta Testing](#beta) • [🚀 Quick Start](#download) • [🛠️ Build & Development](#build)
+[🌟 Highlights](#highlights) • [✨ Features](#features) • [🎨 Visual Customization](#visuals) • [🌐 Languages](#i18n) • [🧩 Plugins & Themes](#extensions) • [🚀 Quick Start](#download) • [🛠️ Build & Development](#build)
 
-[📌 Project Status](#project-status) • [💬 Community](#community) • [🤝 Contributing](#contributing) • [🙏 Special Thanks](#special-thanks) • [⭐ Star History](#star-history) • [❤️ Support](#support) • [📋 Changelog](CHANGELOG.md)
+[📌 Project Status](#project-status) • [💬 Community](#community) • [🤝 Contributing](#contributing) • [🙏 Special Thanks](#special-thanks) • [❤️ Support & Thanks](#support) • [⭐ Star History](#star-history) • [📋 Changelog](CHANGELOG.md)
 
 </div>
 
@@ -37,9 +40,9 @@
 **StarPie** is a lightweight radial mouse-gesture productivity tool for Windows 10 / 11.
 
 > [!NOTE]
-> **Stable release: v1.7.4 (September 19, 2026)**. Everyday features and downloads follow the [v1.7.4 Release](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4). The [plugin system](#plugins), Theme Studio, and other features marked **v1.8.0 Beta** are still under testing and are not part of v1.7.4 stable.
+> **Stable release: v2.0.0 (October 17, 2026)**. The [plugin system](#plugins) and [Theme Studio](#theme-studio) are included in the stable release. See the [v2.0.0 Release](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0) for features, upgrade notes, and downloads.
 
-In everyday use, summon the wheel with the **right, middle, or side mouse button, or a keyboard trigger**, or run actions through independent trail gestures. The v1.7.4 stable release supports 4 / 8 / 12 directions, secondary actions, per-app profiles, window management and tiling, screen OCR, shortcut recording, URL and command execution, and customizable visual layouts, turning frequent operations into muscle memory.
+In everyday use, summon the wheel with the **right, middle, or side mouse button, or a keyboard trigger**, or run actions through independent trail gestures. The v2.0.0 stable release supports 4 / 8 / 12 directions, secondary actions, per-app profiles, shortcut recording, and Theme Studio. Separately installed official plugins provide app launching, URLs, commands, window management, screen OCR, and other capabilities, turning frequent operations into muscle memory.
 
 > 💡 **Design Highlights**:
 > - **Low resource usage**: native C# WPF without a bundled browser engine, targeting a quiet-background working set of **15–30 MB**; actual usage varies by environment and enabled features.
@@ -76,9 +79,9 @@ In everyday use, summon the wheel with the **right, middle, or side mouse button
 
 <a id="highlights"></a>
 
-## 🌟 v1.7.4 Stable Release Highlights
+## 🌟 v2.0.0 Stable Release Highlights
 
-StarPie **v1.7.4** retains radial wheels, trail gestures, window management, and screen OCR while introducing **native Quick Finder search, per-app isolation and layer-aware inheritance, custom interaction sounds, streamlined settings, rendering optimizations, and an installer**.
+StarPie **v2.0.0** consolidates the improvements since v1.7.4 and concludes the v1.8.0 Beta line, introducing **an independent plugin system, Theme Studio, cascading action editing with undo/redo, unified wheel interaction events, a separate sound plugin, and configuration and runtime stability improvements**. Official plugins are downloaded and installed on demand, not bundled with the host.
 
 | Area | Current Capabilities |
 | :--- | :--- |
@@ -86,10 +89,11 @@ StarPie **v1.7.4** retains radial wheels, trail gestures, window management, and
 | **Trail Gestures** | Up to three segments, eight-direction combinations, trail overlays, segment sensitivity, and release hints |
 | **Actions and Windows** | Hotkeys, apps, URLs, folders, commands, system controls, window switching, tiling, cross-monitor moves, pinning, and transparency |
 | **Screen OCR** | Offline Windows recognition, AI vision APIs, and custom HTTP OCR |
-| **Configuration** | Two-pane focused editing, live wheel preview, sector drag-to-swap, running-window capture, and compact action lists |
-| **Visual Customization** | Multiple wheel shapes, independent primary/secondary themes, per-sector fonts/icons/text placement, and screen-edge adaptation |
+| **Configuration** | Two-pane focused editing, live wheel preview, cascading action editing, copy/paste, list sorting, and undo/redo |
+| **Visual Customization** | Multiple wheel shapes, independent primary/secondary themes, per-sector overrides, and five Theme Studio styles with theme import/export |
 | **Native Quick Finder** | No Everything dependency; app pre-indexing, category filters, search controls, and keyboard shortcuts |
-| **Interaction Sounds** | Five event sounds in advanced mode, synthesized waveforms or local WAV, and preset import/export |
+| **Plugin Extensions** | Installation confirmation, capability descriptions, parameter validation, lazy loading, and preloading; official plugins installed separately |
+| **Interaction Sounds** | Event sounds, local WAV, and preset import/export through a separate sound plugin; installation and enabling required |
 | **Installation and Upgrades** | Setup installer, Standalone portable package, and Lightweight portable package |
 
 > 📋 See [CHANGELOG.md](CHANGELOG.md) for the full version history.
@@ -175,7 +179,7 @@ StarPie **v1.7.4** retains radial wheels, trail gestures, window management, and
 - Assign dedicated wheel profiles to foreground apps such as Chrome, VS Code, Photoshop, or SolidWorks.
 - StarPie automatically matches the active app and falls back to the global profile when there is no dedicated profile.
 - Create, duplicate, delete, and rename profiles to reuse and maintain workflows.
-- **v1.7.4 inheritance rules**: new per-app profiles disable inheritance from unconfigured global slots by default. When enabled, layer N inherits from global layer N; layers beyond the global layer count fall back to global layer 1.
+- **Profile inheritance rules**: new per-app profiles disable inheritance from unconfigured global slots by default. When enabled, layer N inherits from global layer N; layers beyond the global layer count fall back to global layer 1.
 - Center-core actions follow the active layer, with outer sub-wheels and highlight states refreshed when layers change.
 
 <div align="center">
@@ -244,34 +248,35 @@ StarPie **v1.7.4** retains radial wheels, trail gestures, window management, and
 | **Window Management** | Switch, tile, move across monitors, pin, or adjust transparency |
 | **System Controls** | Lock, volume, media, Task View, virtual desktops, and other system functions |
 
-Action execution and display icons are independent: each action can use a built-in vector icon, program icon, or custom image regardless of its action type.
+Apart from built-in hotkeys, the app, URL, folder, command, OCR, window-management, and system-control capabilities above require the corresponding official plugins to be installed and enabled in Plugins & Extensions. Action execution and display icons are independent: each action can use a built-in vector icon, program icon, or custom image regardless of its action type.
 
 ---
 
+<a id="extensions"></a>
 <a id="beta"></a>
 
-## 🧪 v1.8.0 Beta Testing
+## 🧩 v2.0.0 Key Changes
 
-This section groups the plugin system and Theme Studio, both still under testing and not part of v1.7.4 stable.
+The plugin system and Theme Studio are included in v2.0.0 stable, which consolidates the features and improvements from the former v1.8.0 Beta line.
 
 <a id="plugins"></a>
 
 ### 🧩 Plugin System
 
 > [!IMPORTANT]
-> This plugin system is **currently under v1.8.0 Beta testing**, not part of v1.7.4 stable. Built-in stable actions are being split into official plugins on the Beta line; upgrading may require installing corresponding modules. Follow the [plugin documentation](plugin/README.md) and SDK contracts for the Beta version you use.
+> **Several previously built-in actions have moved to official plugins, which must be installed and enabled separately after upgrading**; host packages do not bundle them.
 
 StarPie uses a lightweight **.NET in-process DLL plugin architecture**. Plugins reference the standalone
 `StarPie.Plugin.Abstractions` contract assembly and register actions and other contributions through `Initialize`. The host creates
 a wrapper per plugin to manage scanning, loading, lazy activation, invocation leases, exception isolation, asynchronous disabling, and assembly unloading.
 
-The Beta action pipeline covers registration, configuration, parameter validation, and Sequential/Background scheduling.
+The action pipeline covers registration, configuration, parameter validation, and Sequential/Background scheduling.
 Interaction events and wheel structures also have extension points, allowing further expansion without duplicating the plugin lifecycle.
 
 > 📖 **Plugin development**: current documentation, APIs, architecture, examples, and historical material are collected in [StarPie Plugin Resources](plugin/README.md).
 > 🔗 **Official plugin repository**: [StarPie-Official-Plugins](https://github.com/Star-Pie/StarPie-Official-Plugins). Its checkout at `plugin/StarPie-Official-Plugins/` is a Git submodule. Official-plugin source, packaging, and releases are maintained there; the main repository does not duplicate their builds or bundle official plugin DLLs.
 
-- **Manual installation and the first-time setup exception (v1.8.0 Beta)**:
+- **Manual official-plugin installation and first-time setup**:
   - **No pre-bundled modules**: release packages do not carry official plugin DLLs; plugin startup and background operation do not automatically make network requests.
   - **First-time informed consent**: when settings are first opened interactively—not in silent startup or self-test mode—and the plugin system is enabled and healthy, a one-time prompt lists five core modules (`folder`, `weburl`, `launch`, `system`, `shelltool`), their official source, and the `Process` and `InputSimulation` permissions.
   - **No requests before consent**: the host does not fetch the catalog or packages before the user chooses Install All. It installs only missing modules, skipping installed modules without replacing, upgrading, or re-enabling them. Permissions beyond those shown require another confirmation.
@@ -292,12 +297,13 @@ Interaction events and wheel structures also have extension points, allowing fur
   `StarPie.exe --plugin-selftest <plugin.dll> [report path] --skip-invoke` in a temporary sandbox without touching installed plugins,
   or use `StarPie.exe --plugin-paths` to inspect the effective directories.
 
+<a id="theme-studio"></a>
 <a id="art-style-beta"></a>
 
 ### 🎨 Theme Studio
 
 > [!IMPORTANT]
-> Theme Studio belongs to the v1.8.0 Beta development line and is not included in v1.7.4 stable. For stable wheel shapes and colors, see [Visual Customization](#visuals).
+> Theme Studio works alongside existing wheel shapes and independent colors. See [Visual Customization](#visuals).
 
 Theme Studio in appearance settings offers five styles: paper-like minimalism, obsidian-style tech, soft forest, glacier glass, and retro pixels. Copy and edit colors, fonts, corner radii, and wheel materials, with live preview and theme import/export.
 
@@ -313,23 +319,27 @@ See the [Theme Studio documentation](docs/art-style-themes.md) or [importable ex
 
 ## 🚀 Quick Start & Download
 
-**Current stable release: [v1.7.4](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4) (September 19, 2026)**. Setup and Standalone include .NET 8; Lightweight requires the .NET 8 Desktop Runtime on the target computer.
+**Current stable release: [v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0) (October 17, 2026)**. Setup and Standalone include .NET 8; Lightweight requires the .NET 8 Desktop Runtime x64 on the target computer.
+
+> [!WARNING]
+> **All three v2.0.0 release packages are unsigned** while the production CA certificate is being arranged. Windows may show an unknown publisher warning. Download only from the official Release and verify against its `SHA256SUMS.txt`; no test certificate was used for this release.
 
 | Package | Recommended For | Description | Download |
 | :--- | :--- | :--- | :--- |
-| **Setup Installer** | Guided installation, uninstall, and upgrades | Includes .NET; detects a running StarPie during installation | [Download Setup](https://github.com/Star-Pie/StarPie/releases/download/v1.7.4/StarPie-v1.7.4-Setup-win-x64.exe) |
-| **Standalone Portable** | Extract-and-run use without installation | Includes the .NET runtime | [Download Standalone](https://github.com/Star-Pie/StarPie/releases/download/v1.7.4/StarPie-v1.7.4-Standalone-win-x64.zip) |
-| **Lightweight Portable** | Computers with .NET 8 Desktop Runtime installed | Does not include the .NET runtime | [Download Lightweight](https://github.com/Star-Pie/StarPie/releases/download/v1.7.4/StarPie-v1.7.4-Lightweight-win-x64.zip) |
-| **Preview and Historical Releases** | Beta testing or version rollback | v1.8.0 is a Beta line; distinguish Pre-release builds from stable releases | [Browse Releases](https://github.com/Star-Pie/StarPie/releases) |
+| **Setup Installer** | Guided installation, uninstall, and upgrades | Includes .NET; detects a running StarPie during installation | [Download Setup](https://github.com/Star-Pie/StarPie/releases/download/v2.0.0/StarPie-v2.0.0-Setup-win-x64.exe) |
+| **Standalone Portable** | Extract-and-run use without installation | Includes the .NET runtime | [Download Standalone](https://github.com/Star-Pie/StarPie/releases/download/v2.0.0/StarPie-v2.0.0-Standalone-win-x64.zip) |
+| **Lightweight Portable** | Computers with .NET 8 Desktop Runtime installed | Does not include the .NET runtime | [Download Lightweight](https://github.com/Star-Pie/StarPie/releases/download/v2.0.0/StarPie-v2.0.0-Lightweight-win-x64.zip) |
+| **Historical and Preview Releases** | Older versions or preview builds | v1.8.0 Beta is a historical development line; v2.0.0 is the current stable release | [Browse Releases](https://github.com/Star-Pie/StarPie/releases) |
 
-The release page also provides `SHA256SUMS.txt` for download verification. After upgrading to v1.7.4, review profile inheritance, multi-layer actions, center-core actions, and sound presets.
+Back up configuration and plugin data before upgrading. When upgrading from v1.7.4, install and enable the required official modules in Plugins & Extensions. Missing modules leave action data intact, but the corresponding actions remain unavailable. Interaction sounds require the separate sound plugin; the host no longer provides built-in playback. Review existing profiles, enabled states, and preload preferences. Older plugins with an explicit maximum host version may need their authors to update the compatibility declaration.
 
 ### Basic Workflow:
 1. Download and run `StarPie.exe`; the app runs quietly in the system tray.
 2. Double-click the tray icon to open settings and record the wheel trigger in trigger settings.
-3. Hold the trigger and drag past the threshold, or long-press as configured, to summon the wheel near the cursor.
-4. Move over the desired sector and release to execute its action; flick outward to cancel or run the configured cancellation action.
-5. To use trail gestures, enable a dedicated gesture trigger and map one-to-three-segment direction combinations on the Actions page.
+3. Install and enable the official plugins you need in Plugins & Extensions before configuring their actions.
+4. Hold the trigger and drag past the threshold, or long-press as configured, to summon the wheel near the cursor.
+5. Move over the desired sector and release to execute its action; flick outward to cancel or run the configured cancellation action.
+6. To use trail gestures, enable a dedicated gesture trigger and map one-to-three-segment direction combinations on the Actions page.
 
 ---
 
@@ -337,7 +347,7 @@ The release page also provides `SHA256SUMS.txt` for download verification. After
 
 ## 🛠️ Local Build & Development
 
-The commands below check out the **v1.7.4 stable tag**. For **v1.8.0 Beta** development, clone the default `main` branch and consult the [plugin documentation](plugin/README.md); development source may be ahead of stable releases.
+The commands below check out the **v2.0.0 stable tag**. For ongoing development, clone the default `main` branch and consult the [plugin documentation](plugin/README.md); development source may be ahead of stable releases.
 
 ### Requirements
 
@@ -349,7 +359,7 @@ The commands below check out the **v1.7.4 stable tag**. For **v1.8.0 Beta** deve
 
 ```bash
 # 1. Clone the repository
-git clone --branch v1.7.4 https://github.com/Star-Pie/StarPie.git
+git clone --branch v2.0.0 https://github.com/Star-Pie/StarPie.git
 cd StarPie
 
 # 2. Build the project (Release)
@@ -373,8 +383,8 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 
 ![StarPie repository activity](https://repobeats.axiom.co/api/embed/29a1f2c3c5afeb2863ba5e71e72828420d645c14.svg "Repobeats analytics image")
 
-- **Stable release**: [v1.7.4](https://github.com/Star-Pie/StarPie/releases/tag/v1.7.4), released September 19, 2026.
-- **Testing line**: v1.8.0 Beta; the plugin system is still under testing. See [Releases](https://github.com/Star-Pie/StarPie/releases) and [CHANGELOG.md](CHANGELOG.md) for preview packages and version history.
+- **Stable release**: [v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0), released October 17, 2026.
+- **Version history**: the release originally planned as v1.8.0 became v2.0.0 to reflect the scale of the changes, concluding the v1.8.0 Beta series. The plugin system and Theme Studio are now part of stable. See [Releases](https://github.com/Star-Pie/StarPie/releases) and [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ### Windows Code Signing Support
 
@@ -412,7 +422,9 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
   </tbody>
 </table>
 
-Scan the QR code with QQ to join the **StarPie public testing group**. Group number: **1079199287**.
+Scan the QR code with QQ or click the badge below to join [![QQ Public Testing Group: 1079199287](https://img.shields.io/badge/QQ-1079199287-12B7F5?style=flat-square&logo=qq&logoColor=white&labelColor=555555)](https://qm.qq.com/q/y1J4gxkUTu)
+
+You can also contact the developers by email [![Developer 1: erisnebula09@gmail.com](https://img.shields.io/badge/Developer%201-erisnebula09%40gmail.com-EA4335?style=flat-square&logo=gmail&logoColor=white&labelColor=555555)](mailto:erisnebula09@gmail.com)[![Developer 2: ztzastra@gmail.com](https://img.shields.io/badge/Developer%202-ztzastra%40gmail.com-EA4335?style=flat-square&logo=gmail&logoColor=white&labelColor=555555)](mailto:ztzastra@gmail.com)
 
 You are also welcome to connect with us on GitHub:
 
@@ -451,6 +463,26 @@ Thank you to all [project contributors](https://github.com/Star-Pie/StarPie/grap
 
 ---
 
+<a id="support"></a>
+
+## ❤️ Support & Thanks
+
+Thank you to everyone who supports StarPie. Your support helps us maintain the code, test compatibility, and improve the documentation. Core features remain free and open source.
+
+[Support on Afdian](https://afdian.com/a/starpieproject) · [WeChat, Alipay, and the full sponsors page](https://star-pie.github.io/sponsor/)
+
+<a href="https://star-pie.github.io/sponsor/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
+    <img alt="Thank you to StarPie supporters. Open the full supporters list." src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
+  </picture>
+</a>
+
+Sharing your experience, reporting issues, testing changes, and contributing code are valuable support, too. Public listing is entirely optional. To join, update, or leave the list, contact the maintainer as explained on the sponsors page.
+
+---
+
 <a id="star-history"></a>
 
 ## ⭐ Star History
@@ -461,28 +493,5 @@ Thank you to all [project contributors](https://github.com/Star-Pie/StarPie/grap
     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date&amp;theme=dark" />
     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" />
     <img alt="StarPie GitHub Star history chart" src="https://api.star-history.com/svg?repos=Star-Pie/StarPie&amp;type=Date" width="100%" />
-  </picture>
-</a>
-
----
-
-<a id="support"></a>
-
-## ❤️ Support
-
-If StarPie helps you, you can support the project by:
-
-- Giving the [repository](https://github.com/Star-Pie/StarPie) a Star or sharing it with someone who could use a mouse-gesture productivity tool.
-- Sharing themes, use cases, and demo assets in [Discussions](https://github.com/Star-Pie/StarPie/discussions).
-- Providing reproducible feedback or improving code, translations, and documentation through the [contributing guide](CONTRIBUTING.md).
-- **Sponsoring development** through the [StarPie sponsors page](https://star-pie.github.io/sponsor/), using WeChat, Alipay, or Afdian.
-
-Thank you to everyone who supports StarPie. Click the list below to visit the full sponsors page.
-
-<a href="https://star-pie.github.io/sponsor/">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://star-pie.github.io/sponsor/sponsors-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://star-pie.github.io/sponsor/sponsors-light.svg" />
-    <img alt="StarPie sponsors" src="https://star-pie.github.io/sponsor/sponsors-light.svg" width="100%" />
   </picture>
 </a>
