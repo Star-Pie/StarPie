@@ -266,15 +266,18 @@ for (const options of [{ empty: true }, { missing: true }, { duplicate: true }, 
   });
 }
 for (const mode of ['unsigned', 'release-signing']) {
-  test(`actual release notes ${mode === 'unsigned' ? 'include' : 'do not add'} the unsigned warning`, () => {
-    const directory = mkdtempSync(join(scratch, 'notes-'));
-    writeFileSync(join(directory, 'CHANGELOG.md'), '## [v2.0.1-beta.1] - 2026-10-23\n\n- Fixture release notes.\n');
-    const result = powershell(script('Extract Release Notes from CHANGELOG.md'), { mode, cwd: directory });
-    assert.equal(result.status, 0, result.output);
-    const notes = readFileSync(join(directory, 'dist/RELEASE_NOTES.md'), 'utf8');
-    assert.ok(notes.includes('Fixture release notes.'));
-    assert.equal(notes.includes('未签名构建 / Unsigned build'), mode === 'unsigned');
-    if (mode === 'unsigned') assert.ok(notes.includes('SHA256SUMS.txt'));
+  test(`actual release notes in ${mode} contain only the changelog content`, () => {
+    for (const fixture of [
+      '- Fixture release notes.',
+      '> [!WARNING]\n> A notice intentionally written in the changelog.',
+    ]) {
+      const directory = mkdtempSync(join(scratch, 'notes-'));
+      writeFileSync(join(directory, 'CHANGELOG.md'), `## [v2.0.1-beta.1] - 2026-10-23\n\n${fixture}\n`);
+      const result = powershell(script('Extract Release Notes from CHANGELOG.md'), { mode, cwd: directory });
+      assert.equal(result.status, 0, result.output);
+      const notes = readFileSync(join(directory, 'dist/RELEASE_NOTES.md'), 'utf8').replaceAll('\r\n', '\n').trim();
+      assert.equal(notes, fixture);
+    }
   });
 }
 function assertReleaseTargets(directory, targets, paths) {
@@ -331,12 +334,14 @@ Write-Output ('FIXTURE_TARGETS=' + (ConvertTo-Json -InputObject @($global:Verifi
   const targets = JSON.parse(result.output.match(/FIXTURE_TARGETS=(\[[^\r\n]*\])/)[1]);
   assertReleaseTargets(directory, targets, paths);
 });
-test('unsigned warning is present even when the changelog is absent', () => {
-  const directory = mkdtempSync(join(scratch, 'missing-notes-'));
-  const result = powershell(script('Extract Release Notes from CHANGELOG.md'), { cwd: directory });
-  assert.equal(result.status, 0, result.output);
-  assert.ok(readFileSync(join(directory, 'dist/RELEASE_NOTES.md'), 'utf8').includes('未签名构建 / Unsigned build'));
-});
+for (const mode of ['unsigned', 'release-signing']) {
+  test(`release-notes fallback in ${mode} contains only the version title`, () => {
+    const directory = mkdtempSync(join(scratch, 'missing-notes-'));
+    const result = powershell(script('Extract Release Notes from CHANGELOG.md'), { mode, cwd: directory });
+    assert.equal(result.status, 0, result.output);
+    assert.equal(readFileSync(join(directory, 'dist/RELEASE_NOTES.md'), 'utf8').trim(), 'StarPie v2.0.1-beta.1');
+  });
+}
 test('unsigned verification is required before packaging and publication', () => {
   assert.ok(workflow.indexOf('- name: Verify unsigned executables') < workflow.indexOf('- name: Package release assets'));
   assert.ok(workflow.indexOf('- name: Verify unsigned executables') < workflow.indexOf('- name: Create GitHub Release'));

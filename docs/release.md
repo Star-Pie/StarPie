@@ -160,7 +160,7 @@ Release 工作流仅保留 `workflow_dispatch` 手动入口；推送任何 Git T
 1. 将包含本工作流、校验脚本及其测试的修改整合到发布分支，再使用明确 Git Tag 手动执行 `Build and Publish Release`，选择 `unsigned`。未签名模式不能省略标签，也不能用于覆盖已有公开版本。
 2. 正式签名和未签名发布均要求 Tag 提交属于允许分支（`main`、`dev-*`、`dev/**`）的历史，不要求是分支最新提交；分支已有后续提交时仍可发布旧 Tag。使用祖先关系检查，无法获取分支、解析 Tag 或判断关系时阻止发布。标签格式和版本字段检查保留，不修改主程序、SDK 或配置版本。
 3. 打包前，对 `publish/Lightweight/StarPie.exe`、`publish/Standalone/StarPie.exe` 和该 Tag 的 Setup EXE 逐一执行只读 Authenticode 检查。路径必须为三个不同、非空的 EXE；签名状态不是 `NotSigned` 或存在签名者证书都会阻止发布，包括测试证书、无效或不受信任的签名。
-4. 正常生成两种 ZIP、Setup 和最终文件的 `SHA256SUMS.txt`；Release 说明强制附加中英双语未签名警告，即使没有匹配日志也保留警告。不声称具备 Windows 发布者信任，不更改证书存储。
+4. 正常生成两种 ZIP、Setup 和最终文件的 `SHA256SUMS.txt`；Release 说明沿用 `CHANGELOG.md` 提取结果，不自动附加未签名警告；未提取到内容时使用版本标题。此调整不改变未签名校验，不声称具备 Windows 发布者信任，不更改证书存储。
 5. 发布成功后沿用 Beta 保留与 AtomGit 镜像链路。`ATOMGIT_TOKEN` 的既有要求不受 SignPath 可选化影响；镜像失败不回滚 GitHub 已创建的 Release。
 6. 手动选择 `unsigned` 不会取消其他已启动的同标签工作流；避免同标签并行发布。已有 Release 创建失败时停止，不替换旧附件或改写标签。
 7. 此处的 `test-signing` 仍是测试证书集成验证模式，不是新增的 `test` 发布渠道；标签仍只支持原来的稳定版和 `beta.N` 格式。

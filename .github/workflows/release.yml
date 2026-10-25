@@ -448,7 +448,7 @@ jobs:
           @'
           ## Unsigned release mode
           SignPath was skipped. Lightweight, Standalone and Setup executables were verified as NotSigned.
-          Release assets include SHA256SUMS.txt. Release notes explicitly identify this build as unsigned.
+          Release assets include SHA256SUMS.txt.
           This mode does not imply Windows publisher trust or authorize overwriting an existing release.
           '@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
@@ -495,16 +495,6 @@ jobs:
                 $notes = $Matches[1].Trim()
               }
             }
-          }
-
-          if ($env:SIGNING_POLICY -eq 'unsigned') {
-            $notice = @'
-          > [!WARNING]
-          > **未签名构建 / Unsigned build**
-          > 此版本未使用 Authenticode 代码签名，Windows 可能显示未知发布者提示。请从官方发行页下载并核对 SHA256SUMS.txt。
-          > This build is not Authenticode-signed. Windows may show an unknown-publisher warning. Verify SHA256SUMS.txt.
-          '@
-            $notes = $notice + [Environment]::NewLine + [Environment]::NewLine + $notes
           }
 
           New-Item -ItemType Directory -Force -Path "dist" | Out-Null
