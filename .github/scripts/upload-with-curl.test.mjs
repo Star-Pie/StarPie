@@ -75,12 +75,32 @@ test('real curl sends fixed Content-Length and exact bytes with escaped callback
 
 test('real curl rejects redirects without a second PUT and cleans its private config', async (t) => {
   const f = await loopback(t, 302);
-  await assert.rejects(f.upload(), /not confirmed/);
+  await assert.rejects(f.upload(), (error) => {
+    assert.match(error.message, /not confirmed/);
+    assert.match(error.message, /category=http; exit_code=0; http_status=302;/);
+    assert.doesNotMatch(error.message, /https:|signature=|test-only|quote/);
+    return true;
+  });
   f.verify();
 });
 
 test('real curl max-time stops a stalled response and cleans its process and config', async (t) => {
   const f = await loopback(t, 'stall');
-  await assert.rejects(f.upload(), /not confirmed/);
+  await assert.rejects(f.upload(), (error) => {
+    // Node may send 100 Continue before stalling; neither 100 nor 000 is final confirmation.
+    assert.match(error.message, /category=timeout; exit_code=28; http_status=(?:000|100);/);
+    assert.doesNotMatch(error.message, /https:|signature=|test-only|quote/);
+    return true;
+  });
+  f.verify();
+});
+
+test('real curl preserves an HTTP rejection without exposing the signed URL', async (t) => {
+  const f = await loopback(t, 403);
+  await assert.rejects(f.upload(), (error) => {
+    assert.match(error.message, /category=http; exit_code=0; http_status=403;/);
+    assert.doesNotMatch(error.message, /https:|signature=|test-only|quote/);
+    return true;
+  });
   f.verify();
 });

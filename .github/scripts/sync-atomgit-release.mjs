@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
-import { uploadWithCurl } from './upload-with-curl.mjs';
+import { CurlUploadError, uploadWithCurl } from './upload-with-curl.mjs';
 
 const GITHUB_API = 'https://api.github.com';
 const ATOMGIT_API = 'https://api.atomgit.com';
@@ -373,7 +373,11 @@ export async function syncRelease(config, { fetchImpl = fetch, sleep = pause, lo
             await response.body?.cancel();
           }
           completed = true;
-        } catch { throw new Error('Asset upload failed or timed out. Rerun to verify/reuse any completed upload; no file will be overwritten automatically.'); }
+        } catch (error) {
+          // Only our transport's sanitized diagnostic is safe to include here.
+          const detail = error instanceof CurlUploadError ? ` ${error.message}` : '';
+          throw new Error(`Asset upload failed or timed out.${detail} Rerun to verify/reuse any completed upload; no file will be overwritten automatically.`);
+        }
         finally { stream?.destroy(); progress.finish(completed); }
         uploaded++;
         // Object storage callbacks can become visible later than the PUT response.

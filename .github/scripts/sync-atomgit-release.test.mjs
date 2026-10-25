@@ -549,22 +549,23 @@ function curlProcess(f, behavior = {}) {
     const call = { command, args, options, path, config, killed: false };
     calls.push(call);
     if (process.platform !== 'win32') assert.equal(statSync(path).mode & 0o077, 0);
-    if (behavior.spawnThrow) throw new Error('private spawn error atomgit-test-secret');
+    if (behavior.spawnThrow) throw Object.assign(new Error('private spawn error atomgit-test-secret'), { code: behavior.spawnErrorCode });
     const child = new EventEmitter();
     child.stdout = new PassThrough();
     child.stderr = new PassThrough();
     let closed = false;
-    function close(code) {
+    function close(code, signal = null) {
       if (closed) return;
       closed = true;
       child.stdout.end(); child.stderr.end();
-      child.emit('close', code);
+      if (behavior.delayedClose) setImmediate(() => child.emit('close', code, signal));
+      else child.emit('close', code, signal);
     }
-    child.kill = () => { call.killed = true; child.stdin.destroy(); close(null); return true; };
+    child.kill = (signal) => { call.killed = true; child.stdin.destroy(); close(null, signal); return true; };
     const chunks = [];
     child.stdin = new Writable({
       write(chunk, _encoding, callback) {
-        if (behavior.stdinError) { callback(new Error('private stdin error')); return; }
+        if (behavior.stdinError) { callback(Object.assign(new Error('private stdin error'), { code: behavior.stdinErrorCode })); return; }
         chunks.push(Buffer.from(chunk));
         behavior.onChunk?.();
         callback();
@@ -586,12 +587,12 @@ function curlProcess(f, behavior = {}) {
             });
             child.stdout.write(behavior.output ?? String(response.status));
             child.stderr.write('private stderr https://storage.example/?signature=private-signature atomgit-test-secret');
-            close(behavior.exitCode ?? 0);
+            close(behavior.exitSignal ? null : (behavior.exitCode ?? 0), behavior.exitSignal);
           } catch { close(28); }
         });
       },
     });
-    if (behavior.spawnError) setImmediate(() => child.emit('error', new Error('private spawn error')));
+    if (behavior.spawnError) setImmediate(() => child.emit('error', Object.assign(new Error('private spawn error'), { code: behavior.spawnErrorCode })));
     return child;
   }
   return { spawnImpl, calls };
@@ -700,3 +701,37 @@ test('curl keeps signed query strings and escaped callback values out of argv an
   const put = f.calls.find(call => call.method === 'PUT');
   assert.equal(put.headers['x-callback'], 'private-callback"with\\quotes');
 });
+
+for (const [name, behavior, expected] of [
+  ['timeout', { exitCode: 28, output: '000' }, ['exit_code=28', 'http_status=000', 'signal=none', 'category=timeout', 'cleanup_kill=false']],
+  ['timeout after interim response', { exitCode: 28, output: '100' }, ['exit_code=28', 'http_status=100', 'category=timeout']],
+  ['HTTP rejection', { output: '403' }, ['exit_code=0', 'http_status=403', 'signal=none', 'category=http']],
+  ['network failure', { exitCode: 56, output: '000' }, ['exit_code=56', 'http_status=000', 'category=process']],
+  ['signal termination', { exitSignal: 'SIGTERM', output: '000' }, ['exit_code=unknown', 'signal=SIGTERM', 'cleanup_kill=false']],
+  ['missing executable', { spawnThrow: true, spawnErrorCode: 'ENOENT' }, ['error_code=ENOENT', 'http_status=unknown', 'category=spawn']],
+  ['process error', { spawnError: true, spawnErrorCode: 'EACCES' }, ['error_code=EACCES', 'category=spawn']],
+  ['broken stdin', { stdinError: true, stdinErrorCode: 'EPIPE' }, ['error_code=EPIPE', 'signal=SIGKILL', 'category=stream', 'cleanup_kill=true']],
+  ['delayed process close', { spawnError: true, spawnErrorCode: 'ENOENT', delayedClose: true }, ['error_code=ENOENT', 'signal=SIGKILL', 'category=spawn', 'cleanup_kill=true']],
+  ['untrusted status', { output: '403 private-signed-url' }, ['http_status=unknown']],
+  ['untrusted exit code', { exitCode: 'private-exit-secret', output: '000' }, ['exit_code=unknown']],
+  ['untrusted signal', { exitSignal: 'SIGprivate-secret', output: '000' }, ['signal=unknown']],
+  ['untrusted error code', { spawnThrow: true, spawnErrorCode: 'private-error-secret' }, ['error_code=unknown']],
+]) {
+  test('curl preserves safe failure diagnostics: ' + name, async () => {
+    const clock = progressClock();
+    const f = fixture({ clock, env: { UPLOAD_CLIENT: 'curl' } });
+    const curl = curlProcess(f, behavior);
+    await assert.rejects(f.run({ spawnImpl: curl.spawnImpl }), (error) => {
+      assert.match(error.message, /Asset upload failed/);
+      for (const field of expected) assert.ok(error.message.includes(field), `Missing ${field}: ${error.message}`);
+      assert.doesNotMatch(error.message, /private|secret|https:|signature=/);
+      assert.match(error.message, /no file will be overwritten automatically/);
+      return true;
+    });
+    assert.equal(curl.calls.length, 1);
+    assert.equal(existsSync(curl.calls[0].path), false);
+    assert.equal(clock.active(), 0);
+    assert.doesNotMatch(f.logs.join('\n'), /private|secret|https:\/\//);
+    assert.ok(f.calls.filter(call => call.method === 'PUT').length <= 1);
+  });
+}
