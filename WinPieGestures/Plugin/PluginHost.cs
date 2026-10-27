@@ -1182,7 +1182,12 @@ internal static class PluginHost
                 list.Add(new PluginCandidate
                 {
                     DllPath = scan.DllPath,
-                    FileName = Path.GetFileName(scan.DllPath),
+                    // 进程插件没有 DllPath，候选行只能退到可执行文件名（再退到插件 ID）。
+                    FileName = !string.IsNullOrWhiteSpace(scan.DllPath)
+                        ? Path.GetFileName(scan.DllPath)
+                        : scan.Command.Count > 0
+                            ? Path.GetFileName(scan.Command[0])
+                            : (scan.Manifest?.Id ?? ""),
                     Scan = scan,
                     State = state,
                     Note = note,

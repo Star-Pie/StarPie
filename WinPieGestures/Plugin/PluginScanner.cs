@@ -265,9 +265,12 @@ internal static class PluginScanner
     /// </summary>
     private static bool CheckProcessContract(PluginScanResult result, string pluginDirectory, PluginManifest manifest)
     {
+        result.Runtime = PluginRuntimeTypes.Process;  // 下游（PluginInstance）靠这个字段选加载路径
         result.Command = new List<string>(manifest.Command);
-        result.TargetFramework = "";                 // 不是 .NET 程序集，详情页不该显示 TFM
-        result.MachineText = PluginRuntimeTypes.Process;
+        // 不是 .NET 程序集：TFM 与 PE 机器码对进程插件都是无意义的字段，
+        // 留着它们只会在详情页上显示成一句假信息。
+        result.TargetFramework = "";
+        result.MachineText = "";
         result.DllPath = "";                         // 没有入口程序集
 
         if (!TryResolveProcessExecutable(pluginDirectory, manifest, out string exePath, out string error))

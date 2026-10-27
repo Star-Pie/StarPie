@@ -59,9 +59,16 @@ internal static class PluginInstallConfirmationText
             manifest?.ResolveCapabilities() ?? StarPie.Plugin.PluginCapability.None;
 
         string pluginId = manifest?.Id ?? "";
+        // 进程插件没有入口程序集（DllPath 为空），要展示的是那个可执行文件。
+        string entryPath = !string.IsNullOrWhiteSpace(scan.DllPath)
+            ? scan.DllPath
+            : scan.Command.Count > 0
+                ? System.IO.Path.Combine(scan.SourceDirectory, scan.Command[0])
+                : scan.SourceDirectory;
+
         string displayName = !string.IsNullOrWhiteSpace(manifest?.Name)
             ? manifest!.Name!
-            : System.IO.Path.GetFileName(scan.DllPath);
+            : System.IO.Path.GetFileName(entryPath);
         string versionText = string.IsNullOrWhiteSpace(manifest?.Version) ? "" : $"v{manifest.Version}";
 
         var text = new StringBuilder();
@@ -81,7 +88,7 @@ internal static class PluginInstallConfirmationText
         text.AppendLine();
 
         // ② 从哪来、是什么文件
-        text.AppendLine(I18n.TF("PluginsConfirmFile", scan.DllPath));
+        text.AppendLine(I18n.TF("PluginsConfirmFile", entryPath));
         if (!string.IsNullOrWhiteSpace(scan.TargetFramework))
         {
             text.AppendLine(I18n.TF("PluginsConfirmTargetFramework", scan.TargetFramework));
