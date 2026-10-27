@@ -203,6 +203,15 @@ internal static class PluginHost
                 AppLogger.LogError($"[plugin] 退出时停用 {instance.PluginId} 失败", ex);
             }
         }
+
+        // 进程插件必须在宿主退出时清场，而且**不能只依赖上面的停用流程**：
+        // DisableAsync 带 2 秒宽限期，超时或提前返回都不会走到 Teardown，进程就活下来了。
+        // 这里再兜一次底，代价极低（没有进程在册时直接返回）。
+        int terminated = PluginProcessRuntime.TerminateAllPlugins();
+        if (terminated > 0)
+        {
+            AppLogger.LogInfo($"[plugin] 宿主退出，已结束 {terminated} 个由插件拉起的进程");
+        }
     }
 
     // ------------------------------------------------------------------ 安装
