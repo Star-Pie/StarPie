@@ -198,7 +198,13 @@ internal sealed class PluginInstance
     /// <summary>延迟判定的一次性计时器。</summary>
     private System.Threading.Timer? _unloadProbeTimer;
 
-    public bool IsLoaded => _plugin != null;
+    /// <summary>
+    /// 进程形态没有托管实例，所以不能用 "_plugin != null" 判定「已加载」——
+    /// 那会让每次触发都重新走一遍 LoadCore，撞上自己的动作 ID 冲突。
+    /// </summary>
+    private bool _processLoaded;
+
+    public bool IsLoaded => _plugin != null || _processLoaded;
 
     public int ActiveCallCount
     {
@@ -591,6 +597,7 @@ internal sealed class PluginInstance
             h.LastError = null;
         });
 
+        _processLoaded = true;
         OpenInvocationGate();
         return true;
     }
@@ -781,6 +788,15 @@ internal sealed class PluginInstance
         RequestPluginShutdown();
         DisposeTokens();
 
+        // 进程回收只能放在「真正的卸载」里，不能放在 Teardown：
+        // Teardown 同时是加载失败的回滚路径，而一次失败的加载不该迁怒于
+        // 已经在运行的实例 —— 那正是"第二次触发把翻译框弄没"的原因。
+        int terminated = PluginProcessRuntime.TerminateAll(PluginId);
+        if (terminated > 0)
+        {
+            Logger.Info($"停用插件，已结束 {terminated} 个由宿主拉起的进程");
+        }
+
         // OwnedActions 里的 PluginActionRegistration 持有插件侧 IActionContribution。
         // 必须在 Teardown/GC 探测之前清空，否则这个宿主字段会把插件 ALC 继续钉住。
         OwnedActions = Array.Empty<PluginActionRegistration>();
@@ -865,14 +881,7 @@ internal sealed class PluginInstance
         RevokeContributions();
         RevokeEventSubscriptions();
         DisposeTokens();
-
-        // 进程形态：停用即回收宿主自己拉起的那些进程。
-        // 用户在外部启动的同一程序不在册，不会被这里波及 —— 插件的生命周期不该伸到用户的启动里去。
-        int terminated = PluginProcessRuntime.TerminateAll(PluginId);
-        if (terminated > 0)
-        {
-            Logger.Info($"停用插件，已结束 {terminated} 个由宿主拉起的进程");
-        }
+        _processLoaded = false;
         OwnedActions = Array.Empty<PluginActionRegistration>();
         ActionCount = 0;
 
