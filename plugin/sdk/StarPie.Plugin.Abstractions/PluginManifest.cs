@@ -63,6 +63,54 @@ public sealed class PluginManifest
     /// </summary>
     public string? EntryType { get; set; }
 
+    /// <summary>
+    /// 运行时形态。缺省 <c>"assembly"</c> —— 存量插件一个字都不用改。
+    /// <para>
+    /// <c>"assembly"</c>：托管程序集，进程内加载进 <c>AssemblyLoadContext</c>（原路径）。
+    /// </para>
+    /// <para>
+    /// <c>"process"</c>：独立进程，由宿主按 <see cref="Command"/> 拉起。这条形态是为
+    /// Rust / Go / C++ / Python 等无法产出 .NET 程序集的语言准备的 —— 宿主不加载任何代码，
+    /// 只负责触发与生命周期。代价是插件拿不到 <see cref="IPluginContext"/> 下的宿主服务
+    /// （上下文、窗口控制、剪贴板…），它必须自己实现这些。
+    /// </para>
+    /// <para>
+    /// <b>为什么不叫 <c>kind</c> 或 <c>type</c></b>：清单里 <c>type</c> 已经指「动作类型」，
+    /// 再用一次会让「进程插件」和「动作类型」两件事在排查时混为一谈。
+    /// </para>
+    /// </summary>
+    public string Runtime { get; set; } = PluginRuntimeTypes.Assembly;
+
+    /// <summary>
+    /// 进程形态的启动命令。<c>[0]</c> 是可执行文件（相对插件目录，或绝对路径），其余是参数。
+    /// <para>
+    /// 参数里可用占位符，宿主在每次执行前替换：<c>{action}</c>（本次触发的贡献点短 ID）、
+    /// <c>{languageCode}</c>、<c>{foregroundProcess}</c>、<c>{foregroundTitle}</c>、
+    /// <c>{cursorX}</c>、<c>{cursorY}</c>。未知占位符<b>原样保留</b>而不报错 ——
+    /// 让插件能用 <c>{...}</c> 表达自己的字面量，也比因为宿主少支持一个占位符就整个动作失败要好。
+    /// </para>
+    /// <para>
+    /// <b>为什么不做成 "InvokeArgs" 字典 + 固定追加参数</b>：那样每种语言、每个插件都得
+    /// 接受宿主钦定的一套 flag 顺序；把参数完全交给清单写死，插件作者想要什么形态就是什么形态，
+    /// 宿主也不需要为某个插件特判。
+    /// </para>
+    /// </summary>
+    public List<string> Command { get; set; } = new();
+
+    /// <summary>
+    /// <b>仅 <see cref="Runtime"/> = <c>"process"</c> 时使用</b>：该进程贡献的动作列表。
+    /// <para>
+    /// 程序集形态的动作用 <see cref="IActionContribution"/> 在运行时自描述；进程形态没有托管对象，
+    /// 于是把同样的信息搬到清单里。字段刻意与 <see cref="ActionDescriptor"/> 一一对应，
+    /// 将来接 JSON-RPC 时这份声明可以直接由插件在握手里返回，宿主侧不需要第二套模型。
+    /// </para>
+    /// <para>
+    /// 与 <see cref="PluginContributions.Actions"/> 那个 <c>bool</c> 无关：那个是安装确认页的
+    /// 数量提示，这里是真实路由数据。
+    /// </para>
+    /// </summary>
+    public List<PluginProcessAction> Actions { get; set; } = new();
+
     /// <summary>能力声明。见 <see cref="PluginCapability"/>。</summary>
     public List<string> Capabilities { get; set; } = new();
 
@@ -125,6 +173,83 @@ public sealed class PluginManifest
         }
         return unknown;
     }
+}
+
+/// <summary>清单里 <see cref="PluginManifest.Runtime"/> 的合法取值。</summary>
+public static class PluginRuntimeTypes
+{
+    /// <summary>托管程序集，进程内加载。</summary>
+    public const string Assembly = "assembly";
+
+    /// <summary>独立进程，由宿主拉起。</summary>
+    public const string Process = "process";
+
+    /// <summary>全部合法取值，供清单校验与错误提示使用。</summary>
+    public static readonly IReadOnlyList<string> All = new[] { Assembly, Process };
+
+    /// <summary>
+    /// 归一化清单里的取值（大小写不敏感）。
+    /// <para>
+    /// 未知取值返回 <c>false</c> 而<b>不是</b>静默退回 <c>assembly</c>：一个写成
+    /// <c>"proc"</c> 的清单，如果被当成程序集形态加载，用户看到的会是
+    /// 「找不到入口程序集」这种指向错误方向的报错。
+    /// </para>
+    /// </summary>
+    public static bool TryNormalize(string? raw, out string normalized)
+    {
+        normalized = Assembly;
+        if (string.IsNullOrWhiteSpace(raw)) return true;
+        foreach (string candidate in All)
+        {
+            if (string.Equals(candidate, raw.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                normalized = candidate;
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+/// <summary>
+/// 进程插件在清单里声明的一个动作。字段与 <see cref="ActionDescriptor"/> 对齐。
+/// <para>
+/// <b>没有参数表单</b>：v0.5 的进程插件拿不到宿主渲染的参数控件。需要可配置项时，
+/// 要么等 JSON-RPC 的声明式设置页，要么自己在进程里读自己的配置文件 —— 后者是 Selinga 当前的做法。
+/// </para>
+/// </summary>
+public sealed class PluginProcessAction
+{
+    /// <summary>插件内短 ID（小写驼峰）。宿主会归一化为 <c>&lt;pluginId&gt;.&lt;id&gt;</c>，并作为 <c>{action}</c> 注入命令行。</summary>
+    public string Id { get; set; } = "";
+
+    /// <summary>显示名（可直接写中文；支持 <see cref="PluginManifest.NameTranslations"/> 那套词条机制）。</summary>
+    public string DisplayName { get; set; } = "";
+
+    /// <summary>列表里的副标题 / 说明。</summary>
+    public string? Description { get; set; }
+
+    /// <summary>动作下拉里的分组名，例如「效率工具」。留空归入「插件」。</summary>
+    public string Category { get; set; } = "";
+
+    /// <summary>图标。只接受主程序内置的矢量图标 key —— 进程插件无法注册 SVG。</summary>
+    public string? IconKey { get; set; }
+
+    /// <summary>
+    /// 调度类别，<b>默认 <see cref="ActionKind.Background"/></b>。
+    /// <para>
+    /// 与程序集插件不同，这里必须默认后台：拉起进程会做磁盘 IO、可能弹窗，
+    /// 落在唯一的串行动作线程上会把整个动作队列拖住。真要串行（比如必须先切走前台窗口）
+    /// 由作者显式声明，而且要自己保证足够短。
+    /// </para>
+    /// </summary>
+    public ActionKind Kind { get; set; } = ActionKind.Background;
+
+    /// <summary>
+    /// 放弃等待的秒数。进程形态<b>从不等待退出</b>，这个值只用于「启动失败」的判定窗口，
+    /// 以及日志里区分「刚拉起」与「拉起超时」。填 0 用宿主默认（3 秒）。
+    /// </summary>
+    public int LaunchTimeoutSeconds { get; set; }
 }
 
 /// <summary>贡献点预声明。字段存的是「数量」，用于安装确认页快速告知用户插件会往界面里加什么。</summary>
