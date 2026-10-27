@@ -2082,6 +2082,10 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("PluginsConfirmCapabilities", "该插件声明了以下能力：", "此外掛宣告了以下能力：", "This plugin declares the following capabilities:", "このプラグインは以下の機能を宣言しています：");
 		Add("PluginsConfirmDeclaredCapabilities", "声明能力：{0}", "宣告能力：{0}", "Declared capabilities: {0}", "宣言された機能：{0}");
 		Add("PluginsConfirmDescription", "说明：{0}", "說明：{0}", "Description: {0}", "説明：{0}");
+		// 进程运行时（SDK 1.14）：这两句是「告知」而不是门禁 —— 必须把“它是个独立程序”与
+		// “不继承宿主提权”写在安装确认页上，否则用户会以为它和程序集插件受同样的运行时约束。
+		Add("PluginsConfirmProcessRuntime", "运行时：独立进程（以你的用户权限运行，不继承宿主提权）", "執行階段：獨立處理序（以你的使用者權限執行，不繼承宿主提高權限）", "Runtime: separate process (runs with your user rights; does not inherit host elevation)", "実行時：別プロセス（あなたのユーザー権限で動作し、ホストの昇格を継承しません）");
+		Add("PluginsConfirmProcessCommand", "启动命令：{0}", "啟動命令：{0}", "Launch command: {0}", "起動コマンド：{0}");
 		Add("PluginsConfirmDisable", "确定停用「{0}」吗？\n\n· 当前配置中有 {1} 个动作由它提供，停用期间这些动作会暂时失效\n· 配置不会丢失，重新启用即可恢复", "確定停用「{0}」嗎？\n\n· 目前設定中有 {1} 個動作由它提供，停用期間這些動作會暫時失效\n· 設定不會遺失，重新啟用即可恢復", "Disable plugin {0}?\n\n· {1} action(s) in the current configuration come from it and will stop working while it is disabled\n· Nothing is lost from your configuration; re-enabling restores them", "プラグイン「{0}」を無効化しますか？\n\n· 現在の設定には、これが提供する動作が {1} 個あり、無効化中は使用できなくなります\n· 設定は失われません。再度有効化すれば復元します");
 		Add("PluginsConfirmDisableTitle", "停用插件", "停用外掛", "Disable plugin", "プラグインを無効化");
 		Add("PluginsConfirmEnableLater", "装完处于「未启用」状态：需要你到插件列表里勾选启用，它注册的动作才会出现在「手势与动作」页的动作类型下拉框中。", "裝完處於「未啟用」狀態：需要你到外掛清單裡勾選啟用，它註冊的動作才會出現在「手勢與動作」頁的動作類型下拉選單中。", "It stays disabled after installation: tick \"Enabled\" in the plugin list, and only then do its actions appear in the action-type dropdown on the Gestures & Actions page.", "インストール直後は「無効」のままです。プラグイン一覧で有効化してはじめて、登録した動作が「ジェスチャーと動作」ページの動作タイプのドロップダウンに現れます。");

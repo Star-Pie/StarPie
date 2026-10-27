@@ -89,6 +89,15 @@ internal static class PluginInstallConfirmationText
 
         // ② 从哪来、是什么文件
         text.AppendLine(I18n.TF("PluginsConfirmFile", entryPath));
+        if (string.Equals(scan.Runtime, StarPie.Plugin.PluginRuntimeTypes.Process, StringComparison.Ordinal))
+        {
+            // 进程插件的能力位只是告知，不是门禁 —— 这句话必须出现在用户点「确定」之前。
+            text.AppendLine(I18n.T("PluginsConfirmProcessRuntime"));
+            if (scan.Command.Count > 0)
+            {
+                text.AppendLine(I18n.TF("PluginsConfirmProcessCommand", string.Join(" ", scan.Command)));
+            }
+        }
         if (!string.IsNullOrWhiteSpace(scan.TargetFramework))
         {
             text.AppendLine(I18n.TF("PluginsConfirmTargetFramework", scan.TargetFramework));

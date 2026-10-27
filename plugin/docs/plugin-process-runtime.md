@@ -88,6 +88,29 @@
 - **v0.5 没有 `plugin.start` / `plugin.stop`。** 常驻形态不需要宿主托管——插件第一次被触发后
   自己留在后台即可。需要显式起停时再作为 1.15 的增量加。
 
+## 输出通道：进程活着，管道就必须开着
+
+这是踩过一次真故障之后写下的硬约束。
+
+宿主用 `RedirectStandardOutput/Error` 收集插件输出。**一旦持有 `Process` 的对象被释放，
+.NET 会关闭那两个管道**；而常驻型插件在几秒之后才第一次写日志是很常见的。此时：
+
+| 语言 | 对 EPIPE 的反应 |
+|---|---|
+| Rust | `eprintln!` / `println!` **panic**，进程直接退出 |
+| Python | `BrokenPipeError`，若未捕获则退出 |
+| C / C++ | `fwrite` 返回错误，通常被忽略 —— 看起来"没事"，实际日志全丢 |
+
+真实表现：插件被第一次触发时正常，3 秒后宿主关闭管道，用户再次触发时插件恰好写一行日志，
+于是**插件无声消失**，而被误判成"窗口逻辑有问题"。
+
+因此：
+
+1. 宿主**不得**在动作方法返回时释放 `Process`。句柄交给进程登记簿，直到进程退出或插件停用才释放。
+2. 读取器必须一直 `BeginOutputReadLine` / `BeginErrorReadLine`，否则子进程写满缓冲区会阻塞。
+3. 退出后用一次无超时的 `WaitForExit()` 冲刷读取器，再取退出码 —— 少了这一步，最后几行
+   stderr（往往正是崩溃原因）会丢。
+
 ## 能力声明：告知 ≠ 强制
 
 程序集插件的能力位是**真门禁**：未声明 `ScreenCapture` 调用 `IHostScreenCaptureService`
@@ -139,12 +162,12 @@
 |---|---|---|
 | `plugin/sdk/.../PluginManifest.cs` | ✅ 已完成：`Runtime` / `Command` / `Actions` / `PluginProcessAction` / `PluginRuntimeTypes` | 已有 |
 | `plugin/sdk/.../PluginApi.cs` | ✅ 已完成：1.13 → 1.14 | 已有 |
-| `WinPieGestures/Plugin/PluginManifestReader.cs` | 按 runtime 分流：跳过 TFM/assembly/entryType，校验 command 与动作非空 | ~50 |
-| `WinPieGestures/Plugin/PluginScanner.cs` | 打开程序集**之前**分支 | ~80 |
-| `WinPieGestures/Plugin/PluginCandidate.cs` | 加 `Runtime` | ~5 |
-| `WinPieGestures/Plugin/PluginScanResult.cs` | 加 `Runtime` / `Command`，`DllPath` 可空 | ~10 |
-| `WinPieGestures/Plugin/PluginInstance.cs` | `Load`/`Unload`/`OwnedActions` 按 runtime 分支 | ~150 |
-| **`WinPieGestures/Plugin/ProcessActionContribution.cs`** | 新：实现 `IActionContribution`，占位符替换 + 拉起 + 退出码映射 | ~180 |
+| `WinPieGestures/Plugin/PluginManifestReader.cs` | ✅ 按 runtime 分流：跳过 TFM/assembly/entryType，校验 command 与动作非空 | 已完成 |
+| `WinPieGestures/Plugin/PluginScanner.cs` | ✅ 打开程序集**之前**分支，含目录穿越拦截 | 已完成 |
+| `WinPieGestures/Plugin/PluginCandidate.cs` | ✅ 加 `Runtime` | 已完成 |
+| `WinPieGestures/Plugin/PluginScanResult.cs` | ✅ 加 `Runtime` / `Command`，`DllPath` 可空 | 已完成 |
+| `WinPieGestures/Plugin/PluginInstance.cs` | ✅ `Load`/`Unload` 按 runtime 分支；`IsLoaded` 按进程态判定 | 已完成 |
+| **`WinPieGestures/Plugin/ProcessActionContribution.cs`** | ✅ 新：实现 `IActionContribution`，占位符替换 + 拉起 + 退出码映射 | 已完成 |
 | `WinPieGestures/Plugin/PluginInstallConfirmation.cs` | 「将运行独立程序」「不继承提权」 | ~25 |
 | `WinPieGestures/Plugin/PluginCapabilityLabels.cs` | 进程态措辞 | ~10 |
 | `WinPieGestures/Plugin/PluginDetailModel.cs` / `PluginDisplayText.cs` | 详情页显示 runtime 与命令行 | ~15 |
