@@ -263,6 +263,58 @@ internal static class PluginManifestReader
             return false;
         }
 
+        // ---- 运行时形态 ----
+        // 未知取值直接拒绝，而不是退回 assembly：把 "proc" 当成程序集形态加载，
+        // 用户看到的会是「找不到入口程序集」这种指向完全错误方向的报错。
+        if (!PluginRuntimeTypes.TryNormalize(manifest.Runtime, out string runtime))
+        {
+            failure = PluginScanFailure.ManifestInvalid;
+            error = $"runtime=\"{manifest.Runtime}\" 不是可识别的运行时形态，合法值：{string.Join(" / ", PluginRuntimeTypes.All)}。";
+            return false;
+        }
+        manifest.Runtime = runtime;
+
+        bool isProcessRuntime = string.Equals(runtime, PluginRuntimeTypes.Process, StringComparison.Ordinal);
+
+        if (isProcessRuntime)
+        {
+            if (manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
+            {
+                failure = PluginScanFailure.ManifestInvalid;
+                error = "runtime=\"process\" 的插件必须用 command 声明启动命令，且 command[0] 是可执行文件。";
+                return false;
+            }
+            if (manifest.Actions.Count == 0)
+            {
+                failure = PluginScanFailure.ManifestInvalid;
+                error = "runtime=\"process\" 的插件必须在 actions 里至少声明一个动作，否则宿主无法为它创建扇区入口。";
+                return false;
+            }
+
+            var seenActionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (PluginProcessAction action in manifest.Actions)
+            {
+                if (string.IsNullOrWhiteSpace(action.Id))
+                {
+                    failure = PluginScanFailure.ManifestInvalid;
+                    error = "actions[].id 不能为空。";
+                    return false;
+                }
+                if (!seenActionIds.Add(action.Id))
+                {
+                    failure = PluginScanFailure.ManifestInvalid;
+                    error = $"actions 里出现了重复的短 ID \"{action.Id}\"。";
+                    return false;
+                }
+                if (string.IsNullOrWhiteSpace(action.DisplayName))
+                {
+                    failure = PluginScanFailure.ManifestInvalid;
+                    error = $"动作 \"{action.Id}\" 缺少 displayName —— 进程插件没有运行时对象，宿主只能从清单取显示名。";
+                    return false;
+                }
+            }
+        }
+
         // ---- 平台 ----
         if (!string.Equals(manifest.Platform?.Trim(), "win-x64", StringComparison.OrdinalIgnoreCase))
         {
@@ -270,19 +322,24 @@ internal static class PluginManifestReader
             return false;
         }
 
-        // ---- 目标框架 ----
-        if (!TargetFrameworkInfo.TryParse(manifest.TargetFramework, out TargetFrameworkInfo pluginTfm))
+        // ---- 目标框架（仅程序集形态）----
+        // 进程插件不是 .NET 程序集，拿 TFM 卡它没有意义：一个 Rust 写的 exe 没有 TargetFrameworkAttribute，
+        // 强制校验只会让作者被迫填一个与事实不符的值。
+        if (!isProcessRuntime)
         {
-            failure = PluginScanFailure.TargetFrameworkMismatch;
-            error = $"targetFramework=\"{manifest.TargetFramework}\" 不是可识别的 TFM。";
-            return false;
-        }
-        if (!TargetFrameworkInfo.TryParse(HostTargetFramework, out TargetFrameworkInfo hostTfm)
-            || !TargetFrameworkInfo.IsCompatible(pluginTfm, hostTfm))
-        {
-            failure = PluginScanFailure.TargetFrameworkMismatch;
-            error = $"插件目标框架 {manifest.TargetFramework} 高于宿主 {HostTargetFramework}。";
-            return false;
+            if (!TargetFrameworkInfo.TryParse(manifest.TargetFramework, out TargetFrameworkInfo pluginTfm))
+            {
+                failure = PluginScanFailure.TargetFrameworkMismatch;
+                error = $"targetFramework=\"{manifest.TargetFramework}\" 不是可识别的 TFM。";
+                return false;
+            }
+            if (!TargetFrameworkInfo.TryParse(HostTargetFramework, out TargetFrameworkInfo hostTfm)
+                || !TargetFrameworkInfo.IsCompatible(pluginTfm, hostTfm))
+            {
+                failure = PluginScanFailure.TargetFrameworkMismatch;
+                error = $"插件目标框架 {manifest.TargetFramework} 高于宿主 {HostTargetFramework}。";
+                return false;
+            }
         }
 
         // ---- 未知能力声明（仅提示，不阻断）----

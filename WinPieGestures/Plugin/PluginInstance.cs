@@ -398,6 +398,16 @@ internal sealed class PluginInstance
                 return true;
             }
 
+            // 进程形态尚未接线（见 plugin/docs/plugin-process-runtime.md 的实现落点）。
+            // 这里显式拒绝而不是继续往下走：Scan.DllPath 对进程插件是空串，
+            // 掉进 LoadCore 的 Path.GetFullPath("") 会抛 ArgumentException，
+            // 那对用户是一句「参数错误」，与真实原因毫无关系。
+            if (string.Equals(Scan.Runtime, PluginRuntimeTypes.Process, StringComparison.Ordinal))
+            {
+                failureReason = "该插件使用进程运行时，当前宿主版本尚未支持加载（扫描与校验已通过）。";
+                return false;
+            }
+
             return LoadCore(out failureReason);
         }
     }

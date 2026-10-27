@@ -78,6 +78,9 @@ internal sealed class PluginCandidate
 
     public string? PluginId => Scan.Manifest?.Id;
 
+    /// <summary>运行时形态。界面据此区分「程序集插件」与「进程插件」，也用于决定安装提示的措辞。</summary>
+    public string Runtime => Scan.Runtime;
+
     public string DisplayName
     {
         get

@@ -182,6 +182,17 @@ internal static class PluginScanner
         result.Manifest = manifest;
         result.ManifestSource = "Manifest";
 
+        // ---- 进程形态：压根没有程序集 ----
+        // 必须放在定位入口程序集之前，否则这里会先报「找不到与插件 ID 同名的程序集」,
+        // 而那个错误对这个插件是完全无关的。
+        if (string.Equals(manifest.Runtime, PluginRuntimeTypes.Process, StringComparison.Ordinal))
+        {
+            if (!CheckProcessContract(result, pluginDirectory, manifest)) return result;
+            result.Accepted = true;
+            result.Failure = PluginScanFailure.None;
+            return result;
+        }
+
         string? dllPath = ResolveEntryAssemblyPath(pluginDirectory, manifest);
         if (dllPath == null)
         {
@@ -244,6 +255,87 @@ internal static class PluginScanner
         }
 
         return null;
+    }
+
+    // ------------------------------------------------------------------ 进程形态
+
+    /// <summary>
+    /// 校验进程插件的启动命令。程序集插件那一整套（CLR 头、ILOnly、入口类型、TFM 兼容）
+    /// 在这里全部不适用，取而代之的是「可执行文件存在且没有越出插件目录」。
+    /// </summary>
+    private static bool CheckProcessContract(PluginScanResult result, string pluginDirectory, PluginManifest manifest)
+    {
+        result.Command = new List<string>(manifest.Command);
+        result.TargetFramework = "";                 // 不是 .NET 程序集，详情页不该显示 TFM
+        result.MachineText = PluginRuntimeTypes.Process;
+        result.DllPath = "";                         // 没有入口程序集
+
+        if (!TryResolveProcessExecutable(pluginDirectory, manifest, out string exePath, out string error))
+        {
+            Fail(result, PluginScanFailure.DllNotFound, error);
+            return false;
+        }
+
+        result.FileSizeText = DescribeSize(exePath);
+        return true;
+    }
+
+    /// <summary>
+    /// 解析 <c>command[0]</c>。相对路径相对插件目录，且**必须落在目录内**。
+    /// <para>
+    /// 越界检查是这条形态的安全底线：一份形如 <c>..\..\Windows\System32\cmd.exe</c> 的命令，
+    /// 在安装确认页上看起来只是一行路径，用户不会去解析它。绝对路径放行，
+    /// 但那是显式选择 —— 相对的"顺手往上跳两级"不是。
+    /// </para>
+    /// </summary>
+    public static bool TryResolveProcessExecutable(
+        string pluginDirectory,
+        PluginManifest manifest,
+        out string exePath,
+        out string error)
+    {
+        exePath = "";
+        error = "";
+
+        if (manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
+        {
+            error = "command[0] 为空：进程插件的第一项必须是可执行文件。";
+            return false;
+        }
+
+        string raw = manifest.Command[0].Trim();
+        string root = Path.GetFullPath(pluginDirectory);
+        string resolved;
+        try
+        {
+            resolved = Path.GetFullPath(Path.IsPathRooted(raw) ? raw : Path.Combine(root, raw));
+        }
+        catch (Exception ex)
+        {
+            error = $"command[0] 无法解析为路径：{ex.Message}";
+            return false;
+        }
+
+        if (!Path.IsPathRooted(raw))
+        {
+            string rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+                ? root
+                : root + Path.DirectorySeparatorChar;
+            if (!resolved.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+            {
+                error = $"command[0]=\"{raw}\" 解析后越出了插件目录（{resolved}）。相对路径必须留在插件目录内。";
+                return false;
+            }
+        }
+
+        if (!File.Exists(resolved))
+        {
+            error = $"command[0] 指向的可执行文件不存在：{resolved}";
+            return false;
+        }
+
+        exePath = resolved;
+        return true;
     }
 
     // ------------------------------------------------------------------ G-2 结构
