@@ -14,7 +14,7 @@
     <Product>StarPie</Product>
     <Company>StarPie Studio</Company>
     <Description>StarPie - 现代化高颜值 Windows 鼠标轮盘笔势与效率管理系统</Description>
-    <Version>2.0.1-beta.1</Version>
+    <Version>2.0.1-beta.2</Version>
     <AssemblyVersion>2.0.1.0</AssemblyVersion>
     <FileVersion>2.0.1.0</FileVersion>
     <ServerGarbageCollection>false</ServerGarbageCollection>

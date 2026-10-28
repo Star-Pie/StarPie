@@ -12,7 +12,7 @@
 ; 兜底版本号：正常由 build-installer.ps1 以 /DMyAppVersion=... 覆盖（脚本从 csproj 读 <Version>）。
 ; 直接编译本文件（或 ISCC 未传参）时会用到下面这两个值，所以每次发版也要一起改。
 #ifndef MyAppVersion
-  #define MyAppVersion "2.0.1-beta.1"
+  #define MyAppVersion "2.0.1-beta.2"
 #endif
 
 #ifndef SourceDir
