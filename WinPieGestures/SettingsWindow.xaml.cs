@@ -960,6 +960,10 @@ public partial class SettingsWindow : Window
 		{
 			LongPressTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressTrigger;
 		}
+		if (LongPressOnlyTriggerCheckBox != null)
+		{
+			LongPressOnlyTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressOnlyTrigger;
+		}
 		if (LongPressDelaySlider != null)
 		{
 			LongPressDelaySlider.Value = ConfigManager.CurrentConfig.LongPressDelayMs > 0.0 ? ConfigManager.CurrentConfig.LongPressDelayMs : 450.0;
@@ -968,10 +972,7 @@ public partial class SettingsWindow : Window
 		{
 			LongPressDelayLabel.Text = $"{LongPressDelaySlider.Value:0} ms";
 		}
-		if (LongPressDelayPanel != null)
-		{
-			LongPressDelayPanel.Visibility = ConfigManager.CurrentConfig.LongPressTrigger ? Visibility.Visible : Visibility.Collapsed;
-		}
+		UpdateLongPressTriggerControls();
 		if (GestureEnabledCheckBox != null)
 		{
 			GestureEnabledCheckBox.IsChecked = ConfigManager.CurrentConfig.GestureEnabled;
@@ -1906,6 +1907,14 @@ public partial class SettingsWindow : Window
 		if (LongPressTriggerDescText != null)
 		{
 			LongPressTriggerDescText.Text = I18n.T("LongPressTriggerDesc");
+		}
+		if (LongPressOnlyTriggerTitleText != null)
+		{
+			LongPressOnlyTriggerTitleText.Text = I18n.T("LongPressOnlyTriggerTitle");
+		}
+		if (LongPressOnlyTriggerDescText != null)
+		{
+			LongPressOnlyTriggerDescText.Text = I18n.T("LongPressOnlyTriggerDesc");
 		}
 		if (GestureTitleText != null)
 		{
@@ -18815,18 +18824,44 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	private void UpdateLongPressTriggerControls()
+	{
+		bool longPressEnabled = ConfigManager.CurrentConfig.LongPressTrigger;
+		bool longPressOnly = longPressEnabled && ConfigManager.CurrentConfig.LongPressOnlyTrigger;
+		if (LongPressDelayPanel != null)
+		{
+			LongPressDelayPanel.Visibility = longPressEnabled ? Visibility.Visible : Visibility.Collapsed;
+		}
+		// 仅暂时禁用控件，不清除用户原有的手势启用状态、按键和映射。
+		if (GestureEnabledCheckBox != null)
+		{
+			GestureEnabledCheckBox.IsEnabled = !longPressOnly;
+		}
+		if (GestureSettingsDetailsPanel != null)
+		{
+			GestureSettingsDetailsPanel.IsEnabled = !longPressOnly;
+		}
+	}
+
 	private void LongPressTriggerCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (_isUpdatingUi || ConfigManager.CurrentConfig == null)
 		{
 			return;
 		}
-		bool enabled = LongPressTriggerCheckBox.IsChecked == true;
-		ConfigManager.CurrentConfig.LongPressTrigger = enabled;
-		if (LongPressDelayPanel != null)
+		ConfigManager.CurrentConfig.LongPressTrigger = LongPressTriggerCheckBox.IsChecked == true;
+		UpdateLongPressTriggerControls();
+		SyncUiToConfigAndSave();
+	}
+
+	private void LongPressOnlyTriggerCheckBox_Changed(object sender, RoutedEventArgs e)
+	{
+		if (_isUpdatingUi || _isUiInitializing || ConfigManager.CurrentConfig == null)
 		{
-			LongPressDelayPanel.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+			return;
 		}
+		ConfigManager.CurrentConfig.LongPressOnlyTrigger = LongPressOnlyTriggerCheckBox.IsChecked == true;
+		UpdateLongPressTriggerControls();
 		SyncUiToConfigAndSave();
 	}
 

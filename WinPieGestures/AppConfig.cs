@@ -32,8 +32,11 @@ public class AppConfig
 	/// <summary>多层轮盘自定义按键触发的虚拟键码（当 LayerSwitchTrigger 为 "CustomKey" 时生效，默认 9 为 VK_TAB）。</summary>
 	public uint LayerSwitchVkCode { get; set; } = 9;
 
-	/// <summary>可选：长按触发按键（如右键）不动达到长按阈值后呼出轮盘，与拖动呼出共存。</summary>
+	/// <summary>可选：按住触发键达到长按阈值后呼出轮盘，默认与拖动呼出共存。</summary>
 	public bool LongPressTrigger { get; set; }
+
+	/// <summary>仅在长按呼出启用时生效，禁用位移呼出与独立鼠标手势；保留当前光标处的长按呼出和插件呼出。</summary>
+	public bool LongPressOnlyTrigger { get; set; }
 
 	/// <summary>长按响应时长（毫秒）。</summary>
 	public double LongPressDelayMs { get; set; } = 450.0;

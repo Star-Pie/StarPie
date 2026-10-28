@@ -45,6 +45,9 @@ public class GestureController : IDisposable
 
 	private readonly object _longPressLock = new object();
 
+	private static bool IsLongPressOnlyTriggerEnabled =>
+		ConfigManager.CurrentConfig.LongPressTrigger && ConfigManager.CurrentConfig.LongPressOnlyTrigger;
+
 	private bool _mouseTriggerDown;
 
 	private volatile bool _disposed;
@@ -1129,7 +1132,9 @@ public class GestureController : IDisposable
 	/// </summary>
 	private void Hook_OnRawMouseButton(object? sender, RawMouseEventArgs e)
 	{
-		if (!ConfigManager.CurrentConfig.GestureEnabled)
+		bool gesturesEnabled = ConfigManager.CurrentConfig.GestureEnabled && !IsLongPressOnlyTriggerEnabled;
+		// 已接管的手势仍需接收抬起以收尾，但禁用期间不得开始新手势或执行映射动作。
+		if (!gesturesEnabled && !_gestureMode)
 		{
 			return;
 		}
@@ -1148,6 +1153,10 @@ public class GestureController : IDisposable
 		}
 		if (e.IsButtonDown)
 		{
+			if (!gesturesEnabled)
+			{
+				return;
+			}
 			// SendInput 重放回来的按下：放行（不重新开始手势）
 			if (_gestureReplayPending)
 			{
@@ -1173,7 +1182,7 @@ public class GestureController : IDisposable
 		string pattern = GetPreviewPattern();
 		if (hadPath)
 		{
-			if (pattern.Length > 0)
+			if (gesturesEnabled && pattern.Length > 0)
 			{
 				ActionItem? ga = FindGestureAction(pattern);
 				if (ga != null)
@@ -1535,7 +1544,7 @@ public class GestureController : IDisposable
 		}
 	}
 
-	/// <summary>长按达阈值：在按下处呼出轮盘（光标仍在中心，移动后再选择）。线程池回调 → 主线程 UI。</summary>
+	/// <summary>长按达阈值：鼠标默认在按下处呼出，键盘及仅长按模式在当前光标处呼出。线程池回调 → 主线程 UI。</summary>
 	private void LongPressTimerCallback(int generation)
 	{
 		lock (_longPressLock)
@@ -1561,6 +1570,10 @@ public class GestureController : IDisposable
 			{
 				_kbTriggerWaiting = false;
 				_currentWheelFocusSession = null;
+			}
+			if (isKbWaiting || IsLongPressOnlyTriggerEnabled)
+			{
+				// 仅长按模式以计时结束时的光标位置为中心，不沿用按下起点及等待期间的位移。
 				GetCursorPos(out var lpPoint);
 				_startPoint = new Point((double)lpPoint.x, (double)lpPoint.y);
 				_lastMovePoint = _startPoint;
@@ -2223,6 +2236,10 @@ public class GestureController : IDisposable
 		// 鼠标手势：采集轨迹
 		if (_gestureMode)
 		{
+			if (IsLongPressOnlyTriggerEnabled)
+			{
+				return;
+			}
 			if (_gestureWaiting)
 			{
 				double gScaleX = (_currentDpiScaleX > 0.0) ? _currentDpiScaleX : 1.0;
@@ -2246,6 +2263,11 @@ public class GestureController : IDisposable
 		}
 		if (_isWaitingForThreshold)
 		{
+			if (IsLongPressOnlyTriggerEnabled)
+			{
+				// 只限制呼出阶段，保留长按计时；轮盘激活后的滑动选择仍走原有路径。
+				return;
+			}
 			Point position = e.Position;
 			double scaleX = (_currentDpiScaleX > 0.0) ? _currentDpiScaleX : 1.0;
 			double scaleY = (_currentDpiScaleY > 0.0) ? _currentDpiScaleY : 1.0;

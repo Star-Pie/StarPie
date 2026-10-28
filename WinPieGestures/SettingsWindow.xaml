@@ -766,7 +766,7 @@
                       <CheckBox Name="LongPressTriggerCheckBox" Style="{StaticResource ToggleSwitchStyle}" Checked="LongPressTriggerCheckBox_Changed" Unchecked="LongPressTriggerCheckBox_Changed">
                         <StackPanel Margin="6,0,0,0">
                           <TextBlock Name="LongPressTriggerTitleText" Text="长按触发按键呼出面板 (可选)" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
-                          <TextBlock Name="LongPressTriggerDescText" Text="按住触发键不动超过设定时长即呼出轮盘；未达时长松手仍为普通按键。与按住拖动呼出共存。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                          <TextBlock Name="LongPressTriggerDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                       </CheckBox>
                       <StackPanel Name="LongPressDelayPanel" Margin="22,8,0,0">
@@ -778,6 +778,12 @@
                           <Slider Name="LongPressDelaySlider" Minimum="200" Maximum="1000" Value="450" TickFrequency="50" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="LongPressDelaySlider_ValueChanged" />
                           <TextBlock Name="LongPressDelayLabel" Grid.Column="1" Text="450 ms" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         </Grid>
+                        <CheckBox Name="LongPressOnlyTriggerCheckBox" Style="{StaticResource ToggleSwitchStyle}" Margin="0,12,0,0" Checked="LongPressOnlyTriggerCheckBox_Changed" Unchecked="LongPressOnlyTriggerCheckBox_Changed">
+                          <StackPanel Margin="6,0,0,0">
+                            <TextBlock Name="LongPressOnlyTriggerTitleText" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Name="LongPressOnlyTriggerDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                          </StackPanel>
+                        </CheckBox>
                       </StackPanel>
                     </StackPanel>
                   </Border>
