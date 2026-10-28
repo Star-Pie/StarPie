@@ -27,7 +27,7 @@ dotnet build .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Release --no-
 dotnet run --project .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Release --no-build -- --test-instance
 ```
 
-## 4. 测试用例矩阵 (18 场景)
+## 4. 测试用例矩阵 (22 场景)
 1. **Scenario 1**: 正常鼠标悬停触发与精确动作派发（B 窗口获得焦点，B 动作执行）。
 2. **Scenario 2**: 快速松手与 UI 排队竞态保护（松手过快时，动作执行前确认会话有效与目标一致）。
 3. **Scenario 3**: 激活失败安全回退（无法激活目标 B 时丢弃动作，绝不派发给旧前台 A）。
@@ -56,3 +56,14 @@ dotnet run --project .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Relea
   - **变异结果 (RED)**：Scenario 6d 立即报出断言失败：
     `Assertion failed: ProcessActionEnvelope must return false for old action enqueued before pause`。
   - **恢复后 (GREEN)**：18 项全部通过。证明暂停时旧待执行会话被永久失效，恢复后旧动作绝不复活，新合法动作正常执行。
+
+## 窗口进程识别一致性补充
+
+新增 Scenario 19–22，直接调用生产捕捉器的静态进程读取入口与运行时解析器，不构造捕捉窗口：
+
+- 校验 PID、标准化进程名、可执行路径及键盘前台读取的一致性。
+- 模拟空句柄、PID 缺失、映像路径不可读及查询异常，失败结果不得成为可绑定的占位进程。
+- 模拟 `wps.exe` / `et.exe` 两个组件窗口，校验捕捉绑定和运行时命中同一专属方案，不归并父进程。
+- 校验 150ms 缓存同时保留路径和进程名，失败缓存到期后恢复，重置接缝清除旧快照。
+
+这些断言不修改或验证真实 WPS 的窗口层级、取窗筛选及前台回退策略；相关流程保持现状，仍需实机验收。

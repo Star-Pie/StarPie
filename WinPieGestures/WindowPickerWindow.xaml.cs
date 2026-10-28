@@ -52,9 +52,6 @@ public partial class WindowPickerWindow : Window
 	private static extern int GetClassName(nint hWnd, StringBuilder lpClassName, int nMaxCount);
 
 	[DllImport("user32.dll")]
-	private static extern uint GetWindowThreadProcessId(nint hWnd, out uint lpdwProcessId);
-
-	[DllImport("user32.dll")]
 	private static extern nint WindowFromPoint(POINT Point);
 
 	[DllImport("user32.dll")]
@@ -65,24 +62,12 @@ public partial class WindowPickerWindow : Window
 	[return: MarshalAs(UnmanagedType.Bool)]
 	private static extern bool GetCursorPos(out POINT lpPoint);
 
-	[DllImport("kernel32.dll", SetLastError = true)]
-	private static extern nint OpenProcess(uint processAccess, bool bInheritHandle, uint processId);
-
-	[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-	private static extern bool QueryFullProcessImageName(nint hProcess, uint dwFlags, StringBuilder lpExeName, ref uint lpdwSize);
-
-	[DllImport("kernel32.dll", SetLastError = true)]
-	[return: MarshalAs(UnmanagedType.Bool)]
-	private static extern bool CloseHandle(nint hObject);
-
 	[StructLayout(LayoutKind.Sequential)]
 	public struct POINT
 	{
 		public int X;
 		public int Y;
 	}
-
-	private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
 
 	public WindowPickerMode Mode { get; set; } = WindowPickerMode.ExecutablePath;
 	public string SelectedPath { get; private set; } = "";
@@ -167,50 +152,21 @@ public partial class WindowPickerWindow : Window
 					return true;
 				}
 
-				GetWindowThreadProcessId(hWnd, out uint pid);
-				if (pid == 0 || pid == _ownProcessId)
-				{
-					return true; // 坚决过滤 StarPie 自身！
-				}
-
-				string fullPath = GetProcessPath(pid);
-				string procName = Path.GetFileName(fullPath);
-				if (string.IsNullOrEmpty(procName))
-				{
-					try
-					{
-						using Process p = Process.GetProcessById((int)pid);
-						procName = p.ProcessName + ".exe";
-					}
-					catch
-					{
-						procName = "app.exe";
-					}
-				}
-
-				string cleanName = procName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-					? procName.Substring(0, procName.Length - 4)
-					: procName;
-
-				// 再次防护 StarPie 自身
-				if (cleanName.Equals("starpie", StringComparison.OrdinalIgnoreCase) ||
-					cleanName.Equals("winpiegestures", StringComparison.OrdinalIgnoreCase))
+				RunningWindowInfo? winInfo = ReadWindowProcessInfo(hWnd);
+				if (winInfo == null || winInfo.ProcessId == _ownProcessId)
 				{
 					return true;
 				}
 
-				ImageSource? icon = ExtractWindowOrFileIcon(hWnd, fullPath);
-
-				RunningWindowInfo winInfo = new RunningWindowInfo
+				// 再次防护 StarPie 自身
+				if (winInfo.CleanProcessName.Equals("starpie", StringComparison.OrdinalIgnoreCase) ||
+					winInfo.CleanProcessName.Equals("winpiegestures", StringComparison.OrdinalIgnoreCase))
 				{
-					Hwnd = hWnd,
-					ProcessId = pid,
-					WindowTitle = title,
-					ProcessName = procName,
-					CleanProcessName = cleanName,
-					ExecutablePath = fullPath,
-					IconSource = icon
-				};
+					return true;
+				}
+
+				winInfo.WindowTitle = title;
+				winInfo.IconSource = ExtractWindowOrFileIcon(hWnd, winInfo.ExecutablePath);
 
 				_allWindows.Add(winInfo);
 			}
@@ -223,36 +179,26 @@ public partial class WindowPickerWindow : Window
 		StatusTextBlock.Text = $"✅ 已探测到 {_allWindows.Count} 个活跃桌面窗口（已安全排除 StarPie 自身）";
 	}
 
-	private string GetProcessPath(uint processId)
+	internal static RunningWindowInfo? ReadWindowProcessInfo(nint hwnd)
 	{
-		try
+		ActiveWindowHelper.GetWindowProcessInfo(hwnd, out uint processId, out string processName, out string executablePath);
+		// 读取失败不能伪造成可绑定的进程，否则捕捉成功后仍无法在运行时匹配。
+		if (processId == 0 || string.IsNullOrEmpty(processName) ||
+			processName.Equals("unknown.exe", StringComparison.OrdinalIgnoreCase))
 		{
-			using Process p = Process.GetProcessById((int)processId);
-			if (p.MainModule?.FileName is string mainPath && !string.IsNullOrEmpty(mainPath))
-			{
-				return mainPath;
-			}
+			return null;
 		}
-		catch { }
 
-		nint hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
-		if (hProcess != IntPtr.Zero)
+		return new RunningWindowInfo
 		{
-			try
-			{
-				uint size = 1024;
-				StringBuilder sb = new StringBuilder((int)size);
-				if (QueryFullProcessImageName(hProcess, 0, sb, ref size))
-				{
-					return sb.ToString();
-				}
-			}
-			finally
-			{
-				CloseHandle(hProcess);
-			}
-		}
-		return "";
+			Hwnd = hwnd,
+			ProcessId = processId,
+			ProcessName = processName,
+			CleanProcessName = processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+				? processName.Substring(0, processName.Length - 4)
+				: processName,
+			ExecutablePath = executablePath
+		};
 	}
 
 	private ImageSource? ExtractWindowOrFileIcon(nint hwnd, string filePath)
@@ -365,25 +311,13 @@ public partial class WindowPickerWindow : Window
 			nint thisHwnd = new WindowInteropHelper(this).Handle;
 			if (targetHwnd != IntPtr.Zero && targetHwnd != thisHwnd)
 			{
-				GetWindowThreadProcessId(targetHwnd, out uint pid);
-				if (pid != 0 && pid != _ownProcessId)
+				RunningWindowInfo? winInfo = ReadWindowProcessInfo(targetHwnd);
+				if (winInfo != null && winInfo.ProcessId != _ownProcessId)
 				{
 					StringBuilder sb = new StringBuilder(256);
 					GetWindowText(targetHwnd, sb, 256);
 					string title = sb.ToString().Trim();
-					string fullPath = GetProcessPath(pid);
-					string procName = Path.GetFileName(fullPath);
-					if (string.IsNullOrEmpty(procName))
-					{
-						try
-						{
-							using Process p = Process.GetProcessById((int)pid);
-							procName = p.ProcessName + ".exe";
-						}
-						catch { procName = "app.exe"; }
-					}
-
-					CrosshairStatusText.Text = $"🎯 当前瞄准: {(string.IsNullOrEmpty(title) ? procName : title)} ({procName})";
+					CrosshairStatusText.Text = $"🎯 当前瞄准: {(string.IsNullOrEmpty(title) ? winInfo.ProcessName : title)} ({winInfo.ProcessName})";
 				}
 			}
 		}
@@ -404,33 +338,17 @@ public partial class WindowPickerWindow : Window
 			nint thisHwnd = new WindowInteropHelper(this).Handle;
 			if (targetHwnd != IntPtr.Zero && targetHwnd != thisHwnd)
 			{
-				GetWindowThreadProcessId(targetHwnd, out uint pid);
-				if (pid != 0 && pid != _ownProcessId)
+				RunningWindowInfo? winInfo = ReadWindowProcessInfo(targetHwnd);
+				if (winInfo != null && winInfo.ProcessId != _ownProcessId)
 				{
 					StringBuilder sb = new StringBuilder(256);
 					GetWindowText(targetHwnd, sb, 256);
 					string title = sb.ToString().Trim();
-					string fullPath = GetProcessPath(pid);
-					string procName = Path.GetFileName(fullPath);
-					if (string.IsNullOrEmpty(procName))
+					if (!winInfo.CleanProcessName.Equals("starpie", StringComparison.OrdinalIgnoreCase) &&
+						!winInfo.CleanProcessName.Equals("winpiegestures", StringComparison.OrdinalIgnoreCase))
 					{
-						try
-						{
-							using Process p = Process.GetProcessById((int)pid);
-							procName = p.ProcessName + ".exe";
-						}
-						catch { procName = "app.exe"; }
-					}
-
-					string cleanName = procName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-						? procName.Substring(0, procName.Length - 4)
-						: procName;
-
-					if (!cleanName.Equals("starpie", StringComparison.OrdinalIgnoreCase) &&
-						!cleanName.Equals("winpiegestures", StringComparison.OrdinalIgnoreCase))
-					{
-						SelectedPath = fullPath;
-						SelectedProcessName = cleanName;
+						SelectedPath = winInfo.ExecutablePath;
+						SelectedProcessName = winInfo.CleanProcessName;
 						SelectedTitle = title;
 						DialogResult = true;
 						Close();

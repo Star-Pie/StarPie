@@ -28,6 +28,7 @@ public static class ActiveWindowHelper
 	private static nint _cachedWindow = IntPtr.Zero;
 	private static uint _cachedProcessId = 0;
 	private static string _cachedProcessName = "unknown.exe";
+	private static string _cachedExecutablePath = "";
 	private static long _cachedTick = 0;
 	private static readonly object _cacheLock = new object();
 
@@ -67,6 +68,7 @@ public static class ActiveWindowHelper
 
 	internal static Func<nint, uint>? RealPidGetterOverride { get; set; }
 	internal static Func<nint, string>? ProcessNameGetterOverride { get; set; }
+	internal static Func<nint, (uint ProcessId, string ExecutablePath)>? WindowProcessReaderOverride { get; set; }
 
 	/// <summary>
 	/// 读取指定窗口当前实时的进程 ID（直接调用 Win32，绕过 150ms 缓存）。
@@ -106,8 +108,17 @@ public static class ActiveWindowHelper
 	/// </summary>
 	public static void GetWindowProcessInfo(nint window, out uint processId, out string processName)
 	{
+		GetWindowProcessInfo(window, out processId, out processName, out _);
+	}
+
+	/// <summary>
+	/// 捕捉器与运行时共用同一份窗口进程快照；路径只来自该窗口所属 PID，不追溯父进程。
+	/// </summary>
+	internal static void GetWindowProcessInfo(nint window, out uint processId, out string processName, out string executablePath)
+	{
 		processId = 0;
 		processName = "unknown.exe";
+		executablePath = "";
 		if (window == IntPtr.Zero)
 		{
 			return;
@@ -129,61 +140,29 @@ public static class ActiveWindowHelper
 				{
 					processId = _cachedProcessId;
 					processName = _cachedProcessName;
+					executablePath = _cachedExecutablePath;
 					return;
 				}
 			}
 
-			GetWindowThreadProcessId(window, out var lpdwProcessId);
-			if (lpdwProcessId == 0)
+			(processId, executablePath) = WindowProcessReaderOverride != null
+				? WindowProcessReaderOverride(window)
+				: ReadWindowProcess(window);
+			if (processId != 0 && !string.IsNullOrEmpty(executablePath))
 			{
-				lock (_cacheLock)
+				string fileName = Path.GetFileName(executablePath);
+				if (!string.IsNullOrEmpty(fileName))
 				{
-					_cachedWindow = window;
-					_cachedProcessId = 0;
-					_cachedProcessName = "unknown.exe";
-					_cachedTick = now;
-				}
-				return;
-			}
-
-			processId = lpdwProcessId;
-			nint hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, lpdwProcessId);
-			if (hProcess != IntPtr.Zero)
-			{
-				try
-				{
-					uint size = 1024;
-					StringBuilder sb = new StringBuilder((int)size);
-					if (QueryFullProcessImageName(hProcess, 0, sb, ref size))
-					{
-						string fullPath = sb.ToString();
-						string fileName = Path.GetFileName(fullPath);
-						if (!string.IsNullOrEmpty(fileName))
-						{
-							string procName = fileName.ToLowerInvariant();
-							lock (_cacheLock)
-							{
-								_cachedWindow = window;
-								_cachedProcessId = lpdwProcessId;
-								_cachedProcessName = procName;
-								_cachedTick = now;
-							}
-							processName = procName;
-							return;
-						}
-					}
-				}
-				finally
-				{
-					CloseHandle(hProcess);
+					processName = fileName.ToLowerInvariant();
 				}
 			}
 
 			lock (_cacheLock)
 			{
 				_cachedWindow = window;
-				_cachedProcessId = lpdwProcessId;
-				_cachedProcessName = "unknown.exe";
+				_cachedProcessId = processId;
+				_cachedProcessName = processName;
+				_cachedExecutablePath = executablePath;
 				_cachedTick = now;
 			}
 		}
@@ -191,7 +170,36 @@ public static class ActiveWindowHelper
 		{
 			processId = 0;
 			processName = "unknown.exe";
+			executablePath = "";
 		}
+	}
+
+	private static (uint ProcessId, string ExecutablePath) ReadWindowProcess(nint window)
+	{
+		GetWindowThreadProcessId(window, out uint processId);
+		if (processId == 0)
+		{
+			return (0, "");
+		}
+
+		nint hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
+		if (hProcess != IntPtr.Zero)
+		{
+			try
+			{
+				uint size = 1024;
+				StringBuilder sb = new StringBuilder((int)size);
+				if (QueryFullProcessImageName(hProcess, 0, sb, ref size))
+				{
+					return (processId, sb.ToString());
+				}
+			}
+			finally
+			{
+				CloseHandle(hProcess);
+			}
+		}
+		return (processId, "");
 	}
 
 	internal static void ResetTestSeams()
@@ -199,5 +207,14 @@ public static class ActiveWindowHelper
 		ForegroundHwndGetterOverride = null;
 		RealPidGetterOverride = null;
 		ProcessNameGetterOverride = null;
+		WindowProcessReaderOverride = null;
+		lock (_cacheLock)
+		{
+			_cachedWindow = IntPtr.Zero;
+			_cachedProcessId = 0;
+			_cachedProcessName = "unknown.exe";
+			_cachedExecutablePath = "";
+			_cachedTick = 0;
+		}
 	}
 }

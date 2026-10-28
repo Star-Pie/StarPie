@@ -86,6 +86,10 @@ internal static class Program
 		RunTest("Scenario 16: Controlled mock Shell surface fallback", TestShellSurfaceControlledMock);
 		RunTest("Scenario 17: Conservative activation safety (no Alt / no Topmost tampering)", TestConservativeActivationSafety);
 		RunTest("Scenario 18: ReleaseStuckModifiers test seam coverage", TestReleaseStuckModifiersSeamCoverage);
+		RunTest("Scenario 19: Picker and runtime share process identity and path", TestSharedWindowProcessIdentity);
+		RunTest("Scenario 20: Failed process reads cannot become picker bindings", TestSharedWindowProcessFailures);
+		RunTest("Scenario 21: Component processes retain independent bindings", TestIndependentComponentProcessBindings);
+		RunTest("Scenario 22: Cached identity retains path and failure consistency", TestWindowProcessSnapshotCache);
 
 		Console.WriteLine("===============================================================");
 		Console.WriteLine($"  Results: {_passedCount} passed, {_failedCount} failed, total {_passedCount + _failedCount}");
@@ -123,8 +127,7 @@ internal static class Program
 	private static void ResetAllTestState()
 	{
 		WheelFocusSwitcher.ResetTestSeams();
-		ActiveWindowHelper.RealPidGetterOverride = null;
-		ActiveWindowHelper.ProcessNameGetterOverride = null;
+		ActiveWindowHelper.ResetTestSeams();
 		lock (_executedActions)
 		{
 			_executedActions.Clear();
@@ -870,6 +873,105 @@ internal static class Program
 		int after = _releaseStuckModifiersCallCount;
 
 		Assert(after > before, "CancelGestureTracking must invoke ReleaseStuckModifiers test seam!");
+	}
+
+	private static void TestSharedWindowProcessIdentity()
+	{
+		nint hwnd = 0x5010;
+		const string path = @"C:\Program Files\WPS Office\WPS.EXE";
+		ActiveWindowHelper.WindowProcessReaderOverride = h =>
+		{
+			Assert(h == hwnd, "Identity resolution must use the supplied window, not a parent process");
+			return (19676u, path);
+		};
+		ActiveWindowHelper.GetWindowProcessInfo(hwnd, out uint pid, out string name);
+		var picked = WindowPickerWindow.ReadWindowProcessInfo(hwnd)
+			?? throw new InvalidOperationException("A known process must be available to the picker without constructing a Window");
+		Assert(pid == 19676 && picked.ProcessId == pid, "Picker and runtime must retain the same PID");
+		Assert(name == "wps.exe" && picked.ProcessName == name, "Both callers must normalize the same executable name");
+		Assert(picked.CleanProcessName == "wps", "Picker binding must retain the existing extension-free format");
+		Assert(picked.ExecutablePath == path && picked.Hwnd == hwnd, "Picker must retain the executable path and exact target window");
+		ActiveWindowHelper.ForegroundHwndGetterOverride = () => hwnd;
+		Assert(ActiveWindowHelper.GetActiveWindowInfo(out var foreground) == name && foreground == hwnd,
+			"Keyboard foreground lookup must use the same process identity");
+
+		ActiveWindowHelper.RealPidGetterOverride = _ => 900u;
+		ActiveWindowHelper.ProcessNameGetterOverride = _ => "legacy.exe";
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => throw new InvalidOperationException("Legacy seams must not query native metadata");
+		ActiveWindowHelper.GetWindowProcessInfo(hwnd, out uint legacyPid, out string legacyName);
+		Assert(legacyPid == 900 && legacyName == "legacy.exe", "Existing process-name and PID test seams must remain compatible");
+	}
+
+	private static void TestSharedWindowProcessFailures()
+	{
+		int reads = 0;
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => { reads++; return (19676u, ""); };
+		ActiveWindowHelper.GetWindowProcessInfo(IntPtr.Zero, out uint zeroPid, out string zeroName, out string zeroPath);
+		Assert(zeroPid == 0 && zeroName == "unknown.exe" && zeroPath == "" && reads == 0,
+			"Null windows must short-circuit without reading any process");
+		Assert(WindowPickerWindow.ReadWindowProcessInfo(IntPtr.Zero) == null, "Null windows must not produce a picker row");
+
+		ActiveWindowHelper.GetWindowProcessInfo(0x5020, out uint pid, out string name, out string path);
+		Assert(pid == 19676 && name == "unknown.exe" && path == "", "An unreadable image retains its PID but has no fabricated identity");
+		Assert(WindowPickerWindow.ReadWindowProcessInfo(0x5020) == null,
+			"Image-query failure must not become an app.exe or unknown.exe binding");
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => (0u, "");
+		Assert(WindowPickerWindow.ReadWindowProcessInfo(0x5021) == null, "A missing PID must not become a picker selection");
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => throw new InvalidOperationException("Simulated query failure");
+		ActiveWindowHelper.GetWindowProcessInfo(0x5022, out pid, out name, out path);
+		Assert(pid == 0 && name == "unknown.exe" && path == "", "Query exceptions must fail closed without retaining another window's path");
+		Assert(WindowPickerWindow.ReadWindowProcessInfo(0x5022) == null, "Query exceptions must also fail closed in the picker");
+	}
+
+	private static void TestIndependentComponentProcessBindings()
+	{
+		var writer = CreateDummyProfile("writer");
+		writer.BoundProcesses = "WPS.EXE";
+		var sheets = CreateDummyProfile("sheets");
+		sheets.BoundProcesses = "et";
+		var global = CreateDummyProfile("Global");
+		ConfigManager.CurrentConfig.Profiles = new List<WheelProfile> { global, writer, sheets };
+		ActiveWindowHelper.WindowProcessReaderOverride = h => h == (nint)0x5030
+			? (19676u, @"C:\WPS\wps.exe")
+			: h == (nint)0x5031 ? (3856u, @"C:\WPS\et.exe")
+			: throw new InvalidOperationException("Unexpected host or parent window lookup");
+		foreach (var (hwnd, expected) in new[] { ((nint)0x5030, writer), ((nint)0x5031, sheets) })
+		{
+			var picked = WindowPickerWindow.ReadWindowProcessInfo(hwnd);
+			Assert(picked != null, "Each component's supplied window must remain individually identifiable");
+			ActiveWindowHelper.GetWindowProcessInfo(hwnd, out _, out string processName);
+			Assert(ReferenceEquals(ConfigManager.GetProfileForProcess(picked!.CleanProcessName), expected),
+				"Picker binding must match the component-specific profile");
+			Assert(ReferenceEquals(ConfigManager.GetProfileForProcess(processName), expected),
+				"Runtime must match the same profile without grouping under wpsoffice.exe");
+		}
+	}
+
+	private static void TestWindowProcessSnapshotCache()
+	{
+		int reads = 0;
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => { reads++; return (610u, @"C:\WPS\WPS.EXE"); };
+		ActiveWindowHelper.GetWindowProcessInfo(0x5040, out _, out _);
+		ActiveWindowHelper.GetWindowProcessInfo(0x5040, out uint pid, out string name, out string path);
+		Assert(reads == 1 && pid == 610 && name == "wps.exe" && path == @"C:\WPS\WPS.EXE",
+			"A runtime-warmed cache must retain the executable path for the picker");
+		var picked = WindowPickerWindow.ReadWindowProcessInfo(0x5040);
+		Assert(picked?.ExecutablePath == path && reads == 1, "Picker must consume the same cached snapshot");
+
+		ActiveWindowHelper.ResetTestSeams();
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => (620u, "");
+		ActiveWindowHelper.GetWindowProcessInfo(0x5041, out _, out _);
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => (620u, @"C:\WPS\et.exe");
+		Assert(WindowPickerWindow.ReadWindowProcessInfo(0x5041) == null,
+			"Picker must not independently override a cached runtime failure");
+		Thread.Sleep(170);
+		picked = WindowPickerWindow.ReadWindowProcessInfo(0x5041);
+		Assert(picked?.ProcessName == "et.exe" && picked.ExecutablePath == @"C:\WPS\et.exe",
+			"An expired failure must recover through the shared resolver");
+		ActiveWindowHelper.ResetTestSeams();
+		ActiveWindowHelper.WindowProcessReaderOverride = _ => (630u, @"C:\WPS\wps.exe");
+		ActiveWindowHelper.GetWindowProcessInfo(0x5041, out pid, out name, out path);
+		Assert(pid == 630 && name == "wps.exe", "Reset must invalidate both cached failures and cached paths");
 	}
 
 	private static void Assert(bool condition, string message)
