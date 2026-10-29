@@ -453,7 +453,7 @@ public class MouseHook
 					return 1; // 手势等已接管该按键：拦截原生事件
 				}
 
-				string activeProc = targetAtPoint.ProcessName;
+				string activeProc = targetAtPoint.MatchingProcessName;
 				var triggerConfig = GestureController.GetEffectiveTriggerForProcess(activeProc);
 				bool isMouseTrigger = triggerConfig == null || string.Equals(triggerConfig.TriggerType, "Mouse", StringComparison.OrdinalIgnoreCase);
 				if (isMouseTrigger || !string.IsNullOrEmpty(_activeMouseTriggerButton))

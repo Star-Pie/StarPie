@@ -787,6 +787,14 @@
                       </StackPanel>
                     </StackPanel>
                   </Border>
+                  <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
+                    <CheckBox Name="ComponentIdentificationCheckBox" Style="{StaticResource ToggleSwitchStyle}" Checked="ComponentIdentificationCheckBox_Changed" Unchecked="ComponentIdentificationCheckBox_Changed">
+                      <StackPanel Margin="6,0,0,0">
+                        <TextBlock Name="ComponentIdentificationTitleText" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Name="ComponentIdentificationDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </CheckBox>
+                  </Border>
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="20" Margin="0,0,0,14">

@@ -179,6 +179,13 @@ public partial class WindowPickerWindow : Window
 		StatusTextBlock.Text = $"✅ 已探测到 {_allWindows.Count} 个活跃桌面窗口（已安全排除 StarPie 自身）";
 	}
 
+	internal static RunningWindowInfo? ReadCapturedWindowInfo(nint hit, nint root)
+	{
+		WindowProcessIdentity identity = WindowIdentification.Resolve(hit, root,
+			ConfigManager.CurrentConfig.EnableComponentIdentification);
+		return ReadWindowProcessInfo(identity.Hwnd);
+	}
+
 	internal static RunningWindowInfo? ReadWindowProcessInfo(nint hwnd)
 	{
 		ActiveWindowHelper.GetWindowProcessInfo(hwnd, out uint processId, out string processName, out string executablePath);
@@ -305,13 +312,13 @@ public partial class WindowPickerWindow : Window
 		if (_isDraggingCrosshair)
 		{
 			GetCursorPos(out POINT pt);
-			nint targetHwnd = WindowFromPoint(pt);
-			targetHwnd = GetAncestor(targetHwnd, GA_ROOT);
+			nint hitHwnd = WindowFromPoint(pt);
+			nint targetHwnd = GetAncestor(hitHwnd, GA_ROOT);
 
 			nint thisHwnd = new WindowInteropHelper(this).Handle;
 			if (targetHwnd != IntPtr.Zero && targetHwnd != thisHwnd)
 			{
-				RunningWindowInfo? winInfo = ReadWindowProcessInfo(targetHwnd);
+				RunningWindowInfo? winInfo = ReadCapturedWindowInfo(hitHwnd, targetHwnd);
 				if (winInfo != null && winInfo.ProcessId != _ownProcessId)
 				{
 					StringBuilder sb = new StringBuilder(256);
@@ -332,13 +339,13 @@ public partial class WindowPickerWindow : Window
 			this.Opacity = 1.0;
 
 			GetCursorPos(out POINT pt);
-			nint targetHwnd = WindowFromPoint(pt);
-			targetHwnd = GetAncestor(targetHwnd, GA_ROOT);
+			nint hitHwnd = WindowFromPoint(pt);
+			nint targetHwnd = GetAncestor(hitHwnd, GA_ROOT);
 
 			nint thisHwnd = new WindowInteropHelper(this).Handle;
 			if (targetHwnd != IntPtr.Zero && targetHwnd != thisHwnd)
 			{
-				RunningWindowInfo? winInfo = ReadWindowProcessInfo(targetHwnd);
+				RunningWindowInfo? winInfo = ReadCapturedWindowInfo(hitHwnd, targetHwnd);
 				if (winInfo != null && winInfo.ProcessId != _ownProcessId)
 				{
 					StringBuilder sb = new StringBuilder(256);
@@ -350,6 +357,8 @@ public partial class WindowPickerWindow : Window
 						SelectedPath = winInfo.ExecutablePath;
 						SelectedProcessName = winInfo.CleanProcessName;
 						SelectedTitle = title;
+						WindowCaptureDiagnostics.Record(pt.X, pt.Y, hitHwnd, targetHwnd,
+							"selected", SelectedProcessName, SelectedPath, winInfo.ProcessId);
 						DialogResult = true;
 						Close();
 						return;
@@ -357,6 +366,7 @@ public partial class WindowPickerWindow : Window
 				}
 			}
 
+			WindowCaptureDiagnostics.Record(pt.X, pt.Y, hitHwnd, targetHwnd, "not-selected");
 			CrosshairStatusText.Text = "未命中有效外部窗口，请重试或在下方列表直接点选。";
 			CrosshairStatusText.Foreground = (Brush)FindResource("TextSecondaryBrush");
 		}

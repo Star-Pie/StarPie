@@ -930,6 +930,10 @@ public partial class SettingsWindow : Window
 
 		ThresholdSlider.Value = ConfigManager.CurrentConfig.DragThreshold;
 		ThresholdValueLabel.Text = $"{ConfigManager.CurrentConfig.DragThreshold:0} px";
+		if (ComponentIdentificationCheckBox != null)
+		{
+			ComponentIdentificationCheckBox.IsChecked = ConfigManager.CurrentConfig.EnableComponentIdentification;
+		}
 		if (MouseReleaseDebounceCheckBox != null)
 		{
 			MouseReleaseDebounceCheckBox.IsChecked = ConfigManager.CurrentConfig.EnableMouseReleaseDebounce;
@@ -1944,6 +1948,8 @@ public partial class SettingsWindow : Window
 		{
 			GestureSensitivityTitleText.Text = I18n.T("GestureSensitivityTitle");
 		}
+		if (ComponentIdentificationTitleText != null) ComponentIdentificationTitleText.Text = I18n.T("ComponentIdentificationTitle");
+		if (ComponentIdentificationDescText != null) ComponentIdentificationDescText.Text = I18n.T("ComponentIdentificationDesc");
 		if (MouseReleaseDebounceTitleText != null)
 		{
 			MouseReleaseDebounceTitleText.Text = I18n.T("MouseReleaseDebounceTitle");
@@ -3965,6 +3971,10 @@ public partial class SettingsWindow : Window
 			if (ThresholdSlider != null)
 			{
 				ConfigManager.CurrentConfig.DragThreshold = ThresholdSlider.Value;
+			}
+			if (ComponentIdentificationCheckBox != null)
+			{
+				ConfigManager.CurrentConfig.EnableComponentIdentification = ComponentIdentificationCheckBox.IsChecked == true;
 			}
 			if (MouseReleaseDebounceCheckBox != null)
 			{
@@ -11179,6 +11189,14 @@ public partial class SettingsWindow : Window
 		ScheduleAutoSave();
 	}
 
+	private void ComponentIdentificationCheckBox_Changed(object sender, RoutedEventArgs e)
+	{
+		if (_isUpdatingUi || ConfigManager.CurrentConfig == null) return;
+		bool enabled = ComponentIdentificationCheckBox?.IsChecked == true;
+		if (ConfigManager.CurrentConfig.EnableComponentIdentification == enabled) return;
+		ConfigManager.CurrentConfig.EnableComponentIdentification = enabled;
+		ScheduleAutoSave();
+	}
 	private void MouseReleaseDebounceCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		bool enabled = MouseReleaseDebounceCheckBox?.IsChecked == true;

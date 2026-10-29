@@ -17,15 +17,28 @@ public sealed class TargetWindowInfo
 	public uint ProcessId { get; }
 	public string ProcessName { get; }
 	public bool IsEligibleBackgroundTarget { get; }
+	internal WindowProcessIdentity MatchingIdentity { get; }
+	public string MatchingProcessName => MatchingIdentity.ProcessName;
 
 	public TargetWindowInfo(nint hwnd, uint processId, string? processName, bool isEligibleBackgroundTarget)
+		: this(hwnd, processId, processName, isEligibleBackgroundTarget, null) { }
+
+	internal TargetWindowInfo(nint hwnd, uint processId, string? processName, bool isEligibleBackgroundTarget,
+		WindowProcessIdentity? matchingIdentity)
 	{
 		Hwnd = hwnd;
 		ProcessId = processId;
 		ProcessName = string.IsNullOrWhiteSpace(processName) ? "unknown.exe" : processName.Trim().ToLowerInvariant();
 		IsEligibleBackgroundTarget = isEligibleBackgroundTarget;
+		MatchingIdentity = matchingIdentity is { IsKnown: true } identity
+			? identity : new WindowProcessIdentity(Hwnd, ProcessId, ProcessName, string.Empty);
 	}
 
+	internal ActionExecutionContext CreateExecutionContext(Func<bool> sessionValid, Action? onConsumed = null)
+	{
+		return new ActionExecutionContext(Hwnd, ProcessId, ProcessName,
+			() => sessionValid() && WheelFocusSwitcher.IsTargetValid(this), onConsumed);
+	}
 	public static TargetWindowInfo None => new TargetWindowInfo(IntPtr.Zero, 0, "unknown.exe", false);
 }
 
@@ -274,25 +287,20 @@ public static class WheelFocusSwitcher
 				Y = (int)Math.Round(physicalPoint.Y)
 			};
 
-			nint targetHwnd = ResolveTargetWindow(pt);
+			nint targetHwnd = ResolveTargetWindow(pt, out nint hitHwnd);
 			nint currentFg = GetForegroundWindowSafe();
-
-			if (targetHwnd != IntPtr.Zero && targetHwnd != currentFg)
+			if (targetHwnd != IntPtr.Zero)
 			{
-				ActiveWindowHelper.GetWindowProcessInfo(targetHwnd, out uint pid, out string proc);
-				if (!string.Equals(proc, "unknown.exe", StringComparison.OrdinalIgnoreCase))
-				{
-					return new TargetWindowInfo(targetHwnd, pid, proc, isEligibleBackgroundTarget: true);
-				}
+				TargetWindowInfo? target = CreateTargetSnapshot(hitHwnd, targetHwnd, targetHwnd != currentFg);
+				if (target != null) return target;
 			}
 
-			// 回退到前台窗口
+			// 桌面/任务栏/无效命中仍回退前台，不能借用被拒绝窗口的组件身份。
 			if (currentFg != IntPtr.Zero)
 			{
 				ActiveWindowHelper.GetWindowProcessInfo(currentFg, out uint fgPid, out string fgProc);
 				return new TargetWindowInfo(currentFg, fgPid, fgProc, isEligibleBackgroundTarget: false);
 			}
-
 			return TargetWindowInfo.None;
 		}
 		catch (Exception ex)
@@ -302,6 +310,22 @@ public static class WheelFocusSwitcher
 		}
 	}
 
+	internal static TargetWindowInfo? CreateForegroundTargetSnapshot()
+	{
+		nint root = ActiveWindowHelper.GetForegroundHwnd();
+		WindowProcessIdentity rootIdentity = WindowIdentification.Read(root);
+		if (!rootIdentity.IsKnown) return null;
+		return new TargetWindowInfo(root, rootIdentity.ProcessId, rootIdentity.ProcessName, false,
+			WindowIdentification.ResolveForeground(root));
+	}
+	internal static TargetWindowInfo? CreateTargetSnapshot(nint hit, nint root, bool backgroundTarget)
+	{
+		WindowProcessIdentity rootIdentity = WindowIdentification.Read(root);
+		if (!rootIdentity.IsKnown) return null;
+		WindowProcessIdentity matching = WindowIdentification.Resolve(hit, root,
+			ConfigManager.CurrentConfig.EnableComponentIdentification);
+		return new TargetWindowInfo(root, rootIdentity.ProcessId, rootIdentity.ProcessName, backgroundTarget, matching);
+	}
 	/// <summary>
 	/// 尝试对齐前台焦点至会话指定的目标窗口。
 	/// 采用保守激活：不注入 Alt，不切换 Topmost 状态。
@@ -387,6 +411,14 @@ public static class WheelFocusSwitcher
 				return false;
 			}
 
+			WindowProcessIdentity matching = target.MatchingIdentity;
+			if (matching.Hwnd != target.Hwnd &&
+				(!IsWindow(matching.Hwnd) || WindowIdentification.GetRootWindow(matching.Hwnd) != target.Hwnd ||
+				 ActiveWindowHelper.GetWindowRealProcessId(matching.Hwnd) != matching.ProcessId ||
+				 !string.Equals(ActiveWindowHelper.GetProcessNameForWindow(matching.Hwnd), matching.ProcessName, StringComparison.OrdinalIgnoreCase)))
+			{
+				return false;
+			}
 			return true;
 		}
 		catch
@@ -398,15 +430,17 @@ public static class WheelFocusSwitcher
 	/// <summary>
 	/// 解析呼出点下应当接管前台的顶层窗口；没有合适目标时返回 <see cref="IntPtr.Zero"/>。
 	/// </summary>
-	private static nint ResolveTargetWindow(POINT pt)
+	private static nint ResolveTargetWindow(POINT pt, out nint hitHwnd)
 	{
 		nint hit = WindowFromPoint(pt);
-		nint hitRoot = (hit != IntPtr.Zero) ? GetAncestor(hit, GA_ROOT) : IntPtr.Zero;
+		hitHwnd = hit;
+		nint hitRoot = WindowIdentification.GetRootWindow(hit);
 		if (IsEligibleTarget(hitRoot, pt))
 		{
 			return hitRoot;
 		}
 
+		hitHwnd = IntPtr.Zero; // 原命中已被拒绝，覆盖层身份不得泄漏到下层目标。
 		if (ShouldSearchBelow(hitRoot))
 		{
 			int steps = 0;

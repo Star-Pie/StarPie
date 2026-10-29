@@ -59,6 +59,12 @@ public static class ActiveWindowHelper
 		return GetActiveWindowInfo(out _);
 	}
 
+	public static string GetMatchingActiveWindowProcessName()
+	{
+		if (!ConfigManager.CurrentConfig.EnableComponentIdentification) return GetActiveWindowProcessName();
+		return WindowIdentification.ResolveForeground(GetForegroundHwnd()).ProcessName;
+	}
+
 	public static string GetActiveWindowInfo(out nint foregroundWindow)
 	{
 		foregroundWindow = GetForegroundHwnd();

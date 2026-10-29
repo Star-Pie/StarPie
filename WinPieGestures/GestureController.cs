@@ -78,6 +78,7 @@ public class GestureController : IDisposable
 	// 触发键 KeyDown/KeyUp 一律原生放行，仅用持握时长+拖动阈值唤出轮盘。
 	// _kbTriggerWaiting 区分"键盘触发正在等待阈值"与鼠标触发的等待态（后者仍需吞键）。
 	private volatile bool _kbTriggerWaiting;
+	private TargetWindowInfo? _keyboardMatchingTarget;
 
 	// 触发键按下时刻（Environment.TickCount64），用于 200ms 持握门槛，防止快速敲击+甩动误唤轮盘。
 	private long _kbTriggerDownTick;
@@ -297,6 +298,7 @@ public class GestureController : IDisposable
 
 	private long BeginGestureTracking()
 	{
+		_keyboardMatchingTarget = null;
 		lock (_uiUpdateSync)
 		{
 			_gestureVersion++;
@@ -352,6 +354,7 @@ public class GestureController : IDisposable
 	}
 	private void CancelGestureTracking(string reason = "Interrupted")
 	{
+		_keyboardMatchingTarget = null;
 		_kbTriggerWaiting = false;
 		_isWaitingForThreshold = false;
 		_isGestureActive = false;
@@ -965,14 +968,18 @@ public class GestureController : IDisposable
 	private bool CheckIsIsolated(out string processName, TriggerConfig? activeTrigger = null, TargetWindowInfo? target = null)
 	{
 		nint targetHwnd;
+		string rootProcessName;
 		if (target != null && target.Hwnd != IntPtr.Zero)
 		{
-			processName = target.ProcessName;
+			processName = target.MatchingProcessName;
+			rootProcessName = target.ProcessName;
 			targetHwnd = target.Hwnd;
 		}
 		else
 		{
-			processName = ActiveWindowHelper.GetActiveWindowInfo(out targetHwnd);
+			rootProcessName = ActiveWindowHelper.GetActiveWindowInfo(out targetHwnd);
+			processName = ConfigManager.CurrentConfig.EnableComponentIdentification
+				? WindowIdentification.ResolveForeground(targetHwnd).ProcessName : rootProcessName;
 		}
 		string cleanProcess = (processName ?? "").Trim().ToLowerInvariant();
 
@@ -1032,7 +1039,7 @@ public class GestureController : IDisposable
 		bool isFullScreenSuppressed = false;
 		if (ConfigManager.CurrentConfig.DisableOnFullScreen)
 		{
-			if (!isWhitelisted && FullScreenHelper.IsActiveWindowFullScreen(targetHwnd, cleanProcess))
+			if (!isWhitelisted && FullScreenHelper.IsActiveWindowFullScreen(targetHwnd, rootProcessName))
 			{
 				isFullScreenSuppressed = true;
 			}
@@ -1053,7 +1060,7 @@ public class GestureController : IDisposable
 	private void Hook_OnTriggerButtonDown(object? sender, MouseEventArgs e)
 	{
 		TargetWindowInfo target = e.TargetWindow ?? WheelFocusSwitcher.ResolveTarget(e.Position);
-		string targetProc = target.ProcessName;
+		string targetProc = target.MatchingProcessName;
 		TriggerConfig triggerConfig = GetEffectiveTriggerForProcess(targetProc);
 		if (triggerConfig.TriggerType != "Mouse")
 		{
@@ -1139,7 +1146,10 @@ public class GestureController : IDisposable
 			return;
 		}
 		string gestureButton = ConfigManager.CurrentConfig.GestureTriggerButton ?? "MiddleButton";
-		string targetProc = e.TargetWindow?.ProcessName ?? ActiveWindowHelper.GetActiveWindowProcessName();
+		TargetWindowInfo? matchingTarget = e.TargetWindow;
+		if (ConfigManager.CurrentConfig.EnableComponentIdentification && matchingTarget == null)
+			matchingTarget = WheelFocusSwitcher.ResolveTarget(e.Position);
+		string targetProc = matchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 		var triggerConfig = GetEffectiveTriggerForProcess(targetProc);
 		string wheelBtn = triggerConfig?.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton ?? "RightButton";
 		// 冲突守卫：若手势按键与目标窗口的有效轮盘触发键重叠，优先保证轮盘手势，手势让位，杜绝双重拦截
@@ -1163,7 +1173,7 @@ public class GestureController : IDisposable
 				_gestureReplayPending = false;
 				return;
 			}
-			if (CheckIsIsolated(out _) || IsPointOnTaskbar(e.Position))
+			if (CheckIsIsolated(out _, target: ConfigManager.CurrentConfig.EnableComponentIdentification ? matchingTarget : null) || IsPointOnTaskbar(e.Position))
 			{
 				_gestureMode = false;
 				e.Handled = false;
@@ -1581,9 +1591,9 @@ public class GestureController : IDisposable
 				_currentDpiScaleX = scaleX;
 				_currentDpiScaleY = scaleY;
 			}
-			string processName = (!isKbWaiting && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.ProcessName))
-				? _currentWheelFocusSession.TargetInfo.ProcessName
-				: ActiveWindowHelper.GetActiveWindowProcessName();
+			string processName = (!isKbWaiting && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.MatchingProcessName))
+				? _currentWheelFocusSession.TargetInfo.MatchingProcessName
+				: _keyboardMatchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 			WheelProfile profile = ConfigManager.GetProfileForProcess(processName);
 			_activeProfile = profile;
 			StartInteractionSession(profile);
@@ -1624,7 +1634,7 @@ public class GestureController : IDisposable
 
 	private void Hook_OnTriggerButtonUp(object? sender, MouseEventArgs e)
 	{
-		string activeProc = ActiveWindowHelper.GetActiveWindowProcessName();
+		string activeProc = ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 		TriggerConfig triggerConfig = _activeTrigger ?? GetEffectiveTriggerForProcess(activeProc);
 		if (triggerConfig.TriggerType != "Mouse")
 		{
@@ -1810,16 +1820,13 @@ public class GestureController : IDisposable
 					ActionExecutionContext? execContext = null;
 					if (focusSession?.TargetInfo != null && focusSession.TargetInfo.Hwnd != IntPtr.Zero)
 					{
-						execContext = new ActionExecutionContext(
-							focusSession.TargetInfo.Hwnd,
-							focusSession.TargetInfo.ProcessId,
-							focusSession.TargetInfo.ProcessName,
+						execContext = focusSession.TargetInfo.CreateExecutionContext(
 							() =>
 							{
 								if (_disposed) return false;
 								if (_mouseHook != null && _mouseHook.IsPaused) return false;
 								if (focusSession.IsCancelled) return false;
-								return WheelFocusSwitcher.IsTargetValid(focusSession.TargetInfo);
+								return true;
 							},
 							() =>
 							{
@@ -2029,7 +2036,10 @@ public class GestureController : IDisposable
 				}
 			}
 		}
-		string activeProc = ActiveWindowHelper.GetActiveWindowProcessName();
+		TargetWindowInfo? keyboardTarget = ConfigManager.CurrentConfig.EnableComponentIdentification
+			? WheelFocusSwitcher.CreateForegroundTargetSnapshot() : null;
+		if (ConfigManager.CurrentConfig.EnableComponentIdentification && keyboardTarget == null) return;
+		string activeProc = keyboardTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 		TriggerConfig triggerConfig = GetEffectiveTriggerForProcess(activeProc);
 		if (triggerConfig.TriggerType != "Keyboard")
 		{
@@ -2079,6 +2089,7 @@ public class GestureController : IDisposable
 			_currentDpiScaleX = dpiX;
 			_currentDpiScaleY = dpiY;
 			BeginGestureTracking();
+			_keyboardMatchingTarget = keyboardTarget;
 			_isWaitingForThreshold = true;
 			_isGestureActive = false;
 			_kbTriggerWaiting = true;
@@ -2093,7 +2104,7 @@ public class GestureController : IDisposable
 
 	private void KeyboardHook_OnKeyUp(object? sender, GlobalKeyEventArgs e)
 	{
-		string activeProc = ActiveWindowHelper.GetActiveWindowProcessName();
+		string activeProc = ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 		TriggerConfig triggerConfig = _activeTrigger ?? GetEffectiveTriggerForProcess(activeProc);
 		if (triggerConfig.TriggerType != "Keyboard")
 		{
@@ -2124,6 +2135,8 @@ public class GestureController : IDisposable
 		{
 			return;
 		}
+		TargetWindowInfo? keyboardTarget = _keyboardMatchingTarget;
+		_keyboardMatchingTarget = null;
 		CancelLongPressTimer();
 		if (_isWaitingForThreshold)
 		{
@@ -2151,6 +2164,7 @@ public class GestureController : IDisposable
 			RadialWindow? endedWindow = finalState.Window;
 			bool isEscaped = finalState.IsEscaped;
 			long endedPresentationVersion = finalState.PresentationVersion;
+			long executionVersion = GetCurrentGestureVersion();
 			bool isSubmenuLocked = finalState.IsSubmenuLocked;
 			_volumeAdjustActive = false;
 			_volumeGestureTookOver = false;
@@ -2218,7 +2232,9 @@ public class GestureController : IDisposable
 				if (targetAction != null)
 				{
 					endedInteractionSession?.Confirm(targetAction, PluginInteractionSession.Target(finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
-					EnqueueGestureAction(targetAction);
+					ActionExecutionContext? context = keyboardTarget?.CreateExecutionContext(
+						() => !_disposed && !_mouseHook.IsPaused && IsCurrentGesture(executionVersion));
+					EnqueueGestureAction(targetAction, context);
 				}
 				else
 				{
@@ -2300,9 +2316,9 @@ public class GestureController : IDisposable
 				_isWaitingForThreshold = false;
 				_isGestureActive = true;
 				CancelLongPressTimer(); // 拖动先于长按触发
-				string activeWindowProcessName = (!wasKb && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.ProcessName))
-					? _currentWheelFocusSession.TargetInfo.ProcessName
-					: ActiveWindowHelper.GetActiveWindowProcessName();
+				string activeWindowProcessName = (!wasKb && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.MatchingProcessName))
+					? _currentWheelFocusSession.TargetInfo.MatchingProcessName
+					: _keyboardMatchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 				_activeProfile = ConfigManager.GetProfileForProcess(activeWindowProcessName);
 				StartInteractionSession(_activeProfile);
 				Point center = _startPoint;

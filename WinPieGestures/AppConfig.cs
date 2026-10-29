@@ -23,6 +23,9 @@ public class AppConfig
 	/// <summary>控制台配置模式："Simple"（简单轻量模式，隐藏低频高级微调）或 "Pro"（高级全量模式，开放全部配置）。</summary>
 	public string ConfigMode { get; set; } = "Simple";
 
+	/// <summary>按鼠标命中的组件进程识别情景；默认关闭，窗口激活始终使用根窗口。</summary>
+	public bool EnableComponentIdentification { get; set; }
+
 	/// <summary>核心圆死区唤醒灵敏度（有效判定半径，像素）。光标在此半径内视为停留在中心核圆，可触发中心动作或静默取消。</summary>
 	public double CoreDeadzoneRadius { get; set; } = 35.0;
 

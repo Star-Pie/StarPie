@@ -670,6 +670,8 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("GestureTriggerLabelText", "手势触发键：", "手勢觸發鍵：", "Gesture trigger button:", "ジェスチャートリガーキー：");
 		Add("GestureHintPlaceText", "松手提示位置：", "鬆手提示位置：", "Release-hint position:", "離した時のヒント位置：");
 		Add("GestureSensitivityTitle", "手势段灵敏度：", "手勢段靈敏度：", "Gesture segment sensitivity:", "ジェスチャー感度：");
+		Add("ComponentIdentificationTitle", "组件识别模式", "元件識別模式", "Component identification mode", "コンポーネント識別モード");
+		Add("ComponentIdentificationDesc", "准星捕捉和运行时按鼠标命中的组件进程识别应用。同一窗口不同区域可能使用不同方案；窗口激活仍使用根窗口。", "準星擷取與執行時依滑鼠命中的元件程序識別應用程式。同一視窗不同區域可能使用不同方案；啟用視窗仍使用根視窗。", "Identify apps by the component process under the pointer during crosshair capture and use. Different areas of one window may use different profiles; activation still uses the root window.", "照準による取得と実行時に、ポインター位置のコンポーネントのプロセスでアプリを識別します。同じウィンドウ内でも領域ごとに異なる設定が使われる場合があります。アクティブ化には引き続きルートウィンドウを使用します。");
 		Add("MouseReleaseDebounceTitle", "启用鼠标右键释放防抖", "啟用滑鼠右鍵釋放防抖", "Enable right-button release debounce", "右ボタンのリリースデバウンスを有効化");
 		Add("MouseReleaseDebounceDesc", "收到右键松开后短暂等待；期间若再次按下，则视为微动抖动并保持当前轮盘，不执行动作。", "收到右鍵放開後短暫等待；期間若再次按下，則視為微動抖動並保持目前輪盤，不執行動作。", "Briefly waits after right-button release. If another press arrives during the window, it is treated as switch chatter and the current wheel stays active without executing.", "右ボタンを離した後に短時間待機し、その間に再度押された場合はチャタリングとして扱い、アクションを実行せず現在のホイールを維持します。");
 		Add("MouseReleaseDebounceValueDesc", "建议 8～15 ms，默认 12 ms。数值越大越能过滤微动抖动，但松手后的动作延迟也会相应增加。", "建議 8～15 ms，預設 12 ms。數值越大越能過濾微動抖動，但放開後的動作延遲也會相應增加。", "Recommended: 8–15 ms; default: 12 ms. Higher values filter more switch chatter but add the same release latency.", "推奨値は 8～15 ms、既定値は 12 ms です。値を大きくするとチャタリング除去は強くなりますが、リリース後の遅延も増加します。");
