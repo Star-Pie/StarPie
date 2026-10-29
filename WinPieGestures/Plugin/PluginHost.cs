@@ -203,6 +203,15 @@ internal static class PluginHost
                 AppLogger.LogError($"[plugin] 退出时停用 {instance.PluginId} 失败", ex);
             }
         }
+
+        // 进程插件必须在宿主退出时清场，而且**不能只依赖上面的停用流程**：
+        // DisableAsync 带 2 秒宽限期，超时或提前返回都不会走到 Teardown，进程就活下来了。
+        // 这里再兜一次底，代价极低（没有进程在册时直接返回）。
+        int terminated = PluginProcessRuntime.TerminateAllPlugins();
+        if (terminated > 0)
+        {
+            AppLogger.LogInfo($"[plugin] 宿主退出，已结束 {terminated} 个由插件拉起的进程");
+        }
     }
 
     // ------------------------------------------------------------------ 安装
@@ -215,7 +224,7 @@ internal static class PluginHost
     {
         try
         {
-            return PluginScanner.ScanSelectedDll(dllPath);
+            return PluginScanner.ScanSelectedFile(dllPath);
         }
         catch (Exception ex)
         {
@@ -1156,7 +1165,7 @@ internal static class PluginHost
 
             // 目录名固定从 PluginPaths 取；这里不递归子目录 ——
             // 扫描目录的约定就是「扁平，只放 .dll」，子目录一律不认。
-            string[] files = Directory.GetFiles(PluginPaths.ScanRoot, "*.dll", SearchOption.TopDirectoryOnly);
+            string[] files = PluginScanner.EnumerateCandidateFiles(PluginPaths.ScanRoot);
             Array.Sort(files, StringComparer.OrdinalIgnoreCase);
 
             var scans = new List<PluginScanResult>(files.Length);
@@ -1182,7 +1191,12 @@ internal static class PluginHost
                 list.Add(new PluginCandidate
                 {
                     DllPath = scan.DllPath,
-                    FileName = Path.GetFileName(scan.DllPath),
+                    // 进程插件没有 DllPath，候选行只能退到可执行文件名（再退到插件 ID）。
+                    FileName = !string.IsNullOrWhiteSpace(scan.DllPath)
+                        ? Path.GetFileName(scan.DllPath)
+                        : scan.Command.Count > 0
+                            ? Path.GetFileName(scan.Command[0])
+                            : (scan.Manifest?.Id ?? ""),
                     Scan = scan,
                     State = state,
                     Note = note,
@@ -1203,7 +1217,7 @@ internal static class PluginHost
     {
         try
         {
-            return PluginScanner.ScanSelectedDll(
+            return PluginScanner.ScanSelectedFile(
                 file,
                 allowReservedIdPrefix: IsFileInsideScanRoot(file));
         }
@@ -1742,7 +1756,8 @@ internal static class PluginHost
         restartSuggested = false;
         if (string.Equals(scan.ManifestSource, "Manifest", StringComparison.Ordinal))
         {
-            return CopyDirectory(scan.SourceDirectory, targetDirectory, overwrite, out error, out restartSuggested);
+            return CopyDirectory(scan.SourceDirectory, targetDirectory, overwrite, out error, out restartSuggested,
+                preservePrivateSdk: scan.Runtime == PluginRuntimeTypes.Process);
         }
 
         if (!CopySingleFile(scan.DllPath, targetDirectory, overwrite, out error, out restartSuggested))
@@ -1877,7 +1892,7 @@ internal static class PluginHost
         }
     }
 
-    private static bool CopyDirectory(string source, string target, bool overwrite, out string error, out bool restartSuggested)
+    private static bool CopyDirectory(string source, string target, bool overwrite, out string error, out bool restartSuggested, bool preservePrivateSdk = false)
     {
         error = "";
         restartSuggested = false;
@@ -1904,7 +1919,7 @@ internal static class PluginHost
 
                 // 不复制宿主会统一提供的 SDK 程序集，避免现场出现「类型身份分裂」的隐患
                 string fileName = Path.GetFileName(file);
-                if (string.Equals(fileName, PluginApi.AbstractionsAssemblyName + ".dll", StringComparison.OrdinalIgnoreCase))
+                if (!preservePrivateSdk && string.Equals(fileName, PluginApi.AbstractionsAssemblyName + ".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     AppLogger.LogWarn($"[plugin] 已跳过安装包内的 {fileName}（由宿主统一提供）。");
                     continue;

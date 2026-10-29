@@ -379,7 +379,8 @@ internal static class OfficialPluginOnboarding
         Func<OfficialPluginModule, Func<string, List<string>, Task<bool>>?, IReadOnlyCollection<string>?, CancellationToken, Task<OfficialPluginInstallResult>>? detailedModuleInstaller = null,
         IReadOnlyCollection<string>? preExistingDisabledPluginIds = null,
         LocalPluginEnabler? localEnabler = null,
-        OfficialPluginDownloadOptions? downloadOptions = null)
+        OfficialPluginDownloadOptions? downloadOptions = null,
+        Func<PluginInstallConfirmation, Task<bool>>? processConfirmation = null)
     {
         // 重入防护
         if (Interlocked.CompareExchange(ref _isInstalling, 1, 0) != 0)
@@ -707,7 +708,8 @@ internal static class OfficialPluginOnboarding
                                 informedCapabilities,
                                 cancellationToken,
                                 forceEnable: true,
-                                downloadOptions: downloadOptions).ConfigureAwait(false);
+                                downloadOptions: downloadOptions,
+                                processConfirmation: processConfirmation).ConfigureAwait(false);
                         }
 
                         if (installResult.Success)

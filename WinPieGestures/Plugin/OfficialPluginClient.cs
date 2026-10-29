@@ -49,6 +49,7 @@ internal sealed class OfficialPluginModule
     public long Size { get; set; }
     public string ApiVersion { get; set; } = "";
     public string TargetFramework { get; set; } = "";
+    public string Runtime { get; set; } = PluginRuntimeTypes.Assembly;
     public string MinHostVersion { get; set; } = "";
     public string? MaxHostVersion { get; set; }
     public List<string> TypeClaims { get; set; } = new();
@@ -86,6 +87,7 @@ internal sealed class OfficialPluginInstallResult
     public string Error { get; init; } = "";
     public bool Enabled { get; init; }
     public bool IsNetworkError { get; init; }
+    public bool Cancelled { get; init; }
 
     internal static OfficialPluginInstallResult FromInstallResult(PluginInstallResult result) => new()
     {
@@ -342,8 +344,10 @@ internal static partial class OfficialPluginClient
     public static Task<OfficialPluginInstallResult> InstallAsync(
         OfficialPluginModule module,
         CancellationToken cancellationToken = default,
-        OfficialPluginDownloadOptions? downloadOptions = null)
-        => InstallAsync(module, extraCapabilityPrompter: null, approvedCapabilities: null, cancellationToken, forceEnable: null, downloadOptions: downloadOptions);
+        OfficialPluginDownloadOptions? downloadOptions = null,
+        Func<PluginInstallConfirmation, Task<bool>>? processConfirmation = null)
+        => InstallAsync(module, extraCapabilityPrompter: null, approvedCapabilities: null, cancellationToken, forceEnable: null,
+            downloadOptions: downloadOptions, processConfirmation: processConfirmation);
 
     public static async Task<OfficialPluginInstallResult> InstallAsync(
         OfficialPluginModule module,
@@ -351,7 +355,8 @@ internal static partial class OfficialPluginClient
         IReadOnlyCollection<string>? approvedCapabilities,
         CancellationToken cancellationToken = default,
         bool? forceEnable = null,
-        OfficialPluginDownloadOptions? downloadOptions = null)
+        OfficialPluginDownloadOptions? downloadOptions = null,
+        Func<PluginInstallConfirmation, Task<bool>>? processConfirmation = null)
     {
         if (module == null) return new OfficialPluginInstallResult { Error = "官方插件条目为空。" };
         OfficialPluginCompatibility compatibility = OfficialPluginVersionSelector.Evaluate(module);
@@ -434,6 +439,21 @@ internal static partial class OfficialPluginClient
                     }
                 }
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!await ConfirmRuntimeInstallAsync(new PluginInstallConfirmation
+            {
+                Scan = scan,
+                State = previous == null ? PluginCandidateState.Installable : PluginCandidateState.Update,
+                Note = previous == null ? "" : I18n.TF("PluginsOfflineReplace", previous.Entry.Version, scan.Manifest.Version),
+                EnableAfterInstall = enableAfterInstall,
+            }, processConfirmation).ConfigureAwait(false))
+                return new OfficialPluginInstallResult
+                {
+                    PluginId = module.Id, Cancelled = processConfirmation != null,
+                    Error = I18n.T("PluginsProcessConfirmationRequired"),
+                };
+            cancellationToken.ThrowIfCancellationRequested();
 
             PluginInstallResult result = await PluginHost.CommitInstallAsync(scan, new PluginInstallOptions
             {
@@ -578,6 +598,14 @@ internal static partial class OfficialPluginClient
         }
     }
 
+    internal static async Task<bool> ConfirmRuntimeInstallAsync(PluginInstallConfirmation info,
+        Func<PluginInstallConfirmation, Task<bool>>? confirmation)
+    {
+        if (!info.Scan.Accepted || info.Scan.Manifest == null) return false;
+        if (info.Scan.Runtime != PluginRuntimeTypes.Process) return true;
+        return confirmation != null && await confirmation(info).ConfigureAwait(false);
+    }
+
     private static void VerifyModuleManifest(string packageRoot, OfficialPluginModule catalogModule)
     {
         string path = Path.Combine(packageRoot, "module.manifest.json");
@@ -585,20 +613,31 @@ internal static partial class OfficialPluginClient
 
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
         JsonElement root = document.RootElement;
-        string assembly = root.TryGetProperty("assembly", out JsonElement assemblyElement)
-            ? assemblyElement.GetString() ?? ""
-            : "";
-        string expectedHash = root.TryGetProperty("assemblySha256", out JsonElement hashElement)
-            ? hashElement.GetString() ?? ""
-            : "";
+        if (root.ValueKind != JsonValueKind.Object) throw new InvalidDataException(I18n.T("PluginsPackageRuntimeInvalid"));
         string packageId = root.TryGetProperty("id", out JsonElement idElement) ? idElement.GetString() ?? "" : "";
         string packageVersion = root.TryGetProperty("version", out JsonElement versionElement) ? versionElement.GetString() ?? "" : "";
-        if (string.IsNullOrWhiteSpace(assembly) || string.IsNullOrWhiteSpace(expectedHash))
-            throw new InvalidDataException("module.manifest.json 缺少程序集完整性字段。");
         if (!string.Equals(packageId, catalogModule.Id, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(packageVersion, catalogModule.Version, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("module.manifest.json 的模块 ID 或版本与官方 catalog 不一致。");
 
+        if (root.TryGetProperty("runtime", out JsonElement runtimeElement) &&
+            runtimeElement.ValueKind is not (JsonValueKind.String or JsonValueKind.Null))
+            throw new InvalidDataException(I18n.T("PluginsPackageRuntimeInvalid"));
+        string? declaredRuntime = runtimeElement.ValueKind == JsonValueKind.String ? runtimeElement.GetString() : null;
+        if (!PluginRuntimeTypes.TryNormalize(declaredRuntime, out string runtime) ||
+            !PluginRuntimeTypes.TryNormalize(catalogModule.Runtime, out string expectedRuntime) || runtime != expectedRuntime)
+            throw new InvalidDataException(I18n.T("PluginsPackageRuntimeInvalid"));
+        if (runtime == PluginRuntimeTypes.Process)
+        {
+            PluginPackageIntegrity.VerifyFiles(packageRoot, root);
+            VerifyPluginRuntime(packageRoot, runtime);
+            return;
+        }
+
+        string assembly = root.TryGetProperty("assembly", out JsonElement assemblyElement) ? assemblyElement.GetString() ?? "" : "";
+        string expectedHash = root.TryGetProperty("assemblySha256", out JsonElement hashElement) ? hashElement.GetString() ?? "" : "";
+        if (string.IsNullOrWhiteSpace(assembly) || string.IsNullOrWhiteSpace(expectedHash))
+            throw new InvalidDataException("module.manifest.json 缺少程序集完整性字段。");
         if (!string.Equals(Path.GetFileName(assembly), assembly, StringComparison.Ordinal))
             throw new InvalidDataException("module.manifest.json 的程序集路径必须是包根目录下的文件名。");
 
@@ -608,6 +647,15 @@ internal static partial class OfficialPluginClient
         string actualHash = Convert.ToHexString(SHA256.HashData(stream));
         if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
             throw new InvalidDataException("插件主程序集 SHA-256 校验失败。");
+        VerifyPluginRuntime(packageRoot, runtime);
+    }
+
+    private static void VerifyPluginRuntime(string packageRoot, string expectedRuntime)
+    {
+        // 使用与真正扫描相同的读取规则，包含属性大小写、默认 runtime 及 null 防御。
+        if (!PluginManifestReader.TryLoad(Path.Combine(packageRoot, "plugin.json"), out PluginManifest plugin,
+                out _, out _, allowReservedIdPrefix: true) || plugin.Runtime != expectedRuntime)
+            throw new InvalidDataException(I18n.T("PluginsPackageRuntimeInvalid"));
     }
     private static void ExtractPackageSafely(string packagePath, string destination)
     {

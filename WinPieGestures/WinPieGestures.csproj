@@ -48,6 +48,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="test_catalog" />
+    <InternalsVisibleTo Include="test_process_runtime" />
     <InternalsVisibleTo Include="test_process_launch" />
     <InternalsVisibleTo Include="test_standard_user_launch" />
     <InternalsVisibleTo Include="test_onboarding" />

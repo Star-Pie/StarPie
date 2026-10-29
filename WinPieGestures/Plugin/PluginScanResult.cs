@@ -137,8 +137,14 @@ internal sealed class PluginScanResult
     public PluginScanFailure Failure { get; set; } = PluginScanFailure.None;
     public string ErrorDetail { get; set; } = "";
 
-    /// <summary>用户手动选择的那个 .dll 的完整路径。</summary>
+    /// <summary>用户手动选择的那个 .dll 的完整路径。进程形态插件为空。</summary>
     public string DllPath { get; set; } = "";
+
+    /// <summary>运行时形态，见 <see cref="StarPie.Plugin.PluginRuntimeTypes"/>；程序集插件恒为 <c>assembly</c>。</summary>
+    public string Runtime { get; set; } = StarPie.Plugin.PluginRuntimeTypes.Assembly;
+
+    /// <summary>进程形态的启动命令（保留占位符原样）。程序集形态为空列表。</summary>
+    public List<string> Command { get; set; } = new();
 
     /// <summary>清单来源目录（用于安装时整目录复制）。</summary>
     public string SourceDirectory { get; set; } = "";

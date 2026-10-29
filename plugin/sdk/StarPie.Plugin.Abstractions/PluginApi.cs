@@ -39,6 +39,10 @@ public static class PluginApi
     /// <item>1.11 —— 新增滑块步长与单位、设置分区和同插件命令按钮、可隐藏的兼容动作及说明/帮助词条；保留 1.10 交互事件契约。</item>
     /// <item>1.12 —— 新增可选图片获取与文本结果上下文；返回有界 BGRA32 图片，保留旧 OCR 接口。</item>
     /// <item>1.13 —— 新增可热切换语言的文本结果标题、可选增强服务广告及静态插件名称/说明翻译，保留原文本结果接口；最低 1.12 消费者可检测后回退。</item>
+    /// <item>1.14 —— 新增 <see cref="PluginManifest.Runtime"/> 的 <c>"process"</c> 形态：清单用
+    /// <see cref="PluginManifest.Command"/> 声明一个独立进程插件，宿主按占位符注入触发上下文并拉起它。
+    /// 这条形态是为了让 Rust / Go / C++ / Python 等语言进入插件生态；程序集形态与全部既有服务<b>完全不变</b>，
+    /// 进程插件也拿不到 <see cref="IPluginContext"/> 下的宿主服务。</item>
     /// </list>
     /// <para>
     /// <b>每加一个服务面就在这里补一条，别只改数字。</b>这份清单是后来者判断
@@ -46,10 +50,10 @@ public static class PluginApi
     /// 插件作者会按旧清单去推断版本兼容性，而结论是错的。
     /// </para>
     /// </summary>
-    public const int ApiVersionMinor = 13;
+    public const int ApiVersionMinor = 14;
 
     /// <summary>
-    /// SDK 契约版本字符串，形如 <c>1.13</c>。
+    /// SDK 契约版本字符串，形如 <c>1.14</c>。
     /// <para>
     /// 这里没法用常量插值消掉重复：C# 的常量插值只接受 <c>string</c> 常量，
     /// 而版本号的两个组成部分是 <c>int</c>。所以「这个字符串」与「上面两个数字」
@@ -58,7 +62,7 @@ public static class PluginApi
     /// 漂了以后报错信息里的版本号会和真实契约对不上，排查时先被误导一轮。
     /// </para>
     /// </summary>
-    public const string ApiVersion = "1.13";
+    public const string ApiVersion = "1.14";
 
     /// <summary>本契约程序集的程序集名。宿主的 PluginLoadContext 依赖它做「共享程序集放行」。</summary>
     public const string AbstractionsAssemblyName = "StarPie.Plugin.Abstractions";

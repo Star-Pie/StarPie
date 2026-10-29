@@ -7,7 +7,7 @@ using Microsoft.Win32.SafeHandles;
 namespace WinPieGestures;
 
 /// <summary>只为直接 EXE 启动创建普通权限进程；不修改已有进程或开启令牌特权。</summary>
-internal sealed class StandardUserLaunchNative : StandardUserProcessLauncher.IBackend, IDisposable
+internal sealed partial class StandardUserLaunchNative : StandardUserProcessLauncher.IBackend, IDisposable
 {
     private SafeProcessHandle? _desktopProcess;
     private uint _desktopProcessId;
@@ -120,6 +120,11 @@ internal sealed class StandardUserLaunchNative : StandardUserProcessLauncher.IBa
 
     private bool Start(StandardUserLaunchRequest request, SafeAccessTokenHandle? token, bool useLinkedToken)
     {
+        lock (NativeCreationGate) return StartCore(request, token, useLinkedToken);
+    }
+
+    private bool StartCore(StandardUserLaunchRequest request, SafeAccessTokenHandle? token, bool useLinkedToken)
+    {
         if (token == null || !TryReadIdentity(token, out var target) || !target.IsStandardUser ||
             !TryGetDesktopIdentity(out var desktop) || !TryGetCurrentIdentity(out var current) ||
             target.UserSid != desktop.UserSid || target.SessionId != desktop.SessionId || current.SessionId != desktop.SessionId)
@@ -185,6 +190,7 @@ internal sealed class StandardUserLaunchNative : StandardUserProcessLauncher.IBa
 
     public void Dispose()
     {
+        _trackedToken?.Dispose();
         _linkedToken?.Dispose();
         _currentToken?.Dispose();
         _desktopToken?.Dispose();

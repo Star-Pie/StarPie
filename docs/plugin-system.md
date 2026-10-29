@@ -48,6 +48,8 @@
 
 ## 4. 运行时、租约与卸载
 
+- SDK 1.14 的 process 形态由宿主合成动作贡献点，沿用同一激活、租约和动作队列；不创建插件 ALC。受控普通用户启动返回拥有型进程及输出资源，动作返回不释放管道。细节见 [进程运行时](../plugin/docs/plugin-process-runtime.md)。
+
 - `PluginRuntime` 管理实例、激活、状态、租约、停止和 ALC 卸载。
 - `PluginActivationCoordinator` 只查找、检查状态、合并并发加载和调用 `PluginInstance.Load`；不得更改用户的 `Entry.Enabled` 偏好。
 - `action-execution`、`interaction-event`、`wheel-structure` 等路径使用强类型模块。不要退化成中央字符串路由。
@@ -62,7 +64,7 @@
 
 SDK 1.12 候选通过可选派生上下文 IImageCapturePluginContext / ITextResultPluginContext 提供有界 BGRA32 截图及主题文本结果窗口。旧 IPluginContext 与 OCR 专用接口不变。新文本结果服务分别在展示、复制、打开时检查 Ui / Clipboard / Process；打开仅接受显式 HTTP(S)，不会记录私密链接。完整契约和限制见 [图片工具 API](../plugin/docs/image-tools.md)。
 
-当前 SDK 1.13 候选在上述接口上增加动态语言标题、可选增强服务广告及静态插件名称/说明翻译。扫码插件最低 apiVersion=1.12，检测到增强服务时使用动态标题，否则回退到已翻译的 ShowAsync 标题。SDK 1.11 缺少原始图片服务，仍拒绝扫码插件；新宿主继续接受旧 SDK 插件。主程序版本号与 SDK 程序集身份保持不变，兼容判断使用实际最低 API 次版本。
+SDK 1.13在上述接口上增加动态语言标题、可选增强服务广告及静态插件名称/说明翻译。扫码插件最低 apiVersion=1.12，检测到增强服务时使用动态标题，否则回退到已翻译的 ShowAsync 标题。SDK 1.11 缺少原始图片服务，仍拒绝扫码插件；新宿主继续接受旧 SDK 插件。主程序版本号与 SDK 程序集身份保持不变，兼容判断使用实际最低 API 次版本。
 
 产生后果的宿主服务检查各自能力：
 
@@ -79,10 +81,13 @@ SDK 1.12 候选通过可选派生上下文 IImageCapturePluginContext / ITextRes
 - 元数据（终端、动词、布局、范围）不受门禁，插件声明参数时可以读取。
 - 能力标签必须对应真实强制点，不能复用语义相近但后果不同的能力。
 - 进程内插件仍可直接调用 BCL/PInvoke；门禁是授权说明与宿主服务后果的一致性机制，不是安全沙箱。
+- process 插件不持有宿主服务，能力声明仅为告知；普通用户启动仅约束新建目标进程，不覆盖目标自行提权或已有实例转发。在线、引导、离线及社区导入均须在落盘前完成对应运行形态确认。
 - 既有公共服务不能事后补破坏性门禁；新增能力与强制点同一版本落地。
 - 能力确认文案集中在 `PluginCapabilityLabels`，存词条键而不是缓存后的翻译。
 
 ## 6. 官方插件、安装与目录
+
+- 社区进程插件通过目录中的 plugin.json 导入；官方 process 包核对完整 files 清单和 runtime 一致性，复制时保留自身私有依赖。assembly 继续使用旧完整性契约及宿主 SDK 去重规则。
 
 - 原内建官方动作在 `StarPie-Official-Plugins` 仓库构建发布；主仓库不编译、复制或随包携带其 DLL。
 - `程序目录\plugin\` 是社区候选扫描区：宿主只读、不创建、不删除；社区插件不能使用 `starpie.*` 保留 ID。

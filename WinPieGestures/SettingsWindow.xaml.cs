@@ -7321,7 +7321,10 @@ public partial class SettingsWindow : Window
 		button.IsEnabled = false;
 		try
 		{
-			OfficialPluginInstallResult result = await OfficialPluginClient.InstallAsync(module, downloadOptions: CapturePluginDownloadOptions());
+			OfficialPluginInstallResult result = await OfficialPluginClient.InstallAsync(module,
+                cancellationToken: _lifetimeCts.Token, downloadOptions: CapturePluginDownloadOptions(),
+                processConfirmation: ConfirmOfficialProcessInstallationAsync);
+            if (_resourcesReleased || App.IsExiting || !IsVisible || result.Cancelled) return;
 			string title = I18n.T("PluginsOfficialMsgTitle");
 			if (!result.Success)
 			{
@@ -7331,9 +7334,10 @@ public partial class SettingsWindow : Window
 			}
 			else AppMessageBox.Show(this, I18n.TF("PluginsOfficialInstalled", module.Name, module.Version), title, MessageBoxButton.OK, MessageBoxImage.Information);
 		}
+		catch (OperationCanceledException) when (_lifetimeCts.IsCancellationRequested) { }
 		finally
 		{
-			if (!App.IsExiting)
+			if (!App.IsExiting && !_resourcesReleased)
 			{
 				button.IsEnabled = true;
 				RefreshPluginManagerUi();
@@ -7711,8 +7715,7 @@ public partial class SettingsWindow : Window
 	/// </para>
 	/// </summary>
 	private bool ConfirmPluginInstall(PluginInstallConfirmation info) =>
-		AppMessageBox.Show(this, PluginInstallConfirmationText.Build(info),
-			I18n.T("PluginsConfirmTitle"), MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
+        PluginInstallConfirmationDialog.Show(this, info);
 
 	private void RescanPluginsButton_Click(object sender, RoutedEventArgs e)
 	{

@@ -198,7 +198,13 @@ internal sealed class PluginInstance
     /// <summary>延迟判定的一次性计时器。</summary>
     private System.Threading.Timer? _unloadProbeTimer;
 
-    public bool IsLoaded => _plugin != null;
+    /// <summary>
+    /// 进程形态没有托管实例，所以不能用 "_plugin != null" 判定「已加载」——
+    /// 那会让每次触发都重新走一遍 LoadCore，撞上自己的动作 ID 冲突。
+    /// </summary>
+    private bool _processLoaded;
+
+    public bool IsLoaded => _plugin != null || _processLoaded;
 
     public int ActiveCallCount
     {
@@ -428,6 +434,13 @@ internal sealed class PluginInstance
             Scan = scan;
             PluginManifest manifest = scan.Manifest!;
 
+            // 进程形态没有入口程序集，走另一条提交路径：仍然复用同一套注册事务与冲突检测，
+            // 只是贡献点由宿主侧合成，而不是等插件调用 Actions.Register 登记。
+            if (string.Equals(scan.Runtime, PluginRuntimeTypes.Process, StringComparison.Ordinal))
+            {
+                return LoadProcessCore(scan, manifest, out failureReason);
+            }
+
             if (string.IsNullOrWhiteSpace(scan.DllPath))
             {
                 LastError = "未能定位插件主程序集。";
@@ -503,6 +516,122 @@ internal sealed class PluginInstance
             return false;
         }
     }
+
+    /// <summary>
+    /// 进程形态的加载：不建 ALC、不执行任何插件代码，只把清单里的动作声明合成为宿主侧的
+    /// <see cref="ProcessActionContribution"/> 然后提交。
+    /// <para>
+    /// 它刻意复用 <see cref="PluginRegistrationSession"/> —— 「动作 ID 冲突」「重复注册」这些判定
+    /// 与程序集插件跑的是同一段代码。为第二种形态另写一套规则，迟早会和第一套走偏。
+    /// </para>
+    /// </summary>
+    private bool LoadProcessCore(PluginScanResult scan, PluginManifest manifest, out string failureReason)
+    {
+        failureReason = "";
+        var stopwatch = Stopwatch.StartNew();
+
+        if (!PluginScanner.TryResolveProcessExecutable(Directory, manifest, out string executablePath, out string resolveError))
+        {
+            LastError = resolveError;
+            failureReason = LastError;
+            SetState(PluginRuntimeState.Failed);
+            return false;
+        }
+
+        string dataDirectory = EnsureDataDirectory();
+
+        try
+        {
+            _session = PluginHost.Catalog.BeginSession(PluginId);
+            _events = new PluginEventService(this);
+            _pluginContext = new PluginContext(
+                BuildMetadata(manifest, dataDirectory),
+                Directory,
+                dataDirectory,
+                _session,
+                Logger,
+                Settings,
+                _events,
+                this);
+
+            foreach (PluginProcessAction action in manifest.Actions)
+            {
+                _pluginContext.Actions.Register(new ProcessActionContribution(
+                    Logger, PluginId, Directory, dataDirectory, manifest, action, executablePath));
+            }
+
+            if (!_session.Commit(out string conflictError))
+            {
+                LastError = $"动作声明冲突，已整体拒绝：{conflictError}";
+                failureReason = LastError;
+                Logger.Error(LastError);
+                Teardown();
+                SetState(PluginRuntimeState.Failed);
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            LastError = $"进程插件初始化失败：{ex.GetBaseException().Message}";
+            failureReason = LastError;
+            Logger.Error("进程插件初始化失败", ex);
+            Teardown();
+            SetState(PluginRuntimeState.Failed);
+            return false;
+        }
+
+        OwnedActions = _session.StagedActions.ToArray();
+        ActionCount = OwnedActions.Length;
+
+        stopwatch.Stop();
+        LastLoadMs = stopwatch.Elapsed.TotalMilliseconds;
+
+        Logger.Info(
+            $"已启用（进程形态）：v{manifest.Version}，可执行文件 {executablePath}，" +
+            $"动作 {ActionCount}，加载耗时 {LastLoadMs:F1} ms，宿主 {PluginManifestReader.HostVersion}");
+
+        PluginRegistryStore.MutateHealth(PluginId, h =>
+        {
+            h.LoadCount++;
+            h.ConsecutiveFailures = 0;
+            h.LastError = null;
+        });
+
+        _processLoaded = true;
+        OpenInvocationGate();
+        return true;
+    }
+
+    /// <summary>插件私有数据目录，确保存在。创建失败不阻断加载：插件自己写文件时会看到真实错误。</summary>
+    private string EnsureDataDirectory()
+    {
+        string dataDirectory = PluginPaths.GetDataDirectory(PluginId);
+        try
+        {
+            if (!System.IO.Directory.Exists(dataDirectory)) System.IO.Directory.CreateDirectory(dataDirectory);
+        }
+        catch
+        {
+            // 与既有行为一致：不阻断
+        }
+        return dataDirectory;
+    }
+
+    /// <summary>由清单构造插件元数据。两种运行时形态共用，避免字段在两条路径上各写一遍然后漂移。</summary>
+    private PluginMetadata BuildMetadata(PluginManifest manifest, string dataDirectory) => new()
+    {
+        Id = manifest.Id,
+        Name = manifest.Name,
+        Version = manifest.Version,
+        Author = manifest.Author,
+        Description = manifest.Description,
+        Homepage = manifest.Homepage,
+        License = manifest.License,
+        ApiVersion = manifest.ApiVersion,
+        Capabilities = manifest.ResolveCapabilities(),
+        InstallDirectory = Directory,
+        DataDirectory = dataDirectory,
+    };
 
     /// <summary>
     /// 在独立栈帧中执行 ALC 程序集加载、反射实例化与 <c>Initialize</c> 调用。
@@ -594,30 +723,8 @@ internal sealed class PluginInstance
         entryTypeFullName = entryType.FullName ?? entryType.Name;
 
         // ⑤ 构造上下文与服务
-        string dataDirectory = PluginPaths.GetDataDirectory(PluginId);
-        try
-        {
-            if (!System.IO.Directory.Exists(dataDirectory)) System.IO.Directory.CreateDirectory(dataDirectory);
-        }
-        catch
-        {
-            // 数据目录创建失败不阻断加载，插件自己写文件时会看到真实错误
-        }
-
-        var metadata = new PluginMetadata
-        {
-            Id = manifest.Id,
-            Name = manifest.Name,
-            Version = manifest.Version,
-            Author = manifest.Author,
-            Description = manifest.Description,
-            Homepage = manifest.Homepage,
-            License = manifest.License,
-            ApiVersion = manifest.ApiVersion,
-            Capabilities = manifest.ResolveCapabilities(),
-            InstallDirectory = Directory,
-            DataDirectory = dataDirectory,
-        };
+        string dataDirectory = EnsureDataDirectory();
+        PluginMetadata metadata = BuildMetadata(manifest, dataDirectory);
 
         _session = PluginHost.Catalog.BeginSession(PluginId);
         _events = new PluginEventService(this);
@@ -680,6 +787,18 @@ internal sealed class PluginInstance
         RevokeEventSubscriptions();
         RequestPluginShutdown();
         DisposeTokens();
+
+        // 进程回收只能放在「真正的卸载」里，不能放在 Teardown：
+        // Teardown 同时是加载失败的回滚路径，而一次失败的加载不该迁怒于
+        // 已经在运行的实例 —— 那正是"第二次触发把翻译框弄没"的原因。
+        int terminated = PluginProcessRuntime.TerminateAll(PluginId);
+        if (terminated > 0)
+        {
+            Logger.Info($"停用插件，已结束 {terminated} 个由宿主拉起的进程");
+        }
+
+        if (PluginProcessRuntime.Count(PluginId) != 0)
+            throw new InvalidOperationException(I18n.T("PluginsProcessStopFailed"));
 
         // OwnedActions 里的 PluginActionRegistration 持有插件侧 IActionContribution。
         // 必须在 Teardown/GC 探测之前清空，否则这个宿主字段会把插件 ALC 继续钉住。
@@ -765,6 +884,7 @@ internal sealed class PluginInstance
         RevokeContributions();
         RevokeEventSubscriptions();
         DisposeTokens();
+        _processLoaded = false;
         OwnedActions = Array.Empty<PluginActionRegistration>();
         ActionCount = 0;
 

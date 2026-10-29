@@ -5356,6 +5356,76 @@ internal static class PluginSelfTest
             }
         }
 
+        // 回归断言：进程运行时（SDK 1.14）的清单契约。
+        // 四条各自对应一次真实故障面：合法的被拒（功能不可用）、缺 command 被放行
+        // （一触发才报错）、未知 runtime 静默退回程序集形态（报错方向完全错误）、
+        // 缺省值不是 assembly（存量插件全部退化）。
+        var processManifest = new PluginManifest
+        {
+            Id = "com.selftest.process",
+            Name = "进程运行时自检",
+            Author = "selftest",
+            Description = "d",
+            Version = "0.1.0",
+            ApiVersion = PluginApi.ApiVersion,
+            MinHostVersion = "0.0.1",
+            Runtime = PluginRuntimeTypes.Process,
+            Command = new List<string> { "bin/sample.exe", "--action", "{action}" },
+            Actions = new List<PluginProcessAction> { new() { Id = "run", DisplayName = "运行" } },
+        };
+
+        if (!PluginManifestReader.Validate(processManifest, out _, out string processError, allowReservedIdPrefix: true))
+        {
+            fail("进程运行时契约", $"一个合法的 runtime=process 清单被拒绝：{processError}");
+        }
+
+        var noCommandManifest = new PluginManifest
+        {
+            Id = "com.selftest.process.nocmd",
+            Name = "缺 command",
+            Author = "selftest",
+            Description = "d",
+            Version = "0.1.0",
+            ApiVersion = PluginApi.ApiVersion,
+            MinHostVersion = "0.0.1",
+            Runtime = PluginRuntimeTypes.Process,
+            Actions = new List<PluginProcessAction> { new() { Id = "run", DisplayName = "运行" } },
+        };
+        if (PluginManifestReader.Validate(noCommandManifest, out _, out _, allowReservedIdPrefix: true))
+        {
+            fail("进程运行时契约", "runtime=process 但缺 command 的清单被放行了，应当拒绝。");
+        }
+
+        var badRuntimeManifest = new PluginManifest
+        {
+            Id = "com.selftest.process.badrt",
+            Name = "未知运行时",
+            Author = "selftest",
+            Description = "d",
+            Version = "0.1.0",
+            ApiVersion = PluginApi.ApiVersion,
+            MinHostVersion = "0.0.1",
+            Runtime = "proc",
+            Command = new List<string> { "bin/sample.exe" },
+            Actions = new List<PluginProcessAction> { new() { Id = "run", DisplayName = "运行" } },
+        };
+        if (PluginManifestReader.Validate(badRuntimeManifest, out _, out string badRuntimeError, allowReservedIdPrefix: true))
+        {
+            fail("进程运行时契约", "未知 runtime 值被放行了 —— 它会被当成程序集插件加载，报错方向完全错误。");
+        }
+        else if (!badRuntimeError.Contains(PluginRuntimeTypes.Assembly) ||
+                 !badRuntimeError.Contains(PluginRuntimeTypes.Process))
+        {
+            fail("进程运行时契约", $"未知 runtime 的拒绝信息没有列出合法值：{badRuntimeError}");
+        }
+
+        if (new PluginManifest().Runtime != PluginRuntimeTypes.Assembly)
+        {
+            fail("进程运行时契约", "未声明 runtime 的清单默认值不是 assembly —— 存量插件会全部退化。");
+        }
+
+        line("  进程运行时清单契约：合法清单通过、缺 command 被拒、未知 runtime 被拒且提示合法值、缺省仍为 assembly ✓");
+
         // 回归断言：--test-instance / --plugin-selftest 模式下 EnsureAutoStartRegistryUpToDate 绝不读写 HKCU 开机启动项
         bool isTestMode = ConfigManager.IsTestInstanceMode();
         if (!isTestMode)

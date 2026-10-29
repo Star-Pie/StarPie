@@ -54,6 +54,41 @@ internal static class PluginScanner
 
     // ------------------------------------------------------------------ 公开入口
 
+    /// <summary>社区导入只接受清单本身或既有 DLL 入口；不执行候选代码。</summary>
+    public static PluginScanResult ScanSelectedFile(string file, bool allowReservedIdPrefix = false)
+    {
+        if (string.Equals(Path.GetExtension(file), ".json", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.Equals(Path.GetFileName(file), "plugin.json", StringComparison.OrdinalIgnoreCase) || !File.Exists(file))
+                return Fail(new PluginScanResult { SourceDirectory = Path.GetDirectoryName(file) ?? "" },
+                    PluginScanFailure.ManifestInvalid, I18n.T("PluginsManifestFileRequired"));
+            return ScanInstalledPlugin(Path.GetDirectoryName(Path.GetFullPath(file))!, allowReservedIdPrefix);
+        }
+        return ScanSelectedDll(file, allowReservedIdPrefix);
+    }
+
+    internal static string[] EnumerateCandidateFiles(string directory)
+    {
+        string[] dlls = Directory.GetFiles(directory, "*.dll", SearchOption.TopDirectoryOnly);
+        var files = new List<string>();
+        string manifest = PluginPaths.GetManifestPath(directory);
+        bool processRoot = File.Exists(manifest) &&
+            PluginManifestReader.TryLoad(manifest, out PluginManifest root, out _, out _, allowReservedIdPrefix: true) &&
+            root.Runtime == PluginRuntimeTypes.Process;
+        if (processRoot) files.Add(manifest);
+        else
+        {
+            files.AddRange(dlls);
+            if (dlls.Length == 0 && File.Exists(manifest)) files.Add(manifest);
+        }
+        foreach (string child in Directory.GetDirectories(directory))
+        {
+            string childManifest = PluginPaths.GetManifestPath(child);
+            if (File.Exists(childManifest)) files.Add(childManifest);
+        }
+        return files.ToArray();
+    }
+
     /// <summary>
     /// 识别用户在文件对话框里手动选择的那一枚 <c>.dll</c>。
     /// 这是「手动选 .dll」产品语义的入口，必须能处理两种分发形态：
@@ -182,6 +217,17 @@ internal static class PluginScanner
         result.Manifest = manifest;
         result.ManifestSource = "Manifest";
 
+        // ---- 进程形态：压根没有程序集 ----
+        // 必须放在定位入口程序集之前，否则这里会先报「找不到与插件 ID 同名的程序集」,
+        // 而那个错误对这个插件是完全无关的。
+        if (string.Equals(manifest.Runtime, PluginRuntimeTypes.Process, StringComparison.Ordinal))
+        {
+            if (!CheckProcessContract(result, pluginDirectory, manifest)) return result;
+            result.Accepted = true;
+            result.Failure = PluginScanFailure.None;
+            return result;
+        }
+
         string? dllPath = ResolveEntryAssemblyPath(pluginDirectory, manifest);
         if (dllPath == null)
         {
@@ -244,6 +290,96 @@ internal static class PluginScanner
         }
 
         return null;
+    }
+
+    // ------------------------------------------------------------------ 进程形态
+
+    /// <summary>
+    /// 校验进程插件的启动命令。程序集插件那一整套（CLR 头、ILOnly、入口类型、TFM 兼容）
+    /// 在这里全部不适用，取而代之的是「可执行文件存在且没有越出插件目录」。
+    /// </summary>
+    private static bool CheckProcessContract(PluginScanResult result, string pluginDirectory, PluginManifest manifest)
+    {
+        result.Runtime = PluginRuntimeTypes.Process;  // 下游（PluginInstance）靠这个字段选加载路径
+        result.Command = new List<string>(manifest.Command);
+        // 不是 .NET 程序集：TFM 与 PE 机器码对进程插件都是无意义的字段，
+        // 留着它们只会在详情页上显示成一句假信息。
+        result.TargetFramework = "";
+        result.MachineText = "";
+        result.DllPath = "";                         // 没有入口程序集
+
+        if (!TryResolveProcessExecutable(pluginDirectory, manifest, out string exePath, out string error))
+        {
+            Fail(result, PluginScanFailure.DllNotFound, error);
+            return false;
+        }
+
+        result.FileSizeText = DescribeSize(exePath);
+        return true;
+    }
+
+    /// <summary>
+    /// 解析 <c>command[0]</c>。相对路径相对插件目录，且**必须落在目录内**。
+    /// <para>
+    /// 越界检查是这条形态的安全底线：一份形如 <c>..\..\Windows\System32\cmd.exe</c> 的命令，
+    /// 在安装确认页上看起来只是一行路径，用户不会去解析它。绝对路径放行，
+    /// 但那是显式选择 —— 相对的"顺手往上跳两级"不是。
+    /// </para>
+    /// </summary>
+    public static bool TryResolveProcessExecutable(
+        string pluginDirectory,
+        PluginManifest manifest,
+        out string exePath,
+        out string error)
+    {
+        exePath = "";
+        error = "";
+
+        if (manifest.Command == null || manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
+        {
+            error = "command[0] 为空：进程插件的第一项必须是可执行文件。";
+            return false;
+        }
+
+        string raw = manifest.Command[0].Trim();
+        string root = Path.GetFullPath(pluginDirectory);
+        string resolved;
+        try
+        {
+            // C:foo 和 \foo 都 rooted，但依赖当前目录/驱动器，不能冒充显式绝对路径。
+            if (Path.IsPathRooted(raw) && !Path.IsPathFullyQualified(raw))
+            {
+                error = I18n.TF("PluginsProcessExecutablePathInvalid", raw);
+                return false;
+            }
+            resolved = Path.GetFullPath(Path.IsPathFullyQualified(raw) ? raw : Path.Combine(root, raw));
+        }
+        catch (Exception ex)
+        {
+            error = $"command[0] 无法解析为路径：{ex.Message}";
+            return false;
+        }
+
+        if (!Path.IsPathFullyQualified(raw))
+        {
+            string rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
+                ? root
+                : root + Path.DirectorySeparatorChar;
+            if (!resolved.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+            {
+                error = $"command[0]=\"{raw}\" 解析后越出了插件目录（{resolved}）。相对路径必须留在插件目录内。";
+                return false;
+            }
+        }
+
+        if (!File.Exists(resolved))
+        {
+            error = $"command[0] 指向的可执行文件不存在：{resolved}";
+            return false;
+        }
+
+        exePath = resolved;
+        return true;
     }
 
     // ------------------------------------------------------------------ G-2 结构
