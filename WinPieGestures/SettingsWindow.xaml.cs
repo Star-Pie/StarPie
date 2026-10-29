@@ -934,6 +934,7 @@ public partial class SettingsWindow : Window
 		{
 			ComponentIdentificationCheckBox.IsChecked = ConfigManager.CurrentConfig.EnableComponentIdentification;
 		}
+		RefreshApplicationIdentificationUi();
 		if (MouseReleaseDebounceCheckBox != null)
 		{
 			MouseReleaseDebounceCheckBox.IsChecked = ConfigManager.CurrentConfig.EnableMouseReleaseDebounce;
@@ -1949,7 +1950,11 @@ public partial class SettingsWindow : Window
 			GestureSensitivityTitleText.Text = I18n.T("GestureSensitivityTitle");
 		}
 		if (ComponentIdentificationTitleText != null) ComponentIdentificationTitleText.Text = I18n.T("ComponentIdentificationTitle");
+		if (ApplicationIdentificationHeadingText != null) ApplicationIdentificationHeadingText.Text = I18n.T("ApplicationIdentificationHeading");
+		if (ApplicationIdentificationGlobalText != null) ApplicationIdentificationGlobalText.Text = I18n.T("ApplicationIdentificationGlobal");
+		if (EditApplicationIdentificationBtn != null) EditApplicationIdentificationBtn.Content = I18n.T("EditApplicationIdentification");
 		if (ComponentIdentificationDescText != null) ComponentIdentificationDescText.Text = I18n.T("ComponentIdentificationDesc");
+		RefreshApplicationIdentificationUi();
 		if (MouseReleaseDebounceTitleText != null)
 		{
 			MouseReleaseDebounceTitleText.Text = I18n.T("MouseReleaseDebounceTitle");
@@ -11189,12 +11194,32 @@ public partial class SettingsWindow : Window
 		ScheduleAutoSave();
 	}
 
+	private void RefreshApplicationIdentificationUi()
+	{
+		bool componentMode = ConfigManager.CurrentConfig?.EnableComponentIdentification == true;
+		string mode = I18n.T(componentMode ? "ApplicationIdentificationComponentMode" : "ApplicationIdentificationWindowMode");
+		if (ComponentIdentificationStateText != null)
+			ComponentIdentificationStateText.Text = I18n.TF("ApplicationIdentificationCurrentMode", mode);
+		if (IsolationIdentificationStateText != null)
+			IsolationIdentificationStateText.Text = I18n.TF("ApplicationIdentificationSharedMode", mode);
+	}
+
+	private void EditApplicationIdentificationBtn_Click(object sender, RoutedEventArgs e)
+	{
+		SwitchToTab(2);
+		Dispatcher.BeginInvoke(new Action(() =>
+		{
+			ApplicationIdentificationPanel?.BringIntoView();
+			ComponentIdentificationCheckBox?.Focus();
+		}), DispatcherPriority.Loaded);
+	}
 	private void ComponentIdentificationCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (_isUpdatingUi || ConfigManager.CurrentConfig == null) return;
 		bool enabled = ComponentIdentificationCheckBox?.IsChecked == true;
 		if (ConfigManager.CurrentConfig.EnableComponentIdentification == enabled) return;
 		ConfigManager.CurrentConfig.EnableComponentIdentification = enabled;
+		RefreshApplicationIdentificationUi();
 		ScheduleAutoSave();
 	}
 	private void MouseReleaseDebounceCheckBox_Changed(object sender, RoutedEventArgs e)

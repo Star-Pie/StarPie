@@ -787,14 +787,6 @@
                       </StackPanel>
                     </StackPanel>
                   </Border>
-                  <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,12,0,0">
-                    <CheckBox Name="ComponentIdentificationCheckBox" Style="{StaticResource ToggleSwitchStyle}" Checked="ComponentIdentificationCheckBox_Changed" Unchecked="ComponentIdentificationCheckBox_Changed">
-                      <StackPanel Margin="6,0,0,0">
-                        <TextBlock Name="ComponentIdentificationTitleText" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Name="ComponentIdentificationDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
-                      </StackPanel>
-                    </CheckBox>
-                  </Border>
                 </StackPanel>
               </Border>
               <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="20" Margin="0,0,0,14">
@@ -1468,7 +1460,15 @@
                   <DynamicResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
-                  <TextBlock Name="IsolationModeTitleText" Text="进程隔离与生效名单" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Name="IsolationModeTitleText" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <Grid Margin="0,6,0,6">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Name="IsolationIdentificationStateText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <Button Name="EditApplicationIdentificationBtn" Grid.Column="1" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="8,0,0,0" Click="EditApplicationIdentificationBtn_Click" />
+                  </Grid>
                   <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="4" Margin="0,8,0,12">
                     <Grid>
                       <Grid.ColumnDefinitions>
@@ -2580,6 +2580,7 @@
         <Grid Name="MappingsSettingsGrid" Visibility="Collapsed">
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
           
@@ -2624,8 +2625,34 @@
             </Border>
           </Grid>
 
+          <!-- 全局应用识别：独立于当前方案及画布/列表视图。 -->
+          <Border Name="ApplicationIdentificationPanel" Grid.Row="1" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="12,9" Margin="0,0,0,12">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,18,0">
+                <TextBlock Name="ApplicationIdentificationHeadingText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="8,0,0,0">
+                  <TextBlock Name="ApplicationIdentificationGlobalText" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Border>
+              </StackPanel>
+              <CheckBox Name="ComponentIdentificationCheckBox" Grid.Column="1" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center" Checked="ComponentIdentificationCheckBox_Changed" Unchecked="ComponentIdentificationCheckBox_Changed">
+                <TextBlock Name="ComponentIdentificationTitleText" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" Margin="6,0,0,0" />
+              </CheckBox>
+              <TextBlock Name="ComponentIdentificationStateText" Grid.Column="2" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="18,0,8,0" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <TextBlock Name="ComponentIdentificationDescText" Grid.Row="1" Grid.ColumnSpan="3" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
+            </Grid>
+          </Border>
+
           <!-- 模式 1：画布联动精调工作区 (MappingsCanvasModeGrid) -->
-          <Grid Name="MappingsCanvasModeGrid" Grid.Row="1" Visibility="Visible">
+          <Grid Name="MappingsCanvasModeGrid" Grid.Row="2" Visibility="Visible">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Name="Tab2LeftColumn" Width="1.15*" MinWidth="340" />
               <ColumnDefinition Width="Auto" />
@@ -3522,7 +3549,7 @@
           </Grid>
 
           <!-- 模式 2：紧凑全览列表模式 (MappingsListModeGrid) -->
-          <Grid Name="MappingsListModeGrid" Grid.Row="1" Visibility="Collapsed">
+          <Grid Name="MappingsListModeGrid" Grid.Row="2" Visibility="Collapsed">
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
               <StackPanel Margin="0,0,10,32">
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="18" Margin="0,0,0,14">
