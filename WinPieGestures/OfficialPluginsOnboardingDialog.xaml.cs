@@ -358,7 +358,9 @@ public partial class OfficialPluginsOnboardingDialog : Window
                 progress: progressReporter,
                 cancellationToken: cancellationToken,
                 preExistingDisabledPluginIds: _preExistingDisabledIds,
-                downloadOptions: downloadOptions
+                downloadOptions: downloadOptions,
+                processConfirmation: info => Dispatcher.InvokeAsync(() =>
+                    IsLoaded && !_isCancellingAndClosing && PluginInstallConfirmationDialog.Show(this, info)).Task
             );
 
             if (!IsLoaded || _isCancellingAndClosing) return;

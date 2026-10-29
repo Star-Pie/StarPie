@@ -224,7 +224,7 @@ internal static class PluginHost
     {
         try
         {
-            return PluginScanner.ScanSelectedDll(dllPath);
+            return PluginScanner.ScanSelectedFile(dllPath);
         }
         catch (Exception ex)
         {
@@ -1165,7 +1165,7 @@ internal static class PluginHost
 
             // 目录名固定从 PluginPaths 取；这里不递归子目录 ——
             // 扫描目录的约定就是「扁平，只放 .dll」，子目录一律不认。
-            string[] files = Directory.GetFiles(PluginPaths.ScanRoot, "*.dll", SearchOption.TopDirectoryOnly);
+            string[] files = PluginScanner.EnumerateCandidateFiles(PluginPaths.ScanRoot);
             Array.Sort(files, StringComparer.OrdinalIgnoreCase);
 
             var scans = new List<PluginScanResult>(files.Length);
@@ -1217,7 +1217,7 @@ internal static class PluginHost
     {
         try
         {
-            return PluginScanner.ScanSelectedDll(
+            return PluginScanner.ScanSelectedFile(
                 file,
                 allowReservedIdPrefix: IsFileInsideScanRoot(file));
         }
@@ -1756,7 +1756,8 @@ internal static class PluginHost
         restartSuggested = false;
         if (string.Equals(scan.ManifestSource, "Manifest", StringComparison.Ordinal))
         {
-            return CopyDirectory(scan.SourceDirectory, targetDirectory, overwrite, out error, out restartSuggested);
+            return CopyDirectory(scan.SourceDirectory, targetDirectory, overwrite, out error, out restartSuggested,
+                preservePrivateSdk: scan.Runtime == PluginRuntimeTypes.Process);
         }
 
         if (!CopySingleFile(scan.DllPath, targetDirectory, overwrite, out error, out restartSuggested))
@@ -1891,7 +1892,7 @@ internal static class PluginHost
         }
     }
 
-    private static bool CopyDirectory(string source, string target, bool overwrite, out string error, out bool restartSuggested)
+    private static bool CopyDirectory(string source, string target, bool overwrite, out string error, out bool restartSuggested, bool preservePrivateSdk = false)
     {
         error = "";
         restartSuggested = false;
@@ -1918,7 +1919,7 @@ internal static class PluginHost
 
                 // 不复制宿主会统一提供的 SDK 程序集，避免现场出现「类型身份分裂」的隐患
                 string fileName = Path.GetFileName(file);
-                if (string.Equals(fileName, PluginApi.AbstractionsAssemblyName + ".dll", StringComparison.OrdinalIgnoreCase))
+                if (!preservePrivateSdk && string.Equals(fileName, PluginApi.AbstractionsAssemblyName + ".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     AppLogger.LogWarn($"[plugin] 已跳过安装包内的 {fileName}（由宿主统一提供）。");
                     continue;

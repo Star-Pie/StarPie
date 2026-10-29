@@ -25,6 +25,10 @@ public partial class SettingsWindow
         }
     }
 
+    private Task<bool> ConfirmOfficialProcessInstallationAsync(PluginInstallConfirmation info) =>
+        Dispatcher.InvokeAsync(() => !_resourcesReleased && !App.IsExiting && IsVisible &&
+            ConfirmPluginInstall(info)).Task;
+
     private async Task ImportPluginFileAsync()
     {
         if (_pluginImportBusy || _resourcesReleased || App.IsExiting || !EnsurePluginSystemReady()) return;
@@ -40,7 +44,8 @@ public partial class SettingsWindow
         InstallPluginButton.IsEnabled = false;
         try
         {
-            if (string.Equals(Path.GetExtension(dialog.FileName), ".dll", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(Path.GetExtension(dialog.FileName), ".dll", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Path.GetExtension(dialog.FileName), ".json", StringComparison.OrdinalIgnoreCase))
             {
                 await InstallCommunityPluginAsync(dialog.FileName);
                 return;

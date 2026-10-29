@@ -11,7 +11,7 @@ internal readonly record struct StandardUserLaunchRequest(string FileName, strin
 }
 
 // 只在桌面 Shell 已确认提权时使用；不把检测失败或 COM 执行失败当作降权后备条件。
-internal static class StandardUserProcessLauncher
+internal static partial class StandardUserProcessLauncher
 {
     internal interface IBackend
     {

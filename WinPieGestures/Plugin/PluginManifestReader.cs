@@ -278,13 +278,19 @@ internal static class PluginManifestReader
 
         if (isProcessRuntime)
         {
-            if (manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
+            if (manifest.Command == null || manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
             {
                 failure = PluginScanFailure.ManifestInvalid;
                 error = "runtime=\"process\" 的插件必须用 command 声明启动命令，且 command[0] 是可执行文件。";
                 return false;
             }
-            if (manifest.Actions.Count == 0)
+            if (manifest.Command.Any(argument => argument == null))
+            {
+                failure = PluginScanFailure.ManifestInvalid;
+                error = I18n.T("PluginsProcessCommandInvalid");
+                return false;
+            }
+            if (manifest.Actions == null || manifest.Actions.Count == 0)
             {
                 failure = PluginScanFailure.ManifestInvalid;
                 error = "runtime=\"process\" 的插件必须在 actions 里至少声明一个动作，否则宿主无法为它创建扇区入口。";
@@ -294,7 +300,7 @@ internal static class PluginManifestReader
             var seenActionIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (PluginProcessAction action in manifest.Actions)
             {
-                if (string.IsNullOrWhiteSpace(action.Id))
+                if (action == null || string.IsNullOrWhiteSpace(action.Id))
                 {
                     failure = PluginScanFailure.ManifestInvalid;
                     error = "actions[].id 不能为空。";

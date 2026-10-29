@@ -112,7 +112,7 @@ internal sealed class ProcessActionContribution : IActionContribution
         catch (Exception ex)
         {
             _logger.Error($"进程插件「{_manifest.Id}」启动失败", ex);
-            return ActionResult.Fail($"无法启动插件进程：{ex.GetBaseException().Message}");
+            return ActionResult.Fail(I18n.TF("PluginsProcessLaunchFailed", ex.GetBaseException().Message));
         }
 
         _logger.Info(
@@ -127,7 +127,7 @@ internal sealed class ProcessActionContribution : IActionContribution
             window.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
             try
             {
-                await tracked.Process.WaitForExitAsync(window.Token).ConfigureAwait(false);
+                await tracked.WaitForExitAsync(window.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -136,8 +136,8 @@ internal sealed class ProcessActionContribution : IActionContribution
             }
         }
 
-        // 给 Exited 处理器一点时间把退出码缓存好；等不到就是仍在运行。
-        if (!tracked.WaitForExitInfo(500))
+        // 退出任务只读取缓存；动作完成后不释放进程及管道资源。
+        if (!tracked.HasExited)
         {
             return ActionResult.Ok(silent: true);
         }
@@ -150,9 +150,7 @@ internal sealed class ProcessActionContribution : IActionContribution
 
         string detail = tracked.Snapshot();
         _logger.Warn($"进程插件「{_manifest.Id}」动作「{_action.Id}」退出码 {tracked.ExitCode}：{detail}");
-        return ActionResult.Fail(string.IsNullOrWhiteSpace(detail)
-            ? $"插件进程退出码 {tracked.ExitCode}。"
-            : $"插件进程退出码 {tracked.ExitCode}：{OneLine(detail)}");
+        return ActionResult.Fail(I18n.TF("PluginsProcessExitFailed", tracked.ExitCode, OneLine(detail)).TrimEnd());
     }
 
     /// <summary>

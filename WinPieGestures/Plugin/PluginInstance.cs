@@ -797,6 +797,9 @@ internal sealed class PluginInstance
             Logger.Info($"停用插件，已结束 {terminated} 个由宿主拉起的进程");
         }
 
+        if (PluginProcessRuntime.Count(PluginId) != 0)
+            throw new InvalidOperationException(I18n.T("PluginsProcessStopFailed"));
+
         // OwnedActions 里的 PluginActionRegistration 持有插件侧 IActionContribution。
         // 必须在 Teardown/GC 探测之前清空，否则这个宿主字段会把插件 ALC 继续钉住。
         OwnedActions = Array.Empty<PluginActionRegistration>();

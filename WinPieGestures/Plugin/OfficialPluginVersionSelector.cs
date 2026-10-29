@@ -37,7 +37,8 @@ internal static class OfficialPluginVersionSelector
     internal static bool HasValidRequirements(OfficialPluginModule module) =>
         SimpleVersion.TryParse(module.MinHostVersion, out SimpleVersion minimum) &&
         !string.IsNullOrWhiteSpace(module.ApiVersion) && Regex.IsMatch(module.ApiVersion, @"^[0-9]+\.[0-9]+$") && SimpleVersion.TryParse(module.ApiVersion, out _) &&
-        TargetFrameworkInfo.TryParse(module.TargetFramework, out _) &&
+        PluginRuntimeTypes.TryNormalize(module.Runtime, out string runtime) &&
+        (runtime == PluginRuntimeTypes.Process || TargetFrameworkInfo.TryParse(module.TargetFramework, out _)) &&
         (string.IsNullOrWhiteSpace(module.MaxHostVersion) ||
             (SimpleVersion.TryParse(module.MaxHostVersion, out SimpleVersion maximum) && maximum.CompareTo(minimum) >= 0));
 
@@ -55,8 +56,9 @@ internal static class OfficialPluginVersionSelector
         SimpleVersion.TryParse(module.ApiVersion, out SimpleVersion api);
         if (api.Major != hostApi.Major || api.Minor > hostApi.Minor)
             return new(OfficialPluginCompatibilityKind.ApiUnsupported, module.ApiVersion, host.ApiVersion);
+        PluginRuntimeTypes.TryNormalize(module.Runtime, out string runtime);
         TargetFrameworkInfo.TryParse(module.TargetFramework, out TargetFrameworkInfo framework);
-        if (!TargetFrameworkInfo.IsCompatible(framework, hostFramework))
+        if (runtime != PluginRuntimeTypes.Process && !TargetFrameworkInfo.IsCompatible(framework, hostFramework))
             return new(OfficialPluginCompatibilityKind.FrameworkUnsupported, module.TargetFramework, host.TargetFramework);
         return new(OfficialPluginCompatibilityKind.Compatible);
     }

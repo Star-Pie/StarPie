@@ -54,6 +54,41 @@ internal static class PluginScanner
 
     // ------------------------------------------------------------------ 公开入口
 
+    /// <summary>社区导入只接受清单本身或既有 DLL 入口；不执行候选代码。</summary>
+    public static PluginScanResult ScanSelectedFile(string file, bool allowReservedIdPrefix = false)
+    {
+        if (string.Equals(Path.GetExtension(file), ".json", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.Equals(Path.GetFileName(file), "plugin.json", StringComparison.OrdinalIgnoreCase) || !File.Exists(file))
+                return Fail(new PluginScanResult { SourceDirectory = Path.GetDirectoryName(file) ?? "" },
+                    PluginScanFailure.ManifestInvalid, I18n.T("PluginsManifestFileRequired"));
+            return ScanInstalledPlugin(Path.GetDirectoryName(Path.GetFullPath(file))!, allowReservedIdPrefix);
+        }
+        return ScanSelectedDll(file, allowReservedIdPrefix);
+    }
+
+    internal static string[] EnumerateCandidateFiles(string directory)
+    {
+        string[] dlls = Directory.GetFiles(directory, "*.dll", SearchOption.TopDirectoryOnly);
+        var files = new List<string>();
+        string manifest = PluginPaths.GetManifestPath(directory);
+        bool processRoot = File.Exists(manifest) &&
+            PluginManifestReader.TryLoad(manifest, out PluginManifest root, out _, out _, allowReservedIdPrefix: true) &&
+            root.Runtime == PluginRuntimeTypes.Process;
+        if (processRoot) files.Add(manifest);
+        else
+        {
+            files.AddRange(dlls);
+            if (dlls.Length == 0 && File.Exists(manifest)) files.Add(manifest);
+        }
+        foreach (string child in Directory.GetDirectories(directory))
+        {
+            string childManifest = PluginPaths.GetManifestPath(child);
+            if (File.Exists(childManifest)) files.Add(childManifest);
+        }
+        return files.ToArray();
+    }
+
     /// <summary>
     /// 识别用户在文件对话框里手动选择的那一枚 <c>.dll</c>。
     /// 这是「手动选 .dll」产品语义的入口，必须能处理两种分发形态：
@@ -300,7 +335,7 @@ internal static class PluginScanner
         exePath = "";
         error = "";
 
-        if (manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
+        if (manifest.Command == null || manifest.Command.Count == 0 || string.IsNullOrWhiteSpace(manifest.Command[0]))
         {
             error = "command[0] 为空：进程插件的第一项必须是可执行文件。";
             return false;
@@ -311,7 +346,13 @@ internal static class PluginScanner
         string resolved;
         try
         {
-            resolved = Path.GetFullPath(Path.IsPathRooted(raw) ? raw : Path.Combine(root, raw));
+            // C:foo 和 \foo 都 rooted，但依赖当前目录/驱动器，不能冒充显式绝对路径。
+            if (Path.IsPathRooted(raw) && !Path.IsPathFullyQualified(raw))
+            {
+                error = I18n.TF("PluginsProcessExecutablePathInvalid", raw);
+                return false;
+            }
+            resolved = Path.GetFullPath(Path.IsPathFullyQualified(raw) ? raw : Path.Combine(root, raw));
         }
         catch (Exception ex)
         {
@@ -319,7 +360,7 @@ internal static class PluginScanner
             return false;
         }
 
-        if (!Path.IsPathRooted(raw))
+        if (!Path.IsPathFullyQualified(raw))
         {
             string rootWithSeparator = root.EndsWith(Path.DirectorySeparatorChar)
                 ? root

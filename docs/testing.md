@@ -130,3 +130,11 @@ git diff -- .\tests\i18n_baseline.json
 - 根CI需检出官方子模块；先独立提交插件，再更新主仓库指针。源代码测试通过不等于官方包/catalog已经发布。
 
 当前双仓库候选指纹、准确命令/退出码、独立复核与实机验收清单见[音效迁移验收记录](plans/beta7-sound-plugin-verification.md)。日志及编译产物保留在被忽略的 `scratch/beta7-verification/`，不作为产品或源码提交。
+
+## 进程运行时审查回归
+
+`scratch/process-runtime-review-tests/test_process_runtime.csproj` 必须传入明确的 `CandidateDirectory`，引用该目录中的宿主与 SDK；启动时验证宿主副本哈希，避免嵌套旧产物污染引用。
+探针覆盖普通用户令牌策略、参数往返、资源所有权、有限输出、清单与文件包完整性、导入及在线确认。载荷为无执行能力文件，HTTP 使用内存 handler，不启动真实目标。
+`legacy-launch` 与 `legacy-catalog` 包装工程链接已有探针到同一候选，不修改旧探针源码、不使用默认主程序输出。
+
+最终命令、红绿证据和原生权限／管道／GUI人工门禁见 [进程运行时审查修复](plans/process-runtime-review-fixes.md)。
