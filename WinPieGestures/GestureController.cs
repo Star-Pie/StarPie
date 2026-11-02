@@ -701,7 +701,8 @@ public partial class GestureController : IDisposable
 			return;
 		}
 		radialWindow.SetOuterEscapeState(targetEscape);
-		radialWindow.HighlightSector(targetSector, targetSubSector, targetShowSubTier);
+		radialWindow.HighlightSector(targetSector, targetSubSector, targetShowSubTier,
+			preserveSubTier: _pinState.Presented && targetSector < -1);
 	}
 
 	// 判断指定扇区是否为系统音量加/减动作（用于外甩豁免：音量扇区在任意拖距都可调音）
@@ -1665,7 +1666,7 @@ public partial class GestureController : IDisposable
 					}
 					if (ShowRadialUI(startPoint, profile, gestureVersion, focusSession))
 					{
-						ProcessMove(startPoint);
+						RefreshHoverAfterUiChange(startPoint, gestureVersion);
 						ApplyPendingHighlight();
 						ApplyVolumePreview();
 					}
@@ -2053,14 +2054,16 @@ public partial class GestureController : IDisposable
 					RadialWindow? rw = _radialWindow;
 					if (rw != null)
 					{
+						long version = GetCurrentGestureVersion();
 						DispatchUi(() =>
 						{
+							if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow)) return;
 							rw.SwitchToLayer(nextIdx);
 							if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu) _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
 							Point pt = (_lastMovePoint != default) ? _lastMovePoint : _startPoint;
 							if (_isGestureActive && pt != default)
 							{
-								ProcessMove(pt);
+								RefreshHoverAfterUiChange(pt, version);
 							}
 						});
 					}
@@ -2118,14 +2121,16 @@ public partial class GestureController : IDisposable
 					RadialWindow? rw = _radialWindow;
 					if (rw != null)
 					{
+						long version = GetCurrentGestureVersion();
 						DispatchUi(() =>
 						{
+							if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow)) return;
 							rw.SwitchToLayer(nextIdx);
 							if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu) _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
 							Point pt = (_lastMovePoint != default) ? _lastMovePoint : _startPoint;
 							if (_isGestureActive && pt != default)
 							{
-								ProcessMove(pt);
+								RefreshHoverAfterUiChange(pt, version);
 							}
 						});
 					}
@@ -2418,6 +2423,11 @@ public partial class GestureController : IDisposable
 
 	private void ProcessMove(Point currentPoint)
 	{
+		if (_pinState.Enabled)
+		{
+			QueuePinnedHover(currentPoint);
+			return;
+		}
 		_suppressPrimaryOnRelease = false;
 		_lastMovePoint = currentPoint;
 		double moveScaleX = (_currentDpiScaleX > 0.0) ? _currentDpiScaleX : 1.0;
@@ -2707,8 +2717,18 @@ public partial class GestureController : IDisposable
 
 		try
 		{
-			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, interaction.Presented, _pinState.Enabled);
-			if (_pinState.Enabled) BeginPinnedPresentation(gestureVersion);
+			bool pinned = _pinState.Enabled;
+			if (pinned) interaction.Update(-2, -1, false, false);
+			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, () =>
+			{
+				// Hit testing needs the revealed geometry; publish no initial angular hover first.
+				if (pinned) ApplyPinnedHoverAtPresentation(gestureVersion);
+				interaction.Presented();
+			}, pinned);
+			if (_pinState.Enabled)
+			{
+				BeginPinnedPresentation(gestureVersion);
+			}
 			lock (_uiUpdateSync)
 			{
 				if (_disposed || !_isGestureActive || gestureVersion != _gestureVersion || (focusSession != null && focusSession.IsCancelled) || !ReferenceEquals(_radialWindow, window))
@@ -2732,7 +2752,7 @@ public partial class GestureController : IDisposable
 				SetCursorPos((int)Math.Round(actualCenter.X), (int)Math.Round(actualCenter.Y));
 				ProcessMove(actualCenter);
 			}
-			else if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu)
+			else if (!_pinState.Enabled && ConfigManager.CurrentConfig.LockParentSectorOnSubmenu)
 			{
 				// 首帧可能先于冻结几何准备到达；展示后按最新坐标补算一次。
 				ProcessMove(_lastMovePoint);

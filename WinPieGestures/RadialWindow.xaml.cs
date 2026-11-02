@@ -2675,6 +2675,11 @@ public partial class RadialWindow : Window
 
 	public void HighlightSector(int mainIndex, int subIndex, bool showSubTier)
 	{
+		HighlightSector(mainIndex, subIndex, showSubTier, preserveSubTier: false);
+	}
+
+	internal void HighlightSector(int mainIndex, int subIndex, bool showSubTier, bool preserveSubTier)
+	{
 		_ = _currentHighlightedSector;
 		int currentHighlightedSector = _currentHighlightedSector;
 		_currentHighlightedSector = mainIndex;
@@ -2845,7 +2850,7 @@ public partial class RadialWindow : Window
 				ShowSubTier(mainIndex);
 			}
 		}
-		else if (_activeSubTierParentSector != -1)
+		else if (!preserveSubTier && _activeSubTierParentSector != -1)
 		{
 			ClearSubTier();
 		}

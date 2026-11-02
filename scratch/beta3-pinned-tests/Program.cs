@@ -145,6 +145,7 @@ internal static class Program
                 Check((bool)Field(controller, "_isGestureActive"), "stale confirmation ignored without touching session");
                 var outsideDown = new RawMouseEventArgs(513, "LeftButton", 0, true, 10000, 10000);
                 Call(controller, "Hook_OnRawMouseButton", new object(), outsideDown);
+                Pump();
                 Check(outsideDown.Handled && !(bool)Field(controller, "_isGestureActive"), "outside down cancels and is swallowed");
                 var outsideUp = new RawMouseEventArgs(514, "LeftButton", 0, false, 10000, 10000);
                 Call(controller, "Hook_OnRawMouseButton", new object(), outsideUp);
@@ -198,6 +199,109 @@ internal static class Program
                     Set(controller, "_isGestureActive", true);
                     Set(controller, "_gestureVersion", version);
                 }
+                Activate(150);
+                ConfigManager.CurrentConfig.EnableOuterEscapeCancel = false;
+                var hoverEvents = new List<StarPie.Plugin.InteractionEvent>();
+                object hoverSession = Call(controller, "TestBeginInteractionSession", (Func<StarPie.Plugin.InteractionEvent, int>)(evt => { hoverEvents.Add(evt); return 0; }))!;
+                Call(hoverSession, "Presented");
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(point =>
+                    {
+                        Check(Dispatcher.CurrentDispatcher == app.Dispatcher, "pinned hit testing stays on UI dispatcher");
+                        return point.X > 10 && point.X < 100 ? (true, 0, -1) : (false, -1, -1);
+                    }));
+                Call(controller, "ProcessMove", new Point(10000, 0)); Pump();
+                Check((int)Field(controller, "_selectedSectorIndex") < -1, "outside pinned geometry clears angular selection");
+                Check(hoverEvents.Last(evt => evt.Kind == StarPie.Plugin.InteractionEventKind.SelectionChanged).Target.Kind == StarPie.Plugin.InteractionTargetKind.None,
+                    "outside pinned geometry publishes no sector or core hover");
+                int outsideEvents = hoverEvents.Count;
+                Call(controller, "ProcessMove", new Point(-10000, 10000)); Pump();
+                Check(hoverEvents.Count == outsideEvents, "moving outside across angles does not repeat interaction feedback");
+                Call(controller, "ProcessMove", new Point(50, 0)); Pump();
+                Check((int)Field(controller, "_selectedSectorIndex") == 0, "reentering visible sector restores selection");
+                Set(controller, "_lastShowSubTier", true);
+                Set(controller, "_pinExpandedParent", 0);
+                Call(controller, "ProcessMove", new Point(10000, 0)); Pump();
+                Check((bool)Field(controller, "_lastShowSubTier") && (int)Field(controller, "_pinExpandedParent") == 0,
+                    "leaving geometry clears feedback without collapsing expanded submenu");
+                double protrudingX = Math.Ceiling(ConfigManager.CurrentConfig.WheelRadius) + 5;
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(point => (point.X == protrudingX, 0, -1)));
+                var protrudingDown = new RawMouseEventArgs(519, "MiddleButton", 0, true, (int)protrudingX, 0);
+                Call(controller, "Hook_OnRawMouseButton", new object(), protrudingDown); Pump();
+                Check(protrudingDown.Handled && (bool)Field(controller, "_isGestureActive"), "click bounds include rendered geometry beyond nominal radius");
+                var protrudingUp = new RawMouseEventArgs(520, "MiddleButton", 0, false, (int)protrudingX, 0);
+                Call(controller, "Hook_OnRawMouseButton", new object(), protrudingUp);
+                Check(protrudingUp.Handled, "geometry-checked down retains paired up ownership");
+                int queuedHitCalls = 0;
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(point => { queuedHitCalls++; return point.X < 100 ? (true, 0, -1) : (false, -1, -1); }));
+                Task.Run(() => { Call(controller, "ProcessMove", new Point(50, 0)); Call(controller, "ProcessMove", new Point(10000, 0)); }).Wait();
+                Check(queuedHitCalls == 0, "input thread does not access WPF geometry");
+                Pump();
+                Check(queuedHitCalls == 1 && (int)Field(controller, "_selectedSectorIndex") < -1, "queued hover uses latest pointer once");
+                queuedHitCalls = 0;
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(point =>
+                    {
+                        queuedHitCalls++;
+                        if (point.X < 100) Task.Run(() => Call(controller, "ProcessMove", new Point(10000, 0))).Wait();
+                        return point.X < 100 ? (true, 0, -1) : (false, -1, -1);
+                    }));
+                Call(controller, "ProcessMove", new Point(50, 0)); Pump();
+                Check(queuedHitCalls == 2 && (int)Field(controller, "_selectedSectorIndex") < -1,
+                    "new pointer arriving during UI consumption is not overwritten by old point");
+                Task.Run(() => Call(controller, "ProcessMove", new Point(50, 0))).Wait();
+                Activate(151);
+                queuedHitCalls = 0;
+                Pump();
+                Check(queuedHitCalls == 0, "stale hover callback cannot update a new session");
+                Call(input, "Begin", true);
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 0, -1)));
+                Call(controller, "ProcessMove", new Point(50, 0)); Pump();
+                Call(input, "Present");
+                Call(controller, "ApplyPinnedHoverAtPresentation", 151L);
+                Check((int)Field(controller, "_selectedSectorIndex") == 0, "presentation completion recalculates stationary pointer");
+                Call(controller, "ProcessMove", new Point(50, 0));
+                Call(controller, "RefreshHoverAfterUiChange", new Point(10000, 0), 151L); Pump();
+                Check((int)Field(controller, "_selectedSectorIndex") == 0 && (Point)Field(controller, "_pendingPinnedHoverPoint") == new Point(50, 0),
+                    "UI refresh never overwrites latest input with stale fallback point");
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(_ => { Activate(152); Set(controller, "_selectedSectorIndex", -1); return (true, 0, -1); }));
+                Call(controller, "ApplyPinnedHover", new Point(50, 0), 151L);
+                Check((int)Field(controller, "_selectedSectorIndex") == -1, "generation change during hit test rejects old hover publication");
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(_ => { Activate(153); return (false, -1, -1); }));
+                var oldOutsideDown = new RawMouseEventArgs(519, "MiddleButton", 0, true, 10000, 0);
+                Call(controller, "Hook_OnRawMouseButton", new object(), oldOutsideDown); Pump();
+                var oldOutsideUp = new RawMouseEventArgs(520, "MiddleButton", 0, false, 10000, 0);
+                Call(controller, "Hook_OnRawMouseButton", new object(), oldOutsideUp);
+                Check((bool)Field(controller, "_isGestureActive") && oldOutsideUp.Handled,
+                    "old outside-click hit callback cannot cancel new session and still drains paired up");
+                Activate(154);
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(point => (point.X < 1000, 0, -1)));
+                profile.Layers[0].Actions[0].SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+V" } };
+                Set(controller, "_pinExpandedParent", -1);
+                Set(controller, "_lastShowSubTier", false);
+                double expansionDistance = Math.Max(25, ConfigManager.CurrentConfig.SubWheelTriggerDistance);
+                Call(controller, "ProcessMove", new Point(expansionDistance + 1, 0)); Pump();
+                Call(controller, "ProcessMove", new Point(10000, 0)); Pump();
+                Call(controller, "ProcessMove", new Point(expansionDistance - 15, 0)); Pump();
+                Check((bool)Field(controller, "_lastShowSubTier") && (int)Field(controller, "_pinExpandedParent") == 0,
+                    "hover-expanded submenu stays open after leaving and returning closer to same parent");
+                profile.Layers[0].Actions[0].SubActions = null;
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
+                    (Func<Point, (bool, int, int)>)(_ => { Activate(155); return (true, 0, -1); }));
+                Call(controller, "ConfirmPinnedSelection", new Point(50, 0), 154L); Pump();
+                Check(executions == 0 && (bool)Field(controller, "_isGestureActive"),
+                    "confirmation superseded during geometry testing cannot execute in a new session");
+                Call(input, "Begin", false);
+                Set(controller, "_lastShowSubTier", false);
+                Set(controller, "_pinExpandedParent", -1);
+                Call(controller, "ProcessMove", new Point(10000, 0)); Pump();
+                Check((int)Field(controller, "_selectedSectorIndex") == 0, "ordinary gesture preserves distance-independent direction selection");
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 0, -1)));
                 Activate(200);
                 Call(controller, "ConfirmPinnedSelection", new Point(50, 0), 200L); Pump();
                 Check(executions == 1, "leaf confirm enqueues once through real release pipeline");

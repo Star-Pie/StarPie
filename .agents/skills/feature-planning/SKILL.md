@@ -20,7 +20,7 @@ Define:
 - compatibility, latency, memory, security/capability and localization impacts;
 - implementation stages with observable deliverables;
 - automated gates, independent review and human acceptance;
-- maximum repair cycles, deadline, stop conditions and minimum useful incomplete outcome.
+- completion and stop conditions, meaningful progress checks and minimum useful incomplete outcome; record numeric budgets only when the user explicitly sets them for this task. Do not impose model-call, conversation-turn, delegated-command, repair-cycle or delegation-time quotas by default.
 
 Prefer additive, reversible changes. Reuse existing fact sources, renderers, forms, host services and action queues instead of creating parallel systems.
 
@@ -30,4 +30,4 @@ The handoff must include exact worktree, base commit, model profile, task ID/rev
 
 After the implementation request is visibly delivered and work starts, end the Codex turn. Do not poll, sleep, monitor logs or spend tokens on routine status. Resume only after the user reports completion, asks for progress, or requests troubleshooting.
 
-Do not reset budget by renaming or splitting a task. If a repair would exceed the contract or deadline, stop and request a new bounded authorization.
+Continue authorized delegation, repairs and review as needed to close the task. Do not require renewal solely because a self-imposed call, turn, command, repair-cycle or delegation-time quota was reached. Explicit user budgets, path/permission boundaries and stop conditions still apply; sustained lack of progress calls for a changed approach or a clear report, not empty retries.
