@@ -14213,10 +14213,7 @@ public partial class SettingsWindow : Window
 		if (CustomCoreImagePanel != null)
 		{
 			CustomCoreImagePanel.Visibility = ((!(text == "Image")) ? Visibility.Collapsed : Visibility.Visible);
-			if (text == "Image")
-			{
-				UpdateCoreImageThumbnail(ConfigManager.CurrentConfig.CoreCustomImagePath);
-			}
+			UpdateCoreImageThumbnail(text == "Image" ? ConfigManager.CurrentConfig.CoreCustomImagePath : null);
 		}
 		if (CustomCoreIconPreviewPath != null && CustomCoreIconNameLabel != null)
 		{
@@ -14243,38 +14240,10 @@ public partial class SettingsWindow : Window
 		{
 			return;
 		}
-		if (!string.IsNullOrEmpty(imagePath))
-		{
-			if (File.Exists(imagePath))
-			{
-				try
-				{
-					BitmapImage bitmapImage = new BitmapImage();
-					bitmapImage.BeginInit();
-					bitmapImage.UriSource = new Uri(imagePath, UriKind.Absolute);
-					bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-					bitmapImage.EndInit();
-					CoreImageThumbnail.Source = bitmapImage;
-					return;
-				}
-				catch
-				{
-				}
-			}
-			try
-			{
-				ImageSource? fallbackSource = IconHelper.GetCustomImageSource(imagePath);
-				if (fallbackSource != null)
-				{
-					CoreImageThumbnail.Source = fallbackSource;
-					return;
-				}
-			}
-			catch
-			{
-			}
-		}
-		CoreImageThumbnail.Source = null;
+		// 32 DIP 缩略图保留高 DPI 与设置缩放余量，但不按原图尺寸解码。
+		CoreImageThumbnail.Source = string.IsNullOrWhiteSpace(imagePath)
+			? null
+			: IconHelper.GetCustomImageSource(imagePath, 128);
 	}
 
 	private void CoreImagePathTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -14291,7 +14260,6 @@ public partial class SettingsWindow : Window
 			SetComboBoxSelectedValue(CoreIconTypeComboBox, "Image");
 		}
 		UpdateCoreIconPreviewUI();
-		UpdateCoreImageThumbnail(ConfigManager.CurrentConfig.CoreCustomImagePath);
 		Grid appearanceSettingsGrid = AppearanceSettingsGrid;
 		if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 		{
@@ -14324,7 +14292,6 @@ public partial class SettingsWindow : Window
 				ShowCoreIconCheckBox.IsChecked = true;
 			}
 			UpdateCoreIconPreviewUI();
-			UpdateCoreImageThumbnail(fileName);
 			Grid appearanceSettingsGrid = AppearanceSettingsGrid;
 			if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 			{
