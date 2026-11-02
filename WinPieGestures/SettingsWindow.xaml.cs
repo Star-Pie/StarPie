@@ -16115,51 +16115,13 @@ public partial class SettingsWindow : Window
 			BorderBrush = (System.Windows.Media.Brush)FindResource("CardBorderBrush"),
 			BorderThickness = new Thickness(1),
 			CornerRadius = new CornerRadius(16),
-			Padding = new Thickness(4, 3, 10, 3),
+			Padding = new Thickness(10, 3, 10, 3),
 			Margin = new Thickness(0, 0, 8, 8),
 			Cursor = System.Windows.Input.Cursors.Hand,
 			ToolTip = $"{contributor.Login} (贡献: {contributor.Contributions} 次提交)\n点击在浏览器中访问 GitHub 个人主页"
 		};
 
 		var sp = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-
-		// 圆形头像
-		var avatarBorder = new Border
-		{
-			Width = 26,
-			Height = 26,
-			CornerRadius = new CornerRadius(13),
-			ClipToBounds = true,
-			Background = (System.Windows.Media.Brush)FindResource("ItemHoverBrush")
-		};
-
-		try
-		{
-			if (!string.IsNullOrEmpty(contributor.AvatarUrl))
-			{
-				var bi = new BitmapImage();
-				bi.BeginInit();
-				bi.UriSource = new Uri(contributor.AvatarUrl, UriKind.RelativeOrAbsolute);
-				bi.DecodePixelWidth = 52;
-				bi.CacheOption = BitmapCacheOption.OnDemand;
-				bi.EndInit();
-				avatarBorder.Background = new ImageBrush(bi) { Stretch = Stretch.UniformToFill };
-			}
-		}
-		catch
-		{
-			avatarBorder.Child = new TextBlock
-			{
-				Text = contributor.Login.Length > 0 ? contributor.Login.Substring(0, 1).ToUpper() : "?",
-				HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-				VerticalAlignment = VerticalAlignment.Center,
-				FontWeight = FontWeights.Bold,
-				FontSize = 11,
-				Foreground = (System.Windows.Media.Brush)FindResource("AccentPrimaryBrush")
-			};
-		}
-
-		sp.Children.Add(avatarBorder);
 
 		// 名称
 		var nameTb = new TextBlock
@@ -16169,7 +16131,7 @@ public partial class SettingsWindow : Window
 			FontWeight = FontWeights.SemiBold,
 			Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush"),
 			VerticalAlignment = VerticalAlignment.Center,
-			Margin = new Thickness(6, 0, 4, 0)
+			Margin = new Thickness(0, 0, 4, 0)
 		};
 		sp.Children.Add(nameTb);
 
