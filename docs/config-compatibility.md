@@ -27,6 +27,7 @@
 ## 导入、导出与即时刷新
 
 - `LockParentSectorOnSubmenu` 为可选布尔字段，缺失时按 `false` 保持原交互；显式 `false` 和 `true` 均须往返保留。父扇区锁定状态只属于当前手势，不持久化。
+- `PinWheelAfterTrigger` 为全局可选布尔字段，默认 `false`；旧配置无需迁移，显式 `false` 和 `true` 均须落盘并往返保留。定格目标、点击版本与输入释放所有权属于会话，不写入配置，也不复用插件常驻轮盘的会话状态。
 
 - `ConfigManager.ExportConfig` 必须包含 `CustomColorPresets`、主题、色彩微调和几何尺寸等全局状态。
 - 导入成功后刷新主题预设、动作槽位和实时画布；防止 `_isUpdatingUi` 留在错误状态。

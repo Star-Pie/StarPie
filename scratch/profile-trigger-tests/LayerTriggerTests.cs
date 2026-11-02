@@ -31,6 +31,8 @@ internal static class LayerTriggerTests
         Check(MouseRoute("cad", "RightButton")?.Profile == cad, "default app trigger still available for new layer-only profiles");
 
         var controller = (GestureController)RuntimeHelpers.GetUninitializedObject(typeof(GestureController));
+        var pinField = typeof(GestureController).GetField("_pinState", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (pinField != null) pinField.SetValue(controller, Activator.CreateInstance(pinField.FieldType, nonPublic: true));
         SetActivation(controller, second);
         Check(controller.SelectActivationLayer(cad), "actual presentation selector accepts pinned layer");
         Check(cad.ActiveLayerIndex == 1 && ReferenceEquals(cad.Actions, cad.Layers[1].Actions), "presentation selector selects layer1 action tree instead of resetting0");

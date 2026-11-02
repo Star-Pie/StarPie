@@ -2378,6 +2378,35 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("TextResultOpenHint", "仅打开 HTTP 或 HTTPS 网页链接。", "僅開啟 HTTP 或 HTTPS 網頁連結。", "Only HTTP or HTTPS web links can be opened.", "HTTPまたはHTTPSのウェブリンクのみ開けます。");
 		Add("TextResultKeyboardHint", "可选中文字复制 · Esc 关闭", "可選取文字複製 · Esc 關閉", "Select text to copy · Esc closes", "文字を選択してコピー · Escで閉じる");
 		Add("ImageCaptureSize", "{0} × {1} 像素", "{0} × {1} 像素", "{0} × {1} px", "{0} × {1} ピクセル");
+		Add("PinWheelTitle", "触发后定格 · 点击执行", "觸發後定格 · 點擊執行", "Keep wheel open · click to execute", "ホイールを固定・クリックで実行");
+		Add("PinWheelDescription", "松开触发键后保持轮盘；点击动作执行。Esc、再次触发、点击外部或切换应用取消。", "放開觸發鍵後保持輪盤；點擊動作執行。Esc、再次觸發、點擊外部或切換應用程式取消。", "Release the trigger to keep the wheel open. Click an action to execute. Esc, trigger again, click outside or switch apps to cancel.", "トリガーを離しても表示を保持。アクションをクリックして実行。Esc、再トリガー、外側のクリック、アプリ切替でキャンセル。");
+		Add("RepairAutoStart", "修复自启动", "修復自動啟動", "Repair startup", "自動起動を修復");
+		Add("AutoStartStateUnknown", "无法读取自启动状态，请稍后重试。", "無法讀取自動啟動狀態，請稍後重試。", "Cannot read startup state. Try again later.", "自動起動の状態を読み取れません。後で再試行してください。");
+		Add("AutoStartTaskEnabled", "管理员登录任务已启用", "管理員登入工作已啟用", "Elevated login task enabled", "管理者ログオンタスクは有効です");
+		Add("AutoStartRunEnabled", "普通用户登录自启动已启用", "一般使用者登入自動啟動已啟用", "User login startup enabled", "ユーザーログオン時の自動起動は有効です");
+		Add("AutoStartDisabled", "自启动已关闭", "自動啟動已關閉", "Startup disabled", "自動起動は無効です");
+		Add("AutoStartWorking", "正在更新自启动…", "正在更新自動啟動…", "Updating startup…", "自動起動を更新中…");
+		Add("AutoStartResultFailed", "自启动修改失败，请检查权限后重试。当前状态已重新读取。", "自動啟動修改失敗，請檢查權限後重試。目前狀態已重新讀取。", "Startup change failed. Check permissions and retry. Current state was re-read.", "自動起動の変更に失敗しました。権限を確認して再試行してください。現在の状態を再取得しました。");
+		Add("AutoStartResultCancelled", "已取消自启动修改，未确认的管理员任务不会显示成功。", "已取消自動啟動修改，未確認的管理員工作不會顯示成功。", "Startup change cancelled. An unverified elevated task is not reported as successful.", "自動起動の変更をキャンセルしました。未確認の管理者タスクは成功と表示しません。");
+		Add("AutoStartResultTimedOut", "自启动操作超时，请关闭尚未完成的权限提示后重试。", "自動啟動作業逾時，請關閉尚未完成的權限提示後重試。", "Startup operation timed out. Close any pending permission prompt before retrying.", "自動起動の操作がタイムアウトしました。残っている権限確認を閉じてから再試行してください。");
+		Add("AutoStartResultVerificationFailed", "无法验证自启动结果，请检查任务计划程序中的 StarPie 登录任务。", "無法驗證自動啟動結果，請檢查工作排程器中的 StarPie 登入工作。", "Cannot verify startup. Check the StarPie login task in Task Scheduler.", "自動起動を確認できません。タスクスケジューラのStarPieログオンタスクを確認してください。");
+		Add("AutoStartResultNotEnabled", "自启动未启用；修复不会自动启用它。", "自動啟動未啟用；修復不會自動啟用。", "Startup is disabled; repair does not enable it.", "自動起動は無効です。修復で自動的に有効にはしません。");
+		Add("AutoStartResultSuppressed", "测试实例不修改系统自启动。", "測試執行個體不修改系統自動啟動。", "Test instances do not change system startup.", "テストインスタンスはシステムの自動起動を変更しません。");
+		Add("SvgBatchHint", "多选SVG批量导入；其他图片格式一次选择一个。仅支持单色路径图标。", "多選SVG批次匯入；其他圖片格式一次選擇一個。僅支援單色路徑圖示。", "Select multiple SVG files, or one raster image. Monochrome path icons only.", "SVGは複数選択、その他の画像は1つずつ選択できます。単色のパスアイコンのみ対応。");
+		Add("SvgImportFolder", "导入文件夹", "匯入資料夾", "Import folder", "フォルダーを読込");
+		Add("SvgImportWorking", "正在导入图标…", "正在匯入圖示…", "Importing icons…", "アイコンを読込中…");
+		Add("SvgImportSummary", "导入完成：成功 {0}，跳过 {1}，失败 {2}。", "匯入完成：成功 {0}，略過 {1}，失敗 {2}。", "Import complete: {0} imported, {1} skipped, {2} failed.", "読込完了：成功 {0}、スキップ {1}、失敗 {2}。");
+		Add("SvgImportMore", "另有 {0} 项未在此展开。", "另有 {0} 項未在此展開。", "{0} additional items are not listed here.", "ほか {0} 件は省略しています。");
+		Add("SvgReasonExtension", "批量导入仅支持SVG", "批次匯入僅支援SVG", "Batch import supports SVG only", "一括読込はSVGのみ対応");
+		Add("SvgReasonDuplicate", "重复选择的文件", "重複選擇的檔案", "File selected more than once", "ファイルが重複しています");
+		Add("SvgReasonSize", "文件超过2 MiB限制", "檔案超過2 MiB限制", "File exceeds the 2 MiB limit", "ファイルが2 MiBの制限を超えています");
+		Add("SvgReasonXml", "SVG格式不合法或包含禁止的DTD", "SVG格式不合法或包含禁止的DTD", "Invalid SVG or prohibited DTD", "不正なSVGまたは禁止されたDTDです");
+		Add("SvgReasonPath", "没有可用的矢量路径", "沒有可用的向量路徑", "No valid vector path", "有効なベクターパスがありません");
+		Add("SvgReasonCancelled", "导入已取消", "匯入已取消", "Import cancelled", "読込をキャンセルしました");
+		Add("SvgReasonIo", "无法读取、写入或刷新图标，请检查文件与权限。", "無法讀取、寫入或重新整理圖示，請檢查檔案與權限。", "Cannot read, write or refresh icons. Check files and permissions.", "アイコンの読込、保存、更新に失敗しました。ファイルと権限を確認してください。");
+		Add("SvgReasonUnsupported", "仅支持单色path；不支持变换、描边、多色、引用或其他图形。", "僅支援單色path；不支援變換、描邊、多色、參照或其他圖形。", "Only monochrome paths are supported; transforms, strokes, multiple colors, references and other shapes are unsupported.", "単色パスのみ対応。変形、線、多色、参照、その他の図形には対応していません。");
+		Add("SvgImportFileFilter", "SVG矢量图 (*.svg)|*.svg|图片文件 (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp", "SVG向量圖 (*.svg)|*.svg|圖片檔案 (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp", "SVG icons (*.svg)|*.svg|Images (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp", "SVGアイコン (*.svg)|*.svg|画像 (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp");
+		Add("SvgReasonPaint", "透明或不支持的填色，请使用不透明单色图标。", "透明或不支援的填色，請使用不透明單色圖示。", "Transparent or unsupported fill. Use an opaque monochrome icon.", "透明または未対応の塗りです。不透明な単色アイコンを使用してください。");
 		Translations = dictionary;
 	}
 }

@@ -424,6 +424,11 @@ public partial class App : Application
 		GestureController? gestureController,
 		TrayController? trayController)
 	{
+		if (paused)
+		{
+			gestureController?.OnHostPaused();
+			KeyboardRemapController.Current.OnHostPaused();
+		}
 		if (mouseHook != null)
 		{
 			mouseHook.IsPaused = paused;
@@ -431,11 +436,6 @@ public partial class App : Application
 		if (keyboardHook != null)
 		{
 			keyboardHook.IsPaused = paused;
-		}
-		if (paused)
-		{
-			KeyboardRemapController.Current.OnHostPaused();
-			gestureController?.OnHostPaused();
 		}
 		trayController?.UpdatePauseState(paused);
 	}

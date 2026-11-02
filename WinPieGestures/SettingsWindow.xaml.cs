@@ -966,6 +966,7 @@ public partial class SettingsWindow : Window
 		}
 		if (LongPressTriggerCheckBox != null)
 		{
+			PinWheelCheckBox.IsChecked = ConfigManager.CurrentConfig.PinWheelAfterTrigger;
 			LongPressTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressTrigger;
 		}
 		if (LongPressOnlyTriggerCheckBox != null)
@@ -1515,22 +1516,7 @@ public partial class SettingsWindow : Window
 			EdgeSafeMarginYValueText.Text = $"{marginY:0} px";
 		}
 
-		// AutoStart
-		_isLoadingAutoStartState = true;
-		try
-		{
-			_loadedAutoStartEnabled = ConfigManager.IsAutoStartEnabled();
-			_loadedAutoStartAsAdmin = ConfigManager.CurrentConfig.AutoStartAsAdmin;
-			AutoStartCheckBox.IsChecked = _loadedAutoStartEnabled;
-			if (AutoStartAsAdminCheckBox != null)
-			{
-				AutoStartAsAdminCheckBox.IsChecked = _loadedAutoStartAsAdmin;
-			}
-		}
-		finally
-		{
-			_isLoadingAutoStartState = false;
-		}
+		_ = RefreshAutoStartStateAsync();
 
 		// Language & Previews
 		SetComboBoxSelectedValue(LanguageComboBox, ConfigManager.CurrentConfig.Language ?? "Auto");
@@ -1922,6 +1908,9 @@ public partial class SettingsWindow : Window
 		}
 		if (LongPressTriggerTitleText != null)
 		{
+			PinWheelTitleText.Text = I18n.T("PinWheelTitle");
+			PinWheelCheckBox.ToolTip = I18n.T("PinWheelDescription");
+			RepairAutoStartButton.Content = I18n.T("RepairAutoStart");
 			LongPressTriggerTitleText.Text = I18n.T("LongPressTriggerTitle");
 		}
 		if (LongPressTriggerDescText != null)
@@ -16275,7 +16264,7 @@ public partial class SettingsWindow : Window
 		return border;
 	}
 
-	private void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
+	private async void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (!_isUpdatingUi && !_isUiInitializing && !_isLoadingAutoStartState)
 		{
@@ -16285,14 +16274,11 @@ public partial class SettingsWindow : Window
 			{
 				return;
 			}
-			ConfigManager.SetAutoStart(valueOrDefault, asAdmin);
-			_loadedAutoStartEnabled = valueOrDefault;
-			_loadedAutoStartAsAdmin = asAdmin;
-			SyncUiToConfigAndSave();
+			await ChangeAutoStartAsync(valueOrDefault, asAdmin);
 		}
 	}
 
-	private void AutoStartAsAdminCheckBox_Changed(object sender, RoutedEventArgs e)
+	private async void AutoStartAsAdminCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (!_isUpdatingUi && !_isUiInitializing && !_isLoadingAutoStartState)
 		{
@@ -16302,14 +16288,7 @@ public partial class SettingsWindow : Window
 			{
 				return;
 			}
-			if (ConfigManager.CurrentConfig != null)
-			{
-				ConfigManager.CurrentConfig.AutoStartAsAdmin = flag;
-			}
-			ConfigManager.SetAutoStart(enabled, flag);
-			_loadedAutoStartEnabled = enabled;
-			_loadedAutoStartAsAdmin = flag;
-			SyncUiToConfigAndSave();
+			await ChangeAutoStartAsync(enabled, flag);
 		}
 	}
 
@@ -16758,11 +16737,9 @@ public partial class SettingsWindow : Window
 
 	private void SaveButton_Click(object sender, RoutedEventArgs e)
 	{
-		if (SyncUiToConfigAndSave())
-		{
-			AppMessageBox.Show(this, I18n.T("PromptSavedMessage"), I18n.T("PromptSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
-		}
-		else
+		bool saved = SyncUiToConfigAndSave();
+		UpdateAutoSaveStatus(isSaving: false, success: saved);
+		if (!saved)
 		{
 			AppMessageBox.Show(this, I18n.T("PromptSaveFailedMessage"), I18n.T("PromptSaveFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 		}

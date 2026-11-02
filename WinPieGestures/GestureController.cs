@@ -10,7 +10,7 @@ using WinPieGestures.Plugins;
 
 namespace WinPieGestures;
 
-public class GestureController : IDisposable
+public partial class GestureController : IDisposable
 {
 	private struct POINT
 	{
@@ -294,15 +294,20 @@ public class GestureController : IDisposable
 		_mouseHook.OnMouseMove += Hook_OnMouseMove;
 		_mouseHook.OnRawMouseButtonEvent += Hook_OnRawMouseButton;
 		_mouseHook.OnMouseWheel += Hook_OnMouseWheel;
+		_mouseHook.PinnedReleaseDrain += _pinState.ConsumeMouseUp;
+		ConfigManager.ConfigurationChanged += PinnedConfigurationChanged;
 		if (_keyboardHook != null)
 		{
 			_keyboardHook.OnKeyDown += KeyboardHook_OnKeyDown;
 			_keyboardHook.OnKeyUp += KeyboardHook_OnKeyUp;
+			_keyboardHook.PinnedReleaseDrain += DrainPinnedKey;
 		}
 	}
 
 	private long BeginGestureTracking()
 	{
+		EndPinnedTracking();
+		_pinState.Begin(ConfigManager.CurrentConfig.PinWheelAfterTrigger);
 		_keyboardMatchingTarget = null;
 		lock (_uiUpdateSync)
 		{
@@ -359,6 +364,7 @@ public class GestureController : IDisposable
 	}
 	private void CancelGestureTracking(string reason = "Interrupted")
 	{
+		EndPinnedTracking();
 		_keyboardMatchingTarget = null;
 		_kbTriggerWaiting = false;
 		_isWaitingForThreshold = false;
@@ -388,6 +394,7 @@ public class GestureController : IDisposable
 
 	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction, bool IsSubmenuLocked, WheelLayer? Layer) EndActiveGesture()
 	{
+		EndPinnedTracking();
 		lock (_uiUpdateSync)
 		{
 			long presentationVersion = _gestureVersion;
@@ -1176,6 +1183,7 @@ public class GestureController : IDisposable
 	/// </summary>
 	private void Hook_OnRawMouseButton(object? sender, RawMouseEventArgs e)
 	{
+		if (HandlePinnedMouse(e)) return;
 		if (e.IsButtonDown && (ProfileTriggerRouter.IsRecording || _isGestureActive || _isWaitingForThreshold)) return;
 		bool gesturesEnabled = ConfigManager.CurrentConfig.GestureEnabled && !IsLongPressOnlyTriggerEnabled;
 		// 已接管的手势仍需接收抬起以收尾，但禁用期间不得开始新手势或执行映射动作。
@@ -1681,6 +1689,15 @@ public class GestureController : IDisposable
 
 	private void Hook_OnTriggerButtonUp(object? sender, MouseEventArgs e)
 	{
+		if (_pinState.Enabled) _pinState.ReleaseTrigger();
+		if (_pinState.Enabled && _isGestureActive)
+		{
+			_pinState.ReleaseTrigger();
+			_mouseTriggerDown = false;
+			CancelLongPressTimer();
+			e.Handled = true;
+			return;
+		}
 		ProfileTriggerActivation? activation = e.TriggerActivation ?? _activeActivation;
 		if (activation == null && _activeTrigger != null)
 		{
@@ -2056,6 +2073,7 @@ public class GestureController : IDisposable
 
 	private void KeyboardHook_OnKeyDown(object? sender, GlobalKeyEventArgs e)
 	{
+		if (HandlePinnedKeyDown(e)) return;
 		if (_isGestureActive)
 		{
 			// ESC 按键即刻取消手势轮盘并吞键，防止干扰前台应用
@@ -2124,9 +2142,9 @@ public class GestureController : IDisposable
 				 ProfileTriggerRouter.MatchesLegacy(_activeTrigger, ProfileTriggerSignature.ForKeyboard(e.VkCode, e.Modifiers)))) e.Handled = true;
 			return;
 		}
-		TargetWindowInfo? keyboardTarget = ConfigManager.CurrentConfig.EnableComponentIdentification
+		TargetWindowInfo? keyboardTarget = (ConfigManager.CurrentConfig.EnableComponentIdentification || ConfigManager.CurrentConfig.PinWheelAfterTrigger)
 			? WheelFocusSwitcher.CreateForegroundTargetSnapshot() : null;
-		if (ConfigManager.CurrentConfig.EnableComponentIdentification && keyboardTarget == null) return;
+		if ((ConfigManager.CurrentConfig.EnableComponentIdentification || ConfigManager.CurrentConfig.PinWheelAfterTrigger) && keyboardTarget == null) return;
 		string activeProc = keyboardTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
 		if (ProfileTriggerRouter.TryResolveKeyboard(activeProc, e.VkCode, e.Modifiers,
 			out ProfileTriggerActivation? activation) != ProfileTriggerResolution.Match || activation == null) return;
@@ -2159,6 +2177,16 @@ public class GestureController : IDisposable
 
 	private void KeyboardHook_OnKeyUp(object? sender, GlobalKeyEventArgs e)
 	{
+		if (_pinState.ConsumeKeyUp(e.VkCode)) { e.Handled = true; return; }
+		if (_pinState.Enabled && _activeTrigger?.TriggerType == "Keyboard" && e.VkCode == _activeTrigger.VkCode)
+			_pinState.ReleaseTrigger();
+		if (_pinState.Enabled && _isGestureActive && _activeTrigger?.TriggerType == "Keyboard" &&
+			ProfileTriggerRouter.IsKeyboardRelease(_activeTrigger, e.VkCode))
+		{
+			CancelLongPressTimer();
+			e.Handled = false; // The original physical keyboard Down was deliberately passed through.
+			return;
+		}
 		TriggerConfig? triggerConfig = _activeActivation?.Trigger ?? _activeTrigger;
 		if (triggerConfig == null || !ProfileTriggerRouter.IsKeyboardRelease(triggerConfig, e.VkCode)) return;
 		if (_activeActivation?.IsLayerAvailable == false)
@@ -2566,8 +2594,13 @@ public class GestureController : IDisposable
 				}
 			}
 		}
+		if (_pinState.Enabled && _pinExpandedParent >= 0)
+		{
+			if (_pinExpandedParent == num4) flag2 = true;
+			else _pinExpandedParent = -1;
+		}
 		// 音量"拖距调音"：音量加/减扇区越过子轮盘触发距离即接管为距离映射调音，屏蔽二级子轮盘
-		if (ProcessVolumeAdjust(num3, num4, flag, num7))
+		if (!_pinState.Enabled && ProcessVolumeAdjust(num3, num4, flag, num7))
 		{
 			_submenuLock.Reset();
 			flag2 = false;
@@ -2674,7 +2707,8 @@ public class GestureController : IDisposable
 
 		try
 		{
-			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, interaction.Presented);
+			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, interaction.Presented, _pinState.Enabled);
+			if (_pinState.Enabled) BeginPinnedPresentation(gestureVersion);
 			lock (_uiUpdateSync)
 			{
 				if (_disposed || !_isGestureActive || gestureVersion != _gestureVersion || (focusSession != null && focusSession.IsCancelled) || !ReferenceEquals(_radialWindow, window))
@@ -2865,10 +2899,14 @@ public class GestureController : IDisposable
 		_mouseHook.OnMouseMove -= Hook_OnMouseMove;
 		_mouseHook.OnRawMouseButtonEvent -= Hook_OnRawMouseButton;
 		_mouseHook.OnMouseWheel -= Hook_OnMouseWheel;
+		_mouseHook.PinnedReleaseDrain -= _pinState.ConsumeMouseUp;
+		ConfigManager.ConfigurationChanged -= PinnedConfigurationChanged;
+		EndPinnedTracking();
 		if (_keyboardHook != null)
 		{
 			_keyboardHook.OnKeyDown -= KeyboardHook_OnKeyDown;
 			_keyboardHook.OnKeyUp -= KeyboardHook_OnKeyUp;
+			_keyboardHook.PinnedReleaseDrain -= DrainPinnedKey;
 		}
 
 		RadialWindow? window;

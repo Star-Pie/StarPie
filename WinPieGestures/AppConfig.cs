@@ -14,6 +14,9 @@ public class AppConfig
 
 	public double DragThreshold { get; set; } = 25.0;
 
+	/// <summary>呈现后保持轮盘，点击确认；旧配置默认松手执行。</summary>
+	public bool PinWheelAfterTrigger { get; set; }
+
 	/// <summary>是否启用鼠标右键释放防抖。开启后，抬起需稳定保持指定毫秒数才结束轮盘并执行动作。</summary>
 	public bool EnableMouseReleaseDebounce { get; set; } = true;
 

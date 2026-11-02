@@ -487,6 +487,7 @@ public partial class RadialWindow : Window
 	private bool _hasRenderedContent;
 
 	private bool _isPresented;
+	private bool _preserveTriggerOrigin;
 
 	private bool _isDisposed;
 
@@ -626,11 +627,11 @@ public partial class RadialWindow : Window
 		Present(centerPoint, profile, configurationRevision, presentationVersion, null);
 
 	internal void Present(Point centerPoint, WheelProfile profile, long configurationRevision,
-		long presentationVersion, Action? onPresented)
+		long presentationVersion, Action? onPresented, bool preserveTriggerOrigin = false)
 	{
 		if (!Dispatcher.CheckAccess())
 		{
-			Dispatcher.Invoke(() => Present(centerPoint, profile, configurationRevision, presentationVersion, onPresented));
+			Dispatcher.Invoke(() => Present(centerPoint, profile, configurationRevision, presentationVersion, onPresented, preserveTriggerOrigin));
 			return;
 		}
 		if (_isDisposed)
@@ -645,6 +646,7 @@ public partial class RadialWindow : Window
 			_renderedLayerIndex != profile.ActiveLayerIndex;
 
 		_centerPoint = centerPoint;
+		_preserveTriggerOrigin = preserveTriggerOrigin;
 		_profile = profile;
 		_requestedConfigurationRevision = configurationRevision;
 		_isPresented = true;
@@ -715,6 +717,35 @@ public partial class RadialWindow : Window
 		}
 	}
 
+	internal bool TryHitPinnedWheel(Point physicalPoint, out int sector, out int subSector)
+	{
+		sector = -1;
+		subSector = -1;
+		if (!IsVisible) return false;
+		// Use the rendered geometry, including gaps, rounded corners, fan petals and entrance transforms.
+		for (int i = _subSectorPaths.Count - 1; i >= 0; i--)
+		{
+			var path = _subSectorPaths[i];
+			if (!path.IsVisible || path.Opacity <= 0 || path.Data == null || !path.Data.FillContains(path.PointFromScreen(physicalPoint))) continue;
+			var parts = (path.Tag as string)?.Split('_');
+			if (parts?.Length == 3 && int.TryParse(parts[1], out sector) && int.TryParse(parts[2], out subSector)) return true;
+		}
+		for (int i = _sectorPaths.Count - 1; i >= 0; i--)
+		{
+			var path = _sectorPaths[i];
+			if (path.IsVisible && path.Data != null && path.Data.FillContains(path.PointFromScreen(physicalPoint)))
+			{
+				sector = path.Tag is int index ? index : i;
+				subSector = -1;
+				return true;
+			}
+		}
+		Point core = CoreEllipse.PointFromScreen(physicalPoint);
+		double rx = CoreEllipse.ActualWidth / 2, ry = CoreEllipse.ActualHeight / 2;
+		sector = subSector = -1;
+		return rx > 0 && ry > 0 && Math.Pow((core.X - rx) / rx, 2) + Math.Pow((core.Y - ry) / ry, 2) <= 1;
+	}
+
 	/// <summary>隐藏当前手势，但保留 Window/HWND 供下一次呼出复用。旧手势的延迟回调不得隐藏新手势。</summary>
 	public void Dismiss(long expectedPresentationVersion)
 	{
@@ -757,7 +788,7 @@ public partial class RadialWindow : Window
 		_wheelCanvasSize = maxEffectiveR * 2.0 + 40.0;
 		_canvasCenter = _wheelCanvasSize / 2.0;
 
-		_centerPoint = ComputeClampedPhysicalCenter(requestedCenter, _wheelCanvasSize);
+		_centerPoint = _preserveTriggerOrigin ? requestedCenter : ComputeClampedPhysicalCenter(requestedCenter, _wheelCanvasSize);
 		ActualPhysicalCenter = _centerPoint;
 		ScreenContext screenCtx = ScreenHelper.GetScreenContextAtPoint(_centerPoint);
 		double scaleX = Math.Max(0.1, screenCtx.DpiScale.DpiScaleX);

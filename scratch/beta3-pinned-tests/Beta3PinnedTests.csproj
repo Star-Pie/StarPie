@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Reference Include="StarPie"><HintPath>$(StarPieCandidateDir)\StarPie.dll</HintPath><Private>true</Private></Reference>
+    <Reference Include="StarPie.Plugin.Abstractions"><HintPath>$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll</HintPath><Private>true</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveReferences" Condition="'$(StarPieCandidateDir)' == ''">
+    <Error Text="Pass explicit StarPieCandidateDir; never reference default host output." />
+  </Target>
+</Project>

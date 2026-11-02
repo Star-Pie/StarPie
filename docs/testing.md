@@ -138,3 +138,7 @@ git diff -- .\tests\i18n_baseline.json
 `legacy-launch` 与 `legacy-catalog` 包装工程链接已有探针到同一候选，不修改旧探针源码、不使用默认主程序输出。
 
 最终命令、红绿证据和原生权限／管道／GUI人工门禁见 [进程运行时审查修复](plans/process-runtime-review-fixes.md)。
+
+## beta.3 四项宿主改进
+
+定格、保存反馈、自启动适配层及SVG批量导入的候选绑定、反例、自动证据边界与实机清单见 [四项改进验收](plans/beta3-four-features-verification.md)。`beta3-pinned-tests` 与 `beta3-svg-tests` 必须传入实际时间目录；自动测试不注册真实任务、不安装输入钩子、不执行真实动作。

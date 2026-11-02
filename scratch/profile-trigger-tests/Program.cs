@@ -155,6 +155,9 @@ internal static class Program
         var mouseFirst = new ProfileTriggerActivation(profile, Mouse("RightButton"), ProfileTriggerSignature.ForMouse("RightButton", ModifierKeys.None), true, "app.exe");
         var mouseNext = new ProfileTriggerActivation(profile, Mouse("RightButton"), ProfileTriggerSignature.ForMouse("RightButton", ModifierKeys.None), true, "app.exe");
         var controller = (GestureController)RuntimeHelpers.GetUninitializedObject(typeof(GestureController));
+        // This fixture bypasses field initializers; provide the newly added input owner too.
+        var pinField = typeof(GestureController).GetField("_pinState", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (pinField != null) pinField.SetValue(controller, Activator.CreateInstance(pinField.FieldType, nonPublic: true));
         // Do not run constructors, hooks, EndActiveGesture, cancellation, or any
         // path that releases modifiers/queues an actual action.
         Set(controller, "_mouseReleaseDebounceLock", new object());

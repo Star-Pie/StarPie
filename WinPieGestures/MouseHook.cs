@@ -130,6 +130,19 @@ public class MouseHook
 	public event EventHandler<RawMouseEventArgs>? OnRawMouseButtonEvent;
 
 	public event EventHandler<MouseWheelHookEventArgs>? OnMouseWheel;
+	internal event Func<string, bool>? PinnedReleaseDrain;
+
+	internal bool TryDrainPinnedRelease(int message, uint data)
+	{
+		string? button = message switch
+		{
+			WM_LBUTTONUP => "LeftButton", WM_RBUTTONUP => "RightButton", WM_MBUTTONUP => "MiddleButton",
+			WM_XBUTTONUP => ((data >> 16) & 0xFFFF) == 2 ? "XButton2" : "XButton1", _ => null
+		};
+		if (button == null || PinnedReleaseDrain?.Invoke(button) != true) return false;
+		ForgetActiveTrigger(button);
+		return true;
+	}
 
 	// 钩子回调线程专用的复用事件实例：订阅方必须同步消费，严禁跨线程或异步持有。
 	// 消除每次鼠标移动/滚轮/按键的堆分配，避免 Gen0 GC 抖动干扰手势流畅度。
@@ -372,6 +385,11 @@ public class MouseHook
 	{
 		if (IsPaused)
 		{
+			if (nCode >= 0)
+			{
+				var input = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+				if (input.dwExtraInfo != StarPieExtraInfo && TryDrainPinnedRelease((int)wParam, input.mouseData)) return 1;
+			}
 			return CallNextHookEx(_hookId, nCode, wParam, lParam);
 		}
 		if (nCode >= 0)
@@ -497,6 +515,16 @@ public class MouseHook
 			}
 		}
 		return CallNextHookEx(_hookId, nCode, wParam, lParam);
+	}
+
+	// Used only on the mouse hook thread when a cancelled pinned session drains its owned release.
+	internal void ForgetActiveTrigger(string button)
+	{
+		if (string.Equals(_activeMouseTriggerButton, button, StringComparison.OrdinalIgnoreCase))
+		{
+			_activeMouseTriggerButton = null;
+			_activeMouseTriggerActivation = null;
+		}
 	}
 
 	public void ReplayTriggerClick(string? triggerButton = null)
