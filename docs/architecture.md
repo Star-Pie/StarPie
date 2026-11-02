@@ -1,4 +1,4 @@
-# StarPie 架构概览
+﻿# StarPie 架构概览
 
 ## 产品目标
 
@@ -72,3 +72,8 @@ Plugin implementation → StarPie.Plugin.Abstractions only
 3. 是否已有单一事实来源，还是会制造第二份清单/状态？
 4. 生命周期由谁拥有，停止与释放如何完成？
 5. 哪个自动门禁能证明改动，哪个环节必须人工验证？
+
+## 启动配置初始化与时序
+
+- `ConfigManager` 的显式静态构造器负责首次加载；`App.InitializeConfiguration()` 只访问既有配置，依靠CLR保证一次初始化，不重复强制加载。显式 `LoadConfig()` 的重新读取与损坏恢复语义保持不变。
+- `StartupDiagnostics` 仅记录启动阶段累计耗时，经既有异步日志队列写入；不采样进程、不轮询、不进入输入钩子。图标预载仍在钩子就绪前完成，插件预载偏好和设置窗口按需创建不变。

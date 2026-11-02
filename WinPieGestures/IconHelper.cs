@@ -1543,6 +1543,11 @@ public static class IconHelper
 		return list;
 	}
 
+	public static void InvalidateCustomIconCache()
+	{
+		_cachedCustomIcons = null;
+	}
+
 	public static string ExtractSvgPathData(string svgContent)
 	{
 		if (string.IsNullOrWhiteSpace(svgContent))

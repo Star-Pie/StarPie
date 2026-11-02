@@ -97,6 +97,8 @@ public class WheelLayer : INotifyPropertyChanged
 
 	public int SectorCount { get; set; } = 8;
 
+	public TriggerConfig? ActivationTrigger { get; set; }
+
 	public List<ActionItem> Actions { get; set; } = new List<ActionItem>();
 
 	/// <summary>本层专属中心核心圆动作</summary>
@@ -117,6 +119,7 @@ public class WheelLayer : INotifyPropertyChanged
 		WheelLayer clone = new WheelLayer
 		{
 			Name = this.Name,
+			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
 			EnableCenterAction = this.EnableCenterAction,
 			CenterAction = this.CenterAction?.Clone(),

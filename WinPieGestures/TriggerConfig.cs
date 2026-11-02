@@ -19,4 +19,20 @@ public class TriggerConfig
 	public bool RequireWin { get; set; }
 
 	public string DisplayText { get; set; } = "\ud83d\uddb1\ufe0f 鼠标右键 (Right Button)";
+
+	public TriggerConfig Clone()
+	{
+		return new TriggerConfig
+		{
+			TriggerType = TriggerType,
+			MouseButton = MouseButton,
+			Key = Key,
+			VkCode = VkCode,
+			RequireCtrl = RequireCtrl,
+			RequireShift = RequireShift,
+			RequireAlt = RequireAlt,
+			RequireWin = RequireWin,
+			DisplayText = DisplayText
+		};
+	}
 }

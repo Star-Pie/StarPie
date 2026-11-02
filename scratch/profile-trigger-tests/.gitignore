@@ -1,0 +1,11 @@
+artifacts/
+ui-baseline/
+*.log
+candidate-path.txt
+reference-resolution.json
+regression-results.json
+finish_integration.py
+finish_safety.py
+repair_review.py
+layer-candidate-path.txt
+layer-results.json

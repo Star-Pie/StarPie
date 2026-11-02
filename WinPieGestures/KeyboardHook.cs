@@ -218,6 +218,8 @@ public class KeyboardHook : IDisposable
 	public event EventHandler<GlobalKeyEventArgs>? OnKeyDown;
 
 	public event EventHandler<GlobalKeyEventArgs>? OnKeyUp;
+	internal event Func<uint, bool, bool>? PinnedReleaseDrain;
+	internal bool TryDrainPinnedRelease(uint key, bool down) => PinnedReleaseDrain?.Invoke(key, down) == true;
 
 	public event EventHandler<GlobalKeyEventArgs>? OnRawKeyEvent;
 
@@ -554,6 +556,7 @@ public class KeyboardHook : IDisposable
 
 			if (IsPaused)
 			{
+				if (TryDrainPinnedRelease(vkCode, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;
 				return CallNextHookEx(_hookId, nCode, wParam, lParam);
 			}
 

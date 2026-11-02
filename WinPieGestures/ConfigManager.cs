@@ -26,9 +26,21 @@ public static class ConfigManager
 	/// </summary>
 	public static long ConfigurationRevision => Interlocked.Read(ref _configurationRevision);
 
+	public static event Action? ConfigurationChanged;
+
 	public static void MarkConfigurationChanged()
 	{
 		Interlocked.Increment(ref _configurationRevision);
+		ProfileTriggerRouter.Publish(CurrentConfig);
+		var listeners = ConfigurationChanged;
+		if (listeners != null)
+		{
+			foreach (Action listener in listeners.GetInvocationList())
+			{
+				try { listener(); }
+				catch { /* A subscriber must not prevent configuration publication. */ }
+			}
+		}
 	}
 
 	public static void SetGlobalPrimarySectorFontSize(WheelProfile? profile, double fontSize)
@@ -469,7 +481,9 @@ public static class ConfigManager
 			// 1. 优先在所有非 Global 的专属方案中匹配绑定的程序情景
 			foreach (WheelProfile profile in CurrentConfig.Profiles)
 			{
-				if (profile == null || string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase))
+				if (profile == null ||
+					string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ||
+					profile.ActivationTrigger != null)
 				{
 					continue;
 				}
@@ -655,7 +669,7 @@ public static class ConfigManager
 				},
 				new ActionItem
 				{
-					Type = "Launch",
+					Type = "WebUrl",
 					Name = "浏览器",
 					Parameter = "https://www.google.com",
 					IconKey = "Browser",
@@ -837,6 +851,7 @@ public static class ConfigManager
 				if (!SaveConfig(allowOverwriteFallback: true))
 				{
 					CurrentConfig = previousConfig!;
+					MarkConfigurationChanged();
 					return false;
 				}
 				I18n.SetLanguage(CurrentConfig.Language);
@@ -998,6 +1013,7 @@ public static class ConfigManager
 				if (!SaveConfig(allowOverwriteFallback: true))
 				{
 					CurrentConfig = previousConfig!;
+					MarkConfigurationChanged();
 					return false;
 				}
 				I18n.SetLanguage(CurrentConfig.Language);
@@ -1208,199 +1224,83 @@ public static class ConfigManager
 		}
 	}
 
+	private static readonly Lazy<AutoStartRegistration> AutoStartBackend = new(() =>
+	{
+		using var identity = WindowsIdentity.GetCurrent();
+		return new AutoStartRegistration(new WindowsAutoStartSystem(),
+			Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe"),
+			identity.User?.Value ?? throw new InvalidOperationException("Current user SID unavailable."));
+	});
+
 	public static bool IsAutoStartEnabled()
 	{
-		if (IsRegistryAutoStartEnabled())
-		{
-			return true;
-		}
-		if (CurrentConfig != null && CurrentConfig.AutoStartAsAdmin)
-		{
-			return IsAdminTaskAutoStartEnabled();
-		}
-		return false;
+		return IsRegistryAutoStartEnabled() || (CurrentConfig?.AutoStartAsAdmin == true && IsAdminTaskAutoStartEnabled());
 	}
 
 	public static bool IsRegistryAutoStartEnabled()
 	{
 		try
 		{
-			using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", writable: false);
-			return (registryKey != null && registryKey.GetValue("StarPie") != null) || registryKey?.GetValue("WinPieGestures") != null;
+			var values = new WindowsAutoStartSystem().ReadRunValues();
+			return values.ContainsKey("StarPie") || values.ContainsKey("WinPieGestures");
 		}
-		catch
-		{
-			return false;
-		}
+		catch { return false; }
 	}
 
 	public static bool IsAdminTaskAutoStartEnabled()
 	{
-		try
+		// Compatibility for older callers; settings interactions use the asynchronous state API.
+		try { return GetAutoStartStateAsync().ConfigureAwait(false).GetAwaiter().GetResult().AdminTaskEnabled; }
+		catch { return false; }
+	}
+
+	public static System.Threading.Tasks.Task<AutoStartState> GetAutoStartStateAsync(CancellationToken cancellationToken = default)
+	{
+		if (DisableAutoStartSync || IsTestInstanceMode())
 		{
-			using Process process = Process.Start(new ProcessStartInfo
-			{
-				FileName = "schtasks.exe",
-				Arguments = "/query /tn \"StarPie_AdminAutoStart\"",
-				UseShellExecute = false,
-				CreateNoWindow = true,
-				RedirectStandardOutput = true,
-				RedirectStandardError = true
-			});
-			if (process == null)
-			{
-				return false;
-			}
-			process.WaitForExit(1500);
-			return process.ExitCode == 0;
+			return System.Threading.Tasks.Task.FromResult(new AutoStartState(false, false, true));
 		}
-		catch
+		return AutoStartBackend.Value.ReadStateAsync(cancellationToken);
+	}
+
+	public static async System.Threading.Tasks.Task<AutoStartChangeResult> SetAutoStartAsync(bool enable, bool asAdmin = false, CancellationToken cancellationToken = default)
+	{
+		if (DisableAutoStartSync || IsTestInstanceMode())
 		{
-			return false;
+			return new AutoStartChangeResult(AutoStartChangeStatus.Suppressed, new AutoStartState(false, false, true));
 		}
+		var result = await AutoStartBackend.Value.ChangeAsync(enable, asAdmin, cancellationToken: cancellationToken).ConfigureAwait(false);
+		if (result.IsSuccess && CurrentConfig != null)
+		{
+			CurrentConfig.AutoStartAsAdmin = asAdmin;
+			SaveConfig();
+		}
+		return result;
+	}
+
+	public static async System.Threading.Tasks.Task<AutoStartChangeResult> RepairAutoStartAsync(CancellationToken cancellationToken = default)
+	{
+		if (DisableAutoStartSync || IsTestInstanceMode())
+		{
+			return new AutoStartChangeResult(AutoStartChangeStatus.Suppressed, new AutoStartState(false, false, true));
+		}
+		var result = await AutoStartBackend.Value.ChangeAsync(true, CurrentConfig?.AutoStartAsAdmin == true, repairOnly: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+		if (result.IsSuccess && CurrentConfig != null)
+		{
+			CurrentConfig.AutoStartAsAdmin = result.State.AdminTaskEnabled;
+			SaveConfig();
+		}
+		return result;
 	}
 
 	public static void SetAutoStart(bool enable, bool asAdmin = false)
 	{
-		try
+		// Preserve the old signature without blocking the Dispatcher on UAC or task scheduling.
+		_ = SetAutoStartAsync(enable, asAdmin).ContinueWith(task =>
 		{
-			if (DisableAutoStartSync || IsTestInstanceMode())
-			{
-				if (CurrentConfig != null)
-				{
-					CurrentConfig.AutoStartAsAdmin = asAdmin;
-					SaveConfig();
-				}
-				return;
-			}
-
-			string exePath = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
-			if (enable)
-			{
-				// Always write registry auto-start as the foundational reliable guarantee
-				SetRegistryAutoStart(exePath);
-
-				if (asAdmin)
-				{
-					CreateOrUpdateAdminTask(exePath);
-				}
-				else
-				{
-					RemoveAdminTask();
-				}
-			}
-			else
-			{
-				RemoveRegistryAutoStart();
-				RemoveAdminTask();
-			}
-			if (CurrentConfig != null)
-			{
-				CurrentConfig.AutoStartAsAdmin = asAdmin;
-				SaveConfig();
-			}
-		}
-		catch (Exception)
-		{
-		}
-	}
-
-	private static void SetRegistryAutoStart(string exePath)
-	{
-		try
-		{
-			using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", writable: true);
-			if (registryKey == null)
-			{
-				return;
-			}
-			registryKey.SetValue("StarPie", "\"" + exePath + "\" --autostart --minimized");
-			try
-			{
-				registryKey.DeleteValue("WinPieGestures", throwOnMissingValue: false);
-			}
-			catch
-			{
-			}
-		}
-		catch
-		{
-		}
-	}
-
-	private static void RemoveRegistryAutoStart()
-	{
-		try
-		{
-			using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", writable: true);
-			if (registryKey == null)
-			{
-				return;
-			}
-			try
-			{
-				registryKey.DeleteValue("StarPie", throwOnMissingValue: false);
-			}
-			catch
-			{
-			}
-			try
-			{
-				registryKey.DeleteValue("WinPieGestures", throwOnMissingValue: false);
-			}
-			catch
-			{
-			}
-		}
-		catch
-		{
-		}
-	}
-
-	private static void CreateOrUpdateAdminTask(string exePath)
-	{
-		try
-		{
-			// /delay 0000:00 确保计划任务在用户登录后以零延迟（0秒）立即启动，消除 Windows 任务计划程序默认的数秒登录延迟
-			string arguments = $"/create /tn \"StarPie_AdminAutoStart\" /tr \"\\\"{exePath}\\\" --autostart --minimized\" /sc onlogon /delay 0000:00 /rl highest /f";
-			bool isElevated = IsElevated();
-			ProcessStartInfo psi = new ProcessStartInfo
-			{
-				FileName = "schtasks.exe",
-				Arguments = arguments,
-				UseShellExecute = !isElevated,
-				Verb = isElevated ? "" : "runas",
-				CreateNoWindow = isElevated,
-				WindowStyle = ProcessWindowStyle.Hidden
-			};
-			using Process process = Process.Start(psi);
-			process?.WaitForExit(2000);
-		}
-		catch (Exception)
-		{
-		}
-	}
-
-	private static void RemoveAdminTask()
-	{
-		try
-		{
-			bool isElevated = IsElevated();
-			ProcessStartInfo psi = new ProcessStartInfo
-			{
-				FileName = "schtasks.exe",
-				Arguments = "/delete /tn \"StarPie_AdminAutoStart\" /f",
-				UseShellExecute = !isElevated,
-				Verb = isElevated ? "" : "runas",
-				CreateNoWindow = isElevated,
-				WindowStyle = ProcessWindowStyle.Hidden
-			};
-			using Process process = Process.Start(psi);
-			process?.WaitForExit(2000);
-		}
-		catch
-		{
-		}
+			if (task.IsFaulted) { AppLogger.LogError("Failed to change startup registration", task.Exception!); }
+			else if (!task.Result.IsSuccess) { AppLogger.LogWarn($"Startup registration status: {task.Result.Status}"); }
+		}, System.Threading.Tasks.TaskScheduler.Default);
 	}
 
 	/// <summary>显式禁用开机自启同步，用于测试环境与沙箱运行</summary>
@@ -1433,55 +1333,6 @@ public static class ConfigManager
 
 	public static void EnsureAutoStartRegistryUpToDate()
 	{
-		try
-		{
-			// 测试实例或自检模式下，严禁触碰任何真实系统的开机启动项与 HKCU 注册表，防止污染日常环境
-			if (DisableAutoStartSync || IsTestInstanceMode())
-			{
-				return;
-			}
-
-			// 若当前进程本身就是通过自启动参数呼起，说明任务与注册表均已正确就绪，直接跳过耗时的外置进程核验
-			if (Environment.GetCommandLineArgs().Any(a => string.Equals(a, "--autostart", StringComparison.OrdinalIgnoreCase)))
-			{
-				return;
-			}
-
-			if (CurrentConfig != null && CurrentConfig.AutoStartAsAdmin)
-			{
-				if (IsAdminTaskAutoStartEnabled())
-				{
-					CreateOrUpdateAdminTask(Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe"));
-				}
-				return;
-			}
-			using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Run", writable: true);
-			if (registryKey == null)
-			{
-				return;
-			}
-			string text = (registryKey.GetValue("StarPie") as string) ?? (registryKey.GetValue("WinPieGestures") as string);
-			if (string.IsNullOrEmpty(text))
-			{
-				return;
-			}
-			string text2 = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
-			string text3 = "\"" + text2 + "\" --autostart --minimized";
-			if (!(text != text3))
-			{
-				return;
-			}
-			registryKey.SetValue("StarPie", text3);
-			try
-			{
-				registryKey.DeleteValue("WinPieGestures", throwOnMissingValue: false);
-			}
-			catch
-			{
-			}
-		}
-		catch
-		{
-		}
+		// Startup/configuration reads are side-effect free. Explicit user repair uses RepairAutoStartAsync.
 	}
 }

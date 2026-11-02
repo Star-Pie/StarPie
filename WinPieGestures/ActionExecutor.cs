@@ -2310,8 +2310,10 @@ public static class ActionExecutor
         string file = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"'));
         AppLogger.LogInfo($"Executing Launch: Path='{file}', Args='{arguments}', Mode={mode}");
 
-        bool appId = file.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase) ||
-            (file.Contains('!') && !file.Contains(":\\") && !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+        // HTTP(S) 目标既不能按 exe 名去切换已有窗口，也不能因为含 '!' 或缺 .exe 后缀被推断成打包应用 appId。
+        bool isHttpUrl = IsHttpUrlTarget(file);
+        bool appId = !isHttpUrl && (file.StartsWith("shell:AppsFolder", StringComparison.OrdinalIgnoreCase) ||
+            (file.Contains('!') && !file.Contains(":\\") && !file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)));
         if (appId && mode == StarPie.Plugin.ProcessLaunchMode.Administrator)
             throw new NotSupportedException("Packaged application activation does not support administrator launch.");
         if (appId)
@@ -2337,7 +2339,7 @@ public static class ActionExecutor
         bool isShellOrSpecial = ProcessWindowSelector.IsSpecialProgram(exeName);
 
         // 仅在 Default 与 StandardUser 且无参数且非特殊程序时优先进行已有窗口切换
-        if (mode != StarPie.Plugin.ProcessLaunchMode.Administrator && !isShellOrSpecial && string.IsNullOrWhiteSpace(arguments))
+        if (!isHttpUrl && mode != StarPie.Plugin.ProcessLaunchMode.Administrator && !isShellOrSpecial && string.IsNullOrWhiteSpace(arguments))
         {
             var toggleFunc = toggleExisting ?? (p => LaunchWindowToggle.TryToggle(p));
             LaunchWindowToggleResult toggleResult = toggleFunc(file);
@@ -2396,6 +2398,11 @@ public static class ActionExecutor
         }
         return started;
     }
+
+    /// <summary>HTTP(S) 地址直接交给启动后端，不参与已有窗口切换或打包应用推断。</summary>
+    private static bool IsHttpUrlTarget(string value) =>
+        value.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+        value.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
     internal static void ExecuteLaunch(
         string path,

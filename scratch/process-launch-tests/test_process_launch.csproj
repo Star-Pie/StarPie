@@ -6,5 +6,24 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>test_process_launch</AssemblyName>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" /></ItemGroup>
+  <ItemGroup>
+    <!-- 绑定显式候选目录：不使用 ProjectReference，避免把宿主重新构建到默认 bin/Release/<TFM>。 -->
+    <Reference Include="StarPie">
+      <HintPath>$(StarPieCandidateDir)\StarPie.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="StarPie.Plugin.Abstractions">
+      <HintPath>$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- 编译期记录候选目录，运行期用于校验实际加载的宿主 DLL 未陈旧。 -->
+    <AssemblyMetadata Include="StarPieCandidateDir" Value="$(StarPieCandidateDir)" />
+  </ItemGroup>
+  <Target Name="RequireExplicitCandidate" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(StarPieCandidateDir)' == ''" Text="StarPieCandidateDir must identify an explicitly built candidate." />
+    <Error Condition="!Exists('$(StarPieCandidateDir)\StarPie.dll')" Text="Candidate StarPie.dll does not exist." />
+    <Error Condition="!Exists('$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll')" Text="Candidate SDK does not exist." />
+  </Target>
 </Project>

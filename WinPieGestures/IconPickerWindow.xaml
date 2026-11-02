@@ -67,14 +67,18 @@
       <TextBlock Name="HeaderSubtitleText" Text="精选 30+ 常用高保真矢量图形，支持在不同分辨率及 DPI 下无损清晰渲染。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
     </StackPanel>
     <Grid Row="1" Margin="0,0,0,12">
+      <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <TextBox Name="SearchTextBox" Height="32" Padding="8,4" VerticalContentAlignment="Center" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource InputBorderBrush}" Text="" ToolTip="输入图标名称进行快速过滤..." TextChanged="SearchTextBox_TextChanged" />
       <Button Name="ImportIconButton" Grid.Column="1" Content="➕ 导入自定义图标..." Style="{StaticResource ModernButtonStyle}" Height="32" Margin="8,0,0,0" ToolTip="支持导入本地 SVG 矢量图或 PNG / ICO / JPG 图片图标" Click="ImportIcon_Click" />
-      <Button Name="ClearIconButton" Grid.Column="2" Content="清空图标" Style="{StaticResource ModernButtonStyle}" Height="32" Margin="8,0,0,0" Click="ClearIcon_Click" />
+      <Button Name="ImportSvgFolderButton" Grid.Column="2" Style="{StaticResource ModernButtonStyle}" Height="32" Margin="8,0,0,0" Click="ImportSvgFolder_Click" />
+      <Button Name="ClearIconButton" Grid.Column="3" Content="清空图标" Style="{StaticResource ModernButtonStyle}" Height="32" Margin="8,0,0,0" Click="ClearIcon_Click" />
+      <TextBox Name="ImportStatusTextBox" Grid.Row="1" Grid.ColumnSpan="4" Margin="0,8,0,0" MaxHeight="80" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Visibility="Collapsed" Foreground="{DynamicResource TextSecondaryBrush}" Background="{DynamicResource SubtleCardBrush}" />
     </Grid>
     <Border Grid.Row="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="10">
       <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

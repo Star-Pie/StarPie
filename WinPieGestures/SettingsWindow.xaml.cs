@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
@@ -531,6 +531,9 @@ public partial class SettingsWindow : Window
 		_isUpdatingFocusUi = true;
 		InitializeComponent();
 		InitializeArtStyleStudio();
+		PreviewMouseDown += ProfileActivationInteraction_PreviewMouseDown;
+		if (MappingsProfileComboBox != null) MappingsProfileComboBox.PreviewMouseDown += CancelProfileActivationForNavigation;
+		if (ProfilesListBox != null) ProfilesListBox.PreviewMouseDown += CancelProfileActivationForNavigation;
 		if (MappingsPreviewViewportContainer != null)
 		{
 			MappingsPreviewViewportContainer.LostMouseCapture += (s, e) =>
@@ -963,6 +966,7 @@ public partial class SettingsWindow : Window
 		}
 		if (LongPressTriggerCheckBox != null)
 		{
+			PinWheelCheckBox.IsChecked = ConfigManager.CurrentConfig.PinWheelAfterTrigger;
 			LongPressTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressTrigger;
 		}
 		if (LongPressOnlyTriggerCheckBox != null)
@@ -1512,22 +1516,7 @@ public partial class SettingsWindow : Window
 			EdgeSafeMarginYValueText.Text = $"{marginY:0} px";
 		}
 
-		// AutoStart
-		_isLoadingAutoStartState = true;
-		try
-		{
-			_loadedAutoStartEnabled = ConfigManager.IsAutoStartEnabled();
-			_loadedAutoStartAsAdmin = ConfigManager.CurrentConfig.AutoStartAsAdmin;
-			AutoStartCheckBox.IsChecked = _loadedAutoStartEnabled;
-			if (AutoStartAsAdminCheckBox != null)
-			{
-				AutoStartAsAdminCheckBox.IsChecked = _loadedAutoStartAsAdmin;
-			}
-		}
-		finally
-		{
-			_isLoadingAutoStartState = false;
-		}
+		_ = RefreshAutoStartStateAsync();
 
 		// Language & Previews
 		SetComboBoxSelectedValue(LanguageComboBox, ConfigManager.CurrentConfig.Language ?? "Auto");
@@ -1769,6 +1758,16 @@ public partial class SettingsWindow : Window
 		}
 
 		// 3. Tab 2 手势与动作: 隐藏平铺高级正则/间距卡片与紧凑全览列表分段切换
+		if (ProfileActivationPanel != null) ProfileActivationPanel.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
+		RefreshProfileActivationUi();
+		if (ApplicationIdentificationPanel != null)
+		{
+			ApplicationIdentificationPanel.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
+		}
+		if (IsolationIdentificationSummaryPanel != null)
+		{
+			IsolationIdentificationSummaryPanel.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
+		}
 		if (Tab2_TileSettingsCardBorder != null)
 		{
 			Tab2_TileSettingsCardBorder.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
@@ -1844,6 +1843,8 @@ public partial class SettingsWindow : Window
 	{
 		RefreshAutoSaveStatus();
 		ReloadUiFontOptions();
+		PopulateWheelFontFamilies();
+		PopulateCoreFontFamilies();
 		base.Title = I18n.T("WindowTitle");
 		if (ConfigModeSimpleRadio != null)
 		{
@@ -1907,6 +1908,9 @@ public partial class SettingsWindow : Window
 		}
 		if (LongPressTriggerTitleText != null)
 		{
+			PinWheelTitleText.Text = I18n.T("PinWheelTitle");
+			PinWheelCheckBox.ToolTip = I18n.T("PinWheelDescription");
+			RepairAutoStartButton.Content = I18n.T("RepairAutoStart");
 			LongPressTriggerTitleText.Text = I18n.T("LongPressTriggerTitle");
 		}
 		if (LongPressTriggerDescText != null)
@@ -1953,7 +1957,10 @@ public partial class SettingsWindow : Window
 		if (ApplicationIdentificationHeadingText != null) ApplicationIdentificationHeadingText.Text = I18n.T("ApplicationIdentificationHeading");
 		if (ApplicationIdentificationGlobalText != null) ApplicationIdentificationGlobalText.Text = I18n.T("ApplicationIdentificationGlobal");
 		if (EditApplicationIdentificationBtn != null) EditApplicationIdentificationBtn.Content = I18n.T("EditApplicationIdentification");
-		if (ComponentIdentificationDescText != null) ComponentIdentificationDescText.Text = I18n.T("ComponentIdentificationDesc");
+		string componentIdentificationDescription = I18n.T("ComponentIdentificationDesc");
+		if (ComponentIdentificationDescText != null) ComponentIdentificationDescText.Text = componentIdentificationDescription;
+		if (ComponentIdentificationCheckBox != null)
+			System.Windows.Automation.AutomationProperties.SetHelpText(ComponentIdentificationCheckBox, componentIdentificationDescription);
 		RefreshApplicationIdentificationUi();
 		if (MouseReleaseDebounceTitleText != null)
 		{
@@ -4103,6 +4110,7 @@ public partial class SettingsWindow : Window
 
 	private void Window_Closing(object sender, CancelEventArgs e)
 	{
+		StopProfileActivationRecording();
 		if (!_isClosingForRelease && !App.IsExiting)
 		{
 			e.Cancel = true;
@@ -4946,6 +4954,14 @@ public partial class SettingsWindow : Window
 		if (inputDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(inputDialog.InputText))
 		{
 			string newName = inputDialog.InputText.Trim();
+			string proposedBindings = newName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(_selectedProfile.BoundProcesses)
+				? newName.ToLowerInvariant() : _selectedProfile.BoundProcesses;
+			if (ProfileTriggerRouter.ValidateBindings(ConfigManager.CurrentConfig,
+				_selectedProfile, proposedBindings, newName) != ProfileTriggerValidationError.None)
+			{
+				AppMessageBox.Show(this, I18n.T("ProfileActivationConflict"), I18n.T("ProfileActivationRecord"), MessageBoxButton.OK, MessageBoxImage.Information);
+				return;
+			}
 			_selectedProfile.DisplayName = newName;
 			if (newName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(_selectedProfile.BoundProcesses))
 			{
@@ -4959,6 +4975,7 @@ public partial class SettingsWindow : Window
 
 	private void UpdateProfileBindingUi()
 	{
+		RefreshProfileActivationUi();
 		if (ProfileBindingCardBorder == null) return;
 
 		bool isGlobal = _selectedProfile == null || string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase);
@@ -4997,8 +5014,32 @@ public partial class SettingsWindow : Window
 		if (_isUpdatingUi || _selectedProfile == null) return;
 		if (string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase)) return;
 
-		_selectedProfile.BoundProcesses = ProfileBoundProcessesTextBox?.Text?.Trim() ?? "";
-		ScheduleAutoSave();
+		if (TryApplyProfileBindings(ProfileBoundProcessesTextBox?.Text?.Trim() ?? "")) ScheduleAutoSave();
+	}
+
+	private bool TryApplyProfileBindings(string proposedBindings)
+	{
+		if (_selectedProfile == null) return false;
+		if (ProfileTriggerRouter.ValidateBindings(ConfigManager.CurrentConfig, _selectedProfile,
+			proposedBindings) != ProfileTriggerValidationError.None)
+		{
+			UpdateProfileBindingUi();
+			AppMessageBox.Show(this, I18n.T("ProfileActivationConflict"), I18n.T("ProfileActivationRecord"),
+				MessageBoxButton.OK, MessageBoxImage.Information);
+			return false;
+		}
+		_selectedProfile.BoundProcesses = proposedBindings;
+		return true;
+	}
+
+	private bool TryAppendProfileBinding(string processName)
+	{
+		var parts = (ProfileBoundProcessesTextBox?.Text ?? _selectedProfile?.BoundProcesses ?? "")
+			.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
+		if (!parts.Any(p => p.Equals(processName, StringComparison.OrdinalIgnoreCase))) parts.Add(processName);
+		if (!TryApplyProfileBindings(string.Join(", ", parts))) return false;
+		UpdateProfileBindingUi();
+		return true;
 	}
 
 	private void ProfileCaptureWindowBtn_Click(object sender, RoutedEventArgs e)
@@ -5014,21 +5055,7 @@ public partial class SettingsWindow : Window
 			if (picker.ShowDialog() == true && !string.IsNullOrEmpty(picker.SelectedProcessName))
 			{
 				string proc = picker.SelectedProcessName.ToLowerInvariant();
-				string current = ProfileBoundProcessesTextBox?.Text?.Trim() ?? "";
-				if (string.IsNullOrEmpty(current))
-				{
-					if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.Text = proc;
-				}
-				else
-				{
-					var parts = current.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
-					if (!parts.Any(p => p.Equals(proc, StringComparison.OrdinalIgnoreCase)))
-					{
-						parts.Add(proc);
-						if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.Text = string.Join(", ", parts);
-					}
-				}
-				_selectedProfile.BoundProcesses = ProfileBoundProcessesTextBox?.Text ?? proc;
+				if (!TryAppendProfileBinding(proc)) return;
 				// 「配置名是占位还是用户起的」—— 这个判断在本文件里有三处（本节 3 次，动作名之外的另一套）。
 				// 与动作名那套的区别：配置名<b>没有任何走 I18n 的默认值</b>（生成点是
 				// 下面的「<c> - 副本</c>」拼接与设置页的重命名），所以这里的中文字面量
@@ -5062,21 +5089,7 @@ public partial class SettingsWindow : Window
 			if (picker.ShowDialog() == true && !string.IsNullOrEmpty(picker.SelectedPath))
 			{
 				string proc = System.IO.Path.GetFileName(picker.SelectedPath).ToLowerInvariant();
-				string current = ProfileBoundProcessesTextBox?.Text?.Trim() ?? "";
-				if (string.IsNullOrEmpty(current))
-				{
-					if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.Text = proc;
-				}
-				else
-				{
-					var parts = current.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
-					if (!parts.Any(p => p.Equals(proc, StringComparison.OrdinalIgnoreCase)))
-					{
-						parts.Add(proc);
-						if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.Text = string.Join(", ", parts);
-					}
-				}
-				_selectedProfile.BoundProcesses = ProfileBoundProcessesTextBox?.Text ?? proc;
+				if (!TryAppendProfileBinding(proc)) return;
 				if (string.IsNullOrEmpty(_selectedProfile.DisplayName) || _selectedProfile.DisplayName.StartsWith("自定义配置_") || _selectedProfile.DisplayName.EndsWith(" - 副本"))
 				{
 					if (!string.IsNullOrWhiteSpace(picker.SelectedName))
@@ -5107,21 +5120,7 @@ public partial class SettingsWindow : Window
 			if (dlg.ShowDialog(this) == true && !string.IsNullOrEmpty(dlg.FileName))
 			{
 				string proc = System.IO.Path.GetFileName(dlg.FileName).ToLowerInvariant();
-				string current = ProfileBoundProcessesTextBox?.Text?.Trim() ?? "";
-				if (string.IsNullOrEmpty(current))
-				{
-					if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.Text = proc;
-				}
-				else
-				{
-					var parts = current.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
-					if (!parts.Any(p => p.Equals(proc, StringComparison.OrdinalIgnoreCase)))
-					{
-						parts.Add(proc);
-						if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.Text = string.Join(", ", parts);
-					}
-				}
-				_selectedProfile.BoundProcesses = ProfileBoundProcessesTextBox?.Text ?? proc;
+				if (!TryAppendProfileBinding(proc)) return;
 				if (string.IsNullOrEmpty(_selectedProfile.DisplayName) || _selectedProfile.DisplayName.StartsWith("自定义配置_") || _selectedProfile.DisplayName.EndsWith(" - 副本"))
 				{
 					_selectedProfile.DisplayName = System.IO.Path.GetFileNameWithoutExtension(dlg.FileName);
@@ -5382,6 +5381,7 @@ public partial class SettingsWindow : Window
 		{
 			_isUpdatingUi = oldUpdating;
 		}
+		RefreshProfileActivationUi();
 	}
 
 	private void LayerSelectComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -5394,6 +5394,7 @@ public partial class SettingsWindow : Window
 		_selectedProfile.SyncActiveLayerFromRootProperties();
 		_selectedProfile.ActiveLayerIndex = newIdx;
 		_selectedProfile.SyncRootPropertiesFromActiveLayer();
+		RefreshProfileActivationUi();
 
 		bool oldUpdating = _isUpdatingUi;
 		try
@@ -5487,6 +5488,12 @@ public partial class SettingsWindow : Window
 		WheelLayer curLayer = _selectedProfile.GetActiveLayer();
 		WheelLayer clonedLayer = curLayer.Clone();
 		clonedLayer.Name = $"{curLayer.Name} - 副本";
+		if (ProfileTriggerRouter.GetLayerTrigger(_selectedProfile, curLayer) != null)
+		{
+			if (AppMessageBox.Show(this, I18n.T("LayerActivationCopyConflict"), I18n.T("ProfileActivationRecord"),
+				MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+			clonedLayer.ActivationTrigger = null;
+		}
 
 		_selectedProfile.Layers.Add(clonedLayer);
 		_selectedProfile.ActiveLayerIndex = _selectedProfile.Layers.Count - 1;
@@ -5674,6 +5681,13 @@ public partial class SettingsWindow : Window
 			if (newName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 			{
 				newProfile.BoundProcesses = newName.ToLowerInvariant();
+			}
+			if (ProfileTriggerRouter.ValidateBindings(ConfigManager.CurrentConfig, newProfile) != ProfileTriggerValidationError.None)
+			{
+				if (AppMessageBox.Show(this, I18n.T("ProfileActivationCopyConflict"), I18n.T("ProfileActivationRecord"),
+					MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+				newProfile.ActivationTrigger = null;
+				foreach (WheelLayer layer in newProfile.Layers) layer.ActivationTrigger = null;
 			}
 			newProfile.EnsureLayers();
 			newProfile.SyncRootPropertiesFromActiveLayer();
@@ -10766,6 +10780,7 @@ public partial class SettingsWindow : Window
 		if (!_rawKeyboardInputHookAttached && App.MainKeyboardHook != null)
 		{
 			App.MainKeyboardHook.OnRawKeyEvent += MainKeyboardHook_OnRawKeyEvent;
+			App.MainKeyboardHook.OnKeyDown += MainKeyboardHook_OnProfileActivationKeyDown;
 			_rawKeyboardInputHookAttached = true;
 		}
 	}
@@ -10779,28 +10794,44 @@ public partial class SettingsWindow : Window
 		// MouseHook 复用同一事件实例派发，严禁跨线程持有：先取出原始值再入 Dispatcher 队列
 		string mouseButton = e.MouseButton;
 		uint mouseData = e.MouseData;
+		ModifierKeys inputModifiers = KeyboardHook.GetCurrentModifiers();
+		long recordingGeneration = Interlocked.Read(ref _profileRecordingGeneration);
 		((DispatcherObject)this).Dispatcher.BeginInvoke((Delegate)(Action)delegate
 		{
-			if (!_resourcesReleased)
+			if (!_resourcesReleased && recordingGeneration == Interlocked.Read(ref _profileRecordingGeneration))
 			{
-				ProcessRawMouseButton(mouseButton, mouseData);
+				ProcessRawMouseButton(mouseButton, mouseData, inputModifiers);
 			}
-		}, Array.Empty<object>());
+		}, _recordingActivationProfile != null ? DispatcherPriority.Background : DispatcherPriority.Normal, Array.Empty<object>());
 	}
 
 	private void MainKeyboardHook_OnRawKeyEvent(object? sender, GlobalKeyEventArgs e)
 	{
-		if (_resourcesReleased)
+		long recordingGeneration = Interlocked.Read(ref _profileRecordingGeneration);
+		if (_resourcesReleased || _recordingActivationProfile != null)
 		{
 			return;
 		}
 		((DispatcherObject)this).Dispatcher.BeginInvoke((Delegate)(Action)delegate
 		{
-			if (!_resourcesReleased)
+			if (!_resourcesReleased && recordingGeneration == Interlocked.Read(ref _profileRecordingGeneration))
 			{
 				ProcessRawKeyEvent(e);
 			}
 		}, Array.Empty<object>());
+	}
+
+	private void MainKeyboardHook_OnProfileActivationKeyDown(object? sender, GlobalKeyEventArgs e)
+	{
+		if (_resourcesReleased || _recordingActivationProfile == null ||
+			(e.VkCode != 27 && !ProfileTriggerRouter.IsAllowedKeyboardTrigger(e.VkCode))) return;
+		long recordingGeneration = Interlocked.Read(ref _profileRecordingGeneration);
+		e.Handled = true;
+		Dispatcher.BeginInvoke(new Action(() =>
+		{
+			if (!_resourcesReleased && _recordingActivationProfile != null &&
+				recordingGeneration == Interlocked.Read(ref _profileRecordingGeneration)) ProcessRawKeyEvent(e);
+		}), DispatcherPriority.Background);
 	}
 
 	private void UnhookRawInputForSensorAndRecorder()
@@ -10818,6 +10849,7 @@ public partial class SettingsWindow : Window
 			if (App.MainKeyboardHook != null)
 			{
 				App.MainKeyboardHook.OnRawKeyEvent -= MainKeyboardHook_OnRawKeyEvent;
+				App.MainKeyboardHook.OnKeyDown -= MainKeyboardHook_OnProfileActivationKeyDown;
 			}
 			_rawKeyboardInputHookAttached = false;
 		}
@@ -10910,6 +10942,136 @@ public partial class SettingsWindow : Window
 		return mouseText;
 	}
 
+	private WheelProfile? _recordingActivationProfile;
+	private WheelLayer? _recordingActivationLayer;
+	private long _profileRecordingGeneration;
+
+	private WheelLayer? SelectedActivationLayer
+	{
+		get
+		{
+			if (_selectedProfile?.Layers == null) return null;
+			if (LayerSelectComboBox?.SelectedItem is WheelLayer selected && _selectedProfile.Layers.Contains(selected)) return selected;
+			int index = _selectedProfile.ActiveLayerIndex;
+			return index >= 0 && index < _selectedProfile.Layers.Count ? _selectedProfile.Layers[index] : null;
+		}
+	}
+
+	private void ProfileActivationInteraction_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+	{
+		if (_recordingActivationProfile == null || e.ChangedButton != MouseButton.Left) return;
+		DependencyObject? element = e.OriginalSource as DependencyObject;
+		while (element != null && !ReferenceEquals(element, this))
+		{
+			if (element is System.Windows.Controls.Primitives.ButtonBase || element is ItemsControl ||
+				element is System.Windows.Controls.Primitives.TextBoxBase ||
+				element is System.Windows.Controls.Primitives.RangeBase)
+			{
+				bool cancelButton = ReferenceEquals(element, RecordProfileActivationButton);
+				StopProfileActivationRecording();
+				// Suppressing the cancel button's down also suppresses its later Click;
+				// otherwise that Click would start a new recording after cancellation.
+				if (cancelButton) e.Handled = true;
+				return;
+			}
+			element = element is Visual ? VisualTreeHelper.GetParent(element) :
+				(element as FrameworkContentElement)?.Parent;
+		}
+	}
+
+	private void CancelProfileActivationForNavigation(object sender, MouseButtonEventArgs e)
+	{
+		if (_recordingActivationProfile != null) StopProfileActivationRecording();
+	}
+
+	private void RefreshProfileActivationUi()
+	{
+		WheelLayer? layer = SelectedActivationLayer;
+		if (_recordingActivationProfile != null &&
+			(!ReferenceEquals(_recordingActivationProfile, _selectedProfile) ||
+			 !ReferenceEquals(_recordingActivationLayer, layer) ||
+			 ConfigManager.CurrentConfig?.Profiles.Contains(_recordingActivationProfile) != true ||
+			 ProfileActivationPanel?.Visibility != Visibility.Visible)) StopProfileActivationRecording();
+		bool canRecord = _selectedProfile != null && layer != null;
+		TriggerConfig? trigger = canRecord ? ProfileTriggerRouter.GetLayerTrigger(_selectedProfile!, layer!) : null;
+		if (ProfileActivationStatusText != null)
+		{
+			ProfileActivationStatusText.Text = !canRecord ? I18n.T("LayerActivationSelect") :
+				_recordingActivationProfile != null ? I18n.T("ProfileActivationListening") :
+				I18n.TF("LayerActivationStatus", _selectedProfile!.DisplayTitle, layer!.DisplayName,
+					trigger == null ? I18n.T("LayerActivationUnset") : FormatTriggerDisplay(trigger));
+		}
+		if (RecordProfileActivationButton != null)
+		{
+			RecordProfileActivationButton.IsEnabled = canRecord;
+			RecordProfileActivationButton.Content = I18n.T(_recordingActivationProfile == null ? "ProfileActivationRecord" : "ProfileActivationCancel");
+			RecordProfileActivationButton.ToolTip = I18n.T("ProfileActivationHelp");
+		}
+		if (ResetProfileActivationButton != null)
+		{
+			ResetProfileActivationButton.IsEnabled = canRecord && trigger != null;
+			ResetProfileActivationButton.Content = I18n.T("ProfileActivationReset");
+		}
+	}
+
+	private void StopProfileActivationRecording()
+	{
+		Interlocked.Increment(ref _profileRecordingGeneration);
+		_recordingActivationProfile = null;
+		_recordingActivationLayer = null;
+		ProfileTriggerRouter.IsRecording = false;
+		RefreshProfileActivationUi();
+	}
+
+	private void RecordProfileActivationButton_Click(object sender, RoutedEventArgs e)
+	{
+		if (_recordingActivationProfile != null) { StopProfileActivationRecording(); return; }
+		if (_selectedProfile == null || SelectedActivationLayer == null) return;
+		StopTriggerRecording(saved: false);
+		StopProcessTriggerRecording(saved: false);
+		CancelExclusiveRecordingIfActive();
+		_recordingActivationProfile = _selectedProfile;
+		_recordingActivationLayer = SelectedActivationLayer;
+		Interlocked.Increment(ref _profileRecordingGeneration);
+		ProfileTriggerRouter.IsRecording = true;
+		RefreshProfileActivationUi();
+	}
+
+	private void ResetProfileActivationButton_Click(object sender, RoutedEventArgs e)
+	{
+		StopProfileActivationRecording();
+		WheelLayer? layer = SelectedActivationLayer;
+		if (_selectedProfile == null || layer == null) return;
+		layer.ActivationTrigger = null;
+		if (!string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) &&
+			ReferenceEquals(_selectedProfile.Layers.FirstOrDefault(), layer)) _selectedProfile.ActivationTrigger = null;
+		ScheduleAutoSave();
+		RefreshProfileActivationUi();
+	}
+
+	private void CompleteProfileActivationRecording(TriggerConfig trigger)
+	{
+		WheelProfile? profile = _recordingActivationProfile;
+		WheelLayer? layer = _recordingActivationLayer;
+		if (profile == null || layer == null) return;
+		if (!ReferenceEquals(profile, _selectedProfile) || !ReferenceEquals(layer, SelectedActivationLayer) ||
+			!profile.Layers.Contains(layer) || ConfigManager.CurrentConfig?.Profiles.Contains(profile) != true)
+		{
+			StopProfileActivationRecording();
+			return;
+		}
+		ProfileTriggerValidationError error = ProfileTriggerRouter.ValidateLayerTrigger(ConfigManager.CurrentConfig, profile, layer, trigger);
+		if (error != ProfileTriggerValidationError.None)
+		{
+			AppMessageBox.Show(this, I18n.T(error == ProfileTriggerValidationError.Conflict ? "ProfileActivationConflict" : "ProfileActivationInvalid"),
+				I18n.T("ProfileActivationRecord"), MessageBoxButton.OK, MessageBoxImage.Information);
+			return;
+		}
+		layer.ActivationTrigger = trigger.Clone();
+		ScheduleAutoSave();
+		StopProfileActivationRecording();
+	}
+
 	private void RecordTriggerButton_Click(object sender, RoutedEventArgs e)
 	{
 		if (!_isRecordingTrigger)
@@ -10924,6 +11086,7 @@ public partial class SettingsWindow : Window
 
 	private void StartTriggerRecording()
 	{
+		StopProfileActivationRecording();
 		_isRecordingTrigger = true;
 		if (RecordTriggerButton != null)
 		{
@@ -10994,8 +11157,17 @@ public partial class SettingsWindow : Window
 		}
 	}
 
-	public void ProcessRawMouseButton(string mouseButton, uint mouseData = 0u)
+	public void ProcessRawMouseButton(string mouseButton, uint mouseData = 0u, ModifierKeys? capturedModifiers = null)
 	{
+		if (_recordingActivationProfile != null)
+		{
+			ModifierKeys mods = capturedModifiers ?? KeyboardHook.GetCurrentModifiers();
+			CompleteProfileActivationRecording(new TriggerConfig {
+				TriggerType = "Mouse", MouseButton = mouseButton,
+				RequireCtrl = mods.HasFlag(ModifierKeys.Control), RequireShift = mods.HasFlag(ModifierKeys.Shift),
+				RequireAlt = mods.HasFlag(ModifierKeys.Alt), RequireWin = mods.HasFlag(ModifierKeys.Windows) });
+			return;
+		}
 		if ((base.IsVisible || _isRecordingTrigger || _isRecordingProcessTrigger) && ConfigManager.CurrentConfig != null)
 		{
 			string mouseDisplayName = mouseButton switch
@@ -11093,6 +11265,16 @@ public partial class SettingsWindow : Window
 
 	private void ProcessRawKeyEvent(GlobalKeyEventArgs e)
 	{
+		if (_recordingActivationProfile != null)
+		{
+			if (e.VkCode == 27) { StopProfileActivationRecording(); return; }
+			if (!ProfileTriggerRouter.IsAllowedKeyboardTrigger(e.VkCode)) return;
+			CompleteProfileActivationRecording(new TriggerConfig {
+				TriggerType = "Keyboard", Key = e.Key.ToString(), VkCode = e.VkCode,
+				RequireCtrl = e.Modifiers.HasFlag(ModifierKeys.Control), RequireShift = e.Modifiers.HasFlag(ModifierKeys.Shift),
+				RequireAlt = e.Modifiers.HasFlag(ModifierKeys.Alt), RequireWin = e.Modifiers.HasFlag(ModifierKeys.Windows) });
+			return;
+		}
 		if ((int)e.Key == 0)
 		{
 			return;
@@ -11196,6 +11378,7 @@ public partial class SettingsWindow : Window
 
 	private void RefreshApplicationIdentificationUi()
 	{
+		RefreshProfileActivationUi();
 		bool componentMode = ConfigManager.CurrentConfig?.EnableComponentIdentification == true;
 		string mode = I18n.T(componentMode ? "ApplicationIdentificationComponentMode" : "ApplicationIdentificationWindowMode");
 		if (ComponentIdentificationStateText != null)
@@ -12898,102 +13081,14 @@ public partial class SettingsWindow : Window
 
 	private void PopulateWheelFontFamilies()
 	{
-		if (WheelFontFamilyComboBox == null)
-		{
-			return;
-		}
-		string currentTag = (WheelFontFamilyComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString()
-			?? ConfigManager.CurrentConfig?.WheelFontFamily
-			?? "Microsoft YaHei UI, Segoe UI";
-		WheelFontFamilyComboBox.Items.Clear();
-		List<(string, string)> obj = GetStandardFontFamilies();
-		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var item2 in obj)
-		{
-			WheelFontFamilyComboBox.Items.Add(new ComboBoxItem
-			{
-				Content = item2.Item1,
-				Tag = item2.Item2,
-				FontFamily = new System.Windows.Media.FontFamily(item2.Item2)
-			});
-			hashSet.Add(item2.Item2);
-			string item = item2.Item2.Split(',')[0].Trim();
-			hashSet.Add(item);
-		}
-		WheelFontFamilyComboBox.Items.Add(new Separator());
-		try
-		{
-			foreach (System.Windows.Media.FontFamily item3 in Fonts.SystemFontFamilies.OrderBy<System.Windows.Media.FontFamily, string>((System.Windows.Media.FontFamily f) => GetFontDisplayName(f), StringComparer.CurrentCultureIgnoreCase).ToList())
-			{
-				string source = item3.Source;
-				if (!string.IsNullOrWhiteSpace(source) && !hashSet.Contains(source))
-				{
-					string fontDisplayName = GetFontDisplayName(item3);
-					string content = (string.Equals(fontDisplayName, source, StringComparison.OrdinalIgnoreCase) ? ("\ud83d\udd24 " + fontDisplayName) : $"\ud83d\udd24 {fontDisplayName} ({source})");
-					WheelFontFamilyComboBox.Items.Add(new ComboBoxItem
-					{
-						Content = content,
-						Tag = source,
-						FontFamily = item3
-					});
-					hashSet.Add(source);
-				}
-			}
-		}
-		catch
-		{
-		}
-		SetComboBoxSelectedValue(WheelFontFamilyComboBox, currentTag);
+		PopulateAppearanceFontOptions(WheelFontFamilyComboBox, ConfigManager.CurrentConfig?.WheelFontFamily,
+			false, ref _wheelFontListLoaded, ref _wheelFontListLanguage);
 	}
 
 	private void PopulateCoreFontFamilies()
 	{
-		if (CoreFontFamilyComboBox == null)
-		{
-			return;
-		}
-		string currentTag = (CoreFontFamilyComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString()
-			?? ConfigManager.CurrentConfig?.CoreFontFamily
-			?? "Microsoft YaHei UI, Segoe UI";
-		CoreFontFamilyComboBox.Items.Clear();
-		List<(string, string)> obj = GetStandardFontFamilies();
-		HashSet<string> hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var item2 in obj)
-		{
-			CoreFontFamilyComboBox.Items.Add(new ComboBoxItem
-			{
-				Content = item2.Item1,
-				Tag = item2.Item2,
-				FontFamily = new System.Windows.Media.FontFamily(item2.Item2)
-			});
-			hashSet.Add(item2.Item2);
-			string item = item2.Item2.Split(',')[0].Trim();
-			hashSet.Add(item);
-		}
-		CoreFontFamilyComboBox.Items.Add(new Separator());
-		try
-		{
-			foreach (System.Windows.Media.FontFamily item3 in Fonts.SystemFontFamilies.OrderBy<System.Windows.Media.FontFamily, string>((System.Windows.Media.FontFamily f) => GetFontDisplayName(f), StringComparer.CurrentCultureIgnoreCase).ToList())
-			{
-				string source = item3.Source;
-				if (!string.IsNullOrWhiteSpace(source) && !hashSet.Contains(source))
-				{
-					string fontDisplayName = GetFontDisplayName(item3);
-					string content = (string.Equals(fontDisplayName, source, StringComparison.OrdinalIgnoreCase) ? ("\ud83d\udd24 " + fontDisplayName) : $"\ud83d\udd24 {fontDisplayName} ({source})");
-					CoreFontFamilyComboBox.Items.Add(new ComboBoxItem
-					{
-						Content = content,
-						Tag = source,
-						FontFamily = item3
-					});
-					hashSet.Add(source);
-				}
-			}
-		}
-		catch
-		{
-		}
-		SetComboBoxSelectedValue(CoreFontFamilyComboBox, currentTag);
+		PopulateAppearanceFontOptions(CoreFontFamilyComboBox, ConfigManager.CurrentConfig?.CoreFontFamily,
+			false, ref _coreFontListLoaded, ref _coreFontListLanguage);
 	}
 
 	private static string GetFontDisplayName(System.Windows.Media.FontFamily font)
@@ -15302,6 +15397,7 @@ public partial class SettingsWindow : Window
 
 	private void StartProcessTriggerRecording()
 	{
+		StopProfileActivationRecording();
 		if (string.IsNullOrWhiteSpace(_recordingProcessName))
 		{
 			return;
@@ -16168,7 +16264,7 @@ public partial class SettingsWindow : Window
 		return border;
 	}
 
-	private void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
+	private async void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (!_isUpdatingUi && !_isUiInitializing && !_isLoadingAutoStartState)
 		{
@@ -16178,14 +16274,11 @@ public partial class SettingsWindow : Window
 			{
 				return;
 			}
-			ConfigManager.SetAutoStart(valueOrDefault, asAdmin);
-			_loadedAutoStartEnabled = valueOrDefault;
-			_loadedAutoStartAsAdmin = asAdmin;
-			SyncUiToConfigAndSave();
+			await ChangeAutoStartAsync(valueOrDefault, asAdmin);
 		}
 	}
 
-	private void AutoStartAsAdminCheckBox_Changed(object sender, RoutedEventArgs e)
+	private async void AutoStartAsAdminCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (!_isUpdatingUi && !_isUiInitializing && !_isLoadingAutoStartState)
 		{
@@ -16195,14 +16288,7 @@ public partial class SettingsWindow : Window
 			{
 				return;
 			}
-			if (ConfigManager.CurrentConfig != null)
-			{
-				ConfigManager.CurrentConfig.AutoStartAsAdmin = flag;
-			}
-			ConfigManager.SetAutoStart(enabled, flag);
-			_loadedAutoStartEnabled = enabled;
-			_loadedAutoStartAsAdmin = flag;
-			SyncUiToConfigAndSave();
+			await ChangeAutoStartAsync(enabled, flag);
 		}
 	}
 
@@ -16651,11 +16737,9 @@ public partial class SettingsWindow : Window
 
 	private void SaveButton_Click(object sender, RoutedEventArgs e)
 	{
-		if (SyncUiToConfigAndSave())
-		{
-			AppMessageBox.Show(this, I18n.T("PromptSavedMessage"), I18n.T("PromptSavedTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
-		}
-		else
+		bool saved = SyncUiToConfigAndSave();
+		UpdateAutoSaveStatus(isSaving: false, success: saved);
+		if (!saved)
 		{
 			AppMessageBox.Show(this, I18n.T("PromptSaveFailedMessage"), I18n.T("PromptSaveFailedTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
 		}
@@ -16759,14 +16843,16 @@ public partial class SettingsWindow : Window
 			if (item is ComboBoxItem { Tag: var tag } comboBoxItem)
 			{
 				string text = tag?.ToString() ?? "";
-				if (string.Equals(text, value, StringComparison.OrdinalIgnoreCase) || string.Equals(text, b, StringComparison.OrdinalIgnoreCase) || text.StartsWith(value, StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(text, value, StringComparison.OrdinalIgnoreCase) ||
+					((comboBox != WheelFontFamilyComboBox && comboBox != CoreFontFamilyComboBox) &&
+					 (string.Equals(text, b, StringComparison.OrdinalIgnoreCase) || text.StartsWith(value, StringComparison.OrdinalIgnoreCase))))
 				{
 					comboBox.SelectedItem = comboBoxItem;
 					return;
 				}
 			}
 		}
-		if (comboBox == WheelFontFamilyComboBox)
+		if (comboBox == WheelFontFamilyComboBox || comboBox == CoreFontFamilyComboBox)
 		{
 			ComboBoxItem comboBoxItem2 = new ComboBoxItem
 			{

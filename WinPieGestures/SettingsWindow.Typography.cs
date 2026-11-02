@@ -50,4 +50,71 @@ public partial class SettingsWindow
         ArtStyles.ArtStyleService.NotifyChanged();
         ScheduleAutoSave();
     }
+
+    private bool _wheelFontListLoaded;
+    private bool _coreFontListLoaded;
+    private string? _wheelFontListLanguage;
+    private string? _coreFontListLanguage;
+
+    private void WheelFontFamilyComboBox_DropDownOpened(object? sender, EventArgs e)
+    {
+        PopulateAppearanceFontOptions(WheelFontFamilyComboBox, ConfigManager.CurrentConfig?.WheelFontFamily,
+            true, ref _wheelFontListLoaded, ref _wheelFontListLanguage);
+    }
+
+    private void CoreFontFamilyComboBox_DropDownOpened(object? sender, EventArgs e)
+    {
+        PopulateAppearanceFontOptions(CoreFontFamilyComboBox, ConfigManager.CurrentConfig?.CoreFontFamily,
+            true, ref _coreFontListLoaded, ref _coreFontListLanguage);
+    }
+
+    private void PopulateAppearanceFontOptions(ComboBox? comboBox, string? configuredFont, bool includeInstalled,
+        ref bool listLoaded, ref string? listLanguage)
+    {
+        if (comboBox == null) return;
+        string language = I18n.CurrentLanguageCode;
+        if (listLanguage == language && comboBox.Items.Count > 0 && (listLoaded || !includeInstalled)) return;
+
+        string selected = (comboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString()
+            ?? configuredFont ?? "Microsoft YaHei UI, Segoe UI";
+        bool wasUpdating = _isUpdatingUi;
+        _isUpdatingUi = true;
+        try
+        {
+            comboBox.Items.Clear();
+            var sources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var preset in GetStandardFontFamilies())
+            {
+                comboBox.Items.Add(new ComboBoxItem { Content = preset.Item1, Tag = preset.Item2,
+                    FontFamily = new FontFamily(preset.Item2) });
+                sources.Add(preset.Item2);
+                sources.Add(preset.Item2.Split(',')[0].Trim());
+            }
+            bool installedLoaded = false;
+            if (includeInstalled)
+            {
+                comboBox.Items.Add(new Separator());
+                try
+                {
+                    foreach (var font in Fonts.SystemFontFamilies.OrderBy(GetFontDisplayName, StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        if (string.IsNullOrWhiteSpace(font.Source) || !sources.Add(font.Source)) continue;
+                        string displayName = GetFontDisplayName(font);
+                        string caption = string.Equals(displayName, font.Source, StringComparison.OrdinalIgnoreCase)
+                            ? "\ud83d\udd24 " + displayName : $"\ud83d\udd24 {displayName} ({font.Source})";
+                        comboBox.Items.Add(new ComboBoxItem { Content = caption, Tag = font.Source, FontFamily = font });
+                    }
+                    installedLoaded = true;
+                }
+                catch
+                {
+                    // Keep presets/current value usable and allow another attempt on the next opening.
+                }
+            }
+            SetComboBoxSelectedValue(comboBox, selected);
+            listLoaded = installedLoaded;
+            listLanguage = language;
+        }
+        finally { _isUpdatingUi = wasUpdating; }
+    }
 }

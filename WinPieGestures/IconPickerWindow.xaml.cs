@@ -47,6 +47,8 @@ public partial class IconPickerWindow : Window
 		if (ImportIconButton != null)
 		{
 			ImportIconButton.Content = I18n.T("IconPickerImport");
+			ImportIconButton.ToolTip = I18n.T("SvgBatchHint");
+			ImportSvgFolderButton.Content = I18n.T("SvgImportFolder");
 		}
 		if (ClearIconButton != null)
 		{
@@ -248,29 +250,24 @@ public partial class IconPickerWindow : Window
 		card.BorderBrush = (Brush)FindResource("AccentPrimaryBrush");
 	}
 
-	private void ImportIcon_Click(object sender, RoutedEventArgs e)
+	private async void ImportIcon_Click(object sender, RoutedEventArgs e)
 	{
 		try
 		{
 			OpenFileDialog openFileDialog = new OpenFileDialog
 			{
-				Title = "导入自定义图标 (SVG / PNG / ICO / JPG)",
-				Filter = "所有支持的图标 (*.svg;*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.svg;*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp|SVG 矢量图 (*.svg)|*.svg|图片文件 (*.png;*.ico;*.jpg;*.jpeg;*.bmp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp|所有文件 (*.*)|*.*",
-				Multiselect = false
+				Title = I18n.T("IconPickerImport"),
+				Filter = I18n.T("SvgImportFileFilter"),
+				Multiselect = true
 			};
 			if (openFileDialog.ShowDialog(this) == true && !string.IsNullOrEmpty(openFileDialog.FileName))
 			{
-				IconHelper.CustomIconItem customIconItem = IconHelper.ImportCustomIcon(openFileDialog.FileName);
-				if (customIconItem != null)
-				{
-					SelectedIconKey = customIconItem.Key;
-					PopulateIcons(SearchTextBox.Text.Trim());
-				}
+				await ImportSelectedFilesAsync(openFileDialog.FileNames);
 			}
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
-			AppMessageBox.Show("导入图标失败:\n" + ex.Message, "StarPie", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+			ShowImportFailure();
 		}
 	}
 
