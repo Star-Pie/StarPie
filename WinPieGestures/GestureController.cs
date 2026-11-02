@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -72,6 +72,9 @@ public class GestureController : IDisposable
 	private Point _pendingMouseReleasePosition;
 
 	private string _pendingMouseReleaseButton = "RightButton";
+
+	private ProfileTriggerActivation? _pendingMouseReleaseActivation;
+
 	private PluginInteractionSession? _interactionSession;
 
 	// ---- 键盘触发穿透模式 ----
@@ -205,6 +208,8 @@ public class GestureController : IDisposable
 	private long _pendingVolumePreviewVersion;
 
 	private TriggerConfig? _activeTrigger;
+
+	private ProfileTriggerActivation? _activeActivation;
 
 	[DllImport("user32.dll")]
 	[return: MarshalAs(UnmanagedType.Bool)]
@@ -358,6 +363,8 @@ public class GestureController : IDisposable
 		_kbTriggerWaiting = false;
 		_isWaitingForThreshold = false;
 		_isGestureActive = false;
+		_activeActivation = null;
+		_activeTrigger = null;
 		if (_currentWheelFocusSession != null)
 		{
 			_currentWheelFocusSession.Cancel();
@@ -379,7 +386,7 @@ public class GestureController : IDisposable
 		ActionExecutor.ReleaseStuckModifiers();
 	}
 
-	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction, bool IsSubmenuLocked) EndActiveGesture()
+	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction, bool IsSubmenuLocked, WheelLayer? Layer) EndActiveGesture()
 	{
 		lock (_uiUpdateSync)
 		{
@@ -387,7 +394,10 @@ public class GestureController : IDisposable
 			bool isSubmenuLocked = _submenuLock.IsLocked || _suppressPrimaryOnRelease;
 			_submenuLock.Reset();
 			_suppressPrimaryOnRelease = false;
-			var result = (_selectedSectorIndex, _selectedSubSectorIndex, _activeProfile, _radialWindow, _lastEscapedState, presentationVersion, _interactionSession, isSubmenuLocked);
+			WheelProfile? endingProfile = _activeActivation?.Profile ?? _activeProfile;
+			var result = (_selectedSectorIndex, _selectedSubSectorIndex, endingProfile, _radialWindow, _lastEscapedState, presentationVersion, _interactionSession, isSubmenuLocked, CaptureReleaseLayer(endingProfile));
+			_activeActivation = null;
+			_activeTrigger = null;
 			_interactionSession = null;
 			_isGestureActive = false;
 			_isWaitingForThreshold = false;
@@ -397,6 +407,29 @@ public class GestureController : IDisposable
 			ActionExecutor.ReleaseStuckModifiers();
 			return result;
 		}
+	}
+
+	internal static WheelLayer? CaptureReleaseLayer(WheelProfile? profile)
+	{
+		return profile?.Layers != null && profile.ActiveLayerIndex >= 0 && profile.ActiveLayerIndex < profile.Layers.Count
+			? profile.Layers[profile.ActiveLayerIndex] : null;
+	}
+
+	internal static bool TryResolveReleasedAction(WheelProfile? profile, WheelLayer? layer,
+		int sector, int subSector, bool isEscaped, bool isSubmenuLocked, out ActionItem? action)
+	{
+		action = null;
+		// Resolve by reference: layer reordering is safe; deletion cancels queued execution.
+		int layerIndex = layer == null ? -1 : profile?.Layers?.IndexOf(layer) ?? -1;
+		if (profile == null || layerIndex < 0) return false;
+		if (!isEscaped)
+		{
+			if (sector >= 0 && !(isSubmenuLocked && subSector < 0))
+				action = profile.GetEffectiveAction(sector, subSector, layerIndex: layerIndex);
+			else if (sector == -1)
+				action = profile.GetEffectiveCenterAction(layerIndex: layerIndex);
+		}
+		return true;
 	}
 
 	private bool IsCurrentGesture(long version)
@@ -1006,7 +1039,7 @@ public class GestureController : IDisposable
 				{
 					// 核心双轨路由：若该黑名单进程配置了专属触发键，且当前正是以该专属触发键呼出，则放行唤醒轮盘；
 					// 若未配置专属按键，或按下的是全局默认按键，则完全隔离并零延迟放行给宿主软件（如 SolidWorks CAD 笔势）
-					if (overrideTrigger != null && activeTrigger == overrideTrigger)
+					if (overrideTrigger != null && ProfileTriggerRouter.AreEquivalent(activeTrigger, overrideTrigger))
 					{
 						isBlacklisted = false;
 					}
@@ -1059,16 +1092,28 @@ public class GestureController : IDisposable
 
 	private void Hook_OnTriggerButtonDown(object? sender, MouseEventArgs e)
 	{
+		if (ProfileTriggerRouter.IsRecording) return;
 		TargetWindowInfo target = e.TargetWindow ?? WheelFocusSwitcher.ResolveTarget(e.Position);
 		string targetProc = target.MatchingProcessName;
-		TriggerConfig triggerConfig = GetEffectiveTriggerForProcess(targetProc);
+		ProfileTriggerActivation? activation = e.TriggerActivation;
+		if (activation == null)
+		{
+			// Compatibility path for direct/test callers. Normal hook traffic always
+			// carries the already-resolved activation from the routing snapshot.
+			activation = ProfileTriggerRouter.CreateLegacyActivation(
+				targetProc,
+				GetEffectiveTriggerForProcess(targetProc));
+		}
+		TriggerConfig triggerConfig = activation.Trigger;
 		if (triggerConfig.TriggerType != "Mouse")
 		{
 			_currentWheelFocusSession = null;
 			return;
 		}
-		if (TryCancelPendingMouseReleaseAsBounce())
+		if (CheckIsIsolated(out string _, triggerConfig, target) || IsPointOnTaskbar(e.Position)) return;
+		if (TryCancelPendingMouseReleaseAsBounce(activation, target))
 		{
+			e.TriggerActivation = _activeActivation;
 			_mouseTriggerDown = true;
 			if (_isWaitingForThreshold && ConfigManager.CurrentConfig.LongPressTrigger)
 			{
@@ -1077,6 +1122,7 @@ public class GestureController : IDisposable
 			e.Handled = true;
 			return;
 		}
+		if (_isGestureActive || _isWaitingForThreshold || _kbTriggerWaiting) return;
 
 		ModifierKeys currentModifiers = KeyboardHook.GetCurrentModifiers();
 		bool hasCtrl = (!triggerConfig.RequireCtrl || (((int)currentModifiers & 2) != 0));
@@ -1092,25 +1138,13 @@ public class GestureController : IDisposable
 			return;
 		}
 
-		if (CheckIsIsolated(out string _, triggerConfig, target) || IsPointOnTaskbar(e.Position))
-		{
-			// 隔离模式、黑名单或位于任务栏/托盘区域：绝对穿透放行，严禁调用 CancelGestureTracking() 及其包含的 ReleaseStuckModifiers()，杜绝注入虚假 KeyUp 破坏物理按键
-			_isWaitingForThreshold = false;
-			_isGestureActive = false;
-			_mouseTriggerDown = false;
-			_activeTrigger = null;
-			_currentWheelFocusSession = null;
-			CancelLongPressTimer();
-			e.Handled = false;
-			return;
-		}
+
 
 		// 仅在鼠标触发被正式接管后建立有效会话，并使旧待执行会话失效
 		InvalidatePendingExecutionSession();
 		var focusSession = new WheelFocusSession(target, e.Position);
 		_currentWheelFocusSession = focusSession;
 
-		_activeTrigger = triggerConfig;
 		string triggerBtn = triggerConfig.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton ?? "RightButton";
 		_startPoint = e.Position;
 		_lastMovePoint = _startPoint;
@@ -1118,6 +1152,9 @@ public class GestureController : IDisposable
 		_currentDpiScaleX = scaleX;
 		_currentDpiScaleY = scaleY;
 		BeginGestureTracking();
+		_activeActivation = activation;
+		_activeTrigger = triggerConfig;
+		_activeProfile = activation.Profile;
 		_isWaitingForThreshold = true;
 		_isGestureActive = false;
 		_mouseTriggerDown = true;
@@ -1139,6 +1176,7 @@ public class GestureController : IDisposable
 	/// </summary>
 	private void Hook_OnRawMouseButton(object? sender, RawMouseEventArgs e)
 	{
+		if (e.IsButtonDown && (ProfileTriggerRouter.IsRecording || _isGestureActive || _isWaitingForThreshold)) return;
 		bool gesturesEnabled = ConfigManager.CurrentConfig.GestureEnabled && !IsLongPressOnlyTriggerEnabled;
 		// 已接管的手势仍需接收抬起以收尾，但禁用期间不得开始新手势或执行映射动作。
 		if (!gesturesEnabled && !_gestureMode)
@@ -1150,10 +1188,12 @@ public class GestureController : IDisposable
 		if (ConfigManager.CurrentConfig.EnableComponentIdentification && matchingTarget == null)
 			matchingTarget = WheelFocusSwitcher.ResolveTarget(e.Position);
 		string targetProc = matchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-		var triggerConfig = GetEffectiveTriggerForProcess(targetProc);
-		string wheelBtn = triggerConfig?.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton ?? "RightButton";
-		// 冲突守卫：若手势按键与目标窗口的有效轮盘触发键重叠，优先保证轮盘手势，手势让位，杜绝双重拦截
-		if (string.Equals(gestureButton, wheelBtn, StringComparison.OrdinalIgnoreCase))
+		// 冲突守卫：若手势按键与目标窗口的任一有效轮盘触发键重叠，
+		// 优先保证轮盘入口，手势让位，杜绝同一物理按键被双重拦截。
+		if (ProfileTriggerRouter.HasMouseTrigger(
+			targetProc,
+			gestureButton,
+			KeyboardHook.GetCurrentModifiers()))
 		{
 			return;
 		}
@@ -1594,7 +1634,13 @@ public class GestureController : IDisposable
 			string processName = (!isKbWaiting && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.MatchingProcessName))
 				? _currentWheelFocusSession.TargetInfo.MatchingProcessName
 				: _keyboardMatchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-			WheelProfile profile = ConfigManager.GetProfileForProcess(processName);
+			ProfileTriggerActivation? activation = _activeActivation;
+			if (activation != null && !activation.TrySelectInitialLayer())
+			{
+				CancelGestureTracking("LayerRemoved");
+				return;
+			}
+			WheelProfile profile = activation?.Profile ?? ConfigManager.GetProfileForProcess(processName);
 			_activeProfile = profile;
 			StartInteractionSession(profile);
 			long gestureVersion = GetCurrentGestureVersion();
@@ -1604,7 +1650,8 @@ public class GestureController : IDisposable
 			{
 				try
 				{
-					if (!_isGestureActive)
+					if (!_isGestureActive || !IsCurrentGesture(gestureVersion) ||
+						(activation != null && !ReferenceEquals(activation, _activeActivation)))
 					{
 						return;
 					}
@@ -1634,8 +1681,19 @@ public class GestureController : IDisposable
 
 	private void Hook_OnTriggerButtonUp(object? sender, MouseEventArgs e)
 	{
-		string activeProc = ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-		TriggerConfig triggerConfig = _activeTrigger ?? GetEffectiveTriggerForProcess(activeProc);
+		ProfileTriggerActivation? activation = e.TriggerActivation ?? _activeActivation;
+		if (activation == null && _activeTrigger != null)
+		{
+			activation = ProfileTriggerRouter.CreateLegacyActivation(
+				_activeProfile?.ProcessName,
+				_activeTrigger,
+				_activeProfile);
+		}
+		if (activation == null)
+		{
+			return;
+		}
+		TriggerConfig triggerConfig = activation.Trigger;
 		if (triggerConfig.TriggerType != "Mouse")
 		{
 			return;
@@ -1658,16 +1716,32 @@ public class GestureController : IDisposable
 			_mouseTriggerDown = false;
 			CancelLongPressTimer();
 			int debounceMs = Math.Clamp(ConfigManager.CurrentConfig.MouseReleaseDebounceMs, 1, 100);
-			ScheduleMouseReleaseDebounce(e.Position, triggerButton, debounceMs);
+			ScheduleMouseReleaseDebounce(e.Position, triggerButton, debounceMs, activation);
 			e.Handled = true;
 			return;
 		}
 
-		e.Handled = CompleteMouseTriggerRelease(e.Position, triggerButton);
+		e.Handled = CompleteMouseTriggerRelease(e.Position, triggerButton, activation);
 	}
 
-	private bool CompleteMouseTriggerRelease(Point releasePosition, string triggerButton)
+	private bool CompleteMouseTriggerRelease(
+		Point releasePosition,
+		string triggerButton,
+		ProfileTriggerActivation? activation = null)
 	{
+		if (activation != null)
+		{
+			if (!ReferenceEquals(activation, _activeActivation))
+			{
+				// A delayed release/debounce must never close a newer activation.
+				return false;
+			}
+			if (!activation.IsLayerAvailable)
+			{
+				CancelGestureTracking("LayerRemoved");
+				return true;
+			}
+		}
 		bool wasTriggerDown = _mouseTriggerDown;
 		_mouseTriggerDown = false;
 		CancelLongPressTimer();
@@ -1755,23 +1829,11 @@ public class GestureController : IDisposable
 					endedInteractionSession?.End("VolumeAdjusted");
 					return;
 				}
-				if (!isEscaped && finalProfile != null)
+				if (!TryResolveReleasedAction(finalProfile, finalState.Layer, finalSector, finalSubSector,
+					isEscaped, isSubmenuLocked, out targetAction))
 				{
-					if (finalSector >= 0)
-					{
-						if (isSubmenuLocked && finalSubSector < 0)
-						{
-							targetAction = null;
-						}
-						else
-						{
-							targetAction = finalProfile.GetEffectiveAction(finalSector, finalSubSector);
-						}
-					}
-					else if (finalSector == -1)
-					{
-						targetAction = finalProfile.GetEffectiveCenterAction();
-					}
+					endedInteractionSession?.Cancel("LayerRemoved");
+					return;
 				}
 				if (targetAction == null)
 				{
@@ -1854,7 +1916,11 @@ public class GestureController : IDisposable
 		return true;
 	}
 
-	private void ScheduleMouseReleaseDebounce(Point releasePosition, string triggerButton, int debounceMs)
+	private void ScheduleMouseReleaseDebounce(
+		Point releasePosition,
+		string triggerButton,
+		int debounceMs,
+		ProfileTriggerActivation? activation = null)
 	{
 		lock (_mouseReleaseDebounceLock)
 		{
@@ -1865,6 +1931,7 @@ public class GestureController : IDisposable
 			_mouseReleasePending = true;
 			_pendingMouseReleasePosition = releasePosition;
 			_pendingMouseReleaseButton = triggerButton;
+			_pendingMouseReleaseActivation = activation;
 			int generation = ++_mouseReleaseDebounceGeneration;
 			_mouseReleaseDebounceTimer?.Dispose();
 			_mouseReleaseDebounceTimer = new System.Threading.Timer(
@@ -1887,12 +1954,14 @@ public class GestureController : IDisposable
 			_mouseReleasePending = false;
 			completedTimer = _mouseReleaseDebounceTimer;
 			_mouseReleaseDebounceTimer = null;
-			CompleteMouseTriggerRelease(_pendingMouseReleasePosition, _pendingMouseReleaseButton);
+			ProfileTriggerActivation? activation = _pendingMouseReleaseActivation;
+			_pendingMouseReleaseActivation = null;
+			CompleteMouseTriggerRelease(_pendingMouseReleasePosition, _pendingMouseReleaseButton, activation);
 		}
 		completedTimer?.Dispose();
 	}
 
-	private bool TryCancelPendingMouseReleaseAsBounce()
+	private bool TryCancelPendingMouseReleaseAsBounce(ProfileTriggerActivation? activation = null, TargetWindowInfo? target = null)
 	{
 		System.Threading.Timer? timerToCancel;
 		lock (_mouseReleaseDebounceLock)
@@ -1901,8 +1970,18 @@ public class GestureController : IDisposable
 			{
 				return false;
 			}
+			if (target != null &&
+				(!ProfileTriggerActivation.IsSameTarget(_currentWheelFocusSession?.TargetInfo, target) ||
+				 _currentWheelFocusSession!.IsCancelled || !WheelFocusSwitcher.IsTargetValid(_currentWheelFocusSession.TargetInfo))) return false;
+			if (activation != null && _pendingMouseReleaseActivation != null &&
+				!activation.IsSameRoute(_pendingMouseReleaseActivation))
+			{
+				// Do not let a different trigger consume the pending release as a bounce.
+				return false;
+			}
 			_mouseReleasePending = false;
 			_mouseReleaseDebounceGeneration++;
+			_pendingMouseReleaseActivation = null;
 			timerToCancel = _mouseReleaseDebounceTimer;
 			_mouseReleaseDebounceTimer = null;
 		}
@@ -1917,6 +1996,7 @@ public class GestureController : IDisposable
 		{
 			_mouseReleasePending = false;
 			_mouseReleaseDebounceGeneration++;
+			_pendingMouseReleaseActivation = null;
 			timerToCancel = _mouseReleaseDebounceTimer;
 			_mouseReleaseDebounceTimer = null;
 		}
@@ -2036,105 +2116,57 @@ public class GestureController : IDisposable
 				}
 			}
 		}
+		if (ProfileTriggerRouter.IsRecording) return;
+		if (_isGestureActive || _isWaitingForThreshold || _kbTriggerWaiting)
+		{
+			if (_isGestureActive && _activeTrigger?.TriggerType == "Keyboard" &&
+				(_activeActivation?.IsDedicated == true ? e.VkCode == _activeTrigger.VkCode :
+				 ProfileTriggerRouter.MatchesLegacy(_activeTrigger, ProfileTriggerSignature.ForKeyboard(e.VkCode, e.Modifiers)))) e.Handled = true;
+			return;
+		}
 		TargetWindowInfo? keyboardTarget = ConfigManager.CurrentConfig.EnableComponentIdentification
 			? WheelFocusSwitcher.CreateForegroundTargetSnapshot() : null;
 		if (ConfigManager.CurrentConfig.EnableComponentIdentification && keyboardTarget == null) return;
 		string activeProc = keyboardTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-		TriggerConfig triggerConfig = GetEffectiveTriggerForProcess(activeProc);
-		if (triggerConfig.TriggerType != "Keyboard")
+		if (ProfileTriggerRouter.TryResolveKeyboard(activeProc, e.VkCode, e.Modifiers,
+			out ProfileTriggerActivation? activation) != ProfileTriggerResolution.Match || activation == null) return;
+		TriggerConfig triggerConfig = activation.Trigger;
+		if (CheckIsIsolated(out string _, triggerConfig, keyboardTarget)) return;
+		if (_currentWheelFocusSession != null)
 		{
-			return;
+			_currentWheelFocusSession.Cancel();
+			_currentWheelFocusSession = null;
 		}
-		ModifierKeys modifiers = e.Modifiers;
-		if ((!triggerConfig.RequireCtrl || ((((int)modifiers & 2))) != 0) && (!triggerConfig.RequireShift || ((((int)modifiers & 4))) != 0) && (!triggerConfig.RequireAlt || ((((int)modifiers & 1))) != 0) && (!triggerConfig.RequireWin || ((((int)modifiers & 8))) != 0) && (triggerConfig.VkCode == 0 || IsModifierKey(triggerConfig.VkCode) || e.VkCode == triggerConfig.VkCode))
-		{
-			if (_isGestureActive)
-			{
-				// 轮盘激活期间吞掉触发键的自动重复，防止连发漏进前台应用。
-				e.Handled = true;
-				return;
-			}
-			if (_isWaitingForThreshold && !_kbTriggerWaiting)
-			{
-				// 鼠标触发正在等待阈值，保持原有吞键语义。
-				e.Handled = true;
-				return;
-			}
-			if (_kbTriggerWaiting)
-			{
-				// 键盘触发等待期（含自动重复）：穿透放行，原生输入零干扰。
-				return;
-			}
-			if (CheckIsIsolated(out string _, triggerConfig))
-			{
-				// 隔离模式与黑名单：绝对穿透放行，严禁调用 CancelGestureTracking() 及其包含的 ReleaseStuckModifiers()
-				_isWaitingForThreshold = false;
-				_isGestureActive = false;
-				_kbTriggerWaiting = false;
-				_activeTrigger = null;
-				CancelLongPressTimer();
-				e.Handled = false;
-				return;
-			}
-			if (_currentWheelFocusSession != null)
-			{
-				_currentWheelFocusSession.Cancel();
-				_currentWheelFocusSession = null;
-			}
-			_activeTrigger = triggerConfig;
-			GetCursorPos(out var lpPoint);
-			_startPoint = new Point((double)lpPoint.x, (double)lpPoint.y);
-			_lastMovePoint = _startPoint;
-			var (dpiX, dpiY) = RadialWindow.GetMonitorDpiScale(_startPoint);
-			_currentDpiScaleX = dpiX;
-			_currentDpiScaleY = dpiY;
-			BeginGestureTracking();
-			_keyboardMatchingTarget = keyboardTarget;
-			_isWaitingForThreshold = true;
-			_isGestureActive = false;
-			_kbTriggerWaiting = true;
-			_kbTriggerDownTick = Environment.TickCount64;
-			if (ConfigManager.CurrentConfig.LongPressTrigger)
-			{
-				StartLongPressTimer();
-			}
-			// 穿透模式：不吞键，原生 KeyDown 立即到达前台应用。
-		}
+		InvalidatePendingExecutionSession();
+		GetCursorPos(out var lpPoint);
+		_startPoint = new Point(lpPoint.x, lpPoint.y);
+		_lastMovePoint = _startPoint;
+		var (dpiX, dpiY) = RadialWindow.GetMonitorDpiScale(_startPoint);
+		_currentDpiScaleX = dpiX;
+		_currentDpiScaleY = dpiY;
+		BeginGestureTracking();
+		_activeActivation = activation;
+		_activeTrigger = triggerConfig;
+		_activeProfile = activation.Profile;
+		_keyboardMatchingTarget = keyboardTarget;
+		_isWaitingForThreshold = true;
+		_isGestureActive = false;
+		_kbTriggerWaiting = true;
+		_kbTriggerDownTick = Environment.TickCount64;
+		if (ConfigManager.CurrentConfig.LongPressTrigger) StartLongPressTimer();
+		// Down/Up remain native until activation, preserving ordinary quick taps.
 	}
 
 	private void KeyboardHook_OnKeyUp(object? sender, GlobalKeyEventArgs e)
 	{
-		string activeProc = ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-		TriggerConfig triggerConfig = _activeTrigger ?? GetEffectiveTriggerForProcess(activeProc);
-		if (triggerConfig.TriggerType != "Keyboard")
+		TriggerConfig? triggerConfig = _activeActivation?.Trigger ?? _activeTrigger;
+		if (triggerConfig == null || !ProfileTriggerRouter.IsKeyboardRelease(triggerConfig, e.VkCode)) return;
+		if (_activeActivation?.IsLayerAvailable == false)
 		{
+			CancelGestureTracking("LayerRemoved");
 			return;
 		}
-		bool flag = false;
-		if (triggerConfig.VkCode != 0 && e.VkCode == triggerConfig.VkCode)
-		{
-			flag = true;
-		}
-		if (triggerConfig.RequireCtrl && (e.VkCode == 17 || e.VkCode == 162 || e.VkCode == 163))
-		{
-			flag = true;
-		}
-		if (triggerConfig.RequireShift && (e.VkCode == 16 || e.VkCode == 160 || e.VkCode == 161))
-		{
-			flag = true;
-		}
-		if (triggerConfig.RequireAlt && (e.VkCode == 18 || e.VkCode == 164 || e.VkCode == 165))
-		{
-			flag = true;
-		}
-		if (triggerConfig.RequireWin && (e.VkCode == 91 || e.VkCode == 92))
-		{
-			flag = true;
-		}
-		if (!flag)
-		{
-			return;
-		}
+
 		TargetWindowInfo? keyboardTarget = _keyboardMatchingTarget;
 		_keyboardMatchingTarget = null;
 		CancelLongPressTimer();
@@ -2145,6 +2177,8 @@ public class GestureController : IDisposable
 			_kbTriggerWaiting = false;
 			_isWaitingForThreshold = false;
 			_isGestureActive = false;
+			_activeActivation = null;
+			_activeTrigger = null;
 		}
 		else
 		{
@@ -2199,23 +2233,11 @@ public class GestureController : IDisposable
 					return;
 				}
 				ActionItem? targetAction = null;
-				if (!isEscaped && finalProfile != null)
+				if (!TryResolveReleasedAction(finalProfile, finalState.Layer, finalSector, finalSubSector,
+					isEscaped, isSubmenuLocked, out targetAction))
 				{
-					if (finalSector >= 0)
-					{
-						if (isSubmenuLocked && finalSubSector < 0)
-						{
-							targetAction = null;
-						}
-						else
-						{
-							targetAction = finalProfile.GetEffectiveAction(finalSector, finalSubSector);
-						}
-					}
-					else if (finalSector == -1)
-					{
-						targetAction = finalProfile.GetEffectiveCenterAction();
-					}
+					endedInteractionSession?.Cancel("LayerRemoved");
+					return;
 				}
 				if (targetAction == null)
 				{
@@ -2319,7 +2341,13 @@ public class GestureController : IDisposable
 				string activeWindowProcessName = (!wasKb && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.MatchingProcessName))
 					? _currentWheelFocusSession.TargetInfo.MatchingProcessName
 					: _keyboardMatchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-				_activeProfile = ConfigManager.GetProfileForProcess(activeWindowProcessName);
+				ProfileTriggerActivation? activation = _activeActivation;
+				if (activation != null && !activation.TrySelectInitialLayer())
+				{
+					CancelGestureTracking("LayerRemoved");
+					return;
+				}
+				_activeProfile = activation?.Profile ?? ConfigManager.GetProfileForProcess(activeWindowProcessName);
 				StartInteractionSession(_activeProfile);
 				Point center = _startPoint;
 				WheelProfile profile = _activeProfile;
@@ -2333,7 +2361,8 @@ public class GestureController : IDisposable
 				{
 					try
 					{
-						if (!_isGestureActive)
+						if (!_isGestureActive || !IsCurrentGesture(gestureVersion) ||
+							(activation != null && !ReferenceEquals(activation, _activeActivation)))
 						{
 							return;
 						}
@@ -2553,6 +2582,17 @@ public class GestureController : IDisposable
 		QueueHighlightUpdate(num4, num5, flag, flag2, GetCurrentGestureVersion());
 	}
 
+	internal bool SelectActivationLayer(WheelProfile profile)
+	{
+		if (_activeActivation != null && ReferenceEquals(_activeActivation.Profile, profile))
+		{
+			return _activeActivation.TrySelectInitialLayer();
+		}
+		profile.ActiveLayerIndex = 0;
+		profile.SyncRootPropertiesFromActiveLayer();
+		return true;
+	}
+
 	private bool ShowRadialUI(Point center, WheelProfile profile, long gestureVersion, WheelFocusSession? focusSession = null)
 	{
 		// 阻断与时序守卫：在产生任何状态修改、窗口激活、轮盘展示等副作用前，必须确认会话有效
@@ -2578,8 +2618,7 @@ public class GestureController : IDisposable
 		}
 
 		profile.EnsureLayers();
-		profile.ActiveLayerIndex = 0;
-		profile.SyncRootPropertiesFromActiveLayer();
+		if (!SelectActivationLayer(profile)) return false;
 		_activeProfile = profile;
 		if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu)
 		{

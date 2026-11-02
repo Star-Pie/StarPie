@@ -55,6 +55,12 @@ public class WheelProfile : INotifyPropertyChanged
 		}
 	}
 
+	/// <summary>
+	/// 可选的应用专属唤醒触发键。为 null 时保留旧的进程/全局触发路由；
+	/// 非 null 时必须与目标进程和规范化物理按键同时匹配。
+	/// </summary>
+	public TriggerConfig? ActivationTrigger { get; set; }
+
 	/// <summary>下拉框或列表呈现标题（如 "剪映 (jianyingpro.exe)" 或 "Global (全局默认)"）</summary>
 	[System.Text.Json.Serialization.JsonIgnore]
 	public string DisplayTitle
@@ -256,6 +262,7 @@ public class WheelProfile : INotifyPropertyChanged
 			ProcessName = newProcessName,
 			DisplayName = newDisplayName ?? this.DisplayName,
 			BoundProcesses = newBoundProcesses ?? (!string.IsNullOrWhiteSpace(this.BoundProcesses) ? this.BoundProcesses : (string.Equals(this.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ? "" : this.ProcessName)),
+			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
 			EnableCenterAction = this.EnableCenterAction,
 			CenterAction = this.CenterAction?.Clone(),

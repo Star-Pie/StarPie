@@ -1101,13 +1101,19 @@ public partial class RadialWindow : Window
 		{
 			try
 			{
-				BitmapImage image = new BitmapImage(new Uri(coreBackgroundPath, UriKind.Absolute));
-				CoreEllipse.Fill = new ImageBrush(image)
+				// 为大中心圆与高 DPI 保留余量，避免背景图按原始分辨率常驻。
+				ImageSource? image = IconHelper.GetCustomImageSource(coreBackgroundPath, 1024);
+				if (image != null)
 				{
-					Stretch = ParseStretch(ConfigManager.CurrentConfig.CoreBgStretch),
-					Opacity = ConfigManager.CurrentConfig.CoreBgOpacity
-				};
-				coreImageLuminance = GetImageAverageLuminance(coreBackgroundPath);
+					var imageBrush = new ImageBrush(image)
+					{
+						Stretch = ParseStretch(ConfigManager.CurrentConfig.CoreBgStretch),
+						Opacity = ConfigManager.CurrentConfig.CoreBgOpacity
+					};
+					imageBrush.Freeze();
+					CoreEllipse.Fill = imageBrush;
+					coreImageLuminance = GetImageAverageLuminance(coreBackgroundPath);
+				}
 			}
 			catch
 			{

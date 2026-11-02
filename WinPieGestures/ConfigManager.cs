@@ -29,6 +29,7 @@ public static class ConfigManager
 	public static void MarkConfigurationChanged()
 	{
 		Interlocked.Increment(ref _configurationRevision);
+		ProfileTriggerRouter.Publish(CurrentConfig);
 	}
 
 	public static void SetGlobalPrimarySectorFontSize(WheelProfile? profile, double fontSize)
@@ -469,7 +470,9 @@ public static class ConfigManager
 			// 1. 优先在所有非 Global 的专属方案中匹配绑定的程序情景
 			foreach (WheelProfile profile in CurrentConfig.Profiles)
 			{
-				if (profile == null || string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase))
+				if (profile == null ||
+					string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ||
+					profile.ActivationTrigger != null)
 				{
 					continue;
 				}
@@ -655,7 +658,7 @@ public static class ConfigManager
 				},
 				new ActionItem
 				{
-					Type = "Launch",
+					Type = "WebUrl",
 					Name = "浏览器",
 					Parameter = "https://www.google.com",
 					IconKey = "Browser",
@@ -837,6 +840,7 @@ public static class ConfigManager
 				if (!SaveConfig(allowOverwriteFallback: true))
 				{
 					CurrentConfig = previousConfig!;
+					MarkConfigurationChanged();
 					return false;
 				}
 				I18n.SetLanguage(CurrentConfig.Language);
@@ -998,6 +1002,7 @@ public static class ConfigManager
 				if (!SaveConfig(allowOverwriteFallback: true))
 				{
 					CurrentConfig = previousConfig!;
+					MarkConfigurationChanged();
 					return false;
 				}
 				I18n.SetLanguage(CurrentConfig.Language);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.IO;
@@ -134,6 +134,7 @@ public partial class App : Application
 
 	protected override void OnStartup(StartupEventArgs e)
 	{
+		var startup = new StartupDiagnostics();
 		// 必须先等旧进程退出，再获取单实例互斥体或读取用户/插件状态。
 		if (!AppRestartCoordinator.WaitForPreviousProcess(e.Args))
 		{
@@ -208,13 +209,13 @@ public partial class App : Application
 			}
 		}
 		base.OnStartup(e);
-		AppLogger.LogInfo($"=== StarPie {AppVersionInfo.DisplayVersionWithPrefix} Starting (OS: {Environment.OSVersion}, .NET: {Environment.Version}, 64bit: {Environment.Is64BitProcess}, Elevated: {ConfigManager.IsElevated()}) ===");
 		base.DispatcherUnhandledException += new DispatcherUnhandledExceptionEventHandler(App_DispatcherUnhandledException);
 		AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 		try
 		{
-			ConfigManager.LoadConfig();
-			AppLogger.LogInfo("ConfigManager.LoadConfig completed");
+			InitializeConfiguration();
+			AppLogger.LogInfo($"=== StarPie {AppVersionInfo.DisplayVersionWithPrefix} Starting (OS: {Environment.OSVersion}, .NET: {Environment.Version}, 64bit: {Environment.Is64BitProcess}, Elevated: {ConfigManager.IsElevated()}) ===");
+			startup.Mark("ConfigurationReady");
 
 			// 命令行通道（自检 / 路径诊断）要能在调用方的终端上直接看到输出。
 			// 放在最前：晚一步接上，前面打的内容就丢了。
@@ -234,6 +235,7 @@ public partial class App : Application
 			MainKeyboardHook.Start();
 			AppLogger.LogInfo("MainKeyboardHook started");
 			MainGestureController = new GestureController(MainMouseHook, MainKeyboardHook);
+			startup.Mark("InputReady");
 			MainTrayController = new TrayController();
 			MainTrayController.OpenSettingsRequested += ShowSettingsWindow;
 			MainTrayController.TogglePauseRequested += TogglePauseGestures;
@@ -241,6 +243,7 @@ public partial class App : Application
 			MainTrayController.ExitRequested += ExitApplication;
 			MainTrayController.Initialize(MainMouseHook.IsPaused, IsCurrentThemeDark());
 			AppLogger.LogInfo("TrayController initialized");
+			startup.Mark("TrayReady");
 
 			// ---- 插件系统 ----
 			// 通知下沉到托盘气泡：插件的失败提示必须是「可忽略的」，绝不能用 MessageBox 打断用户。
@@ -262,6 +265,7 @@ public partial class App : Application
 				try
 				{
 					Plugins.PluginHost.Initialize();
+					startup.Mark("PluginCatalogReady");
 				}
 				catch (Exception ex)
 				{
@@ -271,6 +275,7 @@ public partial class App : Application
 			}));
 
 			_startupCompleted = true;
+			startup.Mark("HostReady");
 			if (!SettingsWindow.IsSilentLaunch() || _pendingSettingsRequest)
 			{
 				int requestedTab = _pendingSettingsRequest ? _pendingSettingsTabIndex : -1;
@@ -301,6 +306,13 @@ public partial class App : Application
 			MessageBox.Show("初始化 StarPie 失败:\n" + ex.Message, "启动错误", MessageBoxButton.OK, MessageBoxImage.Hand);
 			Shutdown();
 		}
+	}
+
+	internal static void InitializeConfiguration()
+	{
+		// The explicit ConfigManager type initializer loads configuration once.
+		// Reading its property preserves that guarantee without forcing a reload.
+		_ = ConfigManager.CurrentConfig;
 	}
 
 	public static void WakeUpSettingsWindow()

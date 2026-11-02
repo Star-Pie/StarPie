@@ -156,11 +156,15 @@ internal static class ArtStyleTests
         c.Profiles=[new WheelProfile { Actions=actions }];
         SetConfig(c);
         var settings=new SettingsWindow();
-        Check(settings.FindName("ThemeStudioControl") is UserControl,"studio integrated in native settings");
+        var integratedHost=(ContentControl)settings.FindName("ThemeStudioHost");
+        Check(integratedHost.Content==null,"studio stays deferred before appearance is visible");
         Check(((Image)settings.FindName("SidebarLogoImage")).Source is DrawingImage { IsFrozen: true }, "sidebar uses the frozen theme-aware vector brand");
-        var integrated=(ThemeStudio)settings.FindName("ThemeStudioControl");
-        typeof(ThemeStudio).GetMethod("Subscribe",BindingFlags.NonPublic|BindingFlags.Instance)!.Invoke(integrated,null);
         settings.SwitchToTab(1);
+        typeof(SettingsWindow).GetMethod("ThemeStudioHost_IsVisibleChanged",BindingFlags.NonPublic|BindingFlags.Instance)!
+            .Invoke(settings,[integratedHost,new DependencyPropertyChangedEventArgs(UIElement.IsVisibleProperty,false,true)]);
+        Check(integratedHost.Content is ThemeStudio,"studio integrated on first appearance visibility");
+        var integrated=(ThemeStudio)integratedHost.Content;
+        typeof(ThemeStudio).GetMethod("Subscribe",BindingFlags.NonPublic|BindingFlags.Instance)!.Invoke(integrated,null);
         var render=typeof(SettingsWindow).GetMethod("RenderLiveWheelPreview",BindingFlags.NonPublic|BindingFlags.Instance)!;
         render.Invoke(settings,null);
         var field=typeof(SettingsWindow).GetField("_previewSubContainers",BindingFlags.NonPublic|BindingFlags.Instance)!;

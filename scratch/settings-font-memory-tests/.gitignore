@@ -1,0 +1,4 @@
+artifacts/
+*.log
+candidate-path.txt
+results.json

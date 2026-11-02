@@ -10,10 +10,20 @@ public partial class SettingsWindow
     private AppConfig? _artPreviewConfig;
     private AppConfig ArtPreviewConfig => _artPreviewConfig ?? ConfigManager.CurrentConfig;
     private readonly List<StackPanel> _artPreviewContents = new();
+    private ThemeStudio? _themeStudioControl;
 
     private void InitializeArtStyleStudio()
     {
         WeakEventManager<ArtStyleService,EventArgs>.AddHandler(ArtStyleService.Instance,nameof(ArtStyleService.Changed),ArtStyles_Changed);
+    }
+    private void ThemeStudioHost_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is not true || _resourcesReleased || _themeStudioControl != null || ThemeStudioHost == null) return;
+        // Hidden settings pages must not pay the editor's XAML and preview initialization cost.
+        var studio = new ThemeStudio();
+        studio.DraftPreviewChanged += ThemeStudio_DraftPreviewChanged;
+        _themeStudioControl = studio;
+        ThemeStudioHost.Content = studio;
     }
     private void ArtStyles_Changed(object? sender, EventArgs e)
     {
@@ -27,9 +37,9 @@ public partial class SettingsWindow
     private void ReloadArtStyleStudio()
     {
         _artPreviewConfig=null;
-        ThemeStudioControl?.ReloadFromConfig();
+        _themeStudioControl?.ReloadFromConfig();
     }
-    private void ThemeStudio_DraftPreviewChanged(object sender, ArtStyleDraftEventArgs e)
+    private void ThemeStudio_DraftPreviewChanged(object? sender, ArtStyleDraftEventArgs e)
     {
         var c=ConfigManager.CurrentConfig;
         // Only the art-style selection is isolated. Renderers retain the live legacy palette and glow parameters.

@@ -6,7 +6,7 @@ namespace WinPieGestures;
 
 public static class FullScreenHelper
 {
-	private struct RECT
+	internal struct RECT
 	{
 		public int Left;
 		public int Top;
@@ -25,6 +25,9 @@ public static class FullScreenHelper
 
 	private const uint MONITOR_DEFAULTTONEAREST = 2u;
 	private const int GWL_EXSTYLE = -20;
+	private const int GWL_STYLE = -16;
+	private const int WS_MAXIMIZE = 0x01000000;
+	private const int WS_CAPTION = 0x00C00000;
 	private const int WS_EX_LAYERED = 0x00080000;
 	private const int WS_EX_TRANSPARENT = 0x00000020;
 
@@ -143,14 +146,12 @@ public static class FullScreenHelper
 		}
 
 		bool isFs = false;
-		if (lpRect.Left <= lpmi.rcMonitor.Left && lpRect.Top <= lpmi.rcMonitor.Top && lpRect.Right >= lpmi.rcMonitor.Right && lpRect.Bottom >= lpmi.rcMonitor.Bottom)
+		if (CoversMonitor(lpRect, lpmi.rcMonitor))
 		{
 			// 检查是否为透明/分层窗口 (如截屏工具遮罩、透明悬浮窗、HUD等)，这类窗口绝非独占全屏游戏
 			int exStyle = GetWindowLong(foregroundWindow, GWL_EXSTYLE);
-			if ((exStyle & WS_EX_LAYERED) == 0 && (exStyle & WS_EX_TRANSPARENT) == 0)
-			{
-				isFs = true;
-			}
+			int style = GetWindowLong(foregroundWindow, GWL_STYLE);
+			isFs = IsFullScreenSnapshot(lpRect, lpmi.rcMonitor, style, exStyle);
 		}
 
 		lock (_lock)
@@ -160,5 +161,18 @@ public static class FullScreenHelper
 			_cachedTick = now;
 		}
 		return isFs;
+	}
+
+	private static bool CoversMonitor(RECT window, RECT monitor) =>
+		window.Left <= monitor.Left && window.Top <= monitor.Top &&
+		window.Right >= monitor.Right && window.Bottom >= monitor.Bottom;
+
+	internal static bool IsFullScreenSnapshot(RECT window, RECT monitor, int style, int exStyle)
+	{
+		// 自动隐藏任务栏时，带标题栏的最大化窗口也可能覆盖整个显示器；
+		// 无标题栏的全屏窗口即使保留最大化标记，也仍按原来的全屏策略处理。
+		bool isCaptionedMaximized = (style & WS_MAXIMIZE) != 0 && (style & WS_CAPTION) == WS_CAPTION;
+		return !isCaptionedMaximized && CoversMonitor(window, monitor) &&
+			(exStyle & WS_EX_LAYERED) == 0 && (exStyle & WS_EX_TRANSPARENT) == 0;
 	}
 }

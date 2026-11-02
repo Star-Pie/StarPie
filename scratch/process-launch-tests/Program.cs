@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,11 +16,19 @@ internal static class Program
     { if (!condition) throw new Exception(message); _checks++; }
 
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         // 所有日志都在隔离目录；不打开窗口，不启动程序，不弹 UAC。
-        Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(Path.GetTempPath(), "StarPie-ProcessLaunchTests-" + Guid.NewGuid().ToString("N")));
-        Check(AppVersionInfo.DisplayVersion == "2.0.0", "host release version matches the v2.0.0 candidate");
+        Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(AppContext.BaseDirectory, "test-env", Guid.NewGuid().ToString("N")));
+        VerifyCandidateBinding();
+        RunUrlRoutingRegressionTests();
+        if (args.Contains("--urls-only"))
+        {
+            Console.WriteLine($"PASS: {_checks} candidate-bound URL routing checks; all launch/toggle backends were fakes.");
+            return;
+        }
+        RunDefaultBrowserRegressionTests();
+        Check(AppVersionInfo.DisplayVersion == "2.0.1-beta.3", "host release version matches the v2.0.1-beta.3 candidate");
         Check(SimpleVersion.TryParse("1.8.0-beta.4", out var oldHost) &&
             SimpleVersion.TryParse("1.8.0-beta.5", out _), "minimum host versions parse");
         SimpleVersion.TryParse(AppVersionInfo.DisplayVersion, out var currentHost);
@@ -117,6 +127,97 @@ internal static class Program
         RunWindowToggleRegressionTests();
         RunColdEditorIntegration();
         Console.WriteLine($"PASS: {_checks} host launch/SDK/UI/update-restart checks; no processes or windows were started.");
+    }
+
+    private static void VerifyCandidateBinding()
+    {
+        string? candidateDirectory = typeof(Program).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .Single(attribute => attribute.Key == "StarPieCandidateDir").Value;
+        Check(!string.IsNullOrWhiteSpace(candidateDirectory), "test assembly declares an explicit candidate");
+        foreach (Assembly assembly in new[] { typeof(ActionExecutor).Assembly, typeof(IPluginContext).Assembly })
+        {
+            string fileName = Path.GetFileName(assembly.Location);
+            string expectedFile = Path.Combine(candidateDirectory!, fileName);
+            Check(Path.GetFullPath(assembly.Location).Equals(Path.Combine(AppContext.BaseDirectory, fileName), StringComparison.OrdinalIgnoreCase),
+                "assembly is loaded from this fresh test output: " + fileName);
+            Check(File.Exists(expectedFile), "candidate file exists: " + expectedFile);
+            string expectedHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(expectedFile)));
+            string actualHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly.Location)));
+            Check(expectedHash == actualHash, "loaded assembly matches candidate SHA-256: " + fileName);
+            Console.WriteLine($"CANDIDATE: {expectedFile}; SHA256={actualHash}");
+        }
+    }
+
+    private static void RunUrlRoutingRegressionTests()
+    {
+        (string Input, string Target)[] urls =
+        {
+            ("https://example.test", "https://example.test"),
+            ("https://example.test/", "https://example.test/"),
+            ("http://example.test/", "http://example.test/"),
+            ("HTTPS://Example.test/search?q=a%2Fb#part", "HTTPS://Example.test/search?q=a%2Fb#part"),
+            ("https://example.test/tool!name", "https://example.test/tool!name"),
+            ("https://example.test/tool.exe?mode=CAD!edit#panel", "https://example.test/tool.exe?mode=CAD!edit#panel"),
+            ("https://example.test/绘图/零件?q=选择", "https://example.test/绘图/零件?q=选择"),
+            ("  \"https://example.test/\"  ", "https://example.test/")
+        };
+        foreach ((string input, string target) in urls)
+        foreach (ProcessLaunchMode mode in Enum.GetValues<ProcessLaunchMode>())
+        foreach (string arguments in new[] { "", "--unchanged" })
+        {
+            int toggleCalls = 0, launchCalls = 0;
+            bool result = ActionExecutor.ExecuteLaunchWithMode(input, arguments, mode,
+                _ => { toggleCalls++; return LaunchWindowToggleResult.Minimized; },
+                (start, actualMode) =>
+                {
+                    launchCalls++;
+                    Check(start.FileName == target, "URL target is preserved: " + target);
+                    Check(start.Arguments == arguments, "URL arguments are preserved");
+                    Check(actualMode == mode, "URL explicit launch mode is preserved");
+                    Check(start.UseShellExecute, "URL retains shell launch semantics");
+                    return true;
+                });
+            Check(result && toggleCalls == 0 && launchCalls == 1,
+                $"HTTP(S) bypasses window toggle and packaged-app inference: {mode}, {input}");
+        }
+
+        foreach (ProcessLaunchMode mode in Enum.GetValues<ProcessLaunchMode>())
+        {
+            int launchCalls = 0;
+            bool result = ActionExecutor.ExecuteLaunchWithMode("https://example.test/", "", mode,
+                _ => throw new Exception("URL failure must not consult window toggle"),
+                (_, _) => { launchCalls++; return false; });
+            Check(!result && launchCalls == 1, "URL backend failure is returned without retry/fallback: " + mode);
+        }
+        try
+        {
+            ActionExecutor.ExecuteLaunch("https://example.test/", "", runAsStandardUser: true,
+                _ => throw new Exception("legacy URL must not toggle a window"), (_, _) => false);
+            throw new Exception("legacy URL failure must propagate");
+        }
+        catch (InvalidOperationException)
+        {
+            _checks++;
+        }
+    }
+
+    private static void RunDefaultBrowserRegressionTests()
+    {
+        AppConfig defaults = ConfigManager.CreateDefaultConfig();
+        ActionItem browser = defaults.Profiles.Single(profile => profile.ProcessName == "Global")
+            .Actions.Single(action => action.Parameter == "https://www.google.com");
+        Check(browser.Type == "WebUrl", "fresh default browser uses WebUrl");
+        Check(browser.SubActions.Count == 3 && browser.SubActions[0].Type == "Launch" && browser.SubActions[1].Type == "Launch",
+            "default browser executable children retain Launch behavior");
+
+        var legacy = new ActionItem
+        {
+            Type = "Launch", Parameter = "https://example.test/", RunAsStandardUser = true,
+            ExtensionData = new Dictionary<string, string> { ["privateSetting"] = "keep" }
+        };
+        var roundtrip = JsonSerializer.Deserialize<ActionItem>(JsonSerializer.Serialize(legacy))!;
+        Check(roundtrip.Type == legacy.Type && roundtrip.Parameter == legacy.Parameter && roundtrip.RunAsStandardUser &&
+            roundtrip.ExtensionData!["privateSetting"] == "keep", "legacy URL action roundtrip preserves type, mode and unknown data");
     }
 
     private static void RunWindowToggleRegressionTests()

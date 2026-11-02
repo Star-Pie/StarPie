@@ -105,6 +105,8 @@ public class MouseHook
 
 	private string? _activeMouseTriggerButton;
 
+	private ProfileTriggerActivation? _activeMouseTriggerActivation;
+
 	public bool IsPaused
 	{
 		get
@@ -454,29 +456,37 @@ public class MouseHook
 				}
 
 				string activeProc = targetAtPoint.MatchingProcessName;
-				var triggerConfig = GestureController.GetEffectiveTriggerForProcess(activeProc);
-				bool isMouseTrigger = triggerConfig == null || string.Equals(triggerConfig.TriggerType, "Mouse", StringComparison.OrdinalIgnoreCase);
-				if (isMouseTrigger || !string.IsNullOrEmpty(_activeMouseTriggerButton))
+				if (flag && _activeMouseTriggerButton == null)
 				{
-					string text2 = _activeMouseTriggerButton ?? triggerConfig?.MouseButton ?? ConfigManager.CurrentConfig?.TriggerButton ?? "RightButton";
-					bool num2 = flag && string.Equals(text, text2, StringComparison.OrdinalIgnoreCase);
-					bool flag3 = flag2 && string.Equals(text, text2, StringComparison.OrdinalIgnoreCase);
-					if (num2)
+					ProfileTriggerResolution resolution = ProfileTriggerRouter.TryResolveMouse(
+						activeProc,
+						text,
+						KeyboardHook.GetCurrentModifiers(),
+						out ProfileTriggerActivation? activation);
+					if (resolution == ProfileTriggerResolution.Match && activation != null)
 					{
 						MouseEventArgs e4 = _triggerDownArgs;
 						e4.Update(mSLLHOOKSTRUCT.pt.x, mSLLHOOKSTRUCT.pt.y, targetAtPoint);
+						e4.TriggerActivation = activation;
 						OnTriggerButtonDown?.Invoke(this, e4);
 						if (e4.Handled)
 						{
 							_activeMouseTriggerButton = text;
+							_activeMouseTriggerActivation = e4.TriggerActivation ?? activation;
 							return 1;
 						}
 					}
-					else if (flag3)
+				}
+				else if (flag2 && string.Equals(text, _activeMouseTriggerButton, StringComparison.OrdinalIgnoreCase))
+				{
+					ProfileTriggerActivation? activation = _activeMouseTriggerActivation;
+					_activeMouseTriggerButton = null;
+					_activeMouseTriggerActivation = null;
+					if (activation != null)
 					{
-						_activeMouseTriggerButton = null;
 						MouseEventArgs e5 = _triggerUpArgs;
 						e5.Update(mSLLHOOKSTRUCT.pt.x, mSLLHOOKSTRUCT.pt.y, targetAtPoint);
+						e5.TriggerActivation = activation;
 						OnTriggerButtonUp?.Invoke(this, e5);
 						if (e5.Handled)
 						{

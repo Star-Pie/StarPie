@@ -6,7 +6,7 @@ namespace WinPieGestures;
 /// <summary>提供用于界面、日志和托盘的统一应用版本文本。</summary>
 internal static class AppVersionInfo
 {
-	private const string FallbackVersion = "2.0.1-beta.2";
+	private const string FallbackVersion = "2.0.1-beta.3";
 
 	public static string DisplayVersion { get; } = ResolveDisplayVersion();
 

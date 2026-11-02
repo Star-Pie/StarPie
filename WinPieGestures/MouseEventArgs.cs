@@ -11,6 +11,8 @@ public class MouseEventArgs : EventArgs
 
 	public TargetWindowInfo? TargetWindow { get; set; }
 
+	internal ProfileTriggerActivation? TriggerActivation { get; set; }
+
 	public MouseEventArgs(double x, double y, TargetWindowInfo? targetWindow = null)
 	{
 		Position = new Point(x, y);
@@ -24,6 +26,7 @@ public class MouseEventArgs : EventArgs
 		Position = new Point(x, y);
 		Handled = false;
 		TargetWindow = targetWindow;
+		TriggerActivation = null;
 	}
 }
 
