@@ -34,7 +34,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig?.AppTheme ?? "System");
         _preExistingDisabledIds = new HashSet<string>(OfficialPluginOnboarding.GetOriginallyDisabledPluginIds(), StringComparer.OrdinalIgnoreCase);
 
-        _selectedChannel = OfficialPluginDownloadOptions.NormalizeChannel(ConfigManager.CurrentConfig?.UpdateProxySource);
+        _selectedChannel = OfficialPluginDownloadOptions.NormalizeChannel(ConfigManager.CurrentConfig?.OfficialPluginDownloadSource ?? OfficialPluginDownloadOptions.ChannelAtomGit);
 
         ApplyLocalization();
         PopulatePluginItems();
@@ -148,6 +148,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         _isUpdatingLocalization = true;
         try
         {
+            if (ChannelAtomGitItem != null) ChannelAtomGitItem.Content = I18n.T("UpdateSourceAtomGit");
             if (ChannelGhfastItem != null) ChannelGhfastItem.Content = I18n.T("UpdateProxyGhproxy");
             if (ChannelGhproxyItem != null) ChannelGhproxyItem.Content = I18n.T("UpdateProxyMoeyy");
             if (ChannelMirrorItem != null) ChannelMirrorItem.Content = I18n.T("UpdateProxyAkams");
@@ -315,6 +316,8 @@ public partial class OfficialPluginsOnboardingDialog : Window
         _isInstalling = true;
 
         var downloadOptions = new OfficialPluginDownloadOptions(_selectedChannel);
+        if (ConfigManager.CurrentConfig.OfficialPluginDownloadSource != _selectedChannel)
+        { ConfigManager.CurrentConfig.OfficialPluginDownloadSource = _selectedChannel; ConfigManager.SaveConfig(); }
 
         _installCts?.Dispose();
         _installCts = new CancellationTokenSource();

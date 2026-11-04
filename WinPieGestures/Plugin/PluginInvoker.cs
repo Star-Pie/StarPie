@@ -44,6 +44,9 @@ internal enum PluginFailureKind
 
     /// <summary>宿主这一侧的错（有 bug，看日志）。</summary>
     HostError,
+
+    /// <summary>The originating input panel or its target is no longer current.</summary>
+    TargetChanged,
 }
 
 internal readonly struct PluginExecuteOutcome
@@ -96,9 +99,14 @@ internal static class PluginInvoker
         PluginInstance instance,
         PluginActionRegistration registration,
         IReadOnlyDictionary<string, string> parameters,
-        PluginCallCoordinator calls)
+        PluginCallCoordinator calls) => Invoke(instance, registration, parameters, calls, null);
+
+    internal static PluginExecuteOutcome Invoke(
+        PluginInstance instance, PluginActionRegistration registration, IReadOnlyDictionary<string, string> parameters,
+        PluginCallCoordinator calls, ActionExecutionContext? target)
     {
         if (instance == null || registration == null) return PluginExecuteOutcome.NotHandled;
+        if (target != null && !target.IsCurrent()) return CancelledByTarget();
 
         if (!calls.TryAcquireInvocation(
                 instance,
@@ -128,7 +136,7 @@ internal static class PluginInvoker
             {
                 ContributionId = registration.FullId,
                 Parameters = parameters ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
-                Context = BuildActionContext(instance),
+                Context = target?.PluginTargetContext ?? BuildActionContext(instance),
             };
         }
         catch (Exception ex)
@@ -138,8 +146,8 @@ internal static class PluginInvoker
         }
 
         return registration.Kind == ActionKind.Background
-            ? InvokeInBackground(instance, registration, input, timeoutSeconds, lease!)
-            : InvokeSequential(instance, registration, input, timeoutSeconds, lease!);
+            ? InvokeInBackground(instance, registration, input, timeoutSeconds, lease!, target)
+            : InvokeSequential(instance, registration, input, timeoutSeconds, lease!, target);
     }
 
     // ------------------------------------------------------------------ 串行类
@@ -149,14 +157,14 @@ internal static class PluginInvoker
         PluginActionRegistration registration,
         PluginActionInput input,
         int timeoutSeconds,
-        PluginInvocationLease lease)
+        PluginInvocationLease lease, ActionExecutionContext? target)
     {
         var stopwatch = Stopwatch.StartNew();
         PluginInvocationLease? ownedLease = lease;
         CancellationTokenSource? timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
         CancellationTokenSource? linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
             timeoutCts.Token,
-            lease.CancellationToken);
+            lease.CancellationToken, target?.SessionCancellation ?? default);
 
         try
         {
@@ -164,6 +172,7 @@ internal static class PluginInvoker
             CancellationToken invokeToken = linkedCts.Token;
             Task<ActionResult?> task = Task.Run(async () =>
             {
+                if (target != null && !target.IsCurrent()) throw new OperationCanceledException(invokeToken);
                 Task<ActionResult>? innerTask = registration.Contribution.ExecuteAsync(input, invokeToken);
                 if (innerTask == null)
                 {
@@ -177,7 +186,8 @@ internal static class PluginInvoker
             {
                 stopwatch.Stop();
                 try { timeoutCts.Cancel(); } catch { }
-                ObserveTimedOutTask(task, ownedLease, timeoutCts, linkedCts, instance, registration);
+                target?.DeferConsumption();
+                _ = ObserveTimedOutTask(task, ownedLease, timeoutCts, linkedCts, instance, registration, target);
                 ownedLease = null;
                 timeoutCts = null;
                 linkedCts = null;
@@ -185,6 +195,7 @@ internal static class PluginInvoker
                 {
                     return CancelledByStop(registration);
                 }
+                if (target != null && !target.IsCurrent()) return CancelledByTarget();
 
                 return Fail(
                     instance,
@@ -205,11 +216,16 @@ internal static class PluginInvoker
         {
             stopwatch.Stop();
             Exception inner = aggregate.GetBaseException();
+            if (inner is OperationCanceledException && target != null && !target.IsCurrent()) return CancelledByTarget();
             if (inner is OperationCanceledException && lease.CancellationToken.IsCancellationRequested)
             {
                 return CancelledByStop(registration);
             }
             return Fail(instance, registration, DescribeException(inner), stopwatch.Elapsed.TotalMilliseconds, inner);
+        }
+        catch (OperationCanceledException) when (target != null && !target.IsCurrent())
+        {
+            return CancelledByTarget();
         }
         catch (OperationCanceledException) when (lease.CancellationToken.IsCancellationRequested)
         {
@@ -229,16 +245,14 @@ internal static class PluginInvoker
         }
     }
 
-    private static void ObserveTimedOutTask(
+    private static async Task ObserveTimedOutTask(
         Task task,
         PluginInvocationLease lease,
         CancellationTokenSource? timeoutCts,
         CancellationTokenSource? linkedCts,
         PluginInstance instance,
-        PluginActionRegistration registration)
+        PluginActionRegistration registration, ActionExecutionContext? target)
     {
-        _ = Task.Run(async () =>
-        {
             try
             {
                 await task.ConfigureAwait(false);
@@ -253,8 +267,8 @@ internal static class PluginInvoker
                 try { linkedCts?.Dispose(); } catch { }
                 try { timeoutCts?.Dispose(); } catch { }
                 lease.Dispose();
+                target?.OnConsumed?.Invoke();
             }
-        });
     }
 
     // ------------------------------------------------------------------ 后台类
@@ -264,25 +278,31 @@ internal static class PluginInvoker
         PluginActionRegistration registration,
         PluginActionInput input,
         int timeoutSeconds,
-        PluginInvocationLease lease)
+        PluginInvocationLease lease, ActionExecutionContext? target)
     {
         string pluginId = instance.PluginId;
         IActionContribution contribution = registration.Contribution;
 
+        // A scheduled background call still occupies the panel's bounded capacity.
+        // Release it only after the contribution really ends, including timeout tracking.
+        target?.DeferConsumption();
         try
         {
             _ = Task.Run(async () =>
             {
+                try
+                {
                 using (lease)
                 using (var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds)))
                 using (var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(
                            timeoutCts.Token,
-                           lease.CancellationToken))
+                           lease.CancellationToken, target?.SessionCancellation ?? default))
                 {
                     var stopwatch = Stopwatch.StartNew();
 
                     try
                     {
+                        if (target != null && !target.IsCurrent()) return;
                         Task<ActionResult>? task = contribution.ExecuteAsync(input, linkedCts.Token);
                         if (task == null)
                         {
@@ -300,7 +320,7 @@ internal static class PluginInvoker
                         if (!ReferenceEquals(completed, task))
                         {
                             stopwatch.Stop();
-                            if (lease.CancellationToken.IsCancellationRequested)
+                            if (lease.CancellationToken.IsCancellationRequested || (target != null && !target.IsCurrent()))
                             {
                                 instance.Logger.Info($"[{registration.FullId}] 插件停用后任务仍未结束，继续持有租约等待。");
                             }
@@ -324,7 +344,7 @@ internal static class PluginInvoker
                             instance, registration, result.Success, stopwatch.Elapsed.TotalMilliseconds,
                             result.Success ? null : result.Message);
                     }
-                    catch (OperationCanceledException) when (lease.CancellationToken.IsCancellationRequested)
+                    catch (OperationCanceledException) when (lease.CancellationToken.IsCancellationRequested || (target != null && !target.IsCurrent()))
                     {
                         stopwatch.Stop();
                         instance.Logger.Info($"[{registration.FullId}] 因插件停用而取消，不计入插件故障。");
@@ -342,11 +362,14 @@ internal static class PluginInvoker
                         ApplyOutcome(instance, registration, false, stopwatch.Elapsed.TotalMilliseconds, DescribeException(ex));
                     }
                 }
+                }
+                finally { target?.OnConsumed?.Invoke(); }
             });
         }
         catch (Exception ex)
         {
             lease.Dispose();
+            target?.OnConsumed?.Invoke();
             return Fail(instance, registration, $"提交后台任务失败：{ex.Message}", 0, ex);
         }
 
@@ -360,6 +383,12 @@ internal static class PluginInvoker
     }
 
     // ------------------------------------------------------------------ 结果处理
+
+    private static PluginExecuteOutcome CancelledByTarget() => new()
+    {
+        Handled = true, Success = false, Failure = PluginFailureKind.TargetChanged,
+        Message = I18n.T("InputPanelTargetUnavailable"),
+    };
 
     private static PluginExecuteOutcome CancelledByStop(PluginActionRegistration registration) => new()
     {

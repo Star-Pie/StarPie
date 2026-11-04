@@ -487,7 +487,6 @@ public partial class RadialWindow : Window
 	private bool _hasRenderedContent;
 
 	private bool _isPresented;
-	private bool _preserveTriggerOrigin;
 
 	private bool _isDisposed;
 
@@ -646,7 +645,6 @@ public partial class RadialWindow : Window
 			_renderedLayerIndex != profile.ActiveLayerIndex;
 
 		_centerPoint = centerPoint;
-		_preserveTriggerOrigin = preserveTriggerOrigin;
 		_profile = profile;
 		_requestedConfigurationRevision = configurationRevision;
 		_isPresented = true;
@@ -788,7 +786,8 @@ public partial class RadialWindow : Window
 		_wheelCanvasSize = maxEffectiveR * 2.0 + 40.0;
 		_canvasCenter = _wheelCanvasSize / 2.0;
 
-		_centerPoint = _preserveTriggerOrigin ? requestedCenter : ComputeClampedPhysicalCenter(requestedCenter, _wheelCanvasSize);
+		// An enabled edge policy also applies to pinned sessions; rendering and hit testing share this center.
+		_centerPoint = ComputeClampedPhysicalCenter(requestedCenter, _wheelCanvasSize);
 		ActualPhysicalCenter = _centerPoint;
 		ScreenContext screenCtx = ScreenHelper.GetScreenContextAtPoint(_centerPoint);
 		double scaleX = Math.Max(0.1, screenCtx.DpiScale.DpiScaleX);
@@ -2681,7 +2680,7 @@ public partial class RadialWindow : Window
 	internal void HighlightSector(int mainIndex, int subIndex, bool showSubTier, bool preserveSubTier)
 	{
 		_ = _currentHighlightedSector;
-		int currentHighlightedSector = _currentHighlightedSector;
+		int currentHighlightedSector = _currentHighlightedSubSector >= 0 ? -1 : _currentHighlightedSector;
 		_currentHighlightedSector = mainIndex;
 		_ = _currentHighlightedSubSector;
 		_ = _currentHighlightedSubSector;
@@ -2740,7 +2739,7 @@ public partial class RadialWindow : Window
 				_styleRenderer.ApplyExitHighlight(CoreExitIcon, isHighlighted: false);
 			}
 		}
-		if (currentHighlightedSector >= 0 && currentHighlightedSector < _sectorPaths.Count && currentHighlightedSector != mainIndex)
+		if (currentHighlightedSector >= 0 && currentHighlightedSector < _sectorPaths.Count && (currentHighlightedSector != mainIndex || subIndex >= 0))
 		{
 			System.Windows.Shapes.Path path = _sectorPaths[currentHighlightedSector];
 			StackPanel obj = ((currentHighlightedSector < _contentPanels.Count) ? _contentPanels[currentHighlightedSector] : null);
@@ -2788,7 +2787,7 @@ public partial class RadialWindow : Window
 				_styleRenderer.ApplySectorHighlight(path, isHighlighted: false);
 			}
 		}
-		if (mainIndex >= 0 && mainIndex < _sectorPaths.Count)
+		if (mainIndex >= 0 && mainIndex < _sectorPaths.Count && subIndex < 0)
 		{
 			System.Windows.Shapes.Path path3 = _sectorPaths[mainIndex];
 			StackPanel obj2 = ((mainIndex < _contentPanels.Count) ? _contentPanels[mainIndex] : null);

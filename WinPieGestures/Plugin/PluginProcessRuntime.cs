@@ -126,13 +126,15 @@ internal static class PluginProcessRuntime
         }
     }
 
-    public static int TerminateAll(string pluginId)
+    public static int TerminateAll(string pluginId) => TerminateAll(pluginId, 2000);
+
+    private static int TerminateAll(string pluginId, int waitMilliseconds)
     {
         if (string.IsNullOrWhiteSpace(pluginId) || !Registry.TryGetValue(pluginId, out var bucket)) return 0;
         int killed = 0;
         foreach (var pair in bucket)
         {
-            bool terminated = TryKill(pair.Value);
+            bool terminated = TryKill(pair.Value, waitMilliseconds);
             if (terminated) killed++;
             if ((terminated || HasExited(pair.Value)) && bucket.TryRemove(pair.Key, out var gone)) gone.DisposeQuietly();
         }
@@ -146,6 +148,13 @@ internal static class PluginProcessRuntime
         int killed = 0;
         foreach (string id in Registry.Keys) killed += TerminateAll(id);
         return killed;
+    }
+
+    internal static void RequestTerminationAllPlugins()
+    {
+        // The final exit path must not spend another two seconds per child.
+        // Unconfirmed records remain owned; normal stop/update still waits.
+        foreach (string id in Registry.Keys) TerminateAll(id, 0);
     }
 
     public static int Count(string pluginId) => Registry.TryGetValue(pluginId, out var bucket) ? bucket.Count : 0;
@@ -167,7 +176,7 @@ internal static class PluginProcessRuntime
         catch (InvalidOperationException) { return tracked.HasExited; }
     }
 
-    private static bool TryKill(TrackedPluginProcess tracked)
+    private static bool TryKill(TrackedPluginProcess tracked, int waitMilliseconds = 2000)
     {
         try
         {
@@ -176,7 +185,7 @@ internal static class PluginProcessRuntime
             // 始终使用本次创建时持有的 Process/句柄；不按 PID 重新打开别人的进程。
             if (process.StartTime.ToUniversalTime() != tracked.StartedAtUtc) return false;
             process.Kill(entireProcessTree: true);
-            return process.WaitForExit(2000);
+            return process.WaitForExit(waitMilliseconds);
         }
         catch (Exception ex)
         {

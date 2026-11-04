@@ -95,8 +95,9 @@ public partial class GestureController
             if (hit)
             {
                 if (_pinExpandedParent != sector) _pinExpandedParent = -1;
-                double dx = (point.X - _startPoint.X) / (_currentDpiScaleX > 0 ? _currentDpiScaleX : 1);
-                double dy = (point.Y - _startPoint.Y) / (_currentDpiScaleY > 0 ? _currentDpiScaleY : 1);
+                Point center = _radialWindow?.ActualPhysicalCenter ?? _startPoint;
+                double dx = (point.X - center.X) / (_currentDpiScaleX > 0 ? _currentDpiScaleX : 1);
+                double dy = (point.Y - center.Y) / (_currentDpiScaleY > 0 ? _currentDpiScaleY : 1);
                 double threshold = ConfigManager.CurrentConfig.SubWheelTriggerDistance > 20
                     ? ConfigManager.CurrentConfig.SubWheelTriggerDistance : 95;
                 expanded = sector >= 0 && ConfigManager.CurrentConfig.EnableMultiTier &&
@@ -279,11 +280,12 @@ internal sealed class PinnedWheelMonitor : IDisposable
     [DllImport("user32.dll")] private static extern bool UnhookWinEvent(nint hook);
     private readonly WinEventProc _callback;
     private nint _foreground, _destroy;
-    public PinnedWheelMonitor(nint target, Action changed)
+    public PinnedWheelMonitor(nint target, Action changed) : this(target, _ => changed()) { }
+    internal PinnedWheelMonitor(nint target, Action<uint> changed)
     {
-        _callback = (_, evt, hwnd, objectId, _, _, _) =>
+        _callback = (_, evt, hwnd, objectId, _, _, time) =>
         {
-            if ((evt == 3 && hwnd != target) || (evt == 0x8001 && hwnd == target && objectId == 0)) changed();
+            if ((evt == 3 && hwnd != target) || (evt == 0x8001 && hwnd == target && objectId == 0)) changed(time);
         };
         _foreground = SetWinEventHook(3, 3, 0, _callback, 0, 0, 0);
         _destroy = SetWinEventHook(0x8001, 0x8001, 0, _callback, 0, 0, 0);

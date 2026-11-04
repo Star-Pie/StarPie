@@ -69,6 +69,7 @@ internal static class PluginCapabilityLabels
 
         // 托管式键盘重映射：由宿主统一调度进程级按键重定向
         (PluginCapability.InputRemapping, "PluginCapabilityInputRemapping"),
+        (PluginCapability.PluginActions, "PluginCapabilityPluginActions"),
     };
 
     /// <summary>把一组能力位拼成确认页上的多行文本；没有任何能力时返回「（无）」（同样走词条）。</summary>

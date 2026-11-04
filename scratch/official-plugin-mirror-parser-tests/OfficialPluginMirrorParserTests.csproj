@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>test_official_plugin_mirror_parser</AssemblyName>
+    <RootNamespace>OfficialPluginMirrorParserTests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\WinPieGestures\Plugin\OfficialPluginMirrorRelease.cs"
+             Link="OfficialPluginMirrorRelease.cs" />
+  </ItemGroup>
+</Project>

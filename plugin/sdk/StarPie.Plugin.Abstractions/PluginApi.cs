@@ -43,6 +43,7 @@ public static class PluginApi
     /// <see cref="PluginManifest.Command"/> 声明一个独立进程插件，宿主按占位符注入触发上下文并拉起它。
     /// 这条形态是为了让 Rust / Go / C++ / Python 等语言进入插件生态；程序集形态与全部既有服务<b>完全不变</b>，
     /// 进程插件也拿不到 <see cref="IPluginContext"/> 下的宿主服务。</item>
+    /// <item>1.15 —— 新增可选输入面板上下文、目标绑定的输入队列及插件动作绑定；旧同步输入接口不变。</item>
     /// </list>
     /// <para>
     /// <b>每加一个服务面就在这里补一条，别只改数字。</b>这份清单是后来者判断
@@ -50,7 +51,7 @@ public static class PluginApi
     /// 插件作者会按旧清单去推断版本兼容性，而结论是错的。
     /// </para>
     /// </summary>
-    public const int ApiVersionMinor = 14;
+    public const int ApiVersionMinor = 15;
 
     /// <summary>
     /// SDK 契约版本字符串，形如 <c>1.14</c>。
@@ -62,7 +63,7 @@ public static class PluginApi
     /// 漂了以后报错信息里的版本号会和真实契约对不上，排查时先被误导一轮。
     /// </para>
     /// </summary>
-    public const string ApiVersion = "1.14";
+    public const string ApiVersion = "1.15";
 
     /// <summary>本契约程序集的程序集名。宿主的 PluginLoadContext 依赖它做「共享程序集放行」。</summary>
     public const string AbstractionsAssemblyName = "StarPie.Plugin.Abstractions";

@@ -554,6 +554,9 @@ public class KeyboardHook : IDisposable
 				}
 			}
 
+			if ((kbd.flags & 0x10) == 0 && ActionPanelManager.HandleKey(vkCode, currentModifiers, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;
+			if (Plugins.InputPanelCoordinator.HandleEscape(vkCode, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;
+
 			if (IsPaused)
 			{
 				if (TryDrainPinnedRelease(vkCode, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;

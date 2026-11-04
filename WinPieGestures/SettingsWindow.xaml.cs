@@ -6200,6 +6200,7 @@ public partial class SettingsWindow : Window
 			if (FocusOcrPanel != null) FocusOcrPanel.Visibility = (type == "Ocr" || type == "ScreenOcr") ? Visibility.Visible : Visibility.Collapsed;
 			if (FocusPluginPanel != null) FocusPluginPanel.Visibility = (type == PluginActionBinding.TypeName) ? Visibility.Visible : Visibility.Collapsed;
 			if (type == PluginActionBinding.TypeName) RefreshFocusPluginPanel(displayItem);
+			RefreshActionPanelSettings(displayItem);
             FocusContributedParamsHost?.SetAction(displayItem, () => GetCurrentFocusActionItem(ensureLocalForEdit: true));
 
 			// 插件动作子下拉（按插件分组）。非插件类型时由该方法自行隐藏并清空。
@@ -15814,15 +15815,20 @@ public partial class SettingsWindow : Window
 		_downloadCts?.Cancel();
 	}
 
-	private void ApplyRestartUpdateBtn_Click(object sender, RoutedEventArgs e)
+	private async void ApplyRestartUpdateBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if (!string.IsNullOrEmpty(_downloadedZipPath) && File.Exists(_downloadedZipPath))
+		if (sender is not System.Windows.Controls.Button button || !button.IsEnabled) return;
+		button.IsEnabled = false;
+		try
 		{
-			UpdateManager.Instance.RestartAndApplyUpdate(_downloadedZipPath);
+			if (!string.IsNullOrEmpty(_downloadedZipPath) && File.Exists(_downloadedZipPath))
+				await UpdateManager.Instance.RestartAndApplyUpdateAsync(_downloadedZipPath);
+			else
+				AppMessageBox.Show(I18n.T("UpdateArchiveMissing"), I18n.T("UpdateSourceDownloadTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		}
-		else
+		finally
 		{
-			AppMessageBox.Show("未找到已下载的更新包，请重新点击下载。", "StarPie 更新", MessageBoxButton.OK, MessageBoxImage.Information);
+			if (!App.IsExiting) button.IsEnabled = true;
 		}
 	}
 

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>test_update_payload</AssemblyName>
+    <TargetFramework Condition="'$(StarPieCandidateDir)' != ''">net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF Condition="'$(StarPieCandidateDir)' != ''">true</UseWPF>
+    <AssemblyName Condition="'$(StarPieCandidateDir)' != ''">test_process_launch</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Condition="'$(StarPieCandidateDir)' == ''" Include="..\..\WinPieGestures\UpdatePayloadStager.cs" Link="UpdatePayloadStager.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <Reference Include="StarPie"><HintPath>$(StarPieCandidateDir)\StarPie.dll</HintPath><Private>true</Private></Reference>
+    <Reference Include="StarPie.Plugin.Abstractions"><HintPath>$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll</HintPath><Private>true</Private></Reference>
+    <AssemblyMetadata Include="CandidateDll" Value="$(StarPieCandidateDir)\StarPie.dll" />
+  </ItemGroup>
+</Project>

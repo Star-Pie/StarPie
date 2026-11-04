@@ -18,7 +18,7 @@ public partial class UpdateManager
     private const string AtomGitReleasesApi = "https://api.atomgit.com/api/v5/repos/Star-Pie/StarPie/releases";
 
     public static string NormalizeReleaseSource(string? source) =>
-        string.Equals(source, "atomgit", StringComparison.OrdinalIgnoreCase) ? "atomgit" : "github";
+        string.Equals(source?.Trim(), "github", StringComparison.OrdinalIgnoreCase) ? "github" : "atomgit";
 
     public static string GetReleasePageUrl(ReleaseInfo? release, string? source)
     {

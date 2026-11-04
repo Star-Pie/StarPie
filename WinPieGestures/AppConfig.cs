@@ -6,6 +6,8 @@ namespace WinPieGestures;
 
 public class AppConfig
 {
+	public List<ActionPanelScheme> ActionPanels { get; set; } = new();
+
 	public string Language { get; set; } = "Auto";
 
 	public string TriggerButton { get; set; } = "RightButton";
@@ -363,7 +365,8 @@ public class AppConfig
 		: "Stable";
 
 	/// <summary>Application release source, independent from the shared GitHub download proxy.</summary>
-	public string UpdateReleaseSource { get; set; } = "github";
+	public string UpdateReleaseSource { get; set; } = "atomgit";
+	public string OfficialPluginDownloadSource { get; set; } = "atomgit";
 
 	public string UpdateProxySource { get; set; } = "ghproxy";
 

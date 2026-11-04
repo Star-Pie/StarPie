@@ -98,6 +98,7 @@ internal static class ActionTypeCatalog
             });
         }
 
+        items.Add(new ActionTypeItem { Tag = "ActionPanel", DisplayText = I18n.T("ActionPanelTitle") });
         return items;
     }
 
@@ -140,6 +141,7 @@ internal static class ActionTypeCatalog
             });
         }
 
+        items.Add(new ActionTypeItem { Tag = "ActionPanel", DisplayText = I18n.T("ActionPanelTitle") });
         return items;
     }
 
@@ -177,6 +179,7 @@ internal static class ActionTypeCatalog
             });
         }
 
+        items.Add(new ActionTypeOption { Tag = "ActionPanel", DisplayText = I18n.T("ActionPanelTitle") });
         return items;
     }
 
