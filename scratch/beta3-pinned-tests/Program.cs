@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -180,11 +181,15 @@ internal static class Program
                 var target = new TargetWindowInfo((nint)1234, 42, "pin-test.exe", true);
                 var profile = new WheelProfile { ProcessName = "pin-test.exe", Actions = Enumerable.Range(0, 8).Select(_ => new ActionItem()).ToList() };
                 profile.Actions[0] = new ActionItem { Type = "Hotkey", Parameter = "Ctrl+C" };
+                // Keep the other populated slot while testing an actionless parent; avoid legacy all-empty layer repair.
+                profile.Actions[1] = new ActionItem { Type = "Hotkey", Parameter = "Ctrl+X" };
                 profile.EnsureLayers();
                 int executions = 0;
-                controller.GetType().GetProperty("TestActionEnqueued", Private)!.SetValue(controller, (Action<ActionItem>)(_ =>
+                string? lastEnqueuedParameter = null;
+                controller.GetType().GetProperty("TestActionEnqueued", Private)!.SetValue(controller, (Action<ActionItem>)(action =>
                 {
                     Check(!(bool)Field(controller, "_isGestureActive") && !(bool)stateType.GetProperty("Enabled")!.GetValue(input)!, "session ends before enqueue");
+                    lastEnqueuedParameter = action.Parameter;
                     executions++;
                 }));
                 controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 0, -1)));
@@ -290,7 +295,7 @@ internal static class Program
                 Call(controller, "ProcessMove", new Point(expansionDistance - 15, 0)); Pump();
                 Check((bool)Field(controller, "_lastShowSubTier") && (int)Field(controller, "_pinExpandedParent") == 0,
                     "hover-expanded submenu stays open after leaving and returning closer to same parent");
-                profile.Layers[0].Actions[0].SubActions = null;
+                profile.Layers[0].Actions[0].SubActions = new List<ActionItem>();
                 controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
                     (Func<Point, (bool, int, int)>)(_ => { Activate(155); return (true, 0, -1); }));
                 Call(controller, "ConfirmPinnedSelection", new Point(50, 0), 154L); Pump();
@@ -313,6 +318,70 @@ internal static class Program
                 profile.Layers[0].Actions[0].SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+V" } };
                 Activate(400); Call(controller, "ConfirmPinnedSelection", new Point(50, 0), 400L); Pump();
                 Check(executions == 1 && (bool)Field(controller, "_isGestureActive"), "parent navigation stays open without executing");
+
+                // Exercise the actual hook packet -> reused args -> queued confirmation path, without installing a hook.
+                Static(typeof(WheelFocusSwitcher), "TargetResolverOverride", (Func<Point, TargetWindowInfo>)(_ => target));
+                nint packet = Marshal.AllocHGlobal(32);
+                try
+                {
+                    for (int i = 0; i < 32; i++) Marshal.WriteByte(packet, i, 0);
+                    Marshal.WriteInt32(packet, 0, 50);
+                    profile.Layers[0].Actions[0].Parameter = "Ctrl+C";
+                    profile.Layers[0].Actions[0].SubActions = new List<ActionItem>();
+                    Activate(500);
+                    int beforeClick = executions;
+                    Check((nint)Call(mouseHook, "HookCallback", 0, (nint)513, packet)! == 1, "real packet left down is swallowed");
+                    Check((nint)Call(mouseHook, "HookCallback", 0, (nint)514, packet)! == 1, "real packet left up is swallowed");
+                    Pump();
+                    Check(executions == beforeClick + 1 && !(bool)Field(controller, "_isGestureActive"), "real packet click confirms a pinned leaf once");
+                    Activate(501);
+                    var router = typeof(AppConfig).Assembly.GetType("WinPieGestures.ProfileTriggerRouter", true)!;
+                    var activation = router.GetMethod("CreateLegacyActivation", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null,
+                        ["pin-test.exe", new TriggerConfig(), profile]);
+                    Set(controller, "_activeActivation", activation);
+                    beforeClick = executions;
+                    Task.Run(() =>
+                    {
+                        Check((nint)Call(mouseHook, "HookCallback", 0, (nint)513, packet)! == 1, "hook thread left down is swallowed");
+                        Check((nint)Call(mouseHook, "HookCallback", 0, (nint)514, packet)! == 1, "hook thread left up is swallowed");
+                    }).Wait();
+                    Pump();
+                    Check(executions == beforeClick + 1 && !(bool)Field(controller, "_isGestureActive"), "hook thread confirms a pinned leaf with actual activation");
+                    ConfigManager.CurrentConfig.SubmenuStyle = "Wheel";
+                    profile.Layers[0].Actions[0].SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+V" } };
+                    foreach (bool autoExpand in new[] { true, false })
+                    {
+                        ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup = autoExpand;
+                        Activate(autoExpand ? 502 : 503);
+                        Set(controller, "_activeActivation", activation);
+                        beforeClick = executions;
+                        Task.Run(() =>
+                        {
+                            Check((nint)Call(mouseHook, "HookCallback", 0, (nint)513, packet)! == 1, "primary down swallowed");
+                            Check((nint)Call(mouseHook, "HookCallback", 0, (nint)514, packet)! == 1, "primary up swallowed");
+                        }).Wait();
+                        Pump();
+                        Check(executions == beforeClick + 1 && !(bool)Field(controller, "_isGestureActive") && lastEnqueuedParameter == "Ctrl+C",
+                            "configured primary action executes with children; auto-expand=" + autoExpand);
+                    }
+                    Activate(504);
+                    Set(controller, "_activeActivation", activation);
+                    controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 0, 0)));
+                    beforeClick = executions;
+                    Task.Run(() => { Call(mouseHook, "HookCallback", 0, (nint)513, packet); Call(mouseHook, "HookCallback", 0, (nint)514, packet); }).Wait();
+                    Pump();
+                    Check(executions == beforeClick + 1 && !(bool)Field(controller, "_isGestureActive") && lastEnqueuedParameter == "Ctrl+V", "child click still executes the child rather than its primary action");
+                    Activate(505);
+                    Set(controller, "_activeActivation", activation);
+                    profile.Layers[0].Actions[0].Parameter = "";
+                    controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 0, -1)));
+                    beforeClick = executions;
+                    Task.Run(() => { Call(mouseHook, "HookCallback", 0, (nint)513, packet); Call(mouseHook, "HookCallback", 0, (nint)514, packet); }).Wait();
+                    Pump();
+                    Check(executions == beforeClick && (bool)Field(controller, "_isGestureActive") && (int)Field(controller, "_pinExpandedParent") == 0,
+                        $"actionless parent remains navigation-only through real packet pairing (before={beforeClick}, after={executions}, active={Field(controller, "_isGestureActive")}, expanded={Field(controller, "_pinExpandedParent")})");
+                }
+                finally { Marshal.FreeHGlobal(packet); }
             }
             Console.WriteLine($"PASS {_checks} pinned configuration/input checks; candidate={dll}");
             return 0;
