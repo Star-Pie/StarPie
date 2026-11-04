@@ -109,6 +109,12 @@ public enum PluginCapability
     /// </para>
     /// </summary>
     InputRemapping = 1 << 12,
+
+    /// <summary>
+    /// Request configured actions of other enabled plugins through the host queue.
+    /// Their own capabilities and runtime gates still apply; no target is auto-enabled.
+    /// </summary>
+    PluginActions = 1 << 13,
 }
 
 /// <summary>宿主持有的插件元数据。由宿主从 manifest 解析后经 <see cref="IPluginContext.Me"/> 提供给插件。</summary>

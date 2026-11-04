@@ -12,7 +12,7 @@ namespace WinPieGestures.Plugins;
 /// 插件作者只能针对 SDK 编程，宿主内部怎么重构都不影响他们。
 /// </para>
 /// </summary>
-internal sealed class PluginContext : IInteractionPluginContext, IImageCapturePluginContext, ITextResultPluginContext
+internal sealed class PluginContext : IInteractionPluginContext, IImageCapturePluginContext, ITextResultPluginContext, IInputPanelPluginContext
 {
     public PluginContext(
         PluginMetadata metadata,
@@ -37,6 +37,7 @@ internal sealed class PluginContext : IInteractionPluginContext, IImageCapturePl
         Icons = new PluginIconRegistry(session, metadata.Id);
         SettingsPage = new PluginSettingsPageRegistry(session, metadata.Id, settings);
         Host = new PluginHostActionInvoker(metadata.Id, metadata.Capabilities);
+        InputPanels = new PluginInputPanelService(instance, metadata.Capabilities);
 
         // 这四个服务带能力门禁：构造时就把清单里的 Capabilities 交给它们，
         // 未声明对应能力的插件拿到的是一个「调用即拒绝」的对象。
@@ -80,6 +81,7 @@ internal sealed class PluginContext : IInteractionPluginContext, IImageCapturePl
     public ISettingsPageRegistry SettingsPage { get; }
 
     public IHostActionInvoker Host { get; }
+    public IHostInputPanelService InputPanels { get; }
 
     public IHostCommandService Commands { get; }
 

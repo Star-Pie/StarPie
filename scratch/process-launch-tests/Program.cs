@@ -28,7 +28,7 @@ internal static class Program
             return;
         }
         RunDefaultBrowserRegressionTests();
-        Check(AppVersionInfo.DisplayVersion == "2.0.1-beta.3", "host release version matches the v2.0.1-beta.3 candidate");
+        Check(AppVersionInfo.DisplayVersion == "2.0.1-beta.4", "host release version matches the v2.0.1-beta.4 candidate");
         Check(SimpleVersion.TryParse("1.8.0-beta.4", out var oldHost) &&
             SimpleVersion.TryParse("1.8.0-beta.5", out _), "minimum host versions parse");
         SimpleVersion.TryParse(AppVersionInfo.DisplayVersion, out var currentHost);

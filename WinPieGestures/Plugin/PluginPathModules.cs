@@ -157,20 +157,20 @@ internal sealed class ActionExecutionPathModule : PluginPathModule
         }
     }
 
-    public PluginExecuteOutcome Execute(ActionItem action)
+    public PluginExecuteOutcome Execute(ActionItem action, ActionExecutionContext? target = null)
     {
         if (!PluginActionRequest.TryCreate(action, out PluginActionRequest? request))
         {
             return PluginExecuteOutcome.NotHandled;
         }
 
-        return ExecuteRequest(request!);
+        return ExecuteRequest(request!, target);
     }
 
     public PluginExecuteOutcome ExecuteClaimed(ActionItem action, PluginTypeClaimBinding binding) =>
         ExecuteRequest(PluginActionRequest.CreateClaimed(action, binding));
 
-    private PluginExecuteOutcome ExecuteRequest(PluginActionRequest request)
+    private PluginExecuteOutcome ExecuteRequest(PluginActionRequest request, ActionExecutionContext? target = null)
     {
         PluginActivationResult activation = _activation.EnsureLoaded(
             request.PluginId,
@@ -215,7 +215,7 @@ internal sealed class ActionExecutionPathModule : PluginPathModule
             };
         }
 
-        return PluginInvoker.Invoke(instance, registration, request.Parameters, _calls);
+        return PluginInvoker.Invoke(instance, registration, request.Parameters, _calls, target);
     }
     private PluginActionValidation ValidateResolved(
         PluginActionRegistration registration,

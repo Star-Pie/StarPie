@@ -435,11 +435,13 @@ internal sealed class PluginRuntime
     public string PreviewAction(string fullId, IReadOnlyDictionary<string, string> parameters) =>
         Actions.Preview(fullId, parameters);
 
-    public PluginExecuteOutcome ExecuteAction(ActionItem action) =>
+    public PluginExecuteOutcome ExecuteAction(ActionItem action) => ExecuteAction(action, null);
+
+    internal PluginExecuteOutcome ExecuteAction(ActionItem action, ActionExecutionContext? target) =>
         _calls.Invoke(
             PluginPathIds.ActionExecution,
             "执行动作",
-            () => Actions.Execute(action),
+            () => Actions.Execute(action, target),
             static _ => new PluginExecuteOutcome
             {
                 Handled = true,

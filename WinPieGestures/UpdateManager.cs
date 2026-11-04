@@ -807,117 +807,24 @@ public partial class UpdateManager
 		throw new HttpRequestException("Failed to download release asset from all mirror candidates.");
 	}
 
-	public bool RestartAndApplyUpdate(string downloadedZipPath)
+	public async Task<bool> RestartAndApplyUpdateAsync(string downloadedZipPath)
 	{
 		try
 		{
-			Process currentProc = Process.GetCurrentProcess();
-			int pid = currentProc.Id;
-			string currentExe = currentProc.MainModule?.FileName ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
-			string targetDir = Path.GetDirectoryName(currentExe)!;
-
-			// 首先尝试直接解除下载更新包的 Mark of the Web
-			try
-			{
-				string zoneStream = downloadedZipPath + ":Zone.Identifier";
-				if (File.Exists(zoneStream))
-				{
-					File.Delete(zoneStream);
-				}
-			}
-			catch { }
-
-			string scriptPath = Path.Combine(Path.GetTempPath(), $"StarPie_Updater_{pid}.ps1");
-
-			// 使用原生 PowerShell 脚本执行解压、覆盖与重启：
-			// 1. 绝不使用批处理 (>nul / 2>nul)，根除 Windows 10/11 误报 "...\Lightweight\nul" 的缺陷
-			// 2. 自动调用 Unblock-File 移除所有新释放文件的 Zone.Identifier，彻底杜绝 SmartScreen / 安全中心拦截
-			// 3. 严格设置 WorkingDirectory 为 %TEMP%，隔离工作目录
-			// 4. UseShellExecute = false (通过 CreateProcessW 唤起，彻底绕开 Windows Shell 附件执行服务 AES 策略)
-			string scriptContent = $@"# StarPie 自动更新脚本
-$ErrorActionPreference = 'SilentlyContinue'
-
-$targetPid = {pid}
-$zipPath = '{downloadedZipPath.Replace("'", "''")}'
-$targetDir = '{targetDir.Replace("'", "''")}'
-$exePath = '{currentExe.Replace("'", "''")}'
-
-# 1. 等待主进程完全退出并释放所有 dll/exe 文件句柄
-try {{
-    $proc = Get-Process -Id $targetPid -ErrorAction SilentlyContinue
-    if ($proc) {{
-        $exited = $proc.WaitForExit(12000)
-        if (-not $exited) {{
-            Stop-Process -Id $targetPid -Force -ErrorAction SilentlyContinue
-        }}
-    }}
-}} catch {{}}
-
-Start-Sleep -Milliseconds 600
-
-# 2. 解除更新包锁定
-try {{
-    Unblock-File -LiteralPath $zipPath -ErrorAction SilentlyContinue
-}} catch {{}}
-
-# 3. 原生解压并覆盖安装目录
-$extracted = $false
-try {{
-    Expand-Archive -LiteralPath $zipPath -DestinationPath $targetDir -Force -ErrorAction Stop
-    $extracted = $true
-}} catch {{
-    try {{
-        & tar.exe -xf $zipPath -C $targetDir
-        $extracted = $true
-    }} catch {{}}
-}}
-
-# 4. 解除安装目录下所有新释放文件的安全锁定 (消除 Internet 安全阻止)
-try {{
-    Get-ChildItem -LiteralPath $targetDir -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
-}} catch {{}}
-
-# 5. 重新启动新版 StarPie (以 --silent 静默模式启动，避免更新后强制弹出全量控制台 UI)
-Start-Sleep -Milliseconds 400
-try {{
-    Start-Process -FilePath $exePath -ArgumentList ""--silent"" -WorkingDirectory $targetDir
-}} catch {{
-    try {{
-        [System.Diagnostics.Process]::Start($exePath, ""--silent"")
-    }} catch {{}}
-}}
-
-# 6. 清理临时更新包与自身脚本
-Start-Sleep -Milliseconds 800
-try {{ Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue }} catch {{}}
-try {{ Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue }} catch {{}}
-";
-
-			File.WriteAllText(scriptPath, scriptContent, System.Text.Encoding.UTF8);
-
-			ProcessStartInfo psi = new ProcessStartInfo
-			{
-				FileName = "powershell.exe",
-				Arguments = $"-NoProfile -ExecutionPolicy Bypass -NonInteractive -WindowStyle Hidden -File \"{scriptPath}\"",
-				WorkingDirectory = Path.GetTempPath(),
-				CreateNoWindow = true,
-				WindowStyle = ProcessWindowStyle.Hidden,
-				UseShellExecute = false
-			};
-
-			Process.Start(psi);
-
-			AppLogger.LogInfo("Safe PowerShell update script launched, shutting down current instance.");
-			System.Windows.Application.Current.Dispatcher.Invoke(() =>
-			{
-				System.Windows.Application.Current.Shutdown();
-			});
-
+			using Process current = Process.GetCurrentProcess();
+			string executable = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
+			using UpdateRestartSession session = await UpdateRestartSession.PrepareAsync(downloadedZipPath,
+				executable, current.Id, current.StartTime.ToUniversalTime().Ticks);
+				await session.CommitAsync();
+			AppLogger.LogInfo("Verified update helper acknowledged preparation; requesting graceful application exit.");
+			App.ExitApplication();
 			return true;
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError("RestartAndApplyUpdate failed", ex);
+			AppLogger.LogError("Update preparation failed; current instance remains running", ex);
+			AppMessageBox.Show(I18n.TF("UpdateRestartPreparationFailed", ex.Message),
+				I18n.T("UpdateSourceDownloadTitle"), System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
 			return false;
 		}
 	}

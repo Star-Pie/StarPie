@@ -142,3 +142,11 @@ git diff -- .\tests\i18n_baseline.json
 ## beta.3 四项宿主改进
 
 定格、保存反馈、自启动适配层及SVG批量导入的候选绑定、反例、自动证据边界与实机清单见 [四项改进验收](plans/beta3-four-features-verification.md)。`beta3-pinned-tests` 与 `beta3-svg-tests` 必须传入实际时间目录；自动测试不注册真实任务、不安装输入钩子、不执行真实动作。
+
+## beta.4 更新重启与退出交接
+
+`scratch/update-restart-tests`、`scratch/update-payload-tests` 必须显式绑定实际 `StarPieCandidateDir`；脚本夹具 `scratch/update-script-tests` 必须传入 `--candidate` 和独占 `--output`。它仅执行已记录适配的文件夹具，禁止启动真实应用、覆盖安装目录或执行插件动作。原版失败、新候选通过的最终确认反例、跳过项、既有 i18n 静态误报及人工门禁见 [更新重启与退出交接](plans/restart-update-reliability.md)。
+
+## beta.4 临时小键盘
+
+输入会话、插件模型／存储、非显示WPF布局、当前候选哈希与实机门禁见[临时小键盘验收记录](plans/temporary-keyboard-verification.md)。输入后端必须在实际发送前命中替身；1824的真实路径越界记录保留，不能将该轮记为安全通过。1827经独立静态路由核对后，主代理23组接缝测试通过；真实输入仍由用户验收。

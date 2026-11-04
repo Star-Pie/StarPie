@@ -7,22 +7,37 @@ namespace WinPieGestures;
 public partial class SettingsWindow
 {
     private bool _pluginImportBusy;
+    private bool _localizingPluginChannels;
 
     private OfficialPluginDownloadOptions CapturePluginDownloadOptions() => new(
         (PluginDownloadChannelComboBox?.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Tag as string
-        ?? ConfigManager.CurrentConfig?.UpdateProxySource);
+        ?? ConfigManager.CurrentConfig?.OfficialPluginDownloadSource ?? OfficialPluginDownloadOptions.ChannelAtomGit);
 
     private void LocalizePluginDownloadChannels()
     {
         if (PluginDownloadChannelComboBox == null) return;
         PluginDownloadChannelComboBox.ToolTip = I18n.T("OfficialPluginsOnboardingChannelHint");
         string selected = CapturePluginDownloadOptions().Channel;
-        foreach (System.Windows.Controls.ComboBoxItem item in PluginDownloadChannelComboBox.Items)
+        _localizingPluginChannels = true;
+        try
         {
-            var options = new OfficialPluginDownloadOptions(item.Tag as string);
-            item.Content = options.GetChannelDisplayName();
-            if (options.Channel == selected) PluginDownloadChannelComboBox.SelectedItem = item;
+            foreach (System.Windows.Controls.ComboBoxItem item in PluginDownloadChannelComboBox.Items)
+            {
+                var options = new OfficialPluginDownloadOptions(item.Tag as string);
+                item.Content = options.GetChannelDisplayName();
+                if (options.Channel == selected) PluginDownloadChannelComboBox.SelectedItem = item;
+            }
         }
+        finally { _localizingPluginChannels = false; }
+    }
+
+    private void PluginDownloadChannel_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_isUpdatingUi || _localizingPluginChannels || _isUiInitializing || _resourcesReleased || ConfigManager.CurrentConfig == null) return;
+        string source = CapturePluginDownloadOptions().Channel;
+        if (ConfigManager.CurrentConfig.OfficialPluginDownloadSource == source) return;
+        ConfigManager.CurrentConfig.OfficialPluginDownloadSource = source;
+        ScheduleAutoSave();
     }
 
     private Task<bool> ConfirmOfficialProcessInstallationAsync(PluginInstallConfirmation info) =>

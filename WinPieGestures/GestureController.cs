@@ -82,6 +82,8 @@ public partial class GestureController : IDisposable
 	// _kbTriggerWaiting 区分"键盘触发正在等待阈值"与鼠标触发的等待态（后者仍需吞键）。
 	private volatile bool _kbTriggerWaiting;
 	private TargetWindowInfo? _keyboardMatchingTarget;
+	private nint _keyboardPanelTarget;
+	private uint _keyboardPanelTargetPid;
 
 	// 触发键按下时刻（Environment.TickCount64），用于 200ms 持握门槛，防止快速敲击+甩动误唤轮盘。
 	private long _kbTriggerDownTick;
@@ -309,6 +311,8 @@ public partial class GestureController : IDisposable
 		EndPinnedTracking();
 		_pinState.Begin(ConfigManager.CurrentConfig.PinWheelAfterTrigger);
 		_keyboardMatchingTarget = null;
+		_keyboardPanelTarget = 0;
+		_keyboardPanelTargetPid = 0;
 		lock (_uiUpdateSync)
 		{
 			_gestureVersion++;
@@ -366,6 +370,8 @@ public partial class GestureController : IDisposable
 	{
 		EndPinnedTracking();
 		_keyboardMatchingTarget = null;
+		_keyboardPanelTarget = 0;
+		_keyboardPanelTargetPid = 0;
 		_kbTriggerWaiting = false;
 		_isWaitingForThreshold = false;
 		_isGestureActive = false;
@@ -592,6 +598,8 @@ public partial class GestureController : IDisposable
 
 	private void EnqueueGestureAction(ActionItem targetAction, ActionExecutionContext? context = null)
 	{
+		// A queued panel must never rebind to whichever application happens to be foreground later.
+		if (targetAction.Type == "ActionPanel" && (context == null || context.TargetHwnd == 0 || context.TargetProcessId == 0)) return;
 		if (TestActionEnqueuedWithContext != null)
 		{
 			TestActionEnqueuedWithContext(targetAction, context);
@@ -2155,6 +2163,8 @@ public partial class GestureController : IDisposable
 			out ProfileTriggerActivation? activation) != ProfileTriggerResolution.Match || activation == null) return;
 		TriggerConfig triggerConfig = activation.Trigger;
 		if (CheckIsIsolated(out string _, triggerConfig, keyboardTarget)) return;
+		nint panelTarget = keyboardTarget?.Hwnd ?? WheelFocusSwitcher.GetForegroundWindowSafe();
+		uint panelTargetPid = keyboardTarget?.ProcessId ?? ActiveWindowHelper.GetWindowRealProcessId(panelTarget);
 		if (_currentWheelFocusSession != null)
 		{
 			_currentWheelFocusSession.Cancel();
@@ -2172,6 +2182,8 @@ public partial class GestureController : IDisposable
 		_activeTrigger = triggerConfig;
 		_activeProfile = activation.Profile;
 		_keyboardMatchingTarget = keyboardTarget;
+		_keyboardPanelTarget = panelTarget;
+		_keyboardPanelTargetPid = panelTargetPid;
 		_isWaitingForThreshold = true;
 		_isGestureActive = false;
 		_kbTriggerWaiting = true;
@@ -2201,6 +2213,8 @@ public partial class GestureController : IDisposable
 		}
 
 		TargetWindowInfo? keyboardTarget = _keyboardMatchingTarget;
+		nint panelTarget = _keyboardPanelTarget;
+		uint panelTargetPid = _keyboardPanelTargetPid;
 		_keyboardMatchingTarget = null;
 		CancelLongPressTimer();
 		if (_isWaitingForThreshold)
@@ -2289,6 +2303,9 @@ public partial class GestureController : IDisposable
 					endedInteractionSession?.Confirm(targetAction, PluginInteractionSession.Target(finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
 					ActionExecutionContext? context = keyboardTarget?.CreateExecutionContext(
 						() => !_disposed && !_mouseHook.IsPaused && IsCurrentGesture(executionVersion));
+					if (targetAction.Type == "ActionPanel" && context == null && panelTarget != 0 && panelTargetPid != 0)
+						context = new ActionExecutionContext(panelTarget, panelTargetPid, "",
+							() => !_disposed && !_mouseHook.IsPaused && IsCurrentGesture(executionVersion));
 					EnqueueGestureAction(targetAction, context);
 				}
 				else
@@ -2749,8 +2766,12 @@ public partial class GestureController : IDisposable
 					_currentDpiScaleX = newDpiX;
 					_currentDpiScaleY = newDpiY;
 				}
-				SetCursorPos((int)Math.Round(actualCenter.X), (int)Math.Round(actualCenter.Y));
-				ProcessMove(actualCenter);
+				if (_pinState.Enabled) ApplyPinnedHoverAtPresentation(gestureVersion);
+				else
+				{
+					SetCursorPos((int)Math.Round(actualCenter.X), (int)Math.Round(actualCenter.Y));
+					ProcessMove(actualCenter);
+				}
 			}
 			else if (!_pinState.Enabled && ConfigManager.CurrentConfig.LockParentSectorOnSubmenu)
 			{

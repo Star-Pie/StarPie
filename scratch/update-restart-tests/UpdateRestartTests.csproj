@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>test_process_launch</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="StarPie"><HintPath>$(StarPieCandidateDir)\StarPie.dll</HintPath><Private>true</Private></Reference>
+    <Reference Include="StarPie.Plugin.Abstractions"><HintPath>$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll</HintPath><Private>true</Private></Reference>
+  </ItemGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(StarPieCandidateDir)' == '' or !Exists('$(StarPieCandidateDir)\StarPie.dll')" Text="An explicit candidate directory is required." />
+  </Target>
+</Project>

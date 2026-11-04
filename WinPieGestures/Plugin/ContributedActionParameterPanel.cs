@@ -95,6 +95,23 @@ public sealed class ContributedActionParameterPanel : StackPanel
             SetValue(UsesLegacyStandardUserProperty, true);
             Visibility = Visibility.Collapsed;
             if (_item == null) return;
+			if (_viewModel != null && _item.Type == "ActionPanel")
+			{
+				var picker = new ComboBox { ItemsSource = ConfigManager.CurrentConfig.ActionPanels,
+					DisplayMemberPath = nameof(ActionPanelScheme.Name), SelectedValuePath = nameof(ActionPanelScheme.Id),
+					SelectedValue = _item.Parameter, MinHeight = 30 };
+				picker.SelectionChanged += (_, _) => { if (_item != null && picker.SelectedValue is string id) { _item.Parameter = id; OnValuesChanged(); } };
+				Children.Add(picker);
+				var manage = ActionPanelUi.Button(ActionPanelUi.T("Manage"), () =>
+				{
+					var editor = new ActionPanelEditor(_item?.Parameter) { Owner = Window.GetWindow(this) };
+					if (editor.ShowDialog() == true && _item != null && editor.SelectedSchemeId != null)
+					{ _item.Parameter = editor.SelectedSchemeId; OnValuesChanged(); Rebuild(); }
+				});
+				manage.HorizontalAlignment = HorizontalAlignment.Left;
+				Children.Add(manage);
+				Visibility = Visibility.Visible; SetValue(HasFieldsProperty, true); return;
+			}
             if (_includePluginActions && _item.Type == PluginActionBinding.TypeName && _item.PluginActionRef != null &&
                 PluginHost.TryGetAction(_item.PluginActionRef.FullId, out PluginActionRegistration pluginRegistration))
             {

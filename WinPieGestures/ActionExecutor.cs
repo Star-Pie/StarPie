@@ -26,6 +26,11 @@ public sealed class ActionExecutionContext
 	public string TargetProcessName { get; }
 	public Func<bool>? IsValidCallback { get; }
 	public Action? OnConsumed { get; }
+	internal StarPie.Plugin.ActionContext? PluginTargetContext { get; }
+	internal CancellationToken SessionCancellation { get; }
+	private int _consumptionDeferred;
+	internal bool IsConsumptionDeferred => Volatile.Read(ref _consumptionDeferred) != 0;
+	internal void DeferConsumption() => Interlocked.Exchange(ref _consumptionDeferred, 1);
 
 	public ActionExecutionContext(
 		nint targetHwnd,
@@ -33,13 +38,28 @@ public sealed class ActionExecutionContext
 		string? targetProcessName,
 		Func<bool>? isValidCallback = null,
 		Action? onConsumed = null)
+		: this(targetHwnd, targetProcessId, targetProcessName, isValidCallback, onConsumed, null, default)
+	{
+	}
+
+	internal ActionExecutionContext(nint targetHwnd, uint targetProcessId, string? targetProcessName,
+		Func<bool>? isValidCallback, Action? onConsumed, StarPie.Plugin.ActionContext? pluginTargetContext,
+		CancellationToken sessionCancellation)
 	{
 		TargetHwnd = targetHwnd;
 		TargetProcessId = targetProcessId;
 		TargetProcessName = string.IsNullOrWhiteSpace(targetProcessName) ? string.Empty : targetProcessName.Trim().ToLowerInvariant();
 		IsValidCallback = isValidCallback;
 		OnConsumed = onConsumed;
+		PluginTargetContext = pluginTargetContext;
+		SessionCancellation = sessionCancellation;
 	}
+
+	internal bool IsCurrent() => !SessionCancellation.IsCancellationRequested &&
+		(IsValidCallback == null || IsValidCallback()) && (TargetHwnd == 0 ||
+		(WheelFocusSwitcher.IsWindow(TargetHwnd) && WheelFocusSwitcher.IsWindowVisible(TargetHwnd) &&
+		 WheelFocusSwitcher.GetForegroundWindowSafe() == TargetHwnd &&
+		 (TargetProcessId == 0 || ActiveWindowHelper.GetWindowRealProcessId(TargetHwnd) == TargetProcessId)));
 }
 
 internal readonly struct ActionEnvelope
@@ -258,11 +278,13 @@ public static class ActionExecutor
 	#region 测试切缝 (Test Seams)
 	internal static Action<ActionItem, ActionExecutionContext?>? ActionExecutionOverride { get; set; }
 	internal static Action? ReleaseStuckModifiersOverride { get; set; }
+	internal static Action<HotkeyDetails>? InputPanelHotkeyExecutionOverride { get; set; }
 
 	internal static void ResetTestSeams()
 	{
 		ActionExecutionOverride = null;
 		ReleaseStuckModifiersOverride = null;
+		InputPanelHotkeyExecutionOverride = null;
 	}
 	#endregion
 
@@ -395,22 +417,27 @@ public static class ActionExecutor
 			}
 			else
 			{
-				Execute(action);
+				ExecuteCore(action, envelope.Context);
 			}
 			return true;
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError($"Action execution threw: {action.Name}", ex);
+			if (envelope.Context?.PluginTargetContext != null)
+				AppLogger.LogError($"Input panel action execution failed ({ex.GetType().Name}).");
+			else AppLogger.LogError($"Action execution threw: {action.Name}", ex);
 			return false;
 		}
 		finally
 		{
-			envelope.Context?.OnConsumed?.Invoke();
+			if (envelope.Context?.IsConsumptionDeferred != true)
+				envelope.Context?.OnConsumed?.Invoke();
 		}
 	}
 
-	public static void Execute(ActionItem action)
+	public static void Execute(ActionItem action) => ExecuteCore(action, null);
+
+	private static void ExecuteCore(ActionItem action, ActionExecutionContext? context)
 	{
 		if (action == null)
 		{
@@ -418,7 +445,24 @@ public static class ActionExecutor
 		}
 		try
 		{
-			AppLogger.LogInfo($"Executing Action: Name='{action.Name}', Type='{action.Type}', Param='{action.Parameter}', Args='{action.Arguments}', Term='{action.CommandTerminal}'");
+			if (action.Type == "ActionPanel") { ActionPanelManager.RequestShow(action.Parameter, context?.TargetHwnd, context?.TargetProcessId ?? 0, context == null ? null : context.IsCurrent); return; }
+			if (context?.PluginTargetContext != null && !context.IsCurrent()) return;
+			if (context?.PluginTargetContext != null)
+			{
+				AppLogger.LogInfo($"Executing input panel action: Type='{action.Type}'");
+				// Builtin contributions invoke legacy helpers without the panel context.
+				// Keep this bounded input surface ahead of that routing boundary.
+				switch (action.Type)
+				{
+					case "Hotkey": ExecuteHotkey(action.Parameter, privateInput: true); break;
+					case "Text":
+					case "String": SendTextInput(action.Parameter); break;
+					case "Plugin": ExecutePluginActionItem(action, context); break;
+				}
+				return;
+			}
+			else
+				AppLogger.LogInfo($"Executing Action: Name='{action.Name}', Type='{action.Type}', Param='{action.Parameter}', Args='{action.Arguments}', Term='{action.CommandTerminal}'");
 			if (Plugins.BuiltinActionCatalog.TryGet(action.Type, out Plugins.BuiltinActionRegistration builtin))
 			{
 				ExecuteBuiltinActionItem(action, builtin);
@@ -433,7 +477,7 @@ public static class ActionExecutor
 			switch (action.Type.Trim())
 			{
 			case "Hotkey":
-				ExecuteHotkey(action.Parameter);
+				ExecuteHotkey(action.Parameter, context?.PluginTargetContext != null);
 				break;
 			case "Text":
 			case "String":
@@ -441,7 +485,7 @@ public static class ActionExecutor
 				break;
 			case "Plugin":
 				// 普通社区插件动作统一走 PluginHost，避免静默失效。
-				ExecutePluginActionItem(action);
+				ExecutePluginActionItem(action, context?.PluginTargetContext != null ? context : null);
 				break;
 			default:
 				if (Plugins.PluginHost.IsOfficialClaimedType(action.Type))
@@ -459,6 +503,12 @@ public static class ActionExecutor
 		}
 		catch (Exception ex)
 		{
+			if (context?.PluginTargetContext != null)
+			{
+				// Exception text can echo typed values too; never retain it for panel input.
+				AppLogger.LogError($"Input panel action failed ({ex.GetType().Name}).");
+				return;
+			}
 			AppLogger.LogError($"Failed to execute action '{action.Name}' (Type: {action.Type}, Param: {action.Parameter})", ex);
 			MessageBox.Show("Failed to execute action '" + action.Name + "': " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Hand);
 		}
@@ -506,9 +556,9 @@ public static class ActionExecutor
 			Plugins.PluginHost.NotifyUser("内置动作执行失败", outcome.Message);
 		}
 	}
-	private static void ExecutePluginActionItem(ActionItem action)
+	private static void ExecutePluginActionItem(ActionItem action, ActionExecutionContext? target = null)
 	{
-		Plugins.PluginExecuteOutcome outcome = Plugins.PluginHost.ExecutePluginAction(action);
+		Plugins.PluginExecuteOutcome outcome = Plugins.PluginHost.ExecutePluginAction(action, target);
 
 		if (!outcome.Handled)
 		{
@@ -2637,7 +2687,7 @@ public static class ActionExecutor
 		}
 	}
 
-	private static void ExecuteSingleStep(HotkeyStep step)
+	private static void ExecuteSingleStep(HotkeyStep step, bool privateInput = false)
 	{
 		try
 		{
@@ -2716,15 +2766,23 @@ public static class ActionExecutor
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError($"Error in ExecuteSingleStep ({step}): {ex.Message}");
+			AppLogger.LogError(privateInput ? "Input panel key execution failed." : $"Error in ExecuteSingleStep ({step}): {ex.Message}");
 		}
 	}
 
-	internal static void ExecuteHotkey(string hotkeyString)
+	internal static void ExecuteHotkey(string hotkeyString) => ExecuteHotkey(hotkeyString, false);
+
+	internal static void ExecuteHotkey(string hotkeyString, bool privateInput)
 	{
 		if (string.IsNullOrWhiteSpace(hotkeyString))
 		{
 			return;
+		}
+		if (privateInput)
+		{
+			// Panel input has one validated chord; never fall back to literal text.
+			if (!Plugins.InputPanelHotkey.TryNormalize(hotkeyString, out string normalized)) return;
+			hotkeyString = normalized;
 		}
 
 		HotkeyDetails hotkeyDetails = ParseHotkey(hotkeyString);
@@ -2734,7 +2792,7 @@ public static class ActionExecutor
 			string rawStr = hotkeyString.Trim();
 			if (rawStr.Length >= 2 && rawStr.Length <= 8 && rawStr.All(char.IsLetterOrDigit))
 			{
-				AppLogger.LogInfo($"Executing Key Sequence from raw token: '{rawStr}'");
+				if (!privateInput) AppLogger.LogInfo($"Executing Key Sequence from raw token: '{rawStr}'");
 				foreach (char c in rawStr)
 				{
 					ushort vk = MapKeyStringToVk(c.ToString());
@@ -2754,7 +2812,7 @@ public static class ActionExecutor
 				}
 				return;
 			}
-			AppLogger.LogInfo($"Executing Text Input: '{hotkeyString}'");
+			if (!privateInput) AppLogger.LogInfo($"Executing Text Input: '{hotkeyString}'");
 			SendTextInput(hotkeyString);
 			return;
 		}
@@ -2762,12 +2820,12 @@ public static class ActionExecutor
 		// 多步骤序列（包括显式步进如 "Alt, H, V, F"、连续多键如 "Alt+H+V+F"、"U+U"、"Ctrl+K, Ctrl+C" 等）
 		if (hotkeyDetails.Steps.Count > 1)
 		{
-			AppLogger.LogInfo($"Executing Multi-Step Hotkey: '{hotkeyString}' ({hotkeyDetails.Steps.Count} steps: [{string.Join(" -> ", hotkeyDetails.Steps)}])");
+			if (!privateInput) AppLogger.LogInfo($"Executing Multi-Step Hotkey: '{hotkeyString}' ({hotkeyDetails.Steps.Count} steps: [{string.Join(" -> ", hotkeyDetails.Steps)}])");
 			System.Threading.Thread.Sleep(15);
 			for (int s = 0; s < hotkeyDetails.Steps.Count; s++)
 			{
 				HotkeyStep step = hotkeyDetails.Steps[s];
-				ExecuteSingleStep(step);
+				ExecuteSingleStep(step, privateInput);
 				if (s < hotkeyDetails.Steps.Count - 1)
 				{
 					int stepDelay = (step.Modifiers.Contains(164) && step.MainKey == 0) ? 35 : 25;
@@ -2780,7 +2838,7 @@ public static class ActionExecutor
 		// 无修饰键的多键序列回退兼容（例如 "U+U", "U+S", "A+B"）
 		if (hotkeyDetails.Modifiers.Count == 0 && hotkeyDetails.SequenceKeys.Count > 1)
 		{
-			AppLogger.LogInfo($"Executing Key Sequence: [{string.Join(" -> ", hotkeyDetails.SequenceKeys)}]");
+			if (!privateInput) AppLogger.LogInfo($"Executing Key Sequence: [{string.Join(" -> ", hotkeyDetails.SequenceKeys)}]");
 			foreach (ushort vk in hotkeyDetails.SequenceKeys)
 			{
 				INPUT kDown = CreateKeyInput(vk, down: true);
@@ -2793,7 +2851,12 @@ public static class ActionExecutor
 			return;
 		}
 
-		AppLogger.LogInfo($"Executing Hotkey: '{hotkeyString}' (MainKey: {hotkeyDetails.MainKey}, Modifiers: [{string.Join(",", hotkeyDetails.Modifiers)}])");
+		if (!privateInput) AppLogger.LogInfo($"Executing Hotkey: '{hotkeyString}' (MainKey: {hotkeyDetails.MainKey}, Modifiers: [{string.Join(",", hotkeyDetails.Modifiers)}])");
+		if (privateInput && InputPanelHotkeyExecutionOverride != null)
+		{
+			InputPanelHotkeyExecutionOverride(hotkeyDetails);
+			return;
+		}
 
 		// 给 DWM 窗口焦点平稳回落预留短暂缓冲时延（轮盘关闭后目标窗口焦点就绪）
 		System.Threading.Thread.Sleep(10);

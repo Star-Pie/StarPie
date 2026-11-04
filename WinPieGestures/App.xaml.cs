@@ -15,6 +15,10 @@ public partial class App : Application
 {
 	private static Mutex? _singleInstanceMutex;
 	private static EventWaitHandle? _instanceWakeEvent;
+	private static EventWaitHandle? _instanceClosingEvent;
+	private static bool _ownsInstanceMutex;
+	private static bool _pluginsShutdownPrepared;
+	private static readonly AppShutdownSequence ExitSequence = new();
 	private static RegisteredWaitHandle? _waitHandleRegistration;
 	private static bool _isDuplicateInstance;
 	private static bool _isExiting;
@@ -24,6 +28,7 @@ public partial class App : Application
 
 	private const string MutexName = "Global\\StarPie_SingleInstance_Mutex_9B8A7C";
 	private const string WakeEventName = "Global\\StarPie_Wakeup_Event_9B8A7C";
+	private const string ClosingEventName = "Global\\StarPie_Closing_Event_9B8A7C";
 	private const string AppId = "SoftBlack42.StarPie.App";
 
 	public static GestureController? MainGestureController { get; private set; }
@@ -153,51 +158,47 @@ public partial class App : Application
 		string commandLine = Environment.CommandLine;
 		if (!commandLine.Contains("--allow-multiple", StringComparison.OrdinalIgnoreCase) && !commandLine.Contains("--test-instance", StringComparison.OrdinalIgnoreCase) && !commandLine.Contains("--plugin-selftest", StringComparison.OrdinalIgnoreCase))
 		{
-			bool createdNew;
 			try
 			{
-				_singleInstanceMutex = new Mutex(initiallyOwned: true, MutexName, out createdNew);
-			}
-			catch
-			{
-				createdNew = true;
-			}
-			if (!createdNew)
-			{
-				bool hasHandle = false;
-				try
+				// Publish the wake endpoint before owning the mutex. A second launch
+				// can then queue a wake even while this primary is still starting.
+				_instanceWakeEvent = new EventWaitHandle(false, EventResetMode.AutoReset, WakeEventName);
+				_instanceClosingEvent = new EventWaitHandle(false, EventResetMode.ManualReset, ClosingEventName);
+				_singleInstanceMutex = new Mutex(initiallyOwned: true, MutexName, out bool createdNew);
+				_ownsInstanceMutex = createdNew;
+				if (!createdNew)
 				{
-					hasHandle = _singleInstanceMutex.WaitOne(150, false);
-				}
-				catch (AbandonedMutexException)
-				{
-					// 前一进程非正常终止并遗弃了互斥体，当前实例顺利接管所有权
-					hasHandle = true;
-				}
-				catch
-				{
-				}
-
-				if (!hasHandle)
-				{
-					try
+					InstanceHandoffResult handoff = SingleInstanceHandoff.Acquire(_singleInstanceMutex, _instanceClosingEvent, () =>
 					{
-						using EventWaitHandle eventWaitHandle = EventWaitHandle.OpenExisting(WakeEventName);
-						eventWaitHandle.Set();
-					}
-					catch
+						_instanceWakeEvent.Set();
+					});
+					_ownsInstanceMutex = handoff == InstanceHandoffResult.Acquired;
+					if (!_ownsInstanceMutex)
 					{
+						if (handoff == InstanceHandoffResult.ExitTimedOut)
+							MessageBox.Show(I18n.T("InstanceExitWaitFailed"), I18n.T("StartupErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Warning);
+						_isDuplicateInstance = true;
+						DisposeInstanceHandles();
+						Shutdown(handoff == InstanceHandoffResult.ExitTimedOut ? 1 : 0);
+						return;
 					}
-					_isDuplicateInstance = true;
-					Shutdown(0);
-					return;
 				}
+				_instanceClosingEvent.Reset();
+			}
+			catch (Exception ex)
+			{
+				// Permission or handle failures never authorize a second primary instance.
+				_isDuplicateInstance = true;
+				DisposeInstanceHandles();
+				MessageBox.Show(I18n.TF("InstanceStartupFailed", ex.Message), I18n.T("StartupErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+				Shutdown(1);
+				return;
 			}
 			try
 			{
-				_instanceWakeEvent = new EventWaitHandle(initialState: false, EventResetMode.AutoReset, WakeEventName);
 				_waitHandleRegistration = ThreadPool.RegisterWaitForSingleObject(_instanceWakeEvent, delegate
 				{
+					if (_isExiting) return;
 					((DispatcherObject)Application.Current).Dispatcher.BeginInvoke((Delegate)(Action)delegate
 					{
 						WakeUpSettingsWindow();
@@ -235,6 +236,7 @@ public partial class App : Application
 			MainKeyboardHook.Start();
 			AppLogger.LogInfo("MainKeyboardHook started");
 			MainGestureController = new GestureController(MainMouseHook, MainKeyboardHook);
+			ActionPanelManager.Initialize();
 			startup.Mark("InputReady");
 			MainTrayController = new TrayController();
 			MainTrayController.OpenSettingsRequested += ShowSettingsWindow;
@@ -262,6 +264,7 @@ public partial class App : Application
 			// 但放在这里会挤占首帧；而插件系统早一秒晚一秒就绪对用户完全没有感知。
 			Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, new Action(() =>
 			{
+				if (_isExiting) return;
 				try
 				{
 					Plugins.PluginHost.Initialize();
@@ -276,6 +279,7 @@ public partial class App : Application
 
 			_startupCompleted = true;
 			startup.Mark("HostReady");
+			UpdateRestartSession.ReportReady(e.Args);
 			if (!SettingsWindow.IsSilentLaunch() || _pendingSettingsRequest)
 			{
 				int requestedTab = _pendingSettingsRequest ? _pendingSettingsTabIndex : -1;
@@ -427,6 +431,8 @@ public partial class App : Application
 		if (paused)
 		{
 			gestureController?.OnHostPaused();
+			Plugins.InputPanelCoordinator.CloseActive(StarPie.Plugin.InputPanelCloseReason.Paused);
+			ActionPanelManager.Close();
 			KeyboardRemapController.Current.OnHostPaused();
 		}
 		if (mouseHook != null)
@@ -464,13 +470,13 @@ public partial class App : Application
 		try
 		{
 			string fileName = Environment.ProcessPath ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StarPie.exe");
-			Process.Start(new ProcessStartInfo
-			{
-				FileName = fileName,
-				Arguments = "--silent",
-				UseShellExecute = true,
-				Verb = "runas"
-			});
+			using Process current = Process.GetCurrentProcess();
+			ProcessStartInfo start = AppRestartCoordinator.CreateStartInfo(fileName,
+				current.Id, current.StartTime.ToUniversalTime().Ticks);
+			start.UseShellExecute = true;
+			start.Verb = "runas";
+			using Process? next = Process.Start(start);
+			if (next == null) return;
 			ExitApplication();
 		}
 		catch (Exception ex)
@@ -481,14 +487,39 @@ public partial class App : Application
 
 	public static void ExitApplication()
 	{
-		if (_isExiting)
+		Application? application = Application.Current;
+		if (application == null) return;
+		if (!application.Dispatcher.CheckAccess())
 		{
+			application.Dispatcher.BeginInvoke((Action)ExitApplication);
 			return;
 		}
+		TryShutdownStep(() => _instanceClosingEvent?.Set(), "Publish closing state");
 		_isExiting = true;
-		KeyboardRemapController.Current.Shutdown();
-		MainTrayController?.Dispose();
-		Application.Current?.Shutdown();
+		_ = ExitSequence.RunAsync(async () =>
+		{
+			TryShutdownStep(() => ApplyPauseStateTransition(true, MainMouseHook, MainKeyboardHook,
+				MainGestureController, MainTrayController), "Pause input before exit");
+			TryShutdownStep(() => KeyboardRemapController.Current.Shutdown(), "Keyboard remap shutdown");
+			try { await Plugins.PluginHost.ShutdownAllAsync(); }
+			finally { _pluginsShutdownPrepared = true; }
+		}, () => application.Shutdown(), ex => AppLogger.LogError("Preparing application exit failed", ex));
+	}
+
+	private static void TryShutdownStep(Action action, string description)
+	{
+		try { action(); }
+		catch (Exception ex) { try { AppLogger.LogError(description, ex); } catch { } }
+	}
+
+	private static void DisposeInstanceHandles()
+	{
+		try { _waitHandleRegistration?.Unregister(null); } catch { }
+		try { _instanceWakeEvent?.Dispose(); } catch { }
+		try { _instanceClosingEvent?.Dispose(); } catch { }
+		try { if (_ownsInstanceMutex) _singleInstanceMutex?.ReleaseMutex(); } catch { }
+		try { _singleInstanceMutex?.Dispose(); } catch { }
+		_ownsInstanceMutex = false;
 	}
 
 	private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
@@ -640,13 +671,14 @@ public partial class App : Application
 			return;
 		}
 		AppLogger.LogInfo("=== StarPie Exiting ===");
+		TryShutdownStep(() => _instanceClosingEvent?.Set(), "Publish final closing state");
 		_isExiting = true;
 
 		// 插件系统收尾：停用全部插件（撤销贡献点 + 剪断事件订阅 + 尽力卸载 ALC），并把健康度落盘。
 		// 必须在托盘与设置窗口释放之前做 —— 插件停用过程可能产生需要用托盘显示的提示。
 		try
 		{
-			Plugins.PluginHost.ShutdownAll();
+			if (!_pluginsShutdownPrepared) Plugins.PluginHost.RequestShutdownOnExit();
 		}
 		catch (Exception ex)
 		{
@@ -662,22 +694,12 @@ public partial class App : Application
 			AppLogger.LogError("Keyboard remap controller shutdown failed", ex);
 		}
 
-		MainTrayController?.Dispose();
+		TryShutdownStep(() => MainTrayController?.Dispose(), "Tray shutdown");
 		MainTrayController = null;
 		// 退出前自动还原所有窗口到首次平铺前的样式
 		try
 		{
 			WindowTiler.RestoreLastLayout();
-		}
-		catch
-		{
-		}
-		try
-		{
-			_waitHandleRegistration?.Unregister(null);
-			_instanceWakeEvent?.Dispose();
-			_singleInstanceMutex?.ReleaseMutex();
-			_singleInstanceMutex?.Dispose();
 		}
 		catch
 		{
@@ -708,7 +730,12 @@ public partial class App : Application
 		catch
 		{
 		}
-		AppLogger.Shutdown();
-		base.OnExit(e);
+		try { TryShutdownStep(AppLogger.Shutdown, "Logger shutdown"); }
+		finally
+		{
+			// Keep ownership until config saves and hook cleanup have completed.
+			DisposeInstanceHandles();
+			base.OnExit(e);
+		}
 	}
 }

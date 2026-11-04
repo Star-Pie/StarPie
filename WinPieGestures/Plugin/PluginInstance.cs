@@ -319,6 +319,7 @@ internal sealed class PluginInstance
         }
 
         try { StickyWheelSession.RevokePluginCallbacks(PluginId, this, GenerationId); } catch { }
+        InputPanelCoordinator.Revoke(this, GenerationId);
         Task cancelTask = Task.Run(() =>
         {
             try { cancellation.Cancel(); } catch { }
@@ -832,6 +833,7 @@ internal sealed class PluginInstance
         {
             _events?.RevokeAll();
             StickyWheelSession.RevokePluginCallbacks(PluginId, this, GenerationId);
+            InputPanelCoordinator.Revoke(this, GenerationId);
         }
         catch (Exception ex)
         {

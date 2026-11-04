@@ -180,38 +180,51 @@ internal static class PluginHost
         }
     }
 
-    /// <summary>宿主退出前的收尾。退出路径允许同步等待短宽限期，最终进程退出由操作系统兜底。</summary>
+    private static readonly object ShutdownGate = new();
+    private static Task? _shutdownTask;
+
+    /// <summary>兼容非UI调用方；正常退出在Dispatcher仍运行时异步等待。</summary>
     public static void ShutdownAll()
     {
+        ShutdownAllAsync().GetAwaiter().GetResult();
+    }
+
+    internal static Task ShutdownAllAsync()
+    {
+        lock (ShutdownGate)
+        {
+            return _shutdownTask ??= Task.Run(ShutdownCoreAsync);
+        }
+    }
+
+    internal static void RequestShutdownOnExit()
+    {
+        _ = ShutdownAllAsync();
+        // Emergency/OS exit cannot pump the dispatcher or repeat the full grace
+        // period. Request termination only for handles already owned by us.
+        PluginProcessRuntime.RequestTerminationAllPlugins();
+    }
+
+    private static async Task ShutdownCoreAsync()
+    {
         if (!_initialized) return;
-
-        foreach (PluginInstance instance in ListInstances())
+        Task[] stops = ListInstances().Where(instance => instance.IsLoaded).Select(instance => Task.Run(async () =>
         {
-            if (!instance.IsLoaded) continue;
-
-            try
-            {
-                _ = DisableAsync(
-                        instance.PluginId,
-                        PluginStopReason.ApplicationExit,
-                        TimeSpan.FromSeconds(2),
-                        CancellationToken.None)
-                    .GetAwaiter().GetResult();
-            }
-            catch (Exception ex)
-            {
-                AppLogger.LogError($"[plugin] 退出时停用 {instance.PluginId} 失败", ex);
-            }
-        }
-
-        // 进程插件必须在宿主退出时清场，而且**不能只依赖上面的停用流程**：
-        // DisableAsync 带 2 秒宽限期，超时或提前返回都不会走到 Teardown，进程就活下来了。
-        // 这里再兜一次底，代价极低（没有进程在册时直接返回）。
-        int terminated = PluginProcessRuntime.TerminateAllPlugins();
-        if (terminated > 0)
+            try { await DisableAsync(instance.PluginId, PluginStopReason.ApplicationExit,
+                TimeSpan.FromSeconds(2), CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception ex) { AppLogger.LogError($"[plugin] 退出时停用 {instance.PluginId} 失败", ex); }
+        })).ToArray();
+        try
         {
-            AppLogger.LogInfo($"[plugin] 宿主退出，已结束 {terminated} 个由插件拉起的进程");
+            // Includes the synchronous prefix of each plugin's stopping path,
+            // rather than multiplying the wait by the number of plugins.
+            await Task.WhenAll(stops).WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
         }
+        catch (TimeoutException)
+        {
+            AppLogger.LogWarn("[plugin] Application exit grace period elapsed; finishing owned process cleanup.");
+        }
+        finally { PluginProcessRuntime.RequestTerminationAllPlugins(); }
     }
 
     // ------------------------------------------------------------------ 安装
@@ -712,6 +725,8 @@ internal static class PluginHost
 
     /// <summary>主程序唯一的插件动作入口，具体行为由动作路径模块负责。</summary>
     public static PluginExecuteOutcome ExecutePluginAction(ActionItem action) => Runtime.ExecuteAction(action);
+    internal static PluginExecuteOutcome ExecutePluginAction(ActionItem action, ActionExecutionContext? target) =>
+        Runtime.ExecuteAction(action, target);
 
     public static bool IsOfficialClaimedType(string? type) =>
         PluginActionClaimRegistry.IsOfficialClaimedType(type);
@@ -806,6 +821,16 @@ internal static class PluginHost
 
     public static bool TryGetAction(string fullId, out PluginActionRegistration registration) =>
         Catalog.TryGetAction(fullId, out registration);
+
+    /// <summary>Explicit picker selection loads only that enabled plugin; never changes preferences.</summary>
+    internal static IReadOnlyList<PluginActionRegistration> LoadActionsForBinding(string pluginId)
+    {
+        if (!_initialized || !_enabled || _safeModeActive) return Array.Empty<PluginActionRegistration>();
+        PluginActivationResult result = Runtime.EnsurePluginLoaded(pluginId, PluginActivationReason.ActionEditing, requireEnabled: true);
+        return result.IsReady ? Catalog.SnapshotActions().Where(action =>
+            action.PluginId.Equals(pluginId, StringComparison.OrdinalIgnoreCase) && action.ShowInActionPicker).ToArray()
+            : Array.Empty<PluginActionRegistration>();
+    }
 
     /// <summary>预览文案。插件回调同样经过活动调用租约，失败时返回空串。</summary>
     public static string PreviewAction(string fullId, IReadOnlyDictionary<string, string> parameters) =>
