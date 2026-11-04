@@ -251,17 +251,22 @@ public partial class GestureController
             }
             _selectedSectorIndex = hitSector;
             _selectedSubSectorIndex = hitSubSector;
-            if (_selectedSectorIndex >= 0 && _selectedSubSectorIndex < 0 && ConfigManager.CurrentConfig.EnableMultiTier &&
-                _activeProfile?.GetEffectiveAction(_selectedSectorIndex)?.SubActions?.Count > 0)
+            bool hasAction = TryResolveReleasedAction(_activeProfile, CaptureReleaseLayer(_activeProfile), _selectedSectorIndex,
+                _selectedSubSectorIndex, false, false, out var action) && action != null &&
+                !string.Equals(action.Type, "None", StringComparison.OrdinalIgnoreCase) &&
+                !(action.Type == "Hotkey" && string.IsNullOrWhiteSpace(action.Parameter));
+            if (!hasAction)
             {
-                _pinExpandedParent = _selectedSectorIndex;
-                QueueHighlightUpdate(_selectedSectorIndex, -1, false, true, version);
+                // A configured primary action remains clickable when it also owns child actions.
+                // Only an actionless parent is navigation-only; hovering still expands either kind.
+                if (_selectedSectorIndex >= 0 && _selectedSubSectorIndex < 0 && ConfigManager.CurrentConfig.EnableMultiTier &&
+                    _activeProfile?.GetEffectiveAction(_selectedSectorIndex)?.SubActions?.Count > 0)
+                {
+                    _pinExpandedParent = _selectedSectorIndex;
+                    QueueHighlightUpdate(_selectedSectorIndex, -1, false, true, version);
+                }
                 return;
             }
-            if (!TryResolveReleasedAction(_activeProfile, CaptureReleaseLayer(_activeProfile), _selectedSectorIndex,
-                _selectedSubSectorIndex, false, false, out var action) || action == null ||
-                string.Equals(action.Type, "None", StringComparison.OrdinalIgnoreCase) ||
-                (action.Type == "Hotkey" && string.IsNullOrWhiteSpace(action.Parameter))) return;
             // CompleteMouseTriggerRelease owns hide-before-enqueue, target checks, interaction completion and layer snapshot.
             // An explicit hit on rendered geometry is not a hover-locked release from another parent.
             _submenuLock.Reset();
