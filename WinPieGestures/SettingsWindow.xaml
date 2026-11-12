@@ -2576,17 +2576,25 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Name="GesturesPageHeader" Text="手势方向与动作映射" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+              <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Name="GesturesPageHeader" Text="手势方向与动作映射" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,14,2" />
 
-                <!-- 紧凑型多层轮盘管理工具栏 (仅高级全量模式展示，移至标题右侧留白处) -->
-                <Border Name="Tab2_MultiLayerHeaderPanel" VerticalAlignment="Center" Margin="14,0,0,0" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5,2">
-                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- 紧凑型多层轮盘管理工具栏 (仅高级全量模式展示，空间不足时自动换行不裁剪) -->
+                <Border Name="Tab2_MultiLayerHeaderPanel" VerticalAlignment="Center" Margin="0,2,0,2" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5,2">
+                  <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="Tab2LayerLabel" Text="🌀 轮盘层:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="3,0,5,0" />
-                    <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="95" VerticalAlignment="Center" DisplayMemberPath="DisplayName" SelectionChanged="LayerSelectComboBox_SelectionChanged" />
+                    <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" MinWidth="135" MaxWidth="220" MaxDropDownHeight="320" VerticalAlignment="Center" DisplayMemberPath="DisplayName" SelectionChanged="LayerSelectComboBox_SelectionChanged" PreviewKeyDown="LayerSelectComboBox_PreviewKeyDown">
+                      <ComboBox.ContextMenu>
+                        <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
+                          <MenuItem x:Name="LayerCtxRenameMenuItem" Header="✏️ 重命名" Style="{StaticResource ModernMenuItemStyle}" Click="RenameLayerBtn_Click" />
+                          <MenuItem x:Name="LayerCtxCopyMenuItem" Header="📑 复制" Style="{StaticResource ModernMenuItemStyle}" Click="CopyLayerBtn_Click" />
+                          <MenuItem x:Name="LayerCtxDeleteMenuItem" Header="🗑️ 删除" Style="{StaticResource ModernMenuItemStyle}" Click="DeleteLayerBtn_Click" />
+                        </ContextMenu>
+                      </ComboBox.ContextMenu>
+                    </ComboBox>
                     <Button Name="AddLayerBtn" Content="➕ 加层" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="4,0,2,0" ToolTip="新增一层独立轮盘配置（支持无限多层）" Click="AddLayerBtn_Click" />
                     <Button Name="CopyLayerBtn" Content="📑 复制" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="复制当前层的所有扇区动作与中心核圆到新层" Click="CopyLayerBtn_Click" />
-                    <Button Name="RenameLayerBtn" Content="✏️" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="重命名当前轮盘层" Click="RenameLayerBtn_Click" />
+                    <Button Name="RenameLayerBtn" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,2,0" ToolTip="重命名当前轮盘层" Click="RenameLayerBtn_Click" />
                     <Button Name="DeleteLayerBtn" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="删除当前轮盘层（至少保留一层）" Click="DeleteLayerBtn_Click" />
                     <Border Width="1" Height="12" Background="{DynamicResource CardBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
                     <TextBlock Name="LayerSwitchTriggerLabel" Text="🔄 切换:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="2,0,4,0" />
@@ -2594,9 +2602,9 @@
                       <ComboBoxItem x:Name="LayerSwitchModeScrollItem" Content="🖱️ 滚轮切换" Tag="Wheel" />
                       <ComboBoxItem x:Name="LayerSwitchModeTabItem" Content="⌨️ Tab 键切换" Tag="Tab" />
                     </ComboBox>
-                  </StackPanel>
+                  </WrapPanel>
                 </Border>
-              </StackPanel>
+              </WrapPanel>
 
               <TextBlock Name="GesturesPageSubheader" Text="支持针对不同前台应用程序设置专属的多向手势轮盘、按键动作、中心核圆与级联子动作。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
             </StackPanel>

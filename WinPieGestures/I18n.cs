@@ -1321,8 +1321,17 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("AddLayerBtnToolTip", "新增一层独立轮盘配置（支持无限多层）", "新增一層獨立輪盤設定（支援無限多層）", "Add a new independent wheel layer (unlimited layers supported)", "新しい独立したホイールレイヤーを追加（無制限）");
 		Add("CopyLayerBtnText", "📑 复制", "📑 複製", "📑 Copy", "📑 複製");
 		Add("CopyLayerBtnToolTip", "复制当前层的所有扇区动作与中心核圆到新层", "複製目前層的所有扇區動作與中心核圓至新層", "Copy all sector actions and center core of current layer to a new layer", "現在のレイヤーの全セクターアクションと中心コアを新規レイヤーに複製");
+		Add("CopyLayerNameFmt", "{0} - 副本", "{0} - 複本", "{0} - Copy", "{0} - コピー");
+		Add("RenameLayerBtnText", "✏️ 重命名", "✏️ 重新命名", "✏️ Rename", "✏️ 名前の変更");
 		Add("RenameLayerBtnToolTip", "重命名当前轮盘层", "重新命名目前輪盤層", "Rename current wheel layer", "現在のホイールレイヤーの名前を変更");
+		Add("RenameLayerTitle", "重命名轮盘层", "重新命名輪盤層", "Rename Wheel Layer", "ホイールレイヤー名の変更");
+		Add("RenameLayerPrompt", "请输入当前轮盘层的新名称（例如：办公快捷 / 浏览器 / 建模）：", "請輸入目前輪盤層的新名稱（例如：辦公快捷 / 瀏覽器 / 建模）：", "Enter a new name for the current wheel layer (e.g., Office / Browser / Modeling):", "現在のホイールレイヤーの新しい名前を入力してください（例：オフィス / ブラウザ / モデリング）：");
+		Add("RenameLayerEmptyError", "层名称不能为空！", "層名稱不能為空！", "Layer name cannot be empty.", "レイヤー名を入力してください。");
+		Add("DeleteLayerBtnText", "🗑️ 删除", "🗑️ 刪除", "🗑️ Delete", "🗑️ 削除");
 		Add("DeleteLayerBtnToolTip", "删除当前轮盘层（至少保留一层）", "刪除目前輪盤層（至少保留一層）", "Delete current wheel layer (at least one layer must be kept)", "現在のホイールレイヤーを削除（最低1レイヤー保持）");
+		Add("DeleteLayerMinError", "至少需要保留一个轮盘层！", "至少需要保留一個輪盤層！", "At least one wheel layer must be kept.", "少なくとも1つのホイールレイヤーを残す必要があります。");
+		Add("DeleteLayerConfirmTitle", "确认删除轮盘层", "確認刪除輪盤層", "Confirm Layer Deletion", "ホイールレイヤー削除の確認");
+		Add("DeleteLayerConfirmMessage", "确定要删除「{0}」吗？删除后该层配置将无法恢复。", "確定要刪除「{0}」嗎？刪除後該層設定將無法復原。", "Are you sure you want to delete \"{0}\"? This layer's settings cannot be recovered.", "「{0}」を削除してもよろしいですか？削除するとこのレイヤーの設定は元に戻せません。");
 		Add("LayerSwitchTriggerLabel", "🔄 切换:", "🔄 切換:", "🔄 Switch:", "🔄 切替:");
 		Add("LayerSwitchTriggerComboBoxToolTip", "多层轮盘切换方式：支持鼠标滚轮上下滑动切换或 Tab 键循环切换", "多層輪盤切換方式：支援滑鼠滾輪上下滾動切換或 Tab 鍵循環切換", "Multi-layer wheel switching method: switch via mouse wheel scroll or Tab key cycle", "マルチレイヤー切替方式：マウスホイールの上下スクロールまたはTabキー巡回切替");
 		Add("LayerSwitchModeScroll", "🖱️ 滚轮切换", "🖱️ 滾輪切換", "🖱️ Wheel Scroll", "🖱️ マウスホイール");
