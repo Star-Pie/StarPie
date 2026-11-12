@@ -1565,7 +1565,10 @@ public partial class RadialWindow : Window
 			ApplyLayerIndicatorStyle();
 
 			WheelLayer curLayer = _profile.Layers[layerIndex];
-			LayerIndicatorText.Text = $"{curLayer.Name} ({layerIndex + 1}/{_profile.Layers.Count})";
+			string layerName = string.IsNullOrWhiteSpace(curLayer.DisplayName)
+				? string.Format(I18n.T("WheelLayerFmt"), layerIndex + 1)
+				: curLayer.DisplayName;
+			LayerIndicatorText.Text = $"{layerName} ({layerIndex + 1}/{_profile.Layers.Count})";
 			LayerIndicatorBadge.Visibility = Visibility.Visible;
 
 			_layerBadgeStoryboard?.Stop();

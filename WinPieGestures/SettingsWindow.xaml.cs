@@ -3298,8 +3298,11 @@ public partial class SettingsWindow : Window
 		if (Tab2LayerLabel != null) Tab2LayerLabel.Text = I18n.T("LayerLabel");
 		if (AddLayerBtn != null) { AddLayerBtn.Content = I18n.T("AddLayerBtnText"); AddLayerBtn.ToolTip = I18n.T("AddLayerBtnToolTip"); }
 		if (CopyLayerBtn != null) { CopyLayerBtn.Content = I18n.T("CopyLayerBtnText"); CopyLayerBtn.ToolTip = I18n.T("CopyLayerBtnToolTip"); }
-		if (RenameLayerBtn != null) RenameLayerBtn.ToolTip = I18n.T("RenameLayerBtnToolTip");
+		if (RenameLayerBtn != null) { RenameLayerBtn.Content = I18n.T("RenameLayerBtnText"); RenameLayerBtn.ToolTip = I18n.T("RenameLayerBtnToolTip"); }
 		if (DeleteLayerBtn != null) DeleteLayerBtn.ToolTip = I18n.T("DeleteLayerBtnToolTip");
+		if (LayerCtxRenameMenuItem != null) LayerCtxRenameMenuItem.Header = I18n.T("RenameLayerBtnText");
+		if (LayerCtxCopyMenuItem != null) LayerCtxCopyMenuItem.Header = I18n.T("CopyLayerBtnText");
+		if (LayerCtxDeleteMenuItem != null) LayerCtxDeleteMenuItem.Header = I18n.T("DeleteLayerBtnText");
 		if (LayerSwitchTriggerLabel != null) LayerSwitchTriggerLabel.Text = I18n.T("LayerSwitchTriggerLabel");
 		if (LayerSwitchTriggerComboBox != null) LayerSwitchTriggerComboBox.ToolTip = I18n.T("LayerSwitchTriggerComboBoxToolTip");
 		if (LayerSwitchModeScrollItem != null) LayerSwitchModeScrollItem.Content = I18n.T("LayerSwitchModeScroll");
@@ -3598,7 +3601,9 @@ public partial class SettingsWindow : Window
 			int curLayerIdx = LayerSelectComboBox.SelectedIndex;
 			LayerSelectComboBox.ItemsSource = null;
 			LayerSelectComboBox.ItemsSource = _selectedProfile.Layers;
-			LayerSelectComboBox.SelectedIndex = curLayerIdx >= 0 ? curLayerIdx : 0;
+			int safeIdx = curLayerIdx >= 0 && curLayerIdx < _selectedProfile.Layers.Count ? curLayerIdx : 0;
+			LayerSelectComboBox.SelectedIndex = safeIdx;
+			LayerSelectComboBox.ToolTip = _selectedProfile.Layers.Count > 0 ? _selectedProfile.Layers[safeIdx].DisplayName : null;
 		}
 		RefreshConfigProfilesUi();
 		ReloadThemePresets();
@@ -5370,10 +5375,16 @@ public partial class SettingsWindow : Window
 				LayerSelectComboBox.ItemsSource = _selectedProfile.Layers;
 				int targetIdx = Math.Clamp(_selectedProfile.ActiveLayerIndex, 0, _selectedProfile.Layers.Count - 1);
 				LayerSelectComboBox.SelectedIndex = targetIdx;
+				LayerSelectComboBox.ToolTip = _selectedProfile.Layers[targetIdx].DisplayName;
 			}
+			bool canDeleteLayer = _selectedProfile.Layers.Count > 1;
 			if (DeleteLayerBtn != null)
 			{
-				DeleteLayerBtn.IsEnabled = (_selectedProfile.Layers.Count > 1);
+				DeleteLayerBtn.IsEnabled = canDeleteLayer;
+			}
+			if (LayerCtxDeleteMenuItem != null)
+			{
+				LayerCtxDeleteMenuItem.IsEnabled = canDeleteLayer;
 			}
 			UpdateLayerSwitchTriggerUi();
 		}
@@ -5394,6 +5405,7 @@ public partial class SettingsWindow : Window
 		_selectedProfile.SyncActiveLayerFromRootProperties();
 		_selectedProfile.ActiveLayerIndex = newIdx;
 		_selectedProfile.SyncRootPropertiesFromActiveLayer();
+		LayerSelectComboBox.ToolTip = _selectedProfile.Layers[newIdx].DisplayName;
 		RefreshProfileActivationUi();
 
 		bool oldUpdating = _isUpdatingUi;
@@ -5417,11 +5429,25 @@ public partial class SettingsWindow : Window
 			_isUpdatingUi = oldUpdating;
 		}
 
+		bool canDeleteLayer = _selectedProfile.Layers.Count > 1;
 		if (DeleteLayerBtn != null)
 		{
-			DeleteLayerBtn.IsEnabled = (_selectedProfile.Layers.Count > 1);
+			DeleteLayerBtn.IsEnabled = canDeleteLayer;
+		}
+		if (LayerCtxDeleteMenuItem != null)
+		{
+			LayerCtxDeleteMenuItem.IsEnabled = canDeleteLayer;
 		}
 		ScheduleAutoSave();
+	}
+
+	private void LayerSelectComboBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+	{
+		if (e.Key == Key.F2)
+		{
+			RenameLayerBtn_Click(sender, e);
+			e.Handled = true;
+		}
 	}
 
 	private void AddLayerBtn_Click(object sender, RoutedEventArgs e)
@@ -5430,7 +5456,7 @@ public partial class SettingsWindow : Window
 		_selectedProfile.EnsureLayers();
 		_selectedProfile.SyncActiveLayerFromRootProperties();
 
-		int nextNum = _selectedProfile.Layers.Count + 1;
+		int nextNum = WheelLayer.GetNextDefaultLayerNumber(_selectedProfile.Layers);
 		int sectorCount = _selectedProfile.SectorCount is 4 or 8 or 12 ? _selectedProfile.SectorCount : 8;
 		WheelLayer newLayer = new WheelLayer
 		{
@@ -5487,7 +5513,7 @@ public partial class SettingsWindow : Window
 
 		WheelLayer curLayer = _selectedProfile.GetActiveLayer();
 		WheelLayer clonedLayer = curLayer.Clone();
-		clonedLayer.Name = $"{curLayer.Name} - 副本";
+		clonedLayer.Name = I18n.TF("CopyLayerNameFmt", curLayer.DisplayName);
 		if (ProfileTriggerRouter.GetLayerTrigger(_selectedProfile, curLayer) != null)
 		{
 			if (AppMessageBox.Show(this, I18n.T("LayerActivationCopyConflict"), I18n.T("ProfileActivationRecord"),
@@ -5531,16 +5557,21 @@ public partial class SettingsWindow : Window
 		_selectedProfile.EnsureLayers();
 
 		WheelLayer curLayer = _selectedProfile.GetActiveLayer();
-		InputDialog dlg = new InputDialog("重命名轮盘层", "请输入当前轮盘层的新名称（例如：办公快捷 / 浏览器 / 建模）：", curLayer.Name, input =>
-		{
-			if (string.IsNullOrWhiteSpace(input)) return (false, "层名称不能为空！");
-			return (true, "");
-		});
+		InputDialog dlg = new InputDialog(
+			I18n.T("RenameLayerTitle"),
+			I18n.T("RenameLayerPrompt"),
+			curLayer.DisplayName,
+			input =>
+			{
+				if (string.IsNullOrWhiteSpace(input)) return (false, I18n.T("RenameLayerEmptyError"));
+				return (true, "");
+			});
 		dlg.Owner = this;
 		if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.InputText))
 		{
 			curLayer.Name = dlg.InputText.Trim();
 			RefreshLayersUi();
+			UpdateLayerIndicatorPreview();
 			ScheduleAutoSave();
 		}
 	}
@@ -5552,13 +5583,18 @@ public partial class SettingsWindow : Window
 
 		if (_selectedProfile.Layers.Count <= 1)
 		{
-			AppMessageBox.Show("至少需要保留一个轮盘层！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, I18n.T("DeleteLayerMinError"), I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
 		int curIdx = _selectedProfile.ActiveLayerIndex;
 		WheelLayer layerToDelete = _selectedProfile.Layers[curIdx];
-		var result = AppMessageBox.Show($"确定要删除「{layerToDelete.Name}」吗？删除后该层配置将无法恢复。", "确认删除轮盘层", MessageBoxButton.YesNo, MessageBoxImage.Question);
+		var result = AppMessageBox.Show(
+			this,
+			I18n.TF("DeleteLayerConfirmMessage", layerToDelete.DisplayName),
+			I18n.T("DeleteLayerConfirmTitle"),
+			MessageBoxButton.YesNo,
+			MessageBoxImage.Question);
 		if (result == MessageBoxResult.Yes)
 		{
 			_selectedProfile.Layers.RemoveAt(curIdx);
@@ -13765,7 +13801,15 @@ public partial class SettingsWindow : Window
 			totalLayers = config.Profiles[0].Layers.Count;
 		}
 		int showLayer = Math.Min(2, Math.Max(1, totalLayers));
-		PreviewLayerIndicatorText.Text = string.Format(I18n.T("PreviewLayerFormat") ?? "第 {0} 层 ({0}/{1})", showLayer, Math.Max(2, totalLayers));
+		if (_selectedProfile?.Layers != null && _selectedProfile.Layers.Count >= 2 && showLayer - 1 < _selectedProfile.Layers.Count)
+		{
+			string layerName = _selectedProfile.Layers[showLayer - 1].DisplayName;
+			PreviewLayerIndicatorText.Text = $"{layerName} ({showLayer}/{totalLayers})";
+		}
+		else
+		{
+			PreviewLayerIndicatorText.Text = string.Format(I18n.T("PreviewLayerFormat") ?? "第 {0} 层 ({0}/{1})", showLayer, Math.Max(2, totalLayers));
+		}
 
 		if (string.Equals(config.LayerIndicatorStyle, "FollowTheme", StringComparison.OrdinalIgnoreCase))
 		{
