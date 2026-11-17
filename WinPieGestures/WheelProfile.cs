@@ -9,6 +9,31 @@ public class WheelProfile : INotifyPropertyChanged
 	private string _processName = "Global";
 	private string? _displayName;
 	private string? _boundProcesses;
+	private bool _useApplicationContext = true;
+
+	/// <summary>Missing on legacy profiles means application-scoped routing.</summary>
+	public bool UseApplicationContext
+	{
+		get => _useApplicationContext;
+		set
+		{
+			if (_useApplicationContext == value) return;
+			_useApplicationContext = value;
+			OnPropertyChanged(nameof(UseApplicationContext));
+			OnPropertyChanged(nameof(DisplayTitle));
+				OnPropertyChanged(nameof(FriendlyName));
+		}
+	}
+
+	/// <summary>An explicitly cleared list must not reactivate the legacy name fallback.</summary>
+	public bool HasExplicitProcessBindings { get; set; }
+
+	/// <summary>Optional local icon hint, loaded only by the settings UI.</summary>
+	public string? ApplicationIconPath { get; set; }
+
+	[System.Text.Json.Serialization.JsonIgnore]
+	public string FriendlyName => !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName.Trim() :
+		string.Equals(ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ? I18n.T("GlobalProfileDefault") : ProcessName;
 
 	public string ProcessName
 	{
@@ -21,6 +46,7 @@ public class WheelProfile : INotifyPropertyChanged
 				OnPropertyChanged(nameof(ProcessName));
 				OnPropertyChanged(nameof(DisplayName));
 				OnPropertyChanged(nameof(DisplayTitle));
+				OnPropertyChanged(nameof(FriendlyName));
 			}
 		}
 	}
@@ -36,6 +62,7 @@ public class WheelProfile : INotifyPropertyChanged
 				_displayName = value;
 				OnPropertyChanged(nameof(DisplayName));
 				OnPropertyChanged(nameof(DisplayTitle));
+				OnPropertyChanged(nameof(FriendlyName));
 			}
 		}
 	}
@@ -51,6 +78,7 @@ public class WheelProfile : INotifyPropertyChanged
 				_boundProcesses = value;
 				OnPropertyChanged(nameof(BoundProcesses));
 				OnPropertyChanged(nameof(DisplayTitle));
+				OnPropertyChanged(nameof(FriendlyName));
 			}
 		}
 	}
@@ -69,8 +97,9 @@ public class WheelProfile : INotifyPropertyChanged
 		{
 			if (string.Equals(ProcessName, "Global", StringComparison.OrdinalIgnoreCase))
 			{
-				return $"🌐 {I18n.T("GlobalProfileDefault")}";
+				return $"🌐 {FriendlyName}";
 			}
+			if (!UseApplicationContext) return $"🌐 {FriendlyName} · {I18n.T("ParallelProfileMode")}";
 			string name = !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName.Trim() : ProcessName.Trim();
 			string procs = !string.IsNullOrWhiteSpace(BoundProcesses) ? BoundProcesses.Trim() : ProcessName.Trim();
 			if (string.Equals(name, procs, StringComparison.OrdinalIgnoreCase))
@@ -98,6 +127,19 @@ public class WheelProfile : INotifyPropertyChanged
 	public int ActiveLayerIndex { get; set; } = 0;
 
 	public event PropertyChangedEventHandler? PropertyChanged;
+
+	internal bool RemoveLayer(WheelLayer layer)
+	{
+		int index = Layers.IndexOf(layer);
+		if (index < 0 || Layers.Count <= 1) return false;
+		// The legacy scheme trigger belonged to the original first layer. Deleting
+		// that layer must not silently transfer a hidden trigger to its successor.
+		if (index == 0) ActivationTrigger = null;
+		Layers.RemoveAt(index);
+		ActiveLayerIndex = Math.Clamp(ActiveLayerIndex - (index <= ActiveLayerIndex ? 1 : 0), 0, Layers.Count - 1);
+		SyncRootPropertiesFromActiveLayer();
+		return true;
+	}
 
 	protected void OnPropertyChanged(string propertyName)
 	{
@@ -261,7 +303,10 @@ public class WheelProfile : INotifyPropertyChanged
 		{
 			ProcessName = newProcessName,
 			DisplayName = newDisplayName ?? this.DisplayName,
-			BoundProcesses = newBoundProcesses ?? (!string.IsNullOrWhiteSpace(this.BoundProcesses) ? this.BoundProcesses : (string.Equals(this.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ? "" : this.ProcessName)),
+			BoundProcesses = newBoundProcesses ?? (this.HasExplicitProcessBindings ? this.BoundProcesses : (!string.IsNullOrWhiteSpace(this.BoundProcesses) ? this.BoundProcesses : (string.Equals(this.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ? "" : this.ProcessName))),
+			UseApplicationContext = this.UseApplicationContext,
+			HasExplicitProcessBindings = this.HasExplicitProcessBindings,
+			ApplicationIconPath = this.ApplicationIconPath,
 			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
 			EnableCenterAction = this.EnableCenterAction,

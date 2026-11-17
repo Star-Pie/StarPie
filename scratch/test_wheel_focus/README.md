@@ -19,12 +19,12 @@
 
 ### 3.1 编译
 ```pwsh
-dotnet build .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Release --no-restore --nologo
+dotnet build .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Release --nologo -p:StarPieCandidateDir="<本轮时间戳候选目录>" -p:OutDir="<独立测试输出目录>\\"
 ```
 
 ### 3.2 执行全量测试
 ```pwsh
-dotnet run --project .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Release --no-build -- --test-instance
+dotnet "<独立测试输出目录>\test_wheel_focus.dll" "<本轮时间戳候选目录>" --test-instance
 ```
 
 ## 4. 测试用例矩阵 (22 场景)
@@ -45,7 +45,9 @@ dotnet run --project .\scratch\test_wheel_focus\test_wheel_focus.csproj -c Relea
 15. **Scenario 15**: 非鼠标触发保持原有行为无副作用。
 16. **Scenario 16**: 受控 Mock Shell 激活兜底。
 17. **Scenario 17**: 保守激活安全性（禁止 Alt 伪按键注入或 Topmost 篡改）。
-18. **Scenario 18**: `ReleaseStuckModifiers` 测试接缝覆盖率验证（证明无真实输入穿透）。
+18. **Scenario 18**: 取消与销毁轮盘不释放该会话没有按下的修饰键；保留释放切缝，意外调用会被记录并导致失败。
+
+当前测试显式绑定候选并核对实际加载 DLL 的 SHA-256，不通过 ProjectReference 偷建宿主。焦点夹具在设置方案后初始化层身份，路由夹具在配置变化后发布快照，并提供实际存在的方案；这些前置条件与当前生产会话一致。修正前四项焦点失败在原始发布行为上同样存在，未修改产品路由以迎合夹具。修正后观测基线仅“不得全局松键”一项失败，修复候选 22 项通过。
 
 ## 5. 变异测试检验 (Red -> Green)
 - **变异点 1 (R2 快照不可变性)**：在 `WinPieGestures/ActionExecutor.cs` 中的 `EnqueueAction`，若移除 `action.Clone()` 直接入队原对象。

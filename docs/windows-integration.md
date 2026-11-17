@@ -14,6 +14,14 @@
 - 连续文本或多位数字优先使用 `KEYEVENTF_UNICODE` 字符流，避免输入法布局干扰。
 - 自动测试不得向真实前台窗口发送输入；使用纯函数、假服务或空值短路探针。
 
+### 宏与修饰键收尾
+
+- 普通轮盘确认、取消和窗口收尾不全局补发 Alt/Ctrl/Shift/Win 抬起。按键动作只释放本步已确认按下且尚未释放的键；正常成功后不再用第二输入通道或脱离生命周期的延迟任务重复释放。
+- 热键整次调用、文字和单键发送在宿主受控路径中共用同步门，避免后台插件直接调用输入服务时与动作队列交错；该门不协调插件自行 P/Invoke 或其他进程注入。
+- SendInput 未完整接收输入时中止后续热键步骤，仅同步补偿已确认的按下。私有面板仍用脱敏日志，但失败须传回队列消费者，不能因捕获异常而误报成功。
+- 已按下的修饰键用于组合键时不由当前动作释放；单独修饰键轻敲遇到已有按下状态则拒绝。GetAsyncKeyState 不是物理来源证明，最后检查后的状态变化、AltGr、权限和真实目标窗口仍需人工验收。
+- 宏 KEY/HOTKEY 发送按键，TEXT 保持 Unicode 文字输入；输入 AE 成功不等于菜单收到了依次 A/E 按键。候选与验证边界见 [宏输入与 Alt 干扰修复](plans/macro-alt-input-repair.md)。
+
 ## 全屏与场景隔离
 
 - `Progman`、`WorkerW`、`SHELLDLL_DefView`、`SysListView32`、`Shell_TrayWnd`、`Shell_SecondaryTrayWnd` 不是需要拦截的独占全屏应用。
@@ -88,3 +96,10 @@
 - 启动日志 `Startup phase=... elapsed_ms=...` 从 `OnStartup` 进入时开始累计，分为 ConfigurationReady、InputReady（双钩子与控制器均已构造）、TrayReady、HostReady、PluginCatalogReady。目录就绪不代表插件已预加载；这些标记不代表Windows登录调度延迟或首次轮盘呈现耗时。
 - `scratch/startup-baseline-tests` 用候选绑定的隔离配置回放入口IL中的配置调用，不执行整个OnStartup、钩子、托盘或GUI；比较重复加载成本，不能替代完整冷启动实测。
 - 同目录 `Sample-Memory.ps1` 只读采样指定PID并核对创建时间，可绑定候选EXE路径；分别记录总/私有工作集与Private Bytes，不请求GC或工作集裁剪。ManagedLiveHeapBytes为空表示未取得托管存活堆，不能据此排除或认定泄漏。
+
+## 左键长按和零延时
+
+- 启用长按后，左键在等待阶段移动继续计时，不因位移提前呼出；到时仍沿用原有中心策略呼出。用户明确选择该语义，本轮不实现原生拖拽交接。已打开轮盘仍允许移动选项，其他触发键及全局“仅长按”保留既有交互。
+- 0 ms 不设置额外等待：同步认领输入会话，层、中心和DPI在活动状态发布前确定；产品窗口仍由Dispatcher构造和呈现。快速抬起不能因为线程池排队而补发普通点击。0 ms 不能再按等待时长区分同一按键的普通点击与触发。
+- 取消保留已经拦截Down的鼠标Up所有权，通过原始输入通道或暂停时的释放排空消费一次；不能泄漏孤立Up，也不能吞掉后续未接管的Up。
+- 专项验证见 scratch/longpress-trigger-tests。假输入/计时与安全自检不替代真实钩子、DPI、定格点击和系统验收。

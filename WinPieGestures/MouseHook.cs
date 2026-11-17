@@ -527,9 +527,16 @@ public class MouseHook
 		}
 	}
 
+	internal Action<string>? ReplayTriggerClickOverride { get; set; }
+
 	public void ReplayTriggerClick(string? triggerButton = null)
 	{
 		string text = triggerButton ?? ConfigManager.CurrentConfig?.TriggerButton ?? "RightButton";
+		if (ReplayTriggerClickOverride is { } replay)
+		{
+			replay(text);
+			return;
+		}
 		nuint extra = (nuint)StarPieExtraInfo;
 		switch (text)
 		{

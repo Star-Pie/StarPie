@@ -196,6 +196,7 @@ public static class ConfigManager
 		{
 			currentConfig.ActiveConfigProfileName = "默认配置";
 		}
+		currentConfig.ProfileQuickSwitchDisplayMode = ProfilePresentation.NormalizeQuickSwitchDisplayMode(currentConfig.ProfileQuickSwitchDisplayMode);
 		if (currentConfig.BlacklistedProcesses == null)
 		{
 			currentConfig.BlacklistedProcesses = new List<string> { "mstsc.exe", "paint.exe" };
@@ -526,58 +527,9 @@ public static class ConfigManager
 
 	internal static bool IsProfileBoundToProcess(WheelProfile profile, string cleanProc, string cleanBase)
 	{
-		if (profile == null) return false;
-		if (string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase)) return false;
-
-		// 检查 BoundProcesses 字段（支持逗号/分号/竖线/空格/中文逗号分隔多个进程）
-		if (!string.IsNullOrWhiteSpace(profile.BoundProcesses))
-		{
-			string[] tokens = profile.BoundProcesses.Split(new[] { ',', ';', '|', ' ', '，' }, StringSplitOptions.RemoveEmptyEntries);
-			foreach (string token in tokens)
-			{
-				string target = token.Trim().ToLowerInvariant();
-				string targetBase = target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-					? target.Substring(0, target.Length - 4)
-					: target;
-
-				if (target == cleanProc || targetBase == cleanBase)
-				{
-					return true;
-				}
-			}
-			// 当用户显式配置了 BoundProcesses 时，绑定关系以 BoundProcesses 为准，不再回退 ProcessName/DisplayName
-			return false;
-		}
-
-		// 旧配置未填写 BoundProcesses 时的兼容行为：回退检查 ProcessName
-		if (!string.IsNullOrWhiteSpace(profile.ProcessName))
-		{
-			string pProc = profile.ProcessName.Trim().ToLowerInvariant();
-			string pBase = pProc.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-				? pProc.Substring(0, pProc.Length - 4)
-				: pProc;
-
-			if (pProc == cleanProc || pBase == cleanBase)
-			{
-				return true;
-			}
-		}
-
-		// 检查 DisplayName 字段（若用户在旧版本将显示名称直接设为了目标程序名或进程名）
-		if (!string.IsNullOrWhiteSpace(profile.DisplayName))
-		{
-			string dProc = profile.DisplayName.Trim().ToLowerInvariant();
-			string dBase = dProc.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-				? dProc.Substring(0, dProc.Length - 4)
-				: dProc;
-
-			if (dProc == cleanProc || dBase == cleanBase)
-			{
-				return true;
-			}
-		}
-
-		return false;
+		if (profile == null || !profile.UseApplicationContext ||
+			string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase)) return false;
+		return ProfileProcessBindings.GetNames(profile).Contains(cleanBase);
 	}
 
 	public static WheelProfile GetGlobalProfile()
@@ -1101,6 +1053,18 @@ public static class ConfigManager
 	{
 		importedName = "";
 		if (!File.Exists(externalFilePath)) return false;
+		try
+		{
+			return ImportExternalConfigJson(File.ReadAllText(externalFilePath),
+				preferredName ?? Path.GetFileNameWithoutExtension(externalFilePath), out importedName);
+		}
+		catch (Exception ex) { AppLogger.LogError("Failed to read imported configuration", ex); return false; }
+	}
+
+	public static bool ImportExternalConfigJson(string json, string? preferredName, out string importedName)
+	{
+		importedName = "";
+		string? createdFile = null;
 
 		try
 		{
@@ -1110,11 +1074,11 @@ public static class ConfigManager
 				AllowTrailingCommas = true,
 				ReadCommentHandling = JsonCommentHandling.Skip
 			};
-			AppConfig? loaded = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(externalFilePath), options);
+			AppConfig? loaded = JsonSerializer.Deserialize<AppConfig>(json, options);
 			if (loaded == null) return false;
 
 			EnsureConfigsFolder();
-			string baseName = !string.IsNullOrWhiteSpace(preferredName) ? preferredName : Path.GetFileNameWithoutExtension(externalFilePath);
+			string baseName = !string.IsNullOrWhiteSpace(preferredName) ? preferredName : "Imported";
 			baseName = CleanFileName(baseName);
 			if (string.IsNullOrWhiteSpace(baseName)) baseName = "导入方案";
 
@@ -1129,19 +1093,31 @@ public static class ConfigManager
 			EnsureConfigHealth(loaded);
 
 			string targetFile = Path.Combine(ConfigsFolder, $"{targetName}.json");
+			createdFile = targetFile;
 			JsonSerializerOptions saveOpts = new JsonSerializerOptions { WriteIndented = true };
 			WriteTextAtomically(targetFile, JsonSerializer.Serialize(loaded, saveOpts));
 
-			if (!SwitchToConfig(targetName))
+			AppConfig previous = CurrentConfig;
+			CurrentConfig = loaded;
+			if (!SaveConfig(allowOverwriteFallback: true))
 			{
+				CurrentConfig = previous;
+				MarkConfigurationChanged();
+				File.Delete(targetFile);
 				return false;
 			}
+			// Persistence is committed at this point. A presentation subscriber must
+			// not turn a successful import into a resource rollback.
+			try { I18n.SetLanguage(CurrentConfig.Language); }
+			catch (Exception presentation) { AppLogger.LogError("Failed to refresh imported configuration language", presentation); }
+			MarkConfigurationChanged();
 			importedName = targetName;
 			return true;
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError($"Failed to import external config '{externalFilePath}'", ex);
+			AppLogger.LogError("Failed to import external configuration", ex);
+			if (createdFile != null) { try { File.Delete(createdFile); } catch (Exception cleanup) { AppLogger.LogError("Failed to roll back imported configuration", cleanup); } }
 			return false;
 		}
 	}
@@ -1166,6 +1142,16 @@ public static class ConfigManager
 			AppLogger.LogError($"Failed to export config '{profileName}' to '{targetFilePath}'", ex);
 			return false;
 		}
+	}
+
+	public static string GetConfigJsonForExport(string profileName)
+	{
+		string clean = CleanFileName(profileName);
+		string profileFile = Path.Combine(ConfigsFolder, $"{clean}.json");
+		if (!string.Equals(CurrentConfig?.ActiveConfigProfileName, clean, StringComparison.OrdinalIgnoreCase) && File.Exists(profileFile))
+			return File.ReadAllText(profileFile);
+		foreach (var profile in CurrentConfig.Profiles) profile?.SyncRootPropertiesFromActiveLayer();
+		return JsonSerializer.Serialize(CurrentConfig, new JsonSerializerOptions { WriteIndented = true });
 	}
 
 	public static string CleanFileName(string fileName)

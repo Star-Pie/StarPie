@@ -885,11 +885,16 @@ internal static class Program
         {
             Assert(ActionExecutor.InputPanelHotkeyExecutionOverride != null,
                 "Private hotkey fake seam must be installed before reflection execution.");
-            executeCore.Invoke(null, [action, context]);
+            bool failed = false;
+            try { executeCore.Invoke(null, [action, context]); }
+            catch (TargetInvocationException ex) when (ex.InnerException is InvalidOperationException) { failed = true; }
+            Assert(failed, "Private ExecuteCore must propagate failure to its queue consumer.");
             Equal(1, fakeCalls, "The private hotkey exception fixture must reach the fake once.");
 
+            ActionExecutor.ActionExecutionOverride = null;
             Assert(!ActionExecutor.ProcessActionEnvelope(new ActionEnvelope(action, context)),
-                "A plugin-target envelope exception must be isolated and return false.");
+                "An actual private ExecuteCore failure must be isolated and return false.");
+            Equal(2, fakeCalls, "The queued private failure must reach the hotkey sender as well.");
         }
         finally
         {

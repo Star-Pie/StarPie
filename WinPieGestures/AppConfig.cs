@@ -46,8 +46,13 @@ public class AppConfig
 	/// <summary>仅在长按呼出启用时生效，禁用位移呼出与独立鼠标手势；保留当前光标处的长按呼出和插件呼出。</summary>
 	public bool LongPressOnlyTrigger { get; set; }
 
-	/// <summary>长按响应时长（毫秒）。</summary>
+	/// <summary>长按响应时长（毫秒）；0 表示无额外等待。</summary>
 	public double LongPressDelayMs { get; set; } = 450.0;
+
+	internal double EffectiveLongPressDelayMs =>
+		double.IsFinite(LongPressDelayMs) && LongPressDelayMs >= 0
+			? LongPressDelayMs
+			: 450.0;
 
 	// ---- 鼠标手势（画轨迹识别，最多三段图样）----
 	public bool GestureEnabled { get; set; }
@@ -133,6 +138,9 @@ public class AppConfig
 
 	/// <summary>当前正在使用的配置方案名称（如 "默认配置"、"CAD建模方案" 等），对应 AppData/Configs/<Name>.json。</summary>
 	public string ActiveConfigProfileName { get; set; } = "默认配置";
+
+	/// <summary>配置快捷切换条显示方式："IconAndText"（图标和文字，默认）、"TextOnly"（仅文字）、"IconOnly"（仅图标）。</summary>
+	public string ProfileQuickSwitchDisplayMode { get; set; } = "IconAndText";
 
 
 	public double SubWheelRadiusRatio { get; set; } = 1.55;

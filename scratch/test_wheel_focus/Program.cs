@@ -29,6 +29,14 @@ internal static class Program
 			Console.WriteLine("[ERROR] Test runner must be executed with --test-instance argument!");
 			return 1;
 		}
+		string? candidate = args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
+		if (candidate == null || !File.Exists(Path.Combine(candidate, "StarPie.dll")) ||
+			!System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(Path.Combine(candidate, "StarPie.dll")))
+			.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(typeof(ActionExecutor).Assembly.Location))))
+		{
+			Console.WriteLine("[ERROR] Explicit candidate directory must match the loaded host SHA256.");
+			return 1;
+		}
 
 		// 2. 在触碰 ConfigManager、AppLogger 等类型之前设置独立临时 LOCALAPPDATA
 		_testIsolatedDataDir = Path.Combine(Path.GetTempPath(), "StarPie_Focus_Test_" + Guid.NewGuid().ToString("N"));
@@ -85,7 +93,7 @@ internal static class Program
 		RunTest("Scenario 15: Non-mouse triggers remain side-effect free", TestNonMouseTriggersUntouched);
 		RunTest("Scenario 16: Controlled mock Shell surface fallback", TestShellSurfaceControlledMock);
 		RunTest("Scenario 17: Conservative activation safety (no Alt / no Topmost tampering)", TestConservativeActivationSafety);
-		RunTest("Scenario 18: ReleaseStuckModifiers test seam coverage", TestReleaseStuckModifiersSeamCoverage);
+		RunTest("Scenario 18: Wheel cancellation preserves unrelated modifiers", TestReleaseStuckModifiersSeamCoverage);
 		RunTest("Scenario 19: Picker and runtime share process identity and path", TestSharedWindowProcessIdentity);
 		RunTest("Scenario 20: Failed process reads cannot become picker bindings", TestSharedWindowProcessFailures);
 		RunTest("Scenario 21: Component processes retain independent bindings", TestIndependentComponentProcessBindings);
@@ -128,6 +136,13 @@ internal static class Program
 	{
 		WheelFocusSwitcher.ResetTestSeams();
 		ActiveWindowHelper.ResetTestSeams();
+		ConfigManager.CurrentConfig = new AppConfig
+		{
+			Trigger = new TriggerConfig { TriggerType = "Mouse", MouseButton = "RightButton" },
+			GestureEnabled = true,
+			GestureTriggerButton = "MiddleButton"
+		};
+		ProfileTriggerRouter.Publish(ConfigManager.CurrentConfig);
 		lock (_executedActions)
 		{
 			_executedActions.Clear();
@@ -144,7 +159,7 @@ internal static class Program
 
 	private static WheelProfile CreateDummyProfile(string proc = "app_b.exe")
 	{
-		return new WheelProfile
+		var profile = new WheelProfile
 		{
 			ProcessName = proc,
 			DisplayName = "ProfileB",
@@ -153,6 +168,10 @@ internal static class Program
 				new ActionItem { Name = "ActionB_Sector0", Type = "Custom", Parameter = "TestB0" }
 			}
 		};
+		// Release resolves a captured layer identity; an uninitialized legacy root
+		// is not a live activation in current candidates.
+		profile.EnsureLayers();
+		return profile;
 	}
 
 	/// <summary>
@@ -683,6 +702,7 @@ internal static class Program
 			new WheelProfile { ProcessName = "foreground_a.exe", DisplayName = "ProfileA" },
 			new WheelProfile { ProcessName = "background_b.exe", DisplayName = "ProfileB" }
 		};
+		ProfileTriggerRouter.Publish(ConfigManager.CurrentConfig);
 
 		using var controller = new GestureController(new MouseHook(), null);
 
@@ -733,6 +753,11 @@ internal static class Program
 				MouseButton = "MiddleButton"
 			}
 		};
+		ConfigManager.CurrentConfig.Profiles = new List<WheelProfile>
+		{
+			CreateDummyProfile("Global"), CreateDummyProfile("special_cad.exe")
+		};
+		ProfileTriggerRouter.Publish(ConfigManager.CurrentConfig);
 
 		using var controller = new GestureController(new MouseHook(), null);
 
@@ -863,16 +888,16 @@ internal static class Program
 	}
 
 	/// <summary>
-	/// Scenario 18: ReleaseStuckModifiers 切缝覆盖验证
+	/// Scenario 18: 取消轮盘不得释放该会话没有按下的修饰键
 	/// </summary>
 	private static void TestReleaseStuckModifiersSeamCoverage()
 	{
 		int before = _releaseStuckModifiersCallCount;
-		using var controller = new GestureController(new MouseHook(), null);
-		controller.TestCancelGestureTracking();
+		using (var controller = new GestureController(new MouseHook(), null))
+			controller.TestCancelGestureTracking();
 		int after = _releaseStuckModifiersCallCount;
 
-		Assert(after > before, "CancelGestureTracking must invoke ReleaseStuckModifiers test seam!");
+		Assert(after == before, "Wheel cancellation and disposal must not release unrelated modifiers.");
 	}
 
 	private static void TestSharedWindowProcessIdentity()

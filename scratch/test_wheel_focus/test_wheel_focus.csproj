@@ -8,6 +8,10 @@
     <AssemblyName>test_wheel_focus</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" />
+    <Reference Include="StarPie"><HintPath>$(StarPieCandidateDir)\StarPie.dll</HintPath><Private>true</Private></Reference>
+    <Reference Include="StarPie.Plugin.Abstractions"><HintPath>$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll</HintPath><Private>true</Private></Reference>
   </ItemGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(StarPieCandidateDir)' == '' or !Exists('$(StarPieCandidateDir)\StarPie.dll')" Text="Pass an explicit timestamped StarPieCandidateDir; this test must not rebuild the host." />
+  </Target>
 </Project>

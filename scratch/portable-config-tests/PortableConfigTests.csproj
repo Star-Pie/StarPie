@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+    <EnableDefaultContentItems>false</EnableDefaultContentItems>
+    <AssemblyName>test_portable_config</AssemblyName>
+    <RootNamespace>PortableConfigTests</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <DefineConstants>$(DefineConstants);STARPIE_CANDIDATE_MODE</DefineConstants>
+  </PropertyGroup>
+
+  <!-- RAR treats None/Content as CandidateAssemblyFiles; keep stale test outputs out. -->
+  <ItemGroup>
+    <Compile Remove="obj\**\*.cs" />
+    <Compile Remove="obj-candidate-*\**\*.cs" />
+    <Compile Remove="artifacts\**\*.cs" />
+    <None Remove="artifacts\**" />
+    <None Remove="bin\**" />
+    <None Remove="build-out*\**" />
+    <None Remove="obj\**" />
+    <None Remove="obj-candidate-*\**" />
+    <None Remove="scratch\**" />
+    <Content Remove="artifacts\**" />
+    <Content Remove="bin\**" />
+    <Content Remove="build-out*\**" />
+    <Content Remove="obj\**" />
+    <Content Remove="obj-candidate-*\**" />
+    <Content Remove="scratch\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(StarPieCandidateDir)' == ''">
+    <Compile Include="..\..\WinPieGestures\PortableConfigBundle.cs" Link="PortableConfigBundle.cs" />
+    <Compile Include="..\..\WinPieGestures\SvgIconBatchImporter.cs" Link="SvgIconBatchImporter.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <Compile Remove="TestIconHelper.cs" />
+    <Reference Include="StarPie">
+      <HintPath>$(StarPieCandidateDir)\StarPie.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="StarPie.Plugin.Abstractions" Condition="Exists('$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll')">
+      <HintPath>$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

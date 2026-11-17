@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <PortableConfigCandidateDir>$([System.IO.Path]::TrimEndingDirectorySeparator('$(StarPieCandidateDir)'))</PortableConfigCandidateDir>
+    <PortableConfigCandidateName>$([System.IO.Path]::GetFileName('$(PortableConfigCandidateDir)'))</PortableConfigCandidateName>
+    <PortableConfigCandidateName Condition="'$(PortableConfigCandidateName)' == ''">candidate</PortableConfigCandidateName>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj-candidate-$(PortableConfigCandidateName)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)build-out-candidate-$(PortableConfigCandidateName)\</BaseOutputPath>
+  </PropertyGroup>
+</Project>

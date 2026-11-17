@@ -973,14 +973,7 @@ public partial class SettingsWindow : Window
 		{
 			LongPressOnlyTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressOnlyTrigger;
 		}
-		if (LongPressDelaySlider != null)
-		{
-			LongPressDelaySlider.Value = ConfigManager.CurrentConfig.LongPressDelayMs > 0.0 ? ConfigManager.CurrentConfig.LongPressDelayMs : 450.0;
-		}
-		if (LongPressDelayLabel != null)
-		{
-			LongPressDelayLabel.Text = $"{LongPressDelaySlider.Value:0} ms";
-		}
+		RefreshLongPressDelayControls();
 		UpdateLongPressTriggerControls();
 		if (GestureEnabledCheckBox != null)
 		{
@@ -1758,7 +1751,12 @@ public partial class SettingsWindow : Window
 		}
 
 		// 3. Tab 2 手势与动作: 隐藏平铺高级正则/间距卡片与紧凑全览列表分段切换
-		if (ProfileActivationPanel != null) ProfileActivationPanel.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
+		if (ProfileActivationPanel != null)
+		{
+			ProfileActivationPanel.Visibility = (!isSimple && MappingsViewModeListRadio?.IsChecked == true)
+				? Visibility.Visible
+				: Visibility.Collapsed;
+		}
 		RefreshProfileActivationUi();
 		if (ApplicationIdentificationPanel != null)
 		{
@@ -3298,8 +3296,11 @@ public partial class SettingsWindow : Window
 		if (Tab2LayerLabel != null) Tab2LayerLabel.Text = I18n.T("LayerLabel");
 		if (AddLayerBtn != null) { AddLayerBtn.Content = I18n.T("AddLayerBtnText"); AddLayerBtn.ToolTip = I18n.T("AddLayerBtnToolTip"); }
 		if (CopyLayerBtn != null) { CopyLayerBtn.Content = I18n.T("CopyLayerBtnText"); CopyLayerBtn.ToolTip = I18n.T("CopyLayerBtnToolTip"); }
-		if (RenameLayerBtn != null) RenameLayerBtn.ToolTip = I18n.T("RenameLayerBtnToolTip");
+		if (RenameLayerBtn != null) { RenameLayerBtn.Content = I18n.T("RenameLayerBtnText"); RenameLayerBtn.ToolTip = I18n.T("RenameLayerBtnToolTip"); }
 		if (DeleteLayerBtn != null) DeleteLayerBtn.ToolTip = I18n.T("DeleteLayerBtnToolTip");
+		if (LayerCtxRenameMenuItem != null) LayerCtxRenameMenuItem.Header = I18n.T("RenameLayerBtnText");
+		if (LayerCtxCopyMenuItem != null) LayerCtxCopyMenuItem.Header = I18n.T("CopyLayerBtnText");
+		if (LayerCtxDeleteMenuItem != null) LayerCtxDeleteMenuItem.Header = I18n.T("DeleteLayerBtnText");
 		if (LayerSwitchTriggerLabel != null) LayerSwitchTriggerLabel.Text = I18n.T("LayerSwitchTriggerLabel");
 		if (LayerSwitchTriggerComboBox != null) LayerSwitchTriggerComboBox.ToolTip = I18n.T("LayerSwitchTriggerComboBoxToolTip");
 		if (LayerSwitchModeScrollItem != null) LayerSwitchModeScrollItem.Content = I18n.T("LayerSwitchModeScroll");
@@ -3317,8 +3318,16 @@ public partial class SettingsWindow : Window
 		if (AddProfileCustomMenuItem != null) AddProfileCustomMenuItem.Header = I18n.T("AddProfileCustom");
 		if (RenameProfileBtn2 != null) { RenameProfileBtn2.Content = I18n.T("RenameProfileBtnText"); RenameProfileBtn2.ToolTip = I18n.T("RenameProfileBtnToolTip"); }
 		if (DeleteProfileBtn2 != null) DeleteProfileBtn2.ToolTip = I18n.T("DeleteProfileBtnToolTip");
-		if (GlobalProfileHintText != null) GlobalProfileHintText.Text = I18n.T("GlobalProfileHint");
-		if (ProfileBoundProcessesLabel != null) ProfileBoundProcessesLabel.Text = I18n.T("ProfileBoundProcessesLabel");
+		if (GlobalProfileHintText != null)
+		{
+			GlobalProfileHintText.Text = I18n.T("GlobalProfileShortHint");
+			GlobalProfileHintText.ToolTip = I18n.T("GlobalProfileHint");
+		}
+		if (ProfileBoundProcessesLabel != null)
+		{
+			ProfileBoundProcessesLabel.Text = I18n.T("ProfileApplicableAppsLabel");
+			ProfileBoundProcessesLabel.ToolTip = I18n.T("ProfileBoundProcessesHint");
+		}
 		if (ProfileBoundProcessesTextBox != null) ProfileBoundProcessesTextBox.ToolTip = I18n.T("ProfileBoundProcessesToolTip");
 		if (ProfileCaptureWindowBtn != null) { ProfileCaptureWindowBtn.Content = I18n.T("ProfileCaptureWindowBtnText"); ProfileCaptureWindowBtn.ToolTip = I18n.T("ProfileCaptureWindowBtnToolTip"); }
 		if (ProfilePickProgramBtn != null) { ProfilePickProgramBtn.Content = I18n.T("ProfilePickProgramBtnText"); ProfilePickProgramBtn.ToolTip = I18n.T("ProfilePickProgramBtnToolTip"); }
@@ -3598,10 +3607,15 @@ public partial class SettingsWindow : Window
 			int curLayerIdx = LayerSelectComboBox.SelectedIndex;
 			LayerSelectComboBox.ItemsSource = null;
 			LayerSelectComboBox.ItemsSource = _selectedProfile.Layers;
-			LayerSelectComboBox.SelectedIndex = curLayerIdx >= 0 ? curLayerIdx : 0;
+			int safeIdx = curLayerIdx >= 0 && curLayerIdx < _selectedProfile.Layers.Count ? curLayerIdx : 0;
+			LayerSelectComboBox.SelectedIndex = safeIdx;
+			LayerSelectComboBox.ToolTip = _selectedProfile.Layers.Count > 0 ? _selectedProfile.Layers[safeIdx].DisplayName : null;
 		}
 		RefreshConfigProfilesUi();
 		ReloadThemePresets();
+		UpdateProfileBindingUi();
+		if (ImportConfigButton != null) ImportConfigButton.ToolTip = I18n.T("PortableConfigImportHint");
+		if (ExportConfigButton != null) ExportConfigButton.ToolTip = I18n.T("PortableConfigExportHint");
 
 		// 动作编辑面板的文案是**代码拼串**（不是 XAML 字面量），所以它只在被**重建**时才换语言。
 		// 这里必须补一次重渲染，否则切完语言会得到「同一个窗口里两种语言并存」：
@@ -4164,6 +4178,8 @@ public partial class SettingsWindow : Window
 			return;
 		}
 		_resourcesReleased = true;
+		_profileIconRevision++;
+		_profileIcons.Clear();
 		PluginHost.PluginAvailabilityChanged -= HandlePluginAvailabilityChanged;
 
 		if (_deferredCloseTimer != null)
@@ -4751,6 +4767,8 @@ public partial class SettingsWindow : Window
 			ProcessName = procName,
 			DisplayName = appName,
 			BoundProcesses = procName,
+			HasExplicitProcessBindings = true,
+			ApplicationIconPath = programPickerWindow.SelectedPath,
 			SectorCount = num,
 			Actions = new List<ActionItem>()
 		};
@@ -4798,6 +4816,7 @@ public partial class SettingsWindow : Window
 				ProcessName = procName,
 				DisplayName = displayName,
 				BoundProcesses = procName,
+			HasExplicitProcessBindings = true,
 				SectorCount = num,
 				Actions = new List<ActionItem>()
 			};
@@ -4851,6 +4870,7 @@ public partial class SettingsWindow : Window
 				ProcessName = procName,
 				DisplayName = displayName,
 				BoundProcesses = procName,
+			HasExplicitProcessBindings = true,
 				SectorCount = num,
 				Actions = new List<ActionItem>()
 			};
@@ -4899,6 +4919,7 @@ public partial class SettingsWindow : Window
 				ProcessName = newName,
 				DisplayName = newName,
 				BoundProcesses = boundProcs,
+				HasExplicitProcessBindings = true,
 				SectorCount = num,
 				Actions = new List<ActionItem>()
 			};
@@ -4918,93 +4939,42 @@ public partial class SettingsWindow : Window
 			ConfigManager.SaveConfig();
 
 			RefreshProfilesUi(wheelProfile);
+			if (string.IsNullOrEmpty(boundProcs))
+			{
+				RecordProfileActivationButton_Click(sender, e);
+				_pendingParallelProfile = wheelProfile;
+				UpdateProfileModeHint();
+			}
 		}
 	}
 
-	private void RenameProfileButton_Click(object sender, RoutedEventArgs e)
-	{
-		if (_selectedProfile == null)
-		{
-			AppMessageBox.Show(this, "请先在列表中选择要重命名的配置方案！", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
-			return;
-		}
-		if (_selectedProfile.ProcessName.Equals("Global", StringComparison.OrdinalIgnoreCase))
-		{
-			AppMessageBox.Show(this, "「Global」为系统全局默认基础配置，不可重命名。", "提示", MessageBoxButton.OK, MessageBoxImage.Asterisk);
-			return;
-		}
-		string oldName = !string.IsNullOrWhiteSpace(_selectedProfile.DisplayName) ? _selectedProfile.DisplayName : _selectedProfile.ProcessName;
-		InputDialog inputDialog = new InputDialog("重命名配置方案", "请输入配置方案「" + oldName + "」的新名称：", oldName, delegate(string input)
-		{
-			if (string.IsNullOrWhiteSpace(input))
-			{
-				return (IsValid: false, ErrorMessage: "方案名称不能为空！");
-			}
-			if (input.Trim().Equals(oldName, StringComparison.OrdinalIgnoreCase))
-			{
-				return (IsValid: true, ErrorMessage: "");
-			}
-			return ConfigManager.CurrentConfig.Profiles.Any((WheelProfile p) => 
-				p != _selectedProfile &&
-				(p.ProcessName.Equals(input.Trim(), StringComparison.OrdinalIgnoreCase) ||
-				(!string.IsNullOrEmpty(p.DisplayName) && p.DisplayName.Equals(input.Trim(), StringComparison.OrdinalIgnoreCase)))
-			) ? (IsValid: false, ErrorMessage: "已存在同名的配置方案，请换一个名称！") : (IsValid: true, ErrorMessage: "");
-		});
-		inputDialog.Owner = this;
-		if (inputDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(inputDialog.InputText))
-		{
-			string newName = inputDialog.InputText.Trim();
-			string proposedBindings = newName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(_selectedProfile.BoundProcesses)
-				? newName.ToLowerInvariant() : _selectedProfile.BoundProcesses;
-			if (ProfileTriggerRouter.ValidateBindings(ConfigManager.CurrentConfig,
-				_selectedProfile, proposedBindings, newName) != ProfileTriggerValidationError.None)
-			{
-				AppMessageBox.Show(this, I18n.T("ProfileActivationConflict"), I18n.T("ProfileActivationRecord"), MessageBoxButton.OK, MessageBoxImage.Information);
-				return;
-			}
-			_selectedProfile.DisplayName = newName;
-			if (newName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(_selectedProfile.BoundProcesses))
-			{
-				_selectedProfile.BoundProcesses = newName.ToLowerInvariant();
-			}
-			ConfigManager.SaveConfig();
-
-			RefreshProfilesUi(_selectedProfile);
-		}
-	}
+	private void RenameProfileButton_Click(object sender, RoutedEventArgs e) => RenameCurrentProfile();
 
 	private void UpdateProfileBindingUi()
 	{
+		RefreshProfilePresentation();
 		RefreshProfileActivationUi();
 		if (ProfileBindingCardBorder == null) return;
 
 		bool isGlobal = _selectedProfile == null || string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase);
+		bool showContextBindings = !isGlobal && _selectedProfile != null && _selectedProfile.UseApplicationContext;
 
-		if (isGlobal)
-		{
-			if (ProfileGlobalHintPanel != null) ProfileGlobalHintPanel.Visibility = Visibility.Visible;
-			if (ProfileCustomBindingPanel != null) ProfileCustomBindingPanel.Visibility = Visibility.Collapsed;
-		}
-		else
-		{
-			if (ProfileGlobalHintPanel != null) ProfileGlobalHintPanel.Visibility = Visibility.Collapsed;
-			if (ProfileCustomBindingPanel != null) ProfileCustomBindingPanel.Visibility = Visibility.Visible;
+		if (ProfileGlobalHintPanel != null) ProfileGlobalHintPanel.Visibility = isGlobal ? Visibility.Visible : Visibility.Collapsed;
+		if (ProfileContextSwitchRow != null) ProfileContextSwitchRow.Visibility = isGlobal ? Visibility.Collapsed : Visibility.Visible;
+		if (ProfileCustomBindingPanel != null) ProfileCustomBindingPanel.Visibility = showContextBindings ? Visibility.Visible : Visibility.Collapsed;
 
-			if (ProfileBoundProcessesTextBox != null)
+		if (!isGlobal && ProfileBoundProcessesTextBox != null)
+		{
+			bool oldUpdating = _isUpdatingUi;
+			try
 			{
-				bool oldUpdating = _isUpdatingUi;
-				try
-				{
-					_isUpdatingUi = true;
-					string procs = !string.IsNullOrWhiteSpace(_selectedProfile?.BoundProcesses) 
-						? _selectedProfile.BoundProcesses 
-						: (_selectedProfile?.ProcessName ?? "");
-					ProfileBoundProcessesTextBox.Text = procs;
-				}
-				finally
-				{
-					_isUpdatingUi = oldUpdating;
-				}
+				_isUpdatingUi = true;
+				string procs = _selectedProfile == null ? "" : string.Join(", ", ProfileBindingTokens(_selectedProfile));
+				ProfileBoundProcessesTextBox.Text = procs;
+			}
+			finally
+			{
+				_isUpdatingUi = oldUpdating;
 			}
 		}
 	}
@@ -5014,7 +4984,11 @@ public partial class SettingsWindow : Window
 		if (_isUpdatingUi || _selectedProfile == null) return;
 		if (string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase)) return;
 
-		if (TryApplyProfileBindings(ProfileBoundProcessesTextBox?.Text?.Trim() ?? "")) ScheduleAutoSave();
+		if (TryApplyProfileBindings(ProfileBoundProcessesTextBox?.Text?.Trim() ?? ""))
+		{
+			ScheduleAutoSave();
+			RefreshProfilePresentation();
+		}
 	}
 
 	private bool TryApplyProfileBindings(string proposedBindings)
@@ -5024,11 +4998,16 @@ public partial class SettingsWindow : Window
 			proposedBindings) != ProfileTriggerValidationError.None)
 		{
 			UpdateProfileBindingUi();
-			AppMessageBox.Show(this, I18n.T("ProfileActivationConflict"), I18n.T("ProfileActivationRecord"),
-				MessageBoxButton.OK, MessageBoxImage.Information);
+			if (IsVisible)
+			{
+				AppMessageBox.Show(this, I18n.T("ProfileActivationConflict"), I18n.T("ProfileActivationRecord"),
+					MessageBoxButton.OK, MessageBoxImage.Information);
+			}
 			return false;
 		}
 		_selectedProfile.BoundProcesses = proposedBindings;
+		_selectedProfile.HasExplicitProcessBindings = true;
+		_selectedProfile.ApplicationIconPath = null;
 		return true;
 	}
 
@@ -5090,6 +5069,7 @@ public partial class SettingsWindow : Window
 			{
 				string proc = System.IO.Path.GetFileName(picker.SelectedPath).ToLowerInvariant();
 				if (!TryAppendProfileBinding(proc)) return;
+				_selectedProfile.ApplicationIconPath = picker.SelectedPath;
 				if (string.IsNullOrEmpty(_selectedProfile.DisplayName) || _selectedProfile.DisplayName.StartsWith("自定义配置_") || _selectedProfile.DisplayName.EndsWith(" - 副本"))
 				{
 					if (!string.IsNullOrWhiteSpace(picker.SelectedName))
@@ -5098,6 +5078,7 @@ public partial class SettingsWindow : Window
 					}
 				}
 				ScheduleAutoSave();
+				UpdateProfileBindingUi();
 			}
 		}
 		catch (Exception ex)
@@ -5121,11 +5102,13 @@ public partial class SettingsWindow : Window
 			{
 				string proc = System.IO.Path.GetFileName(dlg.FileName).ToLowerInvariant();
 				if (!TryAppendProfileBinding(proc)) return;
+				_selectedProfile.ApplicationIconPath = dlg.FileName;
 				if (string.IsNullOrEmpty(_selectedProfile.DisplayName) || _selectedProfile.DisplayName.StartsWith("自定义配置_") || _selectedProfile.DisplayName.EndsWith(" - 副本"))
 				{
 					_selectedProfile.DisplayName = System.IO.Path.GetFileNameWithoutExtension(dlg.FileName);
 				}
 				ScheduleAutoSave();
+				UpdateProfileBindingUi();
 			}
 		}
 		catch (Exception ex)
@@ -5136,7 +5119,7 @@ public partial class SettingsWindow : Window
 
 	private void ProfilesListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
 	{
-		if (ProfilesListBox.SelectedItem is WheelProfile wheelProfile && !wheelProfile.ProcessName.Equals("Global", StringComparison.OrdinalIgnoreCase))
+		if (ProfilesListBox.SelectedItem is WheelProfile wheelProfile)
 		{
 			RenameProfileButton_Click(sender, e);
 		}
@@ -5176,8 +5159,8 @@ public partial class SettingsWindow : Window
 
 		if (RenameProfileBtn2 != null)
 		{
-			RenameProfileBtn2.IsEnabled = canModify;
-			RenameProfileBtn2.ToolTip = canModify ? "重命名选中的配置方案" : "全局基础配置 (Global) 为系统兜底方案，不可重命名";
+			RenameProfileBtn2.IsEnabled = _selectedProfile != null;
+			RenameProfileBtn2.ToolTip = I18n.T("ProfileRenameTitle");
 		}
 		if (DeleteProfileBtn2 != null)
 		{
@@ -5186,8 +5169,8 @@ public partial class SettingsWindow : Window
 		}
 		if (RenameProfileButton != null)
 		{
-			RenameProfileButton.IsEnabled = canModify;
-			RenameProfileButton.ToolTip = canModify ? "重命名选中的配置方案" : "全局基础配置 (Global) 为系统兜底方案，不可重命名";
+			RenameProfileButton.IsEnabled = _selectedProfile != null;
+			RenameProfileButton.ToolTip = I18n.T("ProfileRenameTitle");
 		}
 		if (DeleteProfileButton != null)
 		{
@@ -5277,6 +5260,7 @@ public partial class SettingsWindow : Window
 		{
 			MappingsCanvasModeGrid.Visibility = Visibility.Visible;
 			MappingsListModeGrid.Visibility = Visibility.Collapsed;
+			if (ProfileActivationPanel != null) ProfileActivationPanel.Visibility = Visibility.Collapsed;
 			bool oldUpdating = _isUpdatingUi;
 			try
 			{
@@ -5294,11 +5278,18 @@ public partial class SettingsWindow : Window
 			{
 				_isUpdatingUi = oldUpdating;
 			}
+			RefreshProfileActivationUi();
 		}
 		else
 		{
 			MappingsCanvasModeGrid.Visibility = Visibility.Collapsed;
 			MappingsListModeGrid.Visibility = Visibility.Visible;
+			if (ProfileActivationPanel != null)
+			{
+				bool isPro = string.Equals(ConfigManager.CurrentConfig?.ConfigMode, "Pro", StringComparison.OrdinalIgnoreCase) ||
+				             string.Equals(ConfigManager.CurrentConfig?.ConfigMode, "Advanced", StringComparison.OrdinalIgnoreCase);
+				ProfileActivationPanel.Visibility = isPro ? Visibility.Visible : Visibility.Collapsed;
+			}
 			bool oldUpdating = _isUpdatingUi;
 			try
 			{
@@ -5314,6 +5305,7 @@ public partial class SettingsWindow : Window
 			{
 				_isUpdatingUi = oldUpdating;
 			}
+			RefreshProfileActivationUi();
 		}
 	}
 
@@ -5370,10 +5362,16 @@ public partial class SettingsWindow : Window
 				LayerSelectComboBox.ItemsSource = _selectedProfile.Layers;
 				int targetIdx = Math.Clamp(_selectedProfile.ActiveLayerIndex, 0, _selectedProfile.Layers.Count - 1);
 				LayerSelectComboBox.SelectedIndex = targetIdx;
+				LayerSelectComboBox.ToolTip = _selectedProfile.Layers[targetIdx].DisplayName;
 			}
+			bool canDeleteLayer = _selectedProfile.Layers.Count > 1;
 			if (DeleteLayerBtn != null)
 			{
-				DeleteLayerBtn.IsEnabled = (_selectedProfile.Layers.Count > 1);
+				DeleteLayerBtn.IsEnabled = canDeleteLayer;
+			}
+			if (LayerCtxDeleteMenuItem != null)
+			{
+				LayerCtxDeleteMenuItem.IsEnabled = canDeleteLayer;
 			}
 			UpdateLayerSwitchTriggerUi();
 		}
@@ -5394,6 +5392,7 @@ public partial class SettingsWindow : Window
 		_selectedProfile.SyncActiveLayerFromRootProperties();
 		_selectedProfile.ActiveLayerIndex = newIdx;
 		_selectedProfile.SyncRootPropertiesFromActiveLayer();
+		LayerSelectComboBox.ToolTip = _selectedProfile.Layers[newIdx].DisplayName;
 		RefreshProfileActivationUi();
 
 		bool oldUpdating = _isUpdatingUi;
@@ -5417,11 +5416,25 @@ public partial class SettingsWindow : Window
 			_isUpdatingUi = oldUpdating;
 		}
 
+		bool canDeleteLayer = _selectedProfile.Layers.Count > 1;
 		if (DeleteLayerBtn != null)
 		{
-			DeleteLayerBtn.IsEnabled = (_selectedProfile.Layers.Count > 1);
+			DeleteLayerBtn.IsEnabled = canDeleteLayer;
+		}
+		if (LayerCtxDeleteMenuItem != null)
+		{
+			LayerCtxDeleteMenuItem.IsEnabled = canDeleteLayer;
 		}
 		ScheduleAutoSave();
+	}
+
+	private void LayerSelectComboBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+	{
+		if (e.Key == Key.F2)
+		{
+			RenameLayerBtn_Click(sender, e);
+			e.Handled = true;
+		}
 	}
 
 	private void AddLayerBtn_Click(object sender, RoutedEventArgs e)
@@ -5430,7 +5443,7 @@ public partial class SettingsWindow : Window
 		_selectedProfile.EnsureLayers();
 		_selectedProfile.SyncActiveLayerFromRootProperties();
 
-		int nextNum = _selectedProfile.Layers.Count + 1;
+		int nextNum = WheelLayer.GetNextDefaultLayerNumber(_selectedProfile.Layers);
 		int sectorCount = _selectedProfile.SectorCount is 4 or 8 or 12 ? _selectedProfile.SectorCount : 8;
 		WheelLayer newLayer = new WheelLayer
 		{
@@ -5487,7 +5500,7 @@ public partial class SettingsWindow : Window
 
 		WheelLayer curLayer = _selectedProfile.GetActiveLayer();
 		WheelLayer clonedLayer = curLayer.Clone();
-		clonedLayer.Name = $"{curLayer.Name} - 副本";
+		clonedLayer.Name = I18n.TF("CopyLayerNameFmt", curLayer.DisplayName);
 		if (ProfileTriggerRouter.GetLayerTrigger(_selectedProfile, curLayer) != null)
 		{
 			if (AppMessageBox.Show(this, I18n.T("LayerActivationCopyConflict"), I18n.T("ProfileActivationRecord"),
@@ -5531,16 +5544,21 @@ public partial class SettingsWindow : Window
 		_selectedProfile.EnsureLayers();
 
 		WheelLayer curLayer = _selectedProfile.GetActiveLayer();
-		InputDialog dlg = new InputDialog("重命名轮盘层", "请输入当前轮盘层的新名称（例如：办公快捷 / 浏览器 / 建模）：", curLayer.Name, input =>
-		{
-			if (string.IsNullOrWhiteSpace(input)) return (false, "层名称不能为空！");
-			return (true, "");
-		});
+		InputDialog dlg = new InputDialog(
+			I18n.T("RenameLayerTitle"),
+			I18n.T("RenameLayerPrompt"),
+			curLayer.DisplayName,
+			input =>
+			{
+				if (string.IsNullOrWhiteSpace(input)) return (false, I18n.T("RenameLayerEmptyError"));
+				return (true, "");
+			});
 		dlg.Owner = this;
 		if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.InputText))
 		{
 			curLayer.Name = dlg.InputText.Trim();
 			RefreshLayersUi();
+			UpdateLayerIndicatorPreview();
 			ScheduleAutoSave();
 		}
 	}
@@ -5552,18 +5570,27 @@ public partial class SettingsWindow : Window
 
 		if (_selectedProfile.Layers.Count <= 1)
 		{
-			AppMessageBox.Show("至少需要保留一个轮盘层！", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
+			AppMessageBox.Show(this, I18n.T("DeleteLayerMinError"), I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Information);
 			return;
 		}
 
 		int curIdx = _selectedProfile.ActiveLayerIndex;
 		WheelLayer layerToDelete = _selectedProfile.Layers[curIdx];
-		var result = AppMessageBox.Show($"确定要删除「{layerToDelete.Name}」吗？删除后该层配置将无法恢复。", "确认删除轮盘层", MessageBoxButton.YesNo, MessageBoxImage.Question);
+		var removalError = ProfileTriggerRouter.ValidateLayerRemoval(ConfigManager.CurrentConfig, _selectedProfile, layerToDelete);
+		if (removalError != ProfileTriggerValidationError.None)
+		{
+			ShowProfileRouteError(removalError);
+			return;
+		}
+		var result = AppMessageBox.Show(
+			this,
+			I18n.TF("DeleteLayerConfirmMessage", layerToDelete.DisplayName),
+			I18n.T("DeleteLayerConfirmTitle"),
+			MessageBoxButton.YesNo,
+			MessageBoxImage.Question);
 		if (result == MessageBoxResult.Yes)
 		{
-			_selectedProfile.Layers.RemoveAt(curIdx);
-			_selectedProfile.ActiveLayerIndex = Math.Max(0, curIdx - 1);
-			_selectedProfile.SyncRootPropertiesFromActiveLayer();
+			if (!_selectedProfile.RemoveLayer(layerToDelete)) return;
 
 			RefreshLayersUi();
 
@@ -5677,6 +5704,8 @@ public partial class SettingsWindow : Window
 		{
 			string newName = inputDialog.InputText.Trim();
 			WheelProfile newProfile = _selectedProfile.Clone(newName);
+			bool parallelCopy = !newProfile.UseApplicationContext;
+			newProfile.HasExplicitProcessBindings = true;
 			newProfile.DisplayName = newName;
 			if (newName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
 			{
@@ -5684,10 +5713,11 @@ public partial class SettingsWindow : Window
 			}
 			if (ProfileTriggerRouter.ValidateBindings(ConfigManager.CurrentConfig, newProfile) != ProfileTriggerValidationError.None)
 			{
-				if (AppMessageBox.Show(this, I18n.T("ProfileActivationCopyConflict"), I18n.T("ProfileActivationRecord"),
+				if (AppMessageBox.Show(this, I18n.T(parallelCopy ? "ParallelProfileCopyConflict" : "ProfileActivationCopyConflict"), I18n.T("ProfileActivationRecord"),
 					MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
 				newProfile.ActivationTrigger = null;
 				foreach (WheelLayer layer in newProfile.Layers) layer.ActivationTrigger = null;
+				if (parallelCopy) { newProfile.UseApplicationContext = true; newProfile.BoundProcesses = ""; }
 			}
 			newProfile.EnsureLayers();
 			newProfile.SyncRootPropertiesFromActiveLayer();
@@ -5695,6 +5725,12 @@ public partial class SettingsWindow : Window
 			ConfigManager.SaveConfig();
 
 			RefreshProfilesUi(newProfile);
+			if (parallelCopy)
+			{
+				RecordProfileActivationButton_Click(sender, e);
+				_pendingParallelProfile = newProfile;
+				UpdateProfileModeHint();
+			}
 		}
 	}
 
@@ -10943,6 +10979,16 @@ public partial class SettingsWindow : Window
 		return mouseText;
 	}
 
+	private static readonly SolidColorBrush s_conflictBadgeBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x1F, 0xEF, 0x44, 0x44));
+	private static readonly SolidColorBrush s_conflictBadgeBorderBrush = CreateFrozenBrush(Color.FromRgb(0xEF, 0x44, 0x44));
+
+	private static SolidColorBrush CreateFrozenBrush(Color color)
+	{
+		var brush = new SolidColorBrush(color);
+		brush.Freeze();
+		return brush;
+	}
+
 	private WheelProfile? _recordingActivationProfile;
 	private WheelLayer? _recordingActivationLayer;
 	private long _profileRecordingGeneration;
@@ -10968,7 +11014,7 @@ public partial class SettingsWindow : Window
 				element is System.Windows.Controls.Primitives.TextBoxBase ||
 				element is System.Windows.Controls.Primitives.RangeBase)
 			{
-				bool cancelButton = ReferenceEquals(element, RecordProfileActivationButton);
+				bool cancelButton = ReferenceEquals(element, RecordProfileActivationButton) || ReferenceEquals(element, ProfileModeRecordButton);
 				StopProfileActivationRecording();
 				// Suppressing the cancel button's down also suppresses its later Click;
 				// otherwise that Click would start a new recording after cancellation.
@@ -10988,35 +11034,93 @@ public partial class SettingsWindow : Window
 	private void RefreshProfileActivationUi()
 	{
 		WheelLayer? layer = SelectedActivationLayer;
+		bool anyEntryVisible = ProfileActivationPanel?.Visibility == Visibility.Visible ||
+			((MappingsCanvasModeGrid == null || MappingsCanvasModeGrid.Visibility == Visibility.Visible) &&
+			 ProfileModeRecordButton?.Visibility == Visibility.Visible);
 		if (_recordingActivationProfile != null &&
 			(!ReferenceEquals(_recordingActivationProfile, _selectedProfile) ||
 			 !ReferenceEquals(_recordingActivationLayer, layer) ||
 			 ConfigManager.CurrentConfig?.Profiles.Contains(_recordingActivationProfile) != true ||
-			 ProfileActivationPanel?.Visibility != Visibility.Visible)) StopProfileActivationRecording();
-		bool canRecord = _selectedProfile != null && layer != null;
-		TriggerConfig? trigger = canRecord ? ProfileTriggerRouter.GetLayerTrigger(_selectedProfile!, layer!) : null;
+			 !anyEntryVisible))
+		{
+			StopProfileActivationRecording();
+		}
+
+		LayerTriggerPresentation presentation = ProfilePresentation.GetLayerTriggerPresentation(
+			ConfigManager.CurrentConfig, _selectedProfile, layer, _recordingActivationProfile != null);
+
+		if (ProfileCurrentLayerKeyLabel != null)
+		{
+			ProfileCurrentLayerKeyLabel.Text = I18n.T("ProfileCurrentLayerKeyLabel");
+			ProfileCurrentLayerKeyLabel.ToolTip = I18n.T("ProfileActivationHelp");
+		}
+		if (ProfileLayerKeyBadgeText != null)
+		{
+			ProfileLayerKeyBadgeText.Text = presentation.BadgeText;
+			ProfileLayerKeyBadgeText.FontWeight = presentation.State == LayerTriggerBadgeState.Unset
+				? FontWeights.Normal
+				: FontWeights.SemiBold;
+			ProfileLayerKeyBadgeText.SetResourceReference(TextBlock.ForegroundProperty,
+				presentation.State == LayerTriggerBadgeState.Recording ? "NavTabActiveFgBrush" :
+				presentation.State == LayerTriggerBadgeState.Bound ? "TextPrimaryBrush" :
+				presentation.State == LayerTriggerBadgeState.ConflictOrDisabled ? "TextPrimaryBrush" :
+				"TextSecondaryBrush");
+		}
+		if (ProfileLayerKeyBadgeBorder != null)
+		{
+			ProfileLayerKeyBadgeBorder.ToolTip = presentation.ToolTipText;
+			if (presentation.State == LayerTriggerBadgeState.ConflictOrDisabled)
+			{
+				ProfileLayerKeyBadgeBorder.Background = s_conflictBadgeBackgroundBrush;
+				ProfileLayerKeyBadgeBorder.BorderBrush = s_conflictBadgeBorderBrush;
+			}
+			else if (presentation.State is LayerTriggerBadgeState.Recording or LayerTriggerBadgeState.Bound)
+			{
+				ProfileLayerKeyBadgeBorder.SetResourceReference(Border.BackgroundProperty, "NavTabActiveBgBrush");
+				ProfileLayerKeyBadgeBorder.SetResourceReference(Border.BorderBrushProperty, "AccentPrimaryBrush");
+			}
+			else
+			{
+				ProfileLayerKeyBadgeBorder.SetResourceReference(Border.BackgroundProperty, "SubtleCardBrush");
+				ProfileLayerKeyBadgeBorder.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
+			}
+		}
+		if (ProfileModeRecordButton != null)
+		{
+			ProfileModeRecordButton.IsEnabled = presentation.CanRecord;
+			ProfileModeRecordButton.Content = presentation.RecordButtonText;
+			ProfileModeRecordButton.ToolTip = I18n.T("ProfileActivationHelp");
+		}
+		if (ProfileModeResetButton != null)
+		{
+			ProfileModeResetButton.Visibility = presentation.CanReset ? Visibility.Visible : Visibility.Collapsed;
+			ProfileModeResetButton.IsEnabled = presentation.CanReset;
+			ProfileModeResetButton.Content = I18n.T("ProfileActivationResetShort");
+			ProfileModeResetButton.ToolTip = I18n.T("ProfileActivationReset");
+		}
 		if (ProfileActivationStatusText != null)
 		{
-			ProfileActivationStatusText.Text = !canRecord ? I18n.T("LayerActivationSelect") :
-				_recordingActivationProfile != null ? I18n.T("ProfileActivationListening") :
-				I18n.TF("LayerActivationStatus", _selectedProfile!.DisplayTitle, layer!.DisplayName,
-					trigger == null ? I18n.T("LayerActivationUnset") : FormatTriggerDisplay(trigger));
+			ProfileActivationStatusText.Text = !presentation.CanRecord ? I18n.T("LayerActivationSelect") :
+				presentation.State == LayerTriggerBadgeState.Recording ? I18n.T("ProfileActivationListening") :
+				I18n.TF("LayerActivationStatus", _selectedProfile!.DisplayTitle, layer!.DisplayName, presentation.BadgeText);
 		}
 		if (RecordProfileActivationButton != null)
 		{
-			RecordProfileActivationButton.IsEnabled = canRecord;
-			RecordProfileActivationButton.Content = I18n.T(_recordingActivationProfile == null ? "ProfileActivationRecord" : "ProfileActivationCancel");
+			RecordProfileActivationButton.IsEnabled = presentation.CanRecord;
+			RecordProfileActivationButton.Content = presentation.RecordButtonText;
 			RecordProfileActivationButton.ToolTip = I18n.T("ProfileActivationHelp");
 		}
 		if (ResetProfileActivationButton != null)
 		{
-			ResetProfileActivationButton.IsEnabled = canRecord && trigger != null;
+			ResetProfileActivationButton.IsEnabled = presentation.CanReset;
 			ResetProfileActivationButton.Content = I18n.T("ProfileActivationReset");
 		}
 	}
 
 	private void StopProfileActivationRecording()
 	{
+		_pendingParallelProfile = null;
+		UpdateProfileModeHint();
 		Interlocked.Increment(ref _profileRecordingGeneration);
 		_recordingActivationProfile = null;
 		_recordingActivationLayer = null;
@@ -11043,11 +11147,14 @@ public partial class SettingsWindow : Window
 		StopProfileActivationRecording();
 		WheelLayer? layer = SelectedActivationLayer;
 		if (_selectedProfile == null || layer == null) return;
+		var error = ProfileTriggerRouter.ValidateLayerTrigger(ConfigManager.CurrentConfig, _selectedProfile, layer, null);
+		if (error != ProfileTriggerValidationError.None) { ShowProfileRouteError(error); return; }
 		layer.ActivationTrigger = null;
 		if (!string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase) &&
 			ReferenceEquals(_selectedProfile.Layers.FirstOrDefault(), layer)) _selectedProfile.ActivationTrigger = null;
+		if (!_isUiInitialized && ConfigManager.CurrentConfig != null) ProfileTriggerRouter.Publish(ConfigManager.CurrentConfig);
 		ScheduleAutoSave();
-		RefreshProfileActivationUi();
+		UpdateProfileBindingUi();
 	}
 
 	private void CompleteProfileActivationRecording(TriggerConfig trigger)
@@ -11064,13 +11171,31 @@ public partial class SettingsWindow : Window
 		ProfileTriggerValidationError error = ProfileTriggerRouter.ValidateLayerTrigger(ConfigManager.CurrentConfig, profile, layer, trigger);
 		if (error != ProfileTriggerValidationError.None)
 		{
-			AppMessageBox.Show(this, I18n.T(error == ProfileTriggerValidationError.Conflict ? "ProfileActivationConflict" : "ProfileActivationInvalid"),
-				I18n.T("ProfileActivationRecord"), MessageBoxButton.OK, MessageBoxImage.Information);
+			StopProfileActivationRecording();
+			if (IsVisible)
+			{
+				AppMessageBox.Show(this, I18n.T(error == ProfileTriggerValidationError.Conflict ? "ProfileActivationConflict" : "ProfileActivationInvalid"),
+					I18n.T("ProfileActivationRecord"), MessageBoxButton.OK, MessageBoxImage.Information);
+			}
 			return;
 		}
 		layer.ActivationTrigger = trigger.Clone();
+		if (ReferenceEquals(_pendingParallelProfile, profile))
+		{
+			var modeError = ProfileTriggerRouter.ValidateContextMode(ConfigManager.CurrentConfig, profile, false);
+			if (modeError != ProfileTriggerValidationError.None)
+			{
+				layer.ActivationTrigger = null;
+				StopProfileActivationRecording();
+				ShowProfileRouteError(modeError);
+				return;
+			}
+			profile.UseApplicationContext = false;
+		}
+		if (!_isUiInitialized && ConfigManager.CurrentConfig != null) ProfileTriggerRouter.Publish(ConfigManager.CurrentConfig);
 		ScheduleAutoSave();
 		StopProfileActivationRecording();
+		UpdateProfileBindingUi();
 	}
 
 	private void RecordTriggerButton_Click(object sender, RoutedEventArgs e)
@@ -11106,6 +11231,7 @@ public partial class SettingsWindow : Window
 
 	private void StopTriggerRecording(bool saved)
 	{
+		Interlocked.Increment(ref _profileRecordingGeneration);
 		_isRecordingTrigger = false;
 		if (RecordTriggerButton != null)
 		{
@@ -11147,6 +11273,12 @@ public partial class SettingsWindow : Window
 				MouseButton = "RightButton"
 			};
 			defaultTrigger.DisplayText = FormatTriggerDisplay(defaultTrigger);
+			if (ProfileTriggerRouter.ConflictsWithParallelTrigger(ConfigManager.CurrentConfig, defaultTrigger))
+			{
+				StopTriggerRecording(saved: false);
+				ShowProfileRouteError(ProfileTriggerValidationError.Conflict);
+				return;
+			}
 			ConfigManager.CurrentConfig.Trigger = defaultTrigger;
 			ConfigManager.CurrentConfig.TriggerButton = "RightButton";
 			StopTriggerRecording(saved: true);
@@ -11227,6 +11359,12 @@ public partial class SettingsWindow : Window
 				};
 				procTrigger.DisplayText = FormatTriggerDisplay(procTrigger);
 				ConfigManager.CurrentConfig.BlacklistTriggerOverrides ??= new Dictionary<string, TriggerConfig>(StringComparer.OrdinalIgnoreCase);
+				if (ProfileTriggerRouter.ConflictsWithParallelTrigger(ConfigManager.CurrentConfig, procTrigger))
+				{
+					StopProcessTriggerRecording(saved: false);
+					ShowProfileRouteError(ProfileTriggerValidationError.Conflict);
+					return;
+				}
 				ConfigManager.CurrentConfig.BlacklistTriggerOverrides[_recordingProcessName] = procTrigger;
 				ScheduleAutoSave();
 				StopProcessTriggerRecording(saved: true);
@@ -11234,7 +11372,7 @@ public partial class SettingsWindow : Window
 			}
 			if (_isRecordingTrigger)
 			{
-				ConfigManager.CurrentConfig.Trigger = new TriggerConfig
+				var candidateTrigger = new TriggerConfig
 				{
 					TriggerType = "Mouse",
 					MouseButton = mouseButton,
@@ -11243,6 +11381,13 @@ public partial class SettingsWindow : Window
 					RequireAlt = (((((int)currentModifiers & 1))) > 0),
 					RequireWin = (((((int)currentModifiers & 8))) > 0)
 				};
+				if (ProfileTriggerRouter.ConflictsWithParallelTrigger(ConfigManager.CurrentConfig, candidateTrigger))
+				{
+					StopTriggerRecording(saved: false);
+					ShowProfileRouteError(ProfileTriggerValidationError.Conflict);
+					return;
+				}
+			ConfigManager.CurrentConfig.Trigger = candidateTrigger;
 				// 若录入的是单独鼠标左键（无修饰键），自动开启长按呼出，确保长按稳定唤醒轮盘，单机保持原生点击
 				if (mouseButton == "LeftButton" &&
 				    !ConfigManager.CurrentConfig.Trigger.RequireCtrl &&
@@ -11340,14 +11485,20 @@ public partial class SettingsWindow : Window
 			};
 			procTrigger.DisplayText = FormatTriggerDisplay(procTrigger);
 			ConfigManager.CurrentConfig.BlacklistTriggerOverrides ??= new Dictionary<string, TriggerConfig>(StringComparer.OrdinalIgnoreCase);
-			ConfigManager.CurrentConfig.BlacklistTriggerOverrides[_recordingProcessName] = procTrigger;
+			if (ProfileTriggerRouter.ConflictsWithParallelTrigger(ConfigManager.CurrentConfig, procTrigger))
+			{
+				StopProcessTriggerRecording(saved: false);
+				ShowProfileRouteError(ProfileTriggerValidationError.Conflict);
+				return;
+			}
+				ConfigManager.CurrentConfig.BlacklistTriggerOverrides[_recordingProcessName] = procTrigger;
 			ScheduleAutoSave();
 			StopProcessTriggerRecording(saved: true);
 			return;
 		}
 		if (_isRecordingTrigger && (int)e.Key != 118 && (int)e.Key != 119 && (int)e.Key != 116 && (int)e.Key != 117 && (int)e.Key != 120 && (int)e.Key != 121 && (int)e.Key != 70 && (int)e.Key != 71)
 		{
-			ConfigManager.CurrentConfig.Trigger = new TriggerConfig
+			var candidateTrigger = new TriggerConfig
 			{
 				TriggerType = "Keyboard",
 				Key = ((object)e.Key/*cast due to constrained. prefix*/).ToString(),
@@ -11357,6 +11508,13 @@ public partial class SettingsWindow : Window
 				RequireAlt = (((((int)modifiers & 1))) > 0),
 				RequireWin = (((((int)modifiers & 8))) > 0)
 			};
+			if (ProfileTriggerRouter.ConflictsWithParallelTrigger(ConfigManager.CurrentConfig, candidateTrigger))
+			{
+				StopTriggerRecording(saved: false);
+				ShowProfileRouteError(ProfileTriggerValidationError.Conflict);
+				return;
+			}
+			ConfigManager.CurrentConfig.Trigger = candidateTrigger;
 			ConfigManager.CurrentConfig.Trigger.DisplayText = FormatTriggerDisplay(ConfigManager.CurrentConfig.Trigger);
 			ScheduleAutoSave();
 			StopTriggerRecording(saved: true);
@@ -13755,17 +13913,9 @@ public partial class SettingsWindow : Window
 			PreviewLayerIndicatorIcon.Visibility = Visibility.Visible;
 		}
 
-		int totalLayers = 1;
-		if (_selectedProfile?.Layers != null && _selectedProfile.Layers.Count > 0)
-		{
-			totalLayers = _selectedProfile.Layers.Count;
-		}
-		else if (config.Profiles != null && config.Profiles.Count > 0 && config.Profiles[0].Layers != null && config.Profiles[0].Layers.Count > 0)
-		{
-			totalLayers = config.Profiles[0].Layers.Count;
-		}
-		int showLayer = Math.Min(2, Math.Max(1, totalLayers));
-		PreviewLayerIndicatorText.Text = string.Format(I18n.T("PreviewLayerFormat") ?? "第 {0} 层 ({0}/{1})", showLayer, Math.Max(2, totalLayers));
+		var previewProfile = _selectedProfile ?? config.Profiles?.FirstOrDefault();
+		PreviewLayerIndicatorText.Text = previewProfile == null ? "" : ProfilePresentation.LayerCaption(previewProfile, previewProfile.ActiveLayerIndex);
+		PreviewLayerIndicatorBadge.ToolTip = PreviewLayerIndicatorText.Text;
 
 		if (string.Equals(config.LayerIndicatorStyle, "FollowTheme", StringComparison.OrdinalIgnoreCase))
 		{
@@ -15421,6 +15571,7 @@ public partial class SettingsWindow : Window
 
 	private void StopProcessTriggerRecording(bool saved)
 	{
+		Interlocked.Increment(ref _profileRecordingGeneration);
 		_isRecordingProcessTrigger = false;
 		if (RecordProcessTriggerButton != null)
 		{
@@ -16556,96 +16707,9 @@ public partial class SettingsWindow : Window
 		}
 	}
 
-	private void ExportConfigButton_Click(object sender, RoutedEventArgs e)
-	{
-		string targetProfile = GetSelectedConfigProfileName();
-		Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog
-		{
-			Filter = "JSON 配置文件 (*.json)|*.json",
-			FileName = $"StarPie_Config_{targetProfile}_{DateTime.Now:yyyyMMdd}.json",
-			Title = $"导出配置方案「{targetProfile}」"
-		};
-		if (saveFileDialog.ShowDialog() == true)
-		{
-			if (ConfigManager.ExportConfigToFile(targetProfile, saveFileDialog.FileName))
-			{
-				AppMessageBox.Show(this, $"配置方案「{targetProfile}」已成功导出至文件！", "导出成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
-			}
-			else
-			{
-				AppMessageBox.Show(this, "配置导出失败，请检查写入权限。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
-			}
-		}
-	}
+	private async void ExportConfigButton_Click(object sender, RoutedEventArgs e) => await ExportSelectedConfigAsync();
 
-	private void ImportConfigButton_Click(object sender, RoutedEventArgs e)
-	{
-		Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog
-		{
-			Filter = "JSON 配置文件 (*.json)|*.json",
-			Title = "选择要导入的 StarPie 配置文件"
-		};
-		if (openFileDialog.ShowDialog() != true)
-		{
-			return;
-		}
-
-		string defaultName = System.IO.Path.GetFileNameWithoutExtension(openFileDialog.FileName);
-		InputDialog inputDialog = new InputDialog(
-			"导入配置方案",
-			"请输入导入方案在列表中的显示名称：",
-			defaultName,
-			(string input) =>
-			{
-				if (string.IsNullOrWhiteSpace(input))
-					return (IsValid: false, ErrorMessage: "方案名称不能为空！");
-				string clean = ConfigManager.CleanFileName(input);
-				if (string.IsNullOrWhiteSpace(clean))
-					return (IsValid: false, ErrorMessage: "方案名称包含非法字符，请重新输入！");
-				return (IsValid: true, ErrorMessage: "");
-			});
-		inputDialog.Owner = this;
-		string? chosenName = null;
-		if (inputDialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(inputDialog.InputText))
-		{
-			chosenName = inputDialog.InputText.Trim();
-		}
-
-		if (ConfigManager.ImportExternalConfig(openFileDialog.FileName, chosenName, out string importedName))
-		{
-			_selectedProfile = null;
-			_isUpdatingUi = true;
-			try
-			{
-				LoadConfigToUi();
-				AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig.AppTheme ?? "System");
-			}
-			finally
-			{
-				_isUpdatingUi = false;
-			}
-			_selectedProfile = ConfigManager.CurrentConfig.Profiles?.FirstOrDefault();
-			if (ProfilesListBox != null)
-			{
-				ProfilesListBox.SelectedItem = _selectedProfile;
-			}
-			if (MappingsProfileComboBox != null)
-			{
-				MappingsProfileComboBox.SelectedItem = _selectedProfile;
-			}
-			ReloadThemePresets();
-			RefreshSlots();
-			UpdateFocusEditorUi();
-			RenderMappingsWheelPreview();
-			RenderLiveWheelPreview();
-			RefreshConfigProfilesUi();
-			AppMessageBox.Show(this, $"外部配置文件已成功导入并收纳入方案「{importedName}」！\n已即时生效并切换至该方案。", "导入成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
-		}
-		else
-		{
-			AppMessageBox.Show(this, "导入失败：文件格式不匹配或已损坏。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
-		}
-	}
+	private async void ImportConfigButton_Click(object sender, RoutedEventArgs e) => await ImportSelectedConfigAsync();
 
 	private void ResetDefaultConfigBtn_Click(object sender, RoutedEventArgs e)
 	{
@@ -18908,6 +18972,20 @@ public partial class SettingsWindow : Window
 		{
 			GestureSettingsDetailsPanel.IsEnabled = !longPressOnly;
 		}
+	}
+
+	private void RefreshLongPressDelayControls()
+	{
+		bool wasUpdating = _isUpdatingUi;
+		_isUpdatingUi = true;
+		try
+		{
+			if (LongPressDelaySlider != null)
+				LongPressDelaySlider.Value = ConfigManager.CurrentConfig.EffectiveLongPressDelayMs;
+			if (LongPressDelayLabel != null && LongPressDelaySlider != null)
+				LongPressDelayLabel.Text = $"{LongPressDelaySlider.Value:0} ms";
+		}
+		finally { _isUpdatingUi = wasUpdating; }
 	}
 
 	private void LongPressTriggerCheckBox_Changed(object sender, RoutedEventArgs e)

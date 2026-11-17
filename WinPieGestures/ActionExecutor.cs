@@ -263,31 +263,66 @@ public static class ActionExecutor
 	private static extern int GetWindowText(nint hWnd, StringBuilder lpString, int nMaxCount);
 
 	
-	[DllImport("user32.dll")]
-	private static extern uint MapVirtualKey(uint uCode, uint uMapType);
+	[DllImport("user32.dll", EntryPoint = "MapVirtualKeyW")]
+	private static extern uint NativeMapVirtualKey(uint uCode, uint uMapType);
 
-	[DllImport("user32.dll")]
-	private static extern short GetAsyncKeyState(int nVirtKey);
+	[DllImport("user32.dll", EntryPoint = "GetAsyncKeyState")]
+	private static extern short NativeGetAsyncKeyState(int nVirtKey);
 
-	[DllImport("user32.dll")]
-	private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, nint dwExtraInfo);
+	[DllImport("user32.dll", EntryPoint = "keybd_event")]
+	private static extern void NativeKeybdEvent(byte bVk, byte bScan, uint dwFlags, nint dwExtraInfo);
 
-	[DllImport("user32.dll", SetLastError = true)]
-	private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+	[DllImport("user32.dll", EntryPoint = "SendInput", SetLastError = true)]
+	private static extern uint NativeSendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+	private static uint MapVirtualKey(uint code, uint mapType) =>
+		KeyboardMapVirtualKeyOverride?.Invoke(code, mapType) ?? NativeMapVirtualKey(code, mapType);
+
+	private static short GetAsyncKeyState(int key) =>
+		KeyboardKeyStateOverride?.Invoke(key) ?? NativeGetAsyncKeyState(key);
+
+	private static void keybd_event(byte key, byte scan, uint flags, nint extraInfo)
+	{
+		if (LegacyKeyboardInputOverride is { } legacy) legacy(key, scan, flags, extraInfo);
+		else NativeKeybdEvent(key, scan, flags, extraInfo);
+	}
+
+	private static uint SendInput(uint count, INPUT[] inputs, int size)
+	{
+		if (KeyboardInputSenderOverride is not { } sender) return NativeSendInput(count, inputs, size);
+		var packets = new (ushort Key, ushort Scan, uint Flags, nint ExtraInfo)[count];
+		for (int i = 0; i < count; i++)
+		{
+			if (inputs[i].type != INPUT_KEYBOARD) throw new InvalidOperationException("Expected keyboard input.");
+			var key = inputs[i].U.ki;
+			packets[i] = (key.wVk, key.wScan, key.dwFlags, key.dwExtraInfo);
+		}
+		return sender(packets);
+	}
 
 	#region 测试切缝 (Test Seams)
 	internal static Action<ActionItem, ActionExecutionContext?>? ActionExecutionOverride { get; set; }
 	internal static Action? ReleaseStuckModifiersOverride { get; set; }
 	internal static Action<HotkeyDetails>? InputPanelHotkeyExecutionOverride { get; set; }
+	internal static Func<(ushort Key, ushort Scan, uint Flags, nint ExtraInfo)[], uint>? KeyboardInputSenderOverride { get; set; }
+	internal static Action<byte, byte, uint, nint>? LegacyKeyboardInputOverride { get; set; }
+	internal static Func<int, short>? KeyboardKeyStateOverride { get; set; }
+	internal static Func<uint, uint, uint>? KeyboardMapVirtualKeyOverride { get; set; }
 
 	internal static void ResetTestSeams()
 	{
 		ActionExecutionOverride = null;
 		ReleaseStuckModifiersOverride = null;
 		InputPanelHotkeyExecutionOverride = null;
+		KeyboardInputSenderOverride = null;
+		LegacyKeyboardInputOverride = null;
+		KeyboardKeyStateOverride = null;
+		KeyboardMapVirtualKeyOverride = null;
 	}
 	#endregion
 
+	// Background plugin services can enter directly, outside the single-reader action queue.
+	private static readonly object s_keyboardInputGate = new();
 	private static readonly Channel<ActionEnvelope> s_actionChannel = Channel.CreateUnbounded<ActionEnvelope>(new UnboundedChannelOptions
 	{
 		SingleReader = true,
@@ -507,7 +542,7 @@ public static class ActionExecutor
 			{
 				// Exception text can echo typed values too; never retain it for panel input.
 				AppLogger.LogError($"Input panel action failed ({ex.GetType().Name}).");
-				return;
+				throw;
 			}
 			AppLogger.LogError($"Failed to execute action '{action.Name}' (Type: {action.Type}, Param: {action.Parameter})", ex);
 			MessageBox.Show("Failed to execute action '" + action.Name + "': " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Hand);
@@ -2687,92 +2722,96 @@ public static class ActionExecutor
 		}
 	}
 
+	private static bool IsModifierAlreadyDown(ushort key)
+	{
+		bool Down(int value) => (GetAsyncKeyState(value) & 0x8000) != 0;
+		return key switch
+		{
+			17 or 162 or 163 => Down(17) || Down(162) || Down(163),
+			16 or 160 or 161 => Down(16) || Down(160) || Down(161),
+			18 or 164 or 165 => Down(18) || Down(164) || Down(165),
+			91 or 92 => Down(91) || Down(92),
+			_ => Down(key)
+		};
+	}
+
 	private static void ExecuteSingleStep(HotkeyStep step, bool privateInput = false)
 	{
+		// Ownership is local to this synchronous step. Wheel teardown and later steps
+		// must never emit releases for a successfully completed input operation.
+		var ownedKeys = new List<ushort>();
+		void Emit(INPUT[] inputs)
+		{
+			uint accepted = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf(typeof(INPUT)));
+			for (int i = 0; i < Math.Min(accepted, (uint)inputs.Length); i++)
+			{
+				var key = inputs[i].U.ki;
+				if ((key.dwFlags & KEYEVENTF_KEYUP) == 0) ownedKeys.Add(key.wVk);
+				else ownedKeys.Remove(key.wVk);
+			}
+			if (accepted != inputs.Length) throw new InvalidOperationException(I18n.T("KeyboardInputIncomplete"));
+		}
 		try
 		{
-			// 1. 纯修饰键步骤 (如 Alt 轻敲呼出 Ribbon 菜单，或单独按下 Shift/Ctrl)
-			if (step.MainKey == 0 && step.Modifiers.Count > 0)
+			var modifiers = new List<ushort>();
+			var borrowed = new List<ushort>();
+			foreach (ushort key in step.Modifiers)
 			{
-				List<INPUT> modDowns = new List<INPUT>();
-				foreach (ushort mod in step.Modifiers)
-				{
-					modDowns.Add(CreateKeyInput(mod, down: true));
-				}
-				SendInput((uint)modDowns.Count, modDowns.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-				System.Threading.Thread.Sleep(15);
-
-				List<INPUT> modUps = new List<INPUT>();
-				for (int i = step.Modifiers.Count - 1; i >= 0; i--)
-				{
-					modUps.Add(CreateKeyInput(step.Modifiers[i], down: false));
-				}
-				SendInput((uint)modUps.Count, modUps.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-				return;
+				if (IsModifierAlreadyDown(key)) borrowed.Add(key);
+				else modifiers.Add(key);
 			}
-
-			// 2. 复合键步骤 (如 Alt+H 或 Ctrl+K)
-			if (step.Modifiers.Count > 0 && step.MainKey != 0)
+			// An explicit modifier tap needs its own down/up; borrowing a held key
+			// would silently change the macro's meaning and releasing it would steal user input.
+			if (step.MainKey == 0 && borrowed.Count > 0)
+				throw new InvalidOperationException(I18n.T("KeyboardModifierHeld"));
+			if (modifiers.Count > 0)
 			{
-				List<INPUT> modDowns = new List<INPUT>();
-				foreach (ushort mod in step.Modifiers)
-				{
-					modDowns.Add(CreateKeyInput(mod, down: true));
-				}
-				SendInput((uint)modDowns.Count, modDowns.ToArray(), Marshal.SizeOf(typeof(INPUT)));
+				Emit(modifiers.Select(key => CreateKeyInput(key, down: true)).ToArray());
 				System.Threading.Thread.Sleep(12);
-
-				INPUT keyDown = CreateKeyInput(step.MainKey, down: true);
-				INPUT keyUp = CreateKeyInput(step.MainKey, down: false);
-
-				if (step.MainKey == 44) // VK_SNAPSHOT
-				{
-					SendInput(2u, new INPUT[] { keyDown, keyUp }, Marshal.SizeOf(typeof(INPUT)));
-				}
-				else
-				{
-					SendInput(1u, new INPUT[] { keyDown }, Marshal.SizeOf(typeof(INPUT)));
-					System.Threading.Thread.Sleep(15);
-					SendInput(1u, new INPUT[] { keyUp }, Marshal.SizeOf(typeof(INPUT)));
-					System.Threading.Thread.Sleep(12);
-				}
-
-				List<INPUT> modUps = new List<INPUT>();
-				for (int i = step.Modifiers.Count - 1; i >= 0; i--)
-				{
-					modUps.Add(CreateKeyInput(step.Modifiers[i], down: false));
-				}
-				SendInput((uint)modUps.Count, modUps.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-				return;
 			}
-
-			// 3. 单键轻敲步骤 (如 H, V, F 等)
 			if (step.MainKey != 0)
 			{
-				INPUT keyDown = CreateKeyInput(step.MainKey, down: true);
-				INPUT keyUp = CreateKeyInput(step.MainKey, down: false);
-
-				if (step.MainKey == 44) // VK_SNAPSHOT
-				{
-					SendInput(2u, new INPUT[] { keyDown, keyUp }, Marshal.SizeOf(typeof(INPUT)));
-				}
+				if (borrowed.Any(key => !IsModifierAlreadyDown(key)))
+					throw new InvalidOperationException(I18n.T("KeyboardInputIncomplete"));
+				INPUT down = CreateKeyInput(step.MainKey, down: true);
+				INPUT up = CreateKeyInput(step.MainKey, down: false);
+				if (step.MainKey == 44) Emit(new[] { down, up });
 				else
 				{
-					SendInput(1u, new INPUT[] { keyDown }, Marshal.SizeOf(typeof(INPUT)));
+					Emit(new[] { down });
 					System.Threading.Thread.Sleep(15);
-					SendInput(1u, new INPUT[] { keyUp }, Marshal.SizeOf(typeof(INPUT)));
+					Emit(new[] { up });
 				}
 			}
+			if (ownedKeys.Count > 0)
+				Emit(ownedKeys.AsEnumerable().Reverse().Select(key => CreateKeyInput(key, down: false)).ToArray());
 		}
-		catch (Exception ex)
+		finally
 		{
-			AppLogger.LogError(privateInput ? "Input panel key execution failed." : $"Error in ExecuteSingleStep ({step}): {ex.Message}");
+			// Compensate only downs confirmed by SendInput's accepted prefix. A failed
+			// normal up gets one synchronous recovery attempt; no detached retries.
+			bool incomplete = false;
+			foreach (ushort key in ownedKeys.AsEnumerable().Reverse().ToArray())
+			{
+				try
+				{
+					if (SendInput(1, new[] { CreateKeyInput(key, down: false) }, Marshal.SizeOf(typeof(INPUT))) != 1)
+						incomplete = true;
+				}
+				catch { incomplete = true; }
+			}
+			if (incomplete) throw new InvalidOperationException(I18n.T("KeyboardInputIncomplete"));
 		}
 	}
 
 	internal static void ExecuteHotkey(string hotkeyString) => ExecuteHotkey(hotkeyString, false);
 
 	internal static void ExecuteHotkey(string hotkeyString, bool privateInput)
+	{
+		lock (s_keyboardInputGate) ExecuteHotkeyCore(hotkeyString, privateInput);
+	}
+
+	private static void ExecuteHotkeyCore(string hotkeyString, bool privateInput)
 	{
 		if (string.IsNullOrWhiteSpace(hotkeyString))
 		{
@@ -2798,11 +2837,7 @@ public static class ActionExecutor
 					ushort vk = MapKeyStringToVk(c.ToString());
 					if (vk != 0)
 					{
-						INPUT kDown = CreateKeyInput(vk, down: true);
-						INPUT kUp = CreateKeyInput(vk, down: false);
-						SendInput(1u, new INPUT[] { kDown }, Marshal.SizeOf(typeof(INPUT)));
-						System.Threading.Thread.Sleep(15);
-						SendInput(1u, new INPUT[] { kUp }, Marshal.SizeOf(typeof(INPUT)));
+						ExecuteSingleStep(new HotkeyStep { MainKey = vk }, privateInput);
 						System.Threading.Thread.Sleep(25);
 					}
 					else
@@ -2841,11 +2876,7 @@ public static class ActionExecutor
 			if (!privateInput) AppLogger.LogInfo($"Executing Key Sequence: [{string.Join(" -> ", hotkeyDetails.SequenceKeys)}]");
 			foreach (ushort vk in hotkeyDetails.SequenceKeys)
 			{
-				INPUT kDown = CreateKeyInput(vk, down: true);
-				INPUT kUp = CreateKeyInput(vk, down: false);
-				SendInput(1u, new INPUT[] { kDown }, Marshal.SizeOf(typeof(INPUT)));
-				System.Threading.Thread.Sleep(15);
-				SendInput(1u, new INPUT[] { kUp }, Marshal.SizeOf(typeof(INPUT)));
+				ExecuteSingleStep(new HotkeyStep { MainKey = vk }, privateInput);
 				System.Threading.Thread.Sleep(25);
 			}
 			return;
@@ -2858,127 +2889,12 @@ public static class ActionExecutor
 			return;
 		}
 
-		// 给 DWM 窗口焦点平稳回落预留短暂缓冲时延（轮盘关闭后目标窗口焦点就绪）
+		// Keep the existing focus settling delay, then share the same ownership path
+		// as a multi-step macro. Normal completion sends exactly one matching up.
 		System.Threading.Thread.Sleep(10);
-
-		try
-		{
-			// 1. If pure modifier combo (e.g. Shift + Alt, Ctrl + Shift)
-			if (hotkeyDetails.MainKey == 0 && hotkeyDetails.Modifiers.Count > 0)
-			{
-				List<INPUT> modDowns = new List<INPUT>();
-				foreach (ushort mod in hotkeyDetails.Modifiers)
-				{
-					modDowns.Add(CreateKeyInput(mod, down: true));
-				}
-				SendInput((uint)modDowns.Count, modDowns.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-				System.Threading.Thread.Sleep(10);
-				List<INPUT> modUps = new List<INPUT>();
-				for (int i = hotkeyDetails.Modifiers.Count - 1; i >= 0; i--)
-				{
-					modUps.Add(CreateKeyInput(hotkeyDetails.Modifiers[i], down: false));
-				}
-				SendInput((uint)modUps.Count, modUps.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-				return;
-			}
-
-			// 2. Standard Modifier + Main Key combo
-			List<INPUT> downInputs = new List<INPUT>();
-			foreach (ushort modifier in hotkeyDetails.Modifiers)
-			{
-				downInputs.Add(CreateKeyInput(modifier, down: true));
-			}
-			if (downInputs.Count > 0)
-			{
-				SendInput((uint)downInputs.Count, downInputs.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-				System.Threading.Thread.Sleep(12);
-			}
-
-			if (hotkeyDetails.MainKey != 0)
-			{
-				INPUT keySeqDown = CreateKeyInput(hotkeyDetails.MainKey, down: true);
-				INPUT keySeqUp = CreateKeyInput(hotkeyDetails.MainKey, down: false);
-
-				if (hotkeyDetails.MainKey == 44) // VK_SNAPSHOT (PrintScreen)
-				{
-					// 瞬态快门模式：PrintScreen Down 与 Up 作为一个原子数据包同时发送（0ms 间隔）
-					// 消除在 Down 和 Up 之间由于外部截图工具抢占全局输入焦点而造成的按键序列截断
-					SendInput(2u, new INPUT[] { keySeqDown, keySeqUp }, Marshal.SizeOf(typeof(INPUT)));
-				}
-				else
-				{
-					SendInput(1u, new INPUT[] { keySeqDown }, Marshal.SizeOf(typeof(INPUT)));
-					System.Threading.Thread.Sleep(12);
-					SendInput(1u, new INPUT[] { keySeqUp }, Marshal.SizeOf(typeof(INPUT)));
-					System.Threading.Thread.Sleep(10);
-				}
-			}
-		}
-		finally
-		{
-			// 3. 无论中间是否发生异常，始终安全下发所有已按下修饰键的抬起事件，彻底杜绝系统级粘滞
-			// 第一通道：SendInput 队列下发 KeyUp
-			List<INPUT> upInputs = new List<INPUT>();
-			for (int num = hotkeyDetails.Modifiers.Count - 1; num >= 0; num--)
-			{
-				upInputs.Add(CreateKeyInput(hotkeyDetails.Modifiers[num], down: false));
-			}
-			if (upInputs.Count > 0)
-			{
-				SendInput((uint)upInputs.Count, upInputs.ToArray(), Marshal.SizeOf(typeof(INPUT)));
-			}
-
-			// 第二通道：keybd_event 直接同步 win32k 全局击键状态表（跨进程/跨权限防御）
-			foreach (ushort mod in hotkeyDetails.Modifiers)
-			{
-				uint flags = KEYEVENTF_KEYUP;
-				if (mod == 91 || mod == 92 || mod == 165 || mod == 163)
-				{
-					flags |= KEYEVENTF_EXTENDEDKEY;
-				}
-				keybd_event((byte)mod, 0, flags, StarPieExtraInfo);
-				if (mod == 162 || mod == 163) keybd_event(17, 0, KEYEVENTF_KEYUP, StarPieExtraInfo); // VK_CONTROL
-				else if (mod == 160 || mod == 161) keybd_event(16, 0, KEYEVENTF_KEYUP, StarPieExtraInfo); // VK_SHIFT
-				else if (mod == 164 || mod == 165) keybd_event(18, 0, KEYEVENTF_KEYUP, StarPieExtraInfo); // VK_MENU
-				else if (mod == 91 || mod == 92) keybd_event((byte)mod, 0, KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY, StarPieExtraInfo);
-			}
-
-			// 4. 双重保险：针对截图软件（Snipaste/PixPin/微信截屏等）或 Win 键系统菜单抢焦场景，
-			// 在 +35ms 与 +85ms 异步补发修饰键释放，彻底消灭残留粘滞
-			bool hasWinMod = hotkeyDetails.Modifiers.Contains(91) || hotkeyDetails.Modifiers.Contains(92);
-			if ((hotkeyDetails.MainKey == 44 || hasWinMod) && hotkeyDetails.Modifiers.Count > 0)
-			{
-				var modsCopy = hotkeyDetails.Modifiers.ToArray();
-				System.Threading.Tasks.Task.Run(async () =>
-				{
-					try
-					{
-						await System.Threading.Tasks.Task.Delay(35).ConfigureAwait(false);
-						foreach (var mod in modsCopy)
-						{
-							uint flags = KEYEVENTF_KEYUP;
-							if (mod == 91 || mod == 92 || mod == 165 || mod == 163) flags |= KEYEVENTF_EXTENDEDKEY;
-							keybd_event((byte)mod, 0, flags, StarPieExtraInfo);
-							if (mod == 162 || mod == 163) keybd_event(17, 0, KEYEVENTF_KEYUP, StarPieExtraInfo);
-							else if (mod == 91 || mod == 92) keybd_event((byte)mod, 0, KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY, StarPieExtraInfo);
-						}
-
-						await System.Threading.Tasks.Task.Delay(50).ConfigureAwait(false);
-						foreach (var mod in modsCopy)
-						{
-							uint flags = KEYEVENTF_KEYUP;
-							if (mod == 91 || mod == 92 || mod == 165 || mod == 163) flags |= KEYEVENTF_EXTENDEDKEY;
-							keybd_event((byte)mod, 0, flags, StarPieExtraInfo);
-							if (mod == 162 || mod == 163) keybd_event(17, 0, KEYEVENTF_KEYUP, StarPieExtraInfo);
-							else if (mod == 91 || mod == 92) keybd_event((byte)mod, 0, KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY, StarPieExtraInfo);
-						}
-					}
-					catch
-					{
-					}
-				});
-			}
-		}
+		HotkeyStep single = hotkeyDetails.Steps.FirstOrDefault() ?? new HotkeyStep { MainKey = hotkeyDetails.MainKey };
+		if (single.Modifiers.Count == 0) single.Modifiers.AddRange(hotkeyDetails.Modifiers);
+		ExecuteSingleStep(single, privateInput);
 	}
 
 	/// <summary>
@@ -3261,15 +3177,23 @@ public static class ActionExecutor
 
 	private static void SimulateSingleKey(ushort vk)
 	{
-		INPUT[] pInputs = new INPUT[2]
+		lock (s_keyboardInputGate)
 		{
-			CreateKeyInput(vk, down: true),
-			CreateKeyInput(vk, down: false)
-		};
-		SendInput(2u, pInputs, Marshal.SizeOf(typeof(INPUT)));
+			INPUT[] pInputs = new INPUT[2]
+			{
+				CreateKeyInput(vk, down: true),
+				CreateKeyInput(vk, down: false)
+			};
+			SendInput(2u, pInputs, Marshal.SizeOf(typeof(INPUT)));
+		}
 	}
 
 	public static void SendTextInput(string text)
+	{
+		lock (s_keyboardInputGate) SendTextInputCore(text);
+	}
+
+	private static void SendTextInputCore(string text)
 	{
 		if (string.IsNullOrEmpty(text)) return;
 		List<INPUT> inputs = new List<INPUT>();

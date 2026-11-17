@@ -760,7 +760,7 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="64" />
                           </Grid.ColumnDefinitions>
-                          <Slider Name="LongPressDelaySlider" Minimum="200" Maximum="1000" Value="450" TickFrequency="50" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="LongPressDelaySlider_ValueChanged" />
+                          <Slider Name="LongPressDelaySlider" Minimum="0" Maximum="1000" Value="450" TickFrequency="1" SmallChange="1" LargeChange="50" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="LongPressDelaySlider_ValueChanged" />
                           <TextBlock Name="LongPressDelayLabel" Grid.Column="1" Text="450 ms" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center" />
                         </Grid>
                         <CheckBox Name="LongPressOnlyTriggerCheckBox" Style="{StaticResource ToggleSwitchStyle}" Margin="0,12,0,0" Checked="LongPressOnlyTriggerCheckBox_Changed" Unchecked="LongPressOnlyTriggerCheckBox_Changed">
@@ -2528,7 +2528,7 @@
                       </Border.Effect>
                       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Name="PreviewLayerIndicatorIcon" Text="🌟" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
-                        <TextBlock Name="PreviewLayerIndicatorText" Text="第 2 层 (2/2)" FontSize="11.5" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+                        <TextBlock Name="PreviewLayerIndicatorText" MaxWidth="280" TextTrimming="CharacterEllipsis" Text="第 2 层 (2/2)" FontSize="11.5" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
                       </StackPanel>
                     </Border>
 
@@ -2576,17 +2576,25 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Name="GesturesPageHeader" Text="手势方向与动作映射" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+              <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Name="GesturesPageHeader" Text="手势方向与动作映射" FontSize="19" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,14,2" />
 
-                <!-- 紧凑型多层轮盘管理工具栏 (仅高级全量模式展示，移至标题右侧留白处) -->
-                <Border Name="Tab2_MultiLayerHeaderPanel" VerticalAlignment="Center" Margin="14,0,0,0" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5,2">
-                  <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- 紧凑型多层轮盘管理工具栏 (仅高级全量模式展示，空间不足时自动换行不裁剪) -->
+                <Border Name="Tab2_MultiLayerHeaderPanel" VerticalAlignment="Center" Margin="0,2,0,2" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="5,2">
+                  <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="Tab2LayerLabel" Text="🌀 轮盘层:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="3,0,5,0" />
-                    <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="95" VerticalAlignment="Center" DisplayMemberPath="DisplayName" SelectionChanged="LayerSelectComboBox_SelectionChanged" />
+                    <ComboBox Name="LayerSelectComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" MinWidth="135" MaxWidth="220" MaxDropDownHeight="320" VerticalAlignment="Center" DisplayMemberPath="DisplayName" SelectionChanged="LayerSelectComboBox_SelectionChanged" PreviewKeyDown="LayerSelectComboBox_PreviewKeyDown">
+                      <ComboBox.ContextMenu>
+                        <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
+                          <MenuItem x:Name="LayerCtxRenameMenuItem" Header="✏️ 重命名" Style="{StaticResource ModernMenuItemStyle}" Click="RenameLayerBtn_Click" />
+                          <MenuItem x:Name="LayerCtxCopyMenuItem" Header="📑 复制" Style="{StaticResource ModernMenuItemStyle}" Click="CopyLayerBtn_Click" />
+                          <MenuItem x:Name="LayerCtxDeleteMenuItem" Header="🗑️ 删除" Style="{StaticResource ModernMenuItemStyle}" Click="DeleteLayerBtn_Click" />
+                        </ContextMenu>
+                      </ComboBox.ContextMenu>
+                    </ComboBox>
                     <Button Name="AddLayerBtn" Content="➕ 加层" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="4,0,2,0" ToolTip="新增一层独立轮盘配置（支持无限多层）" Click="AddLayerBtn_Click" />
                     <Button Name="CopyLayerBtn" Content="📑 复制" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="复制当前层的所有扇区动作与中心核圆到新层" Click="CopyLayerBtn_Click" />
-                    <Button Name="RenameLayerBtn" Content="✏️" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="重命名当前轮盘层" Click="RenameLayerBtn_Click" />
+                    <Button Name="RenameLayerBtn" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,2,0" ToolTip="重命名当前轮盘层" Click="RenameLayerBtn_Click" />
                     <Button Name="DeleteLayerBtn" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="删除当前轮盘层（至少保留一层）" Click="DeleteLayerBtn_Click" />
                     <Border Width="1" Height="12" Background="{DynamicResource CardBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
                     <TextBlock Name="LayerSwitchTriggerLabel" Text="🔄 切换:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="2,0,4,0" />
@@ -2594,9 +2602,9 @@
                       <ComboBoxItem x:Name="LayerSwitchModeScrollItem" Content="🖱️ 滚轮切换" Tag="Wheel" />
                       <ComboBoxItem x:Name="LayerSwitchModeTabItem" Content="⌨️ Tab 键切换" Tag="Tab" />
                     </ComboBox>
-                  </StackPanel>
+                  </WrapPanel>
                 </Border>
-              </StackPanel>
+              </WrapPanel>
 
               <TextBlock Name="GesturesPageSubheader" Text="支持针对不同前台应用程序设置专属的多向手势轮盘、按键动作、中心核圆与级联子动作。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
             </StackPanel>
@@ -2662,20 +2670,26 @@
                       <RowDefinition Height="Auto" />
                       <RowDefinition Height="Auto" />
                       <RowDefinition Height="Auto" />
+                      <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     
-                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                    <Grid x:Name="ProfileHeaderRowGrid" Grid.Row="0" Margin="0,0,0,8" MinHeight="30" VerticalAlignment="Top">
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                       </Grid.ColumnDefinitions>
-                      <TextBlock x:Name="CurrentProfileLabel" Text="当前配置方案:" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,10,0" />
-                      <ComboBox Name="MappingsProfileComboBox" Grid.Column="1" MinWidth="130" Style="{StaticResource FlatComboBoxStyle}" Height="30" DisplayMemberPath="DisplayTitle" SelectionChanged="MappingsProfileComboBox_SelectionChanged" VerticalAlignment="Center" />
+                      <TextBlock x:Name="CurrentProfileLabel" Text="当前配置方案:" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
+                      <ComboBox Name="MappingsProfileComboBox" Grid.Column="1" MinWidth="110" Style="{StaticResource FlatComboBoxStyle}" Height="28" DisplayMemberPath="DisplayTitle" SelectionChanged="MappingsProfileComboBox_SelectionChanged" VerticalAlignment="Center" />
                       
-                      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0">
-                        <Button Name="DuplicateProfileBtn" Content="📑 复制方案" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="将当前方案的所有动作与多层配置复制为新程序方案" Click="DuplicateProfileBtn_Click" />
-                        <Button Name="AddProfileBtn2" Content="➕ 新增" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="添加新的轮盘配置方案（点击可选择从程序添加、捕捉窗口或自定义命名）" Click="AddProfileBtn2_Click">
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
+                        <ComboBox x:Name="ProfileDisplayModeComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="28" MinWidth="92" Padding="8,0,6,0" Margin="0,0,6,0" VerticalAlignment="Center" SelectionChanged="ProfileDisplayModeComboBox_SelectionChanged">
+                          <ComboBoxItem x:Name="ProfileDisplayModeIconAndTextItem" Tag="IconAndText" Content="图标和文字" />
+                          <ComboBoxItem x:Name="ProfileDisplayModeTextOnlyItem" Tag="TextOnly" Content="仅文字" />
+                          <ComboBoxItem x:Name="ProfileDisplayModeIconOnlyItem" Tag="IconOnly" Content="仅图标" />
+                        </ComboBox>
+                        <Button Name="DuplicateProfileBtn" Content="📑 复制方案" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="将当前方案的所有动作与多层配置复制为新程序方案" Click="DuplicateProfileBtn_Click" />
+                        <Button Name="AddProfileBtn2" Content="➕ 新增" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="添加新的轮盘配置方案（点击可选择从程序添加、捕捉窗口或自定义命名）" Click="AddProfileBtn2_Click">
                           <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
                               <MenuItem x:Name="AddProfileFromProgramMenuItem" Header="🖥️ 从已安装软件中添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileButton_Click" />
@@ -2685,44 +2699,94 @@
                             </ContextMenu>
                           </Button.ContextMenu>
                         </Button>
-                        <Button Name="RenameProfileBtn2" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="重命名选中的配置方案" Click="RenameProfileButton_Click" />
-                        <Button Name="DeleteProfileBtn2" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" ToolTip="删除当前选中的配置方案" Click="DeleteProfileButton_Click" />
+                        <Button Name="RenameProfileBtn2" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="重命名选中的配置方案" Click="RenameProfileButton_Click" />
+                        <Button Name="DeleteProfileBtn2" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" ToolTip="删除当前选中的配置方案" Click="DeleteProfileButton_Click" />
                       </StackPanel>
                     </Grid>
 
-                    <!-- 程序情景绑定卡片 (Profile Context Binding Card) -->
-                    <Border Name="ProfileBindingCardBorder" Grid.Row="1" Background="{DynamicResource WindowBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,8" Margin="0,0,0,8">
+                    <!-- Direct profile selection shares the existing selected profile; bottom scrollbar is hidden in favor of horizontal mouse-wheel scrolling. -->
+                    <Grid x:Name="ProfileQuickSwitchRowGrid" Grid.Row="1" Margin="0,0,0,8">
+                      <ScrollViewer x:Name="ProfileQuickSwitchScrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center" PreviewMouseWheel="ProfileQuickSwitchScrollViewer_PreviewMouseWheel">
+                        <StackPanel x:Name="ProfileQuickSwitchPanel" Orientation="Horizontal" />
+                      </ScrollViewer>
+                    </Grid>
+
+                    <!-- 程序情景与当前层按键摘要卡片 (Profile Context & Layer Key Card) -->
+                    <Border Name="ProfileBindingCardBorder" Grid.Row="2" Background="{DynamicResource WindowBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,8">
                       <StackPanel>
-                        <!-- 1. Global 模式说明 -->
-                        <Grid Name="ProfileGlobalHintPanel">
-                          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock Text="🌐" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock x:Name="GlobalProfileHintText" Text="全局通用基础方案：当活动前台程序未配置专属轮盘时，手势将自动应用此全局方案。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                          </StackPanel>
+                        <Grid x:Name="ProfileSummaryHeaderGrid">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                          </Grid.ColumnDefinitions>
+                          <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                            <StackPanel Name="ProfileGlobalHintPanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,1,4,1">
+                              <TextBlock Text="🌐" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center" />
+                              <TextBlock x:Name="GlobalProfileHintText" Text="全局基础轮盘：未匹配专属程序时默认使用" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="280" />
+                            </StackPanel>
+                            <WrapPanel Name="ProfileContextSwitchRow" Visibility="Collapsed" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,1,4,1">
+                              <CheckBox x:Name="ProfileUseContextCheckBox" FontSize="12" Style="{StaticResource ToggleSwitchStyle}" Checked="ProfileUseContext_Changed" Unchecked="ProfileUseContext_Changed" VerticalAlignment="Center" />
+                              <Border x:Name="ProfileModeBadgeBorder" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                <TextBlock x:Name="ProfileModeHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
+                              </Border>
+                            </WrapPanel>
+                          </WrapPanel>
+                          <WrapPanel x:Name="ProfileInlineActivationBar" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,1,0,1">
+                            <TextBlock x:Name="ProfileCurrentLayerKeyLabel" Text="当前层按键：" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <Border x:Name="ProfileLayerKeyBadgeBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
+                              <TextBlock x:Name="ProfileLayerKeyBadgeText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" MaxWidth="210" TextTrimming="CharacterEllipsis" />
+                            </Border>
+                            <Button x:Name="ProfileModeRecordButton" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="0,0,4,0" VerticalAlignment="Center" Click="RecordProfileActivationButton_Click" />
+                            <Button x:Name="ProfileModeResetButton" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="7,0" VerticalAlignment="Center" Visibility="Collapsed" Click="ResetProfileActivationButton_Click" />
+                          </WrapPanel>
                         </Grid>
 
-                        <!-- 2. 专属程序模式绑定面板 -->
-                        <StackPanel Name="ProfileCustomBindingPanel" Visibility="Collapsed">
-                          <Grid>
+                        <!-- 专属程序模式摘要行与按需展开管理面板 -->
+                        <StackPanel Name="ProfileCustomBindingPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                          <Grid x:Name="ProfileBindingsSummaryRow">
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="ProfileBoundProcessesLabel" Text="🎯 绑定程序情景:" VerticalAlignment="Center" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
-                            <TextBox Name="ProfileBoundProcessesTextBox" Grid.Column="1" Height="28" FontSize="11" VerticalContentAlignment="Center" ToolTip="目标程序进程名（如 photoshop.exe 或 code.exe）。支持以英文逗号分隔多个进程。" TextChanged="ProfileBoundProcessesTextBox_TextChanged" />
-                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
-                              <Button Name="ProfileCaptureWindowBtn" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="直接点击桌面上运行中的目标软件窗口，自动识别并绑定其进程" Click="ProfileCaptureWindowBtn_Click" />
-                              <Button Name="ProfilePickProgramBtn" Content="🖥️ 软件库..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" ToolTip="从已安装的软件列表中选择程序并绑定" Click="ProfilePickProgramBtn_Click" />
-                              <Button Name="ProfileBrowseExeBtn" Content="📁 浏览..." Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" ToolTip="浏览选取本地可执行程序文件 (.exe / .lnk)" Click="ProfileBrowseExeBtn_Click" />
-                            </StackPanel>
+                            <TextBlock x:Name="ProfileBoundProcessesLabel" Grid.Column="0" Text="适用程序：" VerticalAlignment="Top" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,6,2" />
+                            <WrapPanel x:Name="ProfileQuickBindingsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                              <Button x:Name="ProfileQuickAddProgramBtn" Content="+ 添加程序" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="0,2,4,2" VerticalAlignment="Center" Click="ProfileQuickAddProgramBtn_Click">
+                                <Button.ContextMenu>
+                                  <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
+                                    <MenuItem x:Name="ProfileQuickCaptureMenuItem" Header="🎯 捕捉窗口..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfileCaptureWindowBtn_Click" />
+                                    <MenuItem x:Name="ProfileQuickPickProgramMenuItem" Header="🖥️ 软件库..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfilePickProgramBtn_Click" />
+                                    <MenuItem x:Name="ProfileQuickBrowseExeMenuItem" Header="📁 浏览..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfileBrowseExeBtn_Click" />
+                                  </ContextMenu>
+                                </Button.ContextMenu>
+                              </Button>
+                            </WrapPanel>
+                            <Button x:Name="ProfileManageBindingsToggleBtn" Grid.Column="2" Content="管理…" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="6,2,0,2" VerticalAlignment="Top" Click="ProfileManageBindingsToggleBtn_Click" />
                           </Grid>
-                          <TextBlock x:Name="ProfileBoundProcessesHintText" Text="💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+
+                          <Border x:Name="ProfileBindingsDetailPanel" Visibility="Collapsed" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
+                            <StackPanel>
+                              <WrapPanel x:Name="ProfileBindingsPanel" Margin="0,0,0,4" />
+                              <Grid x:Name="ProfileBindingButtons">
+                                <Grid.ColumnDefinitions>
+                                  <ColumnDefinition Width="*" />
+                                  <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Name="ProfileBoundProcessesTextBox" Visibility="Collapsed" Grid.Column="0" Height="26" FontSize="11" VerticalContentAlignment="Center" TextChanged="ProfileBoundProcessesTextBox_TextChanged" />
+                                <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                  <Button Name="ProfileCaptureWindowBtn" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" ToolTip="直接点击桌面上运行中的目标软件窗口，自动识别并绑定其进程" Click="ProfileCaptureWindowBtn_Click" />
+                                  <Button Name="ProfilePickProgramBtn" Content="🖥️ 软件库..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" ToolTip="从已安装的软件列表中选择程序并绑定" Click="ProfilePickProgramBtn_Click" />
+                                  <Button Name="ProfileBrowseExeBtn" Content="📁 浏览..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" ToolTip="浏览选取本地可执行程序文件 (.exe / .lnk)" Click="ProfileBrowseExeBtn_Click" />
+                                </WrapPanel>
+                              </Grid>
+                              <TextBlock x:Name="ProfileBoundProcessesHintText" Visibility="Collapsed" Text="💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
+                          </Border>
                         </StackPanel>
                       </StackPanel>
                     </Border>
 
-                    <Border Grid.Row="2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0">
+                    <Border Grid.Row="3" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,8,0,0">
                       <Grid>
                         <Grid.ColumnDefinitions>
                           <ColumnDefinition Width="Auto" />

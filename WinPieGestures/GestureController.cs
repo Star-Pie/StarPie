@@ -39,7 +39,11 @@ public partial class GestureController : IDisposable
 
 	// 长按触发（可选）：钩子跑在独立后台线程，用 System.Threading.Timer（不依赖线程 Dispatcher），
 	// 代数(Generation)防止旧回调触发到新手势；激活经主线程 Dispatcher 执行。
-	private System.Threading.Timer? _longPressTimer;
+	private IDisposable? _longPressTimer;
+
+	internal Func<Action, TimeSpan, IDisposable>? LongPressTimerFactoryOverride { get; set; }
+	internal Func<Point, WheelProfile, long, WheelFocusSession?, bool>? LongPressPresentationOverride { get; set; }
+	internal Func<Point>? LongPressPointerOverride { get; set; }
 
 	private int _longPressGeneration;
 
@@ -47,6 +51,10 @@ public partial class GestureController : IDisposable
 
 	private static bool IsLongPressOnlyTriggerEnabled =>
 		ConfigManager.CurrentConfig.LongPressTrigger && ConfigManager.CurrentConfig.LongPressOnlyTrigger;
+
+	private bool IsMovementTriggerSuppressed => IsLongPressOnlyTriggerEnabled ||
+		(ConfigManager.CurrentConfig.LongPressTrigger && _activeTrigger?.TriggerType == "Mouse" &&
+		 string.Equals(_activeTrigger.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton, "LeftButton", StringComparison.OrdinalIgnoreCase));
 
 	private bool _mouseTriggerDown;
 
@@ -368,6 +376,12 @@ public partial class GestureController : IDisposable
 	}
 	private void CancelGestureTracking(string reason = "Interrupted")
 	{
+		CancelLongPressTimer();
+		// Keep the intercepted Down's release ownership after visibility/session
+		// state is cleared. Raw input drains it even while the host is paused.
+		if (_mouseTriggerDown && _activeTrigger?.TriggerType == "Mouse")
+			_pinState.OwnMouseUp(_activeTrigger.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton ?? "RightButton");
+		_mouseTriggerDown = false;
 		EndPinnedTracking();
 		_keyboardMatchingTarget = null;
 		_keyboardPanelTarget = 0;
@@ -395,7 +409,6 @@ public partial class GestureController : IDisposable
 			_pendingGestureVersion = _gestureVersion;
 		}
 		HideRadialUI();
-		ActionExecutor.ReleaseStuckModifiers();
 	}
 
 	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction, bool IsSubmenuLocked, WheelLayer? Layer) EndActiveGesture()
@@ -417,7 +430,6 @@ public partial class GestureController : IDisposable
 			_gestureVersion++;
 			_highlightUpdateScheduled = false;
 			_pendingGestureVersion = _gestureVersion;
-			ActionExecutor.ReleaseStuckModifiers();
 			return result;
 		}
 	}
@@ -1582,20 +1594,26 @@ public partial class GestureController : IDisposable
 		return null;
 	}
 
-	/// <summary>启动长按触发计时（按下时，仅鼠标触发）。</summary>
+	/// <summary>鼠标/键盘长按；零阈值立即认领会话，窗口仍异步呈现。</summary>
 	private void StartLongPressTimer()
 	{
 		CancelLongPressTimer();
-		double delay = ConfigManager.CurrentConfig.LongPressDelayMs > 0.0 ? ConfigManager.CurrentConfig.LongPressDelayMs : 450.0;
+		double delay = ConfigManager.CurrentConfig.EffectiveLongPressDelayMs;
 		int generation;
 		lock (_longPressLock)
 		{
 			generation = ++_longPressGeneration;
-			_longPressTimer = new System.Threading.Timer(delegate
+			if (delay > 0)
 			{
-				LongPressTimerCallback(generation);
-			}, null, TimeSpan.FromMilliseconds(delay), System.Threading.Timeout.InfiniteTimeSpan);
+				Action callback = () => LongPressTimerCallback(generation);
+				_longPressTimer = LongPressTimerFactoryOverride?.Invoke(callback, TimeSpan.FromMilliseconds(delay))
+					?? new System.Threading.Timer(_ => callback(), null, TimeSpan.FromMilliseconds(delay), System.Threading.Timeout.InfiniteTimeSpan);
+				return;
+			}
 		}
+		// Claim before the physical Up can arrive; do not turn a zero-delay tap
+		// into a deferred native click just because the thread pool is busy.
+		LongPressTimerCallback(generation);
 	}
 
 	private void CancelLongPressTimer()
@@ -1614,67 +1632,85 @@ public partial class GestureController : IDisposable
 	/// <summary>长按达阈值：鼠标默认在按下处呼出，键盘及仅长按模式在当前光标处呼出。线程池回调 → 主线程 UI。</summary>
 	private void LongPressTimerCallback(int generation)
 	{
-		lock (_longPressLock)
-		{
-			if (generation != _longPressGeneration)
-			{
-				return; // 已被取消/替换的旧回调
-			}
-			_longPressTimer = null;
-		}
-		bool isMouseWaiting = _mouseTriggerDown && _isWaitingForThreshold;
-		bool isKbWaiting = _kbTriggerWaiting && _isWaitingForThreshold;
-		// 粘滞轮盘占位期间不起真手势（同屏一轮盘）；反向互斥见 StickyWheelSession.Show。
-		if ((!isMouseWaiting && !isKbWaiting) || _isGestureActive || WinPieGestures.Plugins.StickyWheelSession.IsActive)
-		{
-			return;
-		}
+		long gestureVersion = Interlocked.Read(ref _gestureVersion);
+		ProfileTriggerActivation? activation = _activeActivation;
+		WheelFocusSession? focusSession;
+		WheelProfile profile;
+		bool layerAvailable;
 		try
 		{
-			_isWaitingForThreshold = false;
-			_isGestureActive = true;
-			if (isKbWaiting)
+			lock (_longPressLock)
 			{
-				_kbTriggerWaiting = false;
-				_currentWheelFocusSession = null;
+				if (generation != _longPressGeneration || _disposed || _mouseHook.IsPaused)
+				{
+					return;
+				}
+				_longPressTimer?.Dispose();
+				_longPressTimer = null;
+				bool isMouseWaiting = _mouseTriggerDown && _isWaitingForThreshold;
+				bool isKbWaiting = _kbTriggerWaiting && _isWaitingForThreshold;
+				if ((!isMouseWaiting && !isKbWaiting) || _isGestureActive || StickyWheelSession.IsActive) return;
+				_longPressGeneration++;
+				activation = _activeActivation;
+				focusSession = isKbWaiting ? null : _currentWheelFocusSession;
+				gestureVersion = Interlocked.Read(ref _gestureVersion);
+				profile = activation?.Profile ?? ConfigManager.GetProfileForProcess(
+					focusSession?.TargetInfo.MatchingProcessName ?? _keyboardMatchingTarget?.MatchingProcessName ??
+					ActiveWindowHelper.GetMatchingActiveWindowProcessName());
+				// Release may run before the UI queue. Resolve the captured layer before
+				// exposing an active gesture so it can never execute the previous layer.
+				layerAvailable = activation?.TrySelectInitialLayer() ?? true;
+				if (layerAvailable)
+				{
+					if (isKbWaiting || IsLongPressOnlyTriggerEnabled)
+					{
+						Point timedPointer;
+						if (LongPressPointerOverride is { } pointer) timedPointer = pointer();
+						else
+						{
+							GetCursorPos(out var point);
+							timedPointer = new Point(point.x, point.y);
+						}
+						// Publish the timed center before any Move/Up can observe active.
+						(_currentDpiScaleX, _currentDpiScaleY) = RadialWindow.GetMonitorDpiScale(timedPointer);
+						_startPoint = timedPointer;
+						_lastMovePoint = timedPointer;
+					}
+					_isWaitingForThreshold = false;
+					_isGestureActive = true;
+					_activeProfile = profile;
+					if (isKbWaiting)
+					{
+						_kbTriggerWaiting = false;
+						_currentWheelFocusSession = null;
+					}
+				}
 			}
-			if (isKbWaiting || IsLongPressOnlyTriggerEnabled)
+			if (!layerAvailable)
 			{
-				// 仅长按模式以计时结束时的光标位置为中心，不沿用按下起点及等待期间的位移。
-				GetCursorPos(out var lpPoint);
-				_startPoint = new Point((double)lpPoint.x, (double)lpPoint.y);
-				_lastMovePoint = _startPoint;
-				var (scaleX, scaleY) = RadialWindow.GetMonitorDpiScale(_startPoint);
-				_currentDpiScaleX = scaleX;
-				_currentDpiScaleY = scaleY;
-			}
-			string processName = (!isKbWaiting && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.MatchingProcessName))
-				? _currentWheelFocusSession.TargetInfo.MatchingProcessName
-				: _keyboardMatchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
-			ProfileTriggerActivation? activation = _activeActivation;
-			if (activation != null && !activation.TrySelectInitialLayer())
-			{
-				CancelGestureTracking("LayerRemoved");
+				CancelLongPressActivation(gestureVersion, activation, "LayerRemoved");
 				return;
 			}
-			WheelProfile profile = activation?.Profile ?? ConfigManager.GetProfileForProcess(processName);
-			_activeProfile = profile;
-			StartInteractionSession(profile);
-			long gestureVersion = GetCurrentGestureVersion();
-			Point startPoint = _startPoint;
-			var focusSession = isKbWaiting ? null : _currentWheelFocusSession;
 			((DispatcherObject)Application.Current).Dispatcher.BeginInvoke((Delegate)(Action)delegate
 			{
 				try
 				{
-					if (!_isGestureActive || !IsCurrentGesture(gestureVersion) ||
+					if (_disposed || _mouseHook.IsPaused || !_isGestureActive || !IsCurrentGesture(gestureVersion) ||
 						(activation != null && !ReferenceEquals(activation, _activeActivation)))
 					{
 						return;
 					}
-					if (ShowRadialUI(startPoint, profile, gestureVersion, focusSession))
+					if (activation != null && !activation.IsLayerAvailable)
 					{
-						RefreshHoverAfterUiChange(startPoint, gestureVersion);
+						CancelLongPressActivation(gestureVersion, activation, "LayerRemoved");
+						return;
+					}
+					StartInteractionSession(profile);
+					Point startPoint = _startPoint;
+					if (LongPressPresentationOverride?.Invoke(startPoint, profile, gestureVersion, focusSession)
+						?? ShowRadialUI(startPoint, profile, gestureVersion, focusSession))
+					{
+						RefreshHoverAfterUiChange(_lastMovePoint, gestureVersion);
 						ApplyPendingHighlight();
 						ApplyVolumePreview();
 					}
@@ -1682,17 +1718,22 @@ public partial class GestureController : IDisposable
 				catch (Exception ex)
 				{
 					AppLogger.LogError("ShowRadialUI failed in LongPressTimerCallback", ex);
-					// 激活失败：恢复状态，保证拖拽等其它触发途径不受影响
-					_isWaitingForThreshold = true;
-					_isGestureActive = false;
+					CancelLongPressActivation(gestureVersion, activation, "PresentationFailed");
 				}
 			}, DispatcherPriority.Normal, Array.Empty<object>());
 		}
 		catch
 		{
-			// 预检/分派失败：恢复状态
-			_isWaitingForThreshold = true;
-			_isGestureActive = false;
+			CancelLongPressActivation(gestureVersion, activation, "PresentationDispatchFailed");
+		}
+	}
+
+	private void CancelLongPressActivation(long version, ProfileTriggerActivation? activation, string reason)
+	{
+		lock (_uiUpdateSync)
+		{
+			if (_gestureVersion == version && ReferenceEquals(activation, _activeActivation))
+				CancelGestureTracking(reason);
 		}
 	}
 
@@ -1764,6 +1805,7 @@ public partial class GestureController : IDisposable
 			}
 			if (!activation.IsLayerAvailable)
 			{
+				_mouseTriggerDown = false; // This physical Up is already being consumed here.
 				CancelGestureTracking("LayerRemoved");
 				return true;
 			}
@@ -2351,7 +2393,7 @@ public partial class GestureController : IDisposable
 		}
 		if (_isWaitingForThreshold)
 		{
-			if (IsLongPressOnlyTriggerEnabled)
+			if (IsMovementTriggerSuppressed)
 			{
 				// 只限制呼出阶段，保留长按计时；轮盘激活后的滑动选择仍走原有路径。
 				return;
@@ -2378,16 +2420,23 @@ public partial class GestureController : IDisposable
 				{
 					return;
 				}
-				bool wasKb = _kbTriggerWaiting;
-				_kbTriggerWaiting = false;
+				bool wasKb;
+				lock (_longPressLock)
+				{
+					// Movement and the timer compete for one activation. Recheck after
+					// acquiring the same gate used by the timed claim.
+					if (!_isWaitingForThreshold || _isGestureActive) return;
+					wasKb = _kbTriggerWaiting;
+					_kbTriggerWaiting = false;
+					_isWaitingForThreshold = false;
+					_isGestureActive = true;
+					CancelLongPressTimer();
+				}
 				if (wasKb && _currentWheelFocusSession != null)
 				{
 					_currentWheelFocusSession.Cancel();
 					_currentWheelFocusSession = null;
 				}
-				_isWaitingForThreshold = false;
-				_isGestureActive = true;
-				CancelLongPressTimer(); // 拖动先于长按触发
 				string activeWindowProcessName = (!wasKb && _currentWheelFocusSession?.TargetInfo != null && !string.IsNullOrEmpty(_currentWheelFocusSession.TargetInfo.MatchingProcessName))
 					? _currentWheelFocusSession.TargetInfo.MatchingProcessName
 					: _keyboardMatchingTarget?.MatchingProcessName ?? ActiveWindowHelper.GetMatchingActiveWindowProcessName();
@@ -2829,7 +2878,6 @@ public partial class GestureController : IDisposable
 		{
 			return;
 		}
-		ActionExecutor.ReleaseStuckModifiers();
 		try
 		{
 			gestureWindow.Dismiss(presentationVersion);

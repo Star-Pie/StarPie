@@ -86,6 +86,27 @@ public class WheelLayer : INotifyPropertyChanged
 		return false;
 	}
 
+	internal static int GetNextDefaultLayerNumber(IEnumerable<WheelLayer>? layers)
+	{
+		int count = 0;
+		int maxNum = 0;
+		if (layers != null)
+		{
+			foreach (WheelLayer layer in layers)
+			{
+				count++;
+				if (!string.IsNullOrWhiteSpace(layer?.Name) &&
+					TryParseDefaultLayerNumber(layer.Name, out string? numStr) &&
+					int.TryParse(numStr, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int parsed) &&
+					parsed > maxNum)
+				{
+					maxNum = parsed;
+				}
+			}
+		}
+		return Math.Max(count + 1, maxNum + 1);
+	}
+
 	private static bool IsAllDigits(ReadOnlySpan<char> span)
 	{
 		for (int i = 0; i < span.Length; i++)

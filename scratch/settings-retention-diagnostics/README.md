@@ -1,0 +1,7 @@
+# 设置释放路径隔离探针
+
+只绑定明确候选，运行于全新自有目录及隔离的四个环境根。不构造产品Window/Application、不调用InitializeComponent或Show，不启动钩子、插件或动作，不连接日常进程。只在可丢弃探针内GC。
+
+未释放阳性对照分别由PluginHost事件、实际30秒DispatcherTimer和外部持有的布局项保活owner。实际ReleaseWindowResources运行后检查弱引用、订阅计数及重复释放；包含SlotViewModel的语言订阅释放。定时器在同步测试中停止，不运行DispatcherFrame，不会触发Close回调。
+
+这只证明被测解除订阅路径，不证明完整WPF设置窗口、主题控件、异步任务、绑定或原生资源均无泄漏。真实0858三轮数据及配置更新时间字节级证明见settings-retention-diagnostics报告目录。

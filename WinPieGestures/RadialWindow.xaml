@@ -63,7 +63,7 @@
       </Border.Effect>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <TextBlock Name="LayerIndicatorIcon" Text="🌟" FontSize="12" Margin="0,0,6,0" VerticalAlignment="Center" />
-        <TextBlock Name="LayerIndicatorText" Text="第 1 层 (1/1)" FontSize="11.5" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
+        <TextBlock Name="LayerIndicatorText" Text="第 1 层 (1/1)" MaxWidth="320" TextTrimming="CharacterEllipsis" FontSize="11.5" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" />
       </StackPanel>
     </Border>
   </Grid>

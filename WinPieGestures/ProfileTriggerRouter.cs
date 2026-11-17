@@ -17,6 +17,7 @@ internal enum ProfileTriggerValidationError
 	None,
 	GlobalProtected,
 	InvalidTrigger,
+	MissingTrigger,
 	Conflict
 }
 
@@ -164,6 +165,16 @@ internal static class ProfileTriggerRouter
 		bool hasApplicationOverride = legacyTrigger != null;
 		legacyTrigger ??= snapshot.GlobalTrigger;
 
+		// A parallel wheel is independent of the foreground application's legacy
+		// default. Exact dedicated application shortcuts were already resolved above.
+		RouteKey parallelKey = new(GlobalScope, signature);
+		if (snapshot.Dedicated.TryGetValue(parallelKey, out var parallel) && !IsGlobal(parallel.Profile))
+		{
+			activation = new ProfileTriggerActivation(parallel.Profile, parallel.Trigger,
+				parallel.Signature, isDedicated: true, processName, parallel.Layer);
+			return ProfileTriggerResolution.Match;
+		}
+
 		// Application-scoped legacy bindings also win over a Global layer shortcut.
 		if ((!hasApplicationProfile && !hasApplicationOverride) || legacyTrigger == null || !MatchesLegacy(legacyTrigger, signature))
 		{
@@ -223,14 +234,47 @@ internal static class ProfileTriggerRouter
 	}
 
 	internal static ProfileTriggerValidationError ValidateLayerTrigger(AppConfig? config, WheelProfile profile,
-		WheelLayer layer, TriggerConfig? trigger) => ValidateBinding(config, profile, layer, trigger, null, null);
+		WheelLayer layer, TriggerConfig? trigger)
+	{
+		if (!IsGlobal(profile) && !profile.UseApplicationContext && trigger == null &&
+			!EnumerateBindings(profile).Any(b => !ReferenceEquals(b.Layer, layer)))
+			return ProfileTriggerValidationError.MissingTrigger;
+		return ValidateBinding(config, profile, layer, trigger, null, null);
+	}
 
 	internal static ProfileTriggerValidationError ValidateBindings(AppConfig? config, WheelProfile profile,
-		string? proposedBindings = null, string? proposedDisplayName = null)
+		string? proposedBindings = null, string? proposedDisplayName = null) =>
+		ValidateBindingsCore(config, profile, proposedBindings, proposedDisplayName, profile.UseApplicationContext);
+
+	internal static ProfileTriggerValidationError ValidateContextMode(AppConfig? config, WheelProfile profile, bool useApplicationContext) =>
+		ValidateBindingsCore(config, profile, null, null, useApplicationContext);
+
+	internal static bool ConflictsWithParallelTrigger(AppConfig config, TriggerConfig trigger) =>
+		config.Profiles.Any(p => !IsGlobal(p) && !p.UseApplicationContext &&
+			EnumerateBindings(p).Any(b => AreEquivalent(b.Trigger, trigger)));
+
+	internal static ProfileTriggerValidationError ValidateLayerRemoval(AppConfig config, WheelProfile profile, WheelLayer layer)
 	{
+		int index = profile.Layers.IndexOf(layer);
+		if (index < 0 || profile.Layers.Count <= 1) return ProfileTriggerValidationError.InvalidTrigger;
+		WheelProfile proposed = profile.Clone(profile.ProcessName);
+		proposed.RemoveLayer(proposed.Layers[index]);
+		var proposedConfig = new AppConfig {
+			Trigger = config.Trigger,
+			BlacklistTriggerOverrides = config.BlacklistTriggerOverrides,
+			Profiles = config.Profiles.Select(p => ReferenceEquals(p, profile) ? proposed : p).ToList()
+		};
+		return ValidateBindings(proposedConfig, proposed);
+	}
+
+	private static ProfileTriggerValidationError ValidateBindingsCore(AppConfig? config, WheelProfile profile,
+		string? proposedBindings, string? proposedDisplayName, bool context)
+	{
+		if (!IsGlobal(profile) && !context && !EnumerateBindings(profile).Any())
+			return ProfileTriggerValidationError.MissingTrigger;
 		foreach (var binding in EnumerateBindings(profile))
 		{
-			var error = ValidateBinding(config, profile, binding.Layer, binding.Trigger, proposedBindings, proposedDisplayName);
+			var error = ValidateBinding(config, profile, binding.Layer, binding.Trigger, proposedBindings, proposedDisplayName, context);
 			if (error != ProfileTriggerValidationError.None) return error;
 		}
 		return ProfileTriggerValidationError.None;
@@ -256,7 +300,7 @@ internal static class ProfileTriggerRouter
 	}
 
 	private static ProfileTriggerValidationError ValidateBinding(AppConfig? config, WheelProfile profile,
-		WheelLayer? layer, TriggerConfig? trigger, string? proposedBindings, string? proposedDisplayName)
+		WheelLayer? layer, TriggerConfig? trigger, string? proposedBindings, string? proposedDisplayName, bool? useApplicationContext = null)
 	{
 		if (trigger == null)
 		{
@@ -268,6 +312,10 @@ internal static class ProfileTriggerRouter
 		}
 
 		HashSet<string> tokens = GetProcessTokens(profile, proposedBindings, proposedDisplayName);
+		bool parallel = !IsGlobal(profile) && !(useApplicationContext ?? profile.UseApplicationContext);
+		if (parallel && AreEquivalent(trigger, config?.Trigger)) return ProfileTriggerValidationError.Conflict;
+		if (parallel && config?.BlacklistTriggerOverrides?.Values.Any(t => AreEquivalent(trigger, t)) == true)
+			return ProfileTriggerValidationError.Conflict;
 		if (config?.Profiles == null)
 		{
 			return ProfileTriggerValidationError.None;
@@ -275,12 +323,17 @@ internal static class ProfileTriggerRouter
 
 		foreach (WheelProfile other in config.Profiles)
 		{
-			if (other == null || IsGlobal(other) != IsGlobal(profile))
+			if (other == null)
 			{
 				continue;
 			}
 
-			if (!IsGlobal(profile) && !ReferenceEquals(profile, other) && !tokens.Overlaps(GetProcessTokens(other))) continue;
+			bool otherParallel = !IsGlobal(other) && !other.UseApplicationContext;
+			if (!parallel && !otherParallel)
+			{
+				if (IsGlobal(other) != IsGlobal(profile)) continue;
+				if (!IsGlobal(profile) && !ReferenceEquals(profile, other) && !tokens.Overlaps(GetProcessTokens(other))) continue;
+			}
 			foreach (var binding in EnumerateBindings(other))
 			{
 				if (ReferenceEquals(other, profile) && ReferenceEquals(binding.Layer, layer)) continue;
@@ -390,10 +443,13 @@ internal static class ProfileTriggerRouter
 					globalProfile ??= profile;
 				}
 
-				HashSet<string> tokens = global ? new HashSet<string> { GlobalScope } : GetProcessTokens(profile);
+				bool parallel = !global && !profile.UseApplicationContext;
+				// Invalid imported parallel routes remain stored, but never claim input.
+				if (parallel && ValidateBindings(config, profile) != ProfileTriggerValidationError.None) continue;
+				HashSet<string> tokens = global || parallel ? new HashSet<string> { GlobalScope } : GetProcessTokens(profile);
 				if (tokens.Count == 0) continue;
 
-				if (!global && profile.ActivationTrigger == null)
+				if (!global && !parallel && profile.ActivationTrigger == null)
 				{
 					foreach (string token in tokens) legacyProfiles.TryAdd(token, profile);
 				}
@@ -455,25 +511,7 @@ internal static class ProfileTriggerRouter
 
 	private static HashSet<string> GetProcessTokens(WheelProfile profile, string? bindings = null, string? displayName = null)
 	{
-		HashSet<string> tokens = new(StringComparer.OrdinalIgnoreCase);
-		bindings ??= profile.BoundProcesses;
-		if (!string.IsNullOrWhiteSpace(bindings))
-		{
-			foreach (string token in bindings.Split(
-				new[] { ',', ';', '|', ' ', '，' },
-				StringSplitOptions.RemoveEmptyEntries))
-			{
-				string normalized = NormalizeProcessToken(token);
-				if (!string.IsNullOrEmpty(normalized)) tokens.Add(normalized);
-			}
-		}
-		else
-		{
-			string processToken = NormalizeProcessToken(profile.ProcessName);
-			if (!string.IsNullOrEmpty(processToken)) tokens.Add(processToken);
-			string displayToken = NormalizeProcessToken(displayName ?? profile.DisplayName);
-			if (!string.IsNullOrEmpty(displayToken)) tokens.Add(displayToken);
-		}
+		HashSet<string> tokens = ProfileProcessBindings.GetNames(profile, bindings, displayName);
 		foreach (string token in tokens.ToArray()) tokens.Add(token + ".exe");
 		return tokens;
 	}

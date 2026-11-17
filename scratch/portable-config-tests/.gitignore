@@ -1,0 +1,6 @@
+artifacts/
+build-out*/
+bin/
+obj/
+obj-candidate-*/
+scratch/
