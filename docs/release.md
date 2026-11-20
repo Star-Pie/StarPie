@@ -78,7 +78,9 @@ dotnet publish .\WinPieGestures\WinPieGestures.csproj `
 
 ## 7. AtomGit Release 镜像
 
-源码、分支和 Tag 继续由 AtomGit 已配置的 Pull 镜像同步；GitHub Actions 只复制已经发布的 Release 元数据和原始附件，不构建、签名、推送代码或修改 Tag。
+GitHub 的 main 更新时，工作流「Sync main to AtomGit」将同一提交快进到 AtomGit，并回读远端提交号。两个平台由此显示同一源码树和 README。分支分叉时工作流会报错，维护者可在核对差异后从 main 手动重跑。其他分支和 Tag 继续通过 AtomGit 的 Pull 镜像同步。
+
+工作流使用目标仓库的 ATOMGIT_TOKEN，快进需要 Git 写权限。手动运行时勾选 audit_releases 可只读对比历史发行版与附件清单。发行附件仍由「Sync Release to AtomGit」按已发布标签复制、校验。
 
 ### 配置与入口
 
