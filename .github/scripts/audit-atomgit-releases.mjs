@@ -24,12 +24,21 @@ function indexBy(items, key) {
   return result;
 }
 
-function generatedArchive(asset, repository) {
-  // AtomGit includes generated source archives alongside uploaded release attachments.
-  if (!asset.browser_download_url || !URL.canParse(asset.browser_download_url)) return false;
+function generatedArchive(asset, repository, tag) {
+  // A published attachment can share the generated archive's filename. AtomGit
+  // marks uploads as "attach" with an asset ID, and its source archives as "source".
+  if (asset.type === 'attach' || asset.id > 0 || asset.digest) return false;
+  if (asset.type === 'source') return true;
+  // Older API responses omit the type. Restrict the fallback to archive routes
+  // on the official site; an uploaded file uses /releases/download/ instead.
+  if (!URL.canParse(asset.browser_download_url)) return false;
   const url = new URL(asset.browser_download_url);
-  return ['atomgit.com', 'gitcode.com'].includes(url.hostname)
-    && url.pathname.toLowerCase().startsWith('/' + repository.toLowerCase() + '/-/archive/');
+  if (!['atomgit.com', 'gitcode.com'].includes(url.hostname)) return false;
+  const path = url.pathname.toLowerCase();
+  const base = '/' + repository.toLowerCase();
+  const nameMatches = ['.zip', '.tar.gz', '.tar.bz2', '.tar'].some(ext => asset.name === tag + ext);
+  return path.startsWith(base + '/-/archive/')
+    || (nameMatches && (path.startsWith(base + '/archive/refs/heads/') || path.startsWith(base + '/archive/refs/tags/')));
 }
 
 export async function audit(env, fetchImpl = fetch, output = console.log) {
@@ -86,7 +95,7 @@ export async function audit(env, fetchImpl = fetch, output = console.log) {
   const mirrored = indexBy(mirrors.filter(release => release?.draft !== true && release?.release_status !== 'draft'), 'tag_name');
   let missingReleases = 0, missingFiles = 0, missingBytes = 0, mismatches = 0, extraFiles = 0, extraReleases = 0;
 
-  let metadataDifferences = 0, metadataUnavailable = 0;
+  let metadataDifferences = 0, metadataUnavailable = 0, sourceArchiveCount = 0;
 
   for (const [tag, release] of published) {
     if (!Number.isSafeInteger(release.id) || release.id < 1) throw new Error('Invalid GitHub release ID.');
@@ -103,7 +112,9 @@ export async function audit(env, fetchImpl = fetch, output = console.log) {
       }
       if (!Array.isArray(assets)) throw new Error('AtomGit returned an invalid release attachment list.');
       if (assets.some(asset => !asset || typeof asset !== 'object')) throw new Error('Invalid AtomGit attachment.');
-      actual = indexBy(assets.filter(asset => !generatedArchive(asset, target)), 'name');
+      const uploads = assets.filter(asset => !generatedArchive(asset, target, tag));
+      sourceArchiveCount += assets.length - uploads.length;
+      actual = indexBy(uploads, 'name');
       const fields = [], unavailable = [];
       if (Object.hasOwn(release, 'name') && typeof targetRelease.name === 'string') {
         if (targetRelease.name !== (release.name || tag)) fields.push('name');
@@ -168,7 +179,7 @@ export async function audit(env, fetchImpl = fetch, output = console.log) {
     + '. Missing releases=' + missingReleases + ', missing attachments=' + missingFiles
     + ' (' + missingBytes + ' bytes), mismatched attachments=' + mismatches
     + ', releases with metadata differences=' + metadataDifferences + ', releases with unavailable fields=' + metadataUnavailable
-    + ', extra releases=' + extraReleases + ', extra attachments=' + extraFiles + '.');
+    + ', extra releases=' + extraReleases + ', extra attachments=' + extraFiles + ', platform source archives=' + sourceArchiveCount + '.');
   return missingReleases + missingFiles + mismatches + metadataDifferences + extraReleases + extraFiles === 0;
 }
 
