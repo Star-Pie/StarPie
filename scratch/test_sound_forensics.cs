@@ -3461,7 +3461,7 @@ public class SoundForensicsSuite
         if (Regex.IsMatch(pointer, @"\bInteraction\s*\?\.\s*Update\s*\("))
         {
             var confirmations = Regex.Matches(press, @"\bInteraction\s*\?\.\s*Confirm\s*\(");
-            var dispatches = Regex.Matches(press, @"\bActionExecutor\s*\.\s*EnqueueAction\s*\(");
+            var dispatches = Regex.Matches(press, @"\bActionExecutor\s*\.\s*EnqueueAction(?:AtPoint)?\s*\(");
             var closesNew = Regex.Matches(press, @"\bCloseUi\s*\(\s*session\s*,\s*reason\s*,\s*completeInteraction\s*:\s*false\s*\)\s*;");
             bool valid = closesNew.Count == 1 && confirmations.Count > 0 && dispatches.Count > 0 &&
                 IsUnconditionalTopLevelCall(press, closesNew[0].Index) && confirmations.Cast<Match>().All(c => c.Index > closesNew[0].Index) &&
@@ -3508,6 +3508,10 @@ internal static void HandlePress(bool leftButton)
 		const string close = "CloseUi(session, reason, completeInteraction: false);";
 		const string play = "SoundEffectManager.Play(SoundType.ActionExecute, SoundSessionSource.StickyWheel, session.SoundSessionId);";
 		const string enqueue = "ActionExecutor.EnqueueAction(target);";
+		const string enqueueAtPoint = "ActionExecutor.EnqueueActionAtPoint(target, triggerPoint);";
+		string semantic = fixture.Replace("SoundEffectManager.ReportHover", "session.Interaction?.Update").Replace(play, "session.Interaction?.Confirm(target);").Replace(enqueue, enqueueAtPoint);
+		Assert(AuditStickyWheelSoundPath(semantic, out _), "7B_AuditAcceptsDispatchAtTriggerPoint");
+		Assert(!AuditStickyWheelSoundPath(semantic.Replace(close, enqueueAtPoint + close), out _), "7B_AuditRejectsDispatchAtTriggerPointBeforeClose");
 		Assert(AuditStickyWheelSoundPath(fixture, out _), "7B_AuditAcceptsDeferredClose");
 		Assert(AuditStickyWheelSoundPath(fixture.Replace(close, "CloseUi(\n session,\n reason,\n completeInteraction : false\n );"), out _), "7B_AuditAcceptsMultilineClose");
 		Assert(AuditStickyWheelSoundPath(fixture.Replace(close, "CloseUi(session, reason, false);"), out _), "7B_AuditAcceptsPositionalFalse");
