@@ -184,6 +184,8 @@
                     </StackPanel>
 
                     <!-- (2) 启动程序面板 -->
+                    <CheckBox Content="{Binding LaunchPlacementLabel}" IsChecked="{Binding LaunchOnCursorMonitor, Mode=TwoWay}"
+                              Visibility="{Binding SupportsLaunchPlacement, Converter={StaticResource BoolToVis}}" Margin="0,4,0,6" />
                     <StackPanel Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}">
                       <Grid Margin="0,0,0,6">
                         <Grid.ColumnDefinitions>

@@ -307,6 +307,7 @@ public static partial class Program
         controller.TestActionEnqueued = action => dispatched = action;
         var keyUp = typeof(GestureController).GetMethod("KeyboardHook_OnKeyUp", BindingFlags.Instance | BindingFlags.NonPublic)!;
         controller.TestSetGestureActive(true, 700);
+        typeof(GestureController).GetField("_activeTrigger", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(controller, config.Trigger);
         controller.TestPrepareSubmenuGeometry();
         controller.TestProcessMove(new Point(147, -29));
         controller.TestProcessMove(new Point(0, 150));
@@ -314,6 +315,7 @@ public static partial class Program
         PumpDispatcher();
         ReviewCheck(dispatched == null && !controller.TestSubmenuLock.IsLocked, "KeyboardRelease_EmptySpaceSuppressesParentAndResets");
         controller.TestSetGestureActive(true, 701);
+        typeof(GestureController).GetField("_activeTrigger", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(controller, config.Trigger);
         controller.TestPrepareSubmenuGeometry();
         controller.TestProcessMove(new Point(147, -29));
         keyUp.Invoke(controller, [null, new GlobalKeyEventArgs(65, ModifierKeys.None)]);

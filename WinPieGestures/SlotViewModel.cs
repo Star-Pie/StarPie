@@ -448,6 +448,9 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 			OnPropertyChanged("Type");
 			OnPropertyChanged("IsHotkeyType");
 			OnPropertyChanged("IsLaunchType");
+			OnPropertyChanged(nameof(SupportsLaunchPlacement));
+			OnPropertyChanged(nameof(LaunchPlacementLabel));
+			OnPropertyChanged(nameof(LaunchOnCursorMonitor));
 			OnPropertyChanged("IsWebUrlType");
 			OnPropertyChanged("IsFolderType");
 			OnPropertyChanged("IsSystemType");
@@ -520,6 +523,20 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 				Action.CommandTerminal = value;
 				OnPropertyChanged("CommandTerminal");
 			}
+		}
+	}
+
+	public bool SupportsLaunchPlacement => LaunchMonitorPlacement.IsSupportedAction(Action);
+	public string LaunchPlacementLabel => I18n.T("LaunchPlacementLabel");
+
+	public bool LaunchOnCursorMonitor
+	{
+		get => Action.LaunchOnCursorMonitor;
+		set
+		{
+			if (!SupportsLaunchPlacement || Action.LaunchOnCursorMonitor == value) return;
+			Action.LaunchOnCursorMonitor = value;
+			OnPropertyChanged(nameof(LaunchOnCursorMonitor));
 		}
 	}
 
@@ -955,6 +972,9 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 		OnPropertyChanged(nameof(SelectedSystemPreset));
 		OnPropertyChanged(nameof(IsHotkeyType));
 		OnPropertyChanged(nameof(IsLaunchType));
+		OnPropertyChanged(nameof(SupportsLaunchPlacement));
+		OnPropertyChanged(nameof(LaunchPlacementLabel));
+		OnPropertyChanged(nameof(LaunchOnCursorMonitor));
 		OnPropertyChanged(nameof(IsFolderType));
 		OnPropertyChanged(nameof(IsSystemType));
 		OnPropertyChanged(nameof(IsCommandType));
@@ -996,6 +1016,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 		OnPropertyChanged(nameof(SwitchWindowIndexToolTip));
 		OnPropertyChanged(nameof(TileLayoutToolTip));
 		OnPropertyChanged(nameof(LaunchArgsToolTip));
+		OnPropertyChanged(nameof(LaunchPlacementLabel));
 		OnPropertyChanged(nameof(ManageSubActionsToolTip));
 		OnPropertyChanged(nameof(Terminals));
 		OnPropertyChanged(nameof(TileLayoutOptions));

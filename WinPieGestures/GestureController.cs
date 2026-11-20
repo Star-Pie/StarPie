@@ -608,7 +608,7 @@ public partial class GestureController : IDisposable
 	}
 	#endregion
 
-	private void EnqueueGestureAction(ActionItem targetAction, ActionExecutionContext? context = null)
+	private void EnqueueGestureAction(ActionItem targetAction, ActionExecutionContext? context, Point? triggerPoint)
 	{
 		// A queued panel must never rebind to whichever application happens to be foreground later.
 		if (targetAction.Type == "ActionPanel" && (context == null || context.TargetHwnd == 0 || context.TargetProcessId == 0)) return;
@@ -622,7 +622,10 @@ public partial class GestureController : IDisposable
 			TestActionEnqueued(targetAction);
 			return;
 		}
-		ActionExecutor.EnqueueAction(targetAction, context);
+		if (targetAction.LaunchOnCursorMonitor && LaunchMonitorPlacement.IsSupportedAction(targetAction))
+			ActionExecutor.EnqueueActionAtPoint(targetAction, triggerPoint, context);
+		else
+			ActionExecutor.EnqueueAction(targetAction, context);
 	}
 
 	private void QueueHighlightUpdate(int sectorIndex, int subSectorIndex, bool isEscaped, bool showSubTier, long gestureVersion)
@@ -1267,9 +1270,13 @@ public partial class GestureController : IDisposable
 				if (ga != null)
 				{
 					ActionItem action = ga;
+					Point triggerPoint = e.Position;
 					((DispatcherObject)Application.Current).Dispatcher.BeginInvoke((Delegate)(Action)delegate
 					{
-						ActionExecutor.Execute(action);
+						if (action.LaunchOnCursorMonitor && LaunchMonitorPlacement.IsSupportedAction(action))
+							ActionExecutor.EnqueueActionAtPoint(action, triggerPoint);
+						else
+							ActionExecutor.Execute(action);
 					}, (DispatcherPriority)5, Array.Empty<object>());
 				}
 			}
@@ -1965,7 +1972,7 @@ public partial class GestureController : IDisposable
 						);
 					}
 
-					EnqueueGestureAction(targetAction, execContext);
+					EnqueueGestureAction(targetAction, execContext, releasePosition);
 				}
 				else
 				{
@@ -2261,6 +2268,7 @@ public partial class GestureController : IDisposable
 			}
 			bool volumeTookOver = _volumeGestureTookOver;
 			float volumeBaseline = _volumeBaseline;
+			Point? triggerPoint = GetCursorPos(out var cursor) ? new Point(cursor.x, cursor.y) : null;
 			var finalState = EndActiveGesture();
 			var endedInteractionSession = finalState.Interaction;
 			int finalSector = finalState.Sector;
@@ -2330,7 +2338,7 @@ public partial class GestureController : IDisposable
 					if (targetAction.Type == "ActionPanel" && context == null && panelTarget != 0 && panelTargetPid != 0)
 						context = new ActionExecutionContext(panelTarget, panelTargetPid, "",
 							() => !_disposed && !_mouseHook.IsPaused && IsCurrentGesture(executionVersion));
-					EnqueueGestureAction(targetAction, context);
+					EnqueueGestureAction(targetAction, context, triggerPoint);
 				}
 				else
 				{

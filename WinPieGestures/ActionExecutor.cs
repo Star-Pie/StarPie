@@ -67,10 +67,20 @@ internal readonly struct ActionEnvelope
 	public ActionItem Action { get; }
 	public ActionExecutionContext? Context { get; }
 
-	public ActionEnvelope(ActionItem action, ActionExecutionContext? context = null)
+	public string? LaunchMonitor { get; }
+
+	internal static ActionEnvelope Snapshot(ActionItem action, ActionExecutionContext? context, Point? point,
+		Func<Point?, string?>? lookupMonitor = null)
+	{
+		var snapshot = action.Clone();
+		return new ActionEnvelope(snapshot, context, LaunchMonitorPlacement.Capture(snapshot, point, lookupMonitor));
+	}
+
+	public ActionEnvelope(ActionItem action, ActionExecutionContext? context = null, string? launchMonitor = null)
 	{
 		Action = action;
 		Context = context;
+		LaunchMonitor = launchMonitor;
 	}
 }
 
@@ -343,10 +353,16 @@ public static class ActionExecutor
 	public static void EnqueueAction(ActionItem action, ActionExecutionContext? context = null)
 	{
 		if (action != null)
-		{
-			ActionItem snapshot = action.Clone();
-			s_actionChannel.Writer.TryWrite(new ActionEnvelope(snapshot, context));
-		}
+			s_actionChannel.Writer.TryWrite(ActionEnvelope.Snapshot(action, context, null));
+	}
+
+	internal static void EnqueueActionAtPoint(ActionItem action, Point? physicalPoint, ActionExecutionContext? context = null)
+	{
+		if (action == null) return;
+		// A failed capture at release time must not bind to a later cursor position.
+		var envelope = physicalPoint.HasValue ? ActionEnvelope.Snapshot(action, context, physicalPoint)
+			: new ActionEnvelope(action.Clone(), context);
+		s_actionChannel.Writer.TryWrite(envelope);
 	}
 
 	/// <summary>
@@ -446,6 +462,7 @@ public static class ActionExecutor
 
 		try
 		{
+			using var monitorScope = LaunchMonitorPlacement.BeginInvocation(envelope.LaunchMonitor);
 			if (ActionExecutionOverride != null)
 			{
 				ActionExecutionOverride(action, envelope.Context);
@@ -470,7 +487,11 @@ public static class ActionExecutor
 		}
 	}
 
-	public static void Execute(ActionItem action) => ExecuteCore(action, null);
+	public static void Execute(ActionItem action)
+	{
+		using var monitorScope = LaunchMonitorPlacement.BeginInvocation(LaunchMonitorPlacement.Capture(action, null));
+		ExecuteCore(action, null);
+	}
 
 	private static void ExecuteCore(ActionItem action, ActionExecutionContext? context)
 	{
@@ -2403,7 +2424,8 @@ public static class ActionExecutor
         string arguments,
         StarPie.Plugin.ProcessLaunchMode mode,
         Func<string, LaunchWindowToggleResult>? toggleExisting = null,
-        Func<ProcessStartInfo, StarPie.Plugin.ProcessLaunchMode, bool>? launchProcess = null)
+        Func<ProcessStartInfo, StarPie.Plugin.ProcessLaunchMode, bool>? launchProcess = null, string? targetMonitor = null,
+        Func<ProcessStartInfo, string, bool>? launchOnMonitor = null)
     {
         if (!Enum.IsDefined(mode)) throw new ArgumentOutOfRangeException(nameof(mode));
         if (string.IsNullOrWhiteSpace(path)) return false;
@@ -2438,9 +2460,10 @@ public static class ActionExecutor
 
         string exeName = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
         bool isShellOrSpecial = ProcessWindowSelector.IsSpecialProgram(exeName);
+        bool followMonitor = LaunchMonitorPlacement.CanTrack(targetMonitor, file, mode, isShellOrSpecial || isHttpUrl);
 
         // 仅在 Default 与 StandardUser 且无参数且非特殊程序时优先进行已有窗口切换
-        if (!isHttpUrl && mode != StarPie.Plugin.ProcessLaunchMode.Administrator && !isShellOrSpecial && string.IsNullOrWhiteSpace(arguments))
+        if (!followMonitor && !isHttpUrl && mode != StarPie.Plugin.ProcessLaunchMode.Administrator && !isShellOrSpecial && string.IsNullOrWhiteSpace(arguments))
         {
             var toggleFunc = toggleExisting ?? (p => LaunchWindowToggle.TryToggle(p));
             LaunchWindowToggleResult toggleResult = toggleFunc(file);
@@ -2486,6 +2509,9 @@ public static class ActionExecutor
             UseShellExecute = true,
         };
 
+        if (followMonitor)
+            return (launchOnMonitor ?? LaunchMonitorPlacement.StartWithPlacement)(processStartInfo, targetMonitor!);
+
         if (launchProcess != null)
             return launchProcess(processStartInfo, mode);
 
@@ -2510,14 +2536,14 @@ public static class ActionExecutor
         string arguments,
         bool runAsStandardUser = false,
         Func<string, LaunchWindowToggleResult>? toggleExisting = null,
-        Func<ProcessStartInfo, StarPie.Plugin.ProcessLaunchMode, bool>? launchProcess = null)
+        Func<ProcessStartInfo, StarPie.Plugin.ProcessLaunchMode, bool>? launchProcess = null, string? targetMonitor = null)
     {
         bool ok = ExecuteLaunchWithMode(
             path,
             arguments,
             runAsStandardUser ? StarPie.Plugin.ProcessLaunchMode.StandardUser : StarPie.Plugin.ProcessLaunchMode.Default,
             toggleExisting,
-            launchProcess);
+            launchProcess, targetMonitor);
         if (!ok)
         {
             throw new InvalidOperationException($"Launch execution failed for '{path}'");

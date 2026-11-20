@@ -1471,6 +1471,7 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("FocusLaunchCaptureWindowBtnToolTip", "直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径", "直接探測並捕捉桌面上正在執行的使用中視窗與程式執行路徑", "Detect and capture running window and its executable path directly from desktop", "デスクトップ上で実行中のウィンドウと実行パスを検出して捕捉");
 		Add("FocusLaunchBrowseExeBtnText", "📂 浏览...", "📂 瀏覽...", "📂 Browse...", "📂 参照...");
 		Add("FocusLaunchBrowseExeBtnToolTip", "手动浏览可执行文件或快捷方式", "手動瀏覽可執行檔案或捷徑", "Browse executable file or shortcut manually", "実行ファイルやショートカットを手動で参照");
+		Add("LaunchPlacementLabel", "在鼠标所在的显示器上打开或唤起窗口", "在滑鼠所在的顯示器上開啟或喚起視窗", "Open or recall the window on the monitor under the pointer", "ポインターのあるモニターでウィンドウを開く・呼び戻す");
 		Add("FocusLaunchArgsLabel", "启动参数:", "啟動參數:", "Arguments:", "引数:");
 		Add("FocusLaunchArgsToolTip", "启动命令行参数 (可选)", "啟動命令列參數 (選填)", "Command line launch arguments (optional)", "コマンドライン引数（省略可能）");
 		Add("FocusLaunchAsUserTitle", "🛡️ 以常规普通权限启动 (解决高权限下外部文件无法拖入目标软件的问题)", "🛡️ 以一般普通權限啟動 (解決高權限下外部檔案無法拖入目標軟體的問題)", "🛡️ Launch with Standard User Privileges (Fixes drag-and-drop file restrictions under elevated admin)", "🛡️ 標準ユーザー権限で起動（管理者権限下でのファイルドラッグ＆ドロップ制限を解決）");

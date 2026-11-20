@@ -24,7 +24,16 @@ public static partial class Program
         }
         Environment.SetEnvironmentVariable("LOCALAPPDATA", System.IO.Path.Combine(System.IO.Path.GetTempPath(), "StarPie-Submenu-Review-" + Guid.NewGuid().ToString("N")));
         ConfigManager.DisableAutoStartSync = true;
-        _ = Application.Current ?? new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        // Load the same dictionaries as a normal settings window without running host startup.
+        var application = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        using var styles = typeof(Program).Assembly.GetManifestResourceStream("Fixture.HostStyles.xaml")!;
+        var root = System.Xml.Linq.XDocument.Load(styles).Root!;
+        var dictionary = root.Element(root.Name.Namespace + "Application.Resources")!.Elements().Single();
+        var context = new System.Windows.Markup.ParserContext();
+        context.XmlnsDictionary[""] = root.Name.NamespaceName;
+        context.XmlnsDictionary["x"] = "http://schemas.microsoft.com/winfx/2006/xaml";
+        context.XmlnsDictionary["local"] = "clr-namespace:WinPieGestures;assembly=StarPie";
+        application.Resources = (ResourceDictionary)System.Windows.Markup.XamlReader.Parse(dictionary.ToString(), context);
         _baselineMode = args.Length > 0 && args[0].Equals("--baseline", StringComparison.OrdinalIgnoreCase);
         Console.WriteLine($"=== Submenu Parent Lock Tests (Mode: {(_baselineMode ? "BASELINE RECORDING" : "VERIFICATION")}) ===");
 
