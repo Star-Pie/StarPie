@@ -308,11 +308,30 @@ internal static class Program
         Check(!calls.Contains("ShutdownAll"), "IL guard: final OnExit does not repeat synchronous plugin drain");
         Check(typeof(UpdateManager).GetMethod("RestartAndApplyUpdateAsync")!.ReturnType == typeof(Task<bool>),
             "update UI uses the asynchronous preparation contract");
+        static int FirstCallIndex(List<string> calls, params string[] names)
+        {
+            int best = int.MaxValue;
+            foreach (string name in names)
+            {
+                int idx = calls.IndexOf(name);
+                if (idx >= 0 && idx < best) best = idx;
+            }
+            return best == int.MaxValue ? -1 : best;
+        }
         var startup = typeof(App).GetMethod("OnStartup", BindingFlags.NonPublic | BindingFlags.Instance)!;
         List<string> startupCalls = ReadCalls(startup, qualify: true);
-        Check(startupCalls.IndexOf("EventWaitHandle..ctor") >= 0 &&
-            startupCalls.IndexOf("EventWaitHandle..ctor") < startupCalls.IndexOf("Mutex..ctor"),
+        int wakeIdx = FirstCallIndex(startupCalls, "App.CreateOrOpenInstanceEvent", "EventWaitHandleAcl.Create", "EventWaitHandle..ctor");
+        int mutexIdx = FirstCallIndex(startupCalls, "App.CreateOrOpenInstanceMutex", "MutexAcl.Create", "Mutex..ctor");
+        Check(wakeIdx >= 0 && mutexIdx >= 0 && wakeIdx < mutexIdx,
             "IL guard: wake endpoint exists before the mutex can identify a primary instance");
+        var createEvent = typeof(App).GetMethod("CreateOrOpenInstanceEvent", BindingFlags.NonPublic | BindingFlags.Static)!;
+        List<string> createEventCalls = ReadCalls(createEvent, qualify: true);
+        Check(createEventCalls.Contains("EventWaitHandleAcl.Create") && createEventCalls.Contains("EventWaitHandleAcl.OpenExisting"),
+            "IL guard: instance event uses atomic EventWaitHandleAcl.Create and minimal-rights OpenExisting fallback");
+        var createMutex = typeof(App).GetMethod("CreateOrOpenInstanceMutex", BindingFlags.NonPublic | BindingFlags.Static)!;
+        List<string> createMutexCalls = ReadCalls(createMutex, qualify: true);
+        Check(createMutexCalls.Contains("MutexAcl.Create") && createMutexCalls.Contains("MutexAcl.OpenExisting"),
+            "IL guard: instance mutex uses atomic MutexAcl.Create and minimal-rights OpenExisting fallback");
     }
 
     private static void RunLocalizedMessages()
@@ -329,6 +348,11 @@ internal static class Program
                 {
                     string key = "AutoStartResult" + status;
                     Check(I18n.T(key) != key, "existing computed autostart key resolves in " + language);
+                }
+                foreach (string repairKey in new[] { "AutoStartTaskNeedsRepair", "AutoStartRunNeedsRepair" })
+                {
+                    string localized = I18n.T(repairKey);
+                    Check(!string.IsNullOrWhiteSpace(localized) && localized != repairKey, "autostart repair status resolves in " + language);
                 }
             }
         }

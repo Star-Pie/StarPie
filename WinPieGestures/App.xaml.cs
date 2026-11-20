@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Security.Principal;
 using System.Threading;
 using System.Windows;
 using System.Windows.Interop;
@@ -162,15 +164,18 @@ public partial class App : Application
 			{
 				// Publish the wake endpoint before owning the mutex. A second launch
 				// can then queue a wake even while this primary is still starting.
-				_instanceWakeEvent = new EventWaitHandle(false, EventResetMode.AutoReset, WakeEventName);
-				_instanceClosingEvent = new EventWaitHandle(false, EventResetMode.ManualReset, ClosingEventName);
-				_singleInstanceMutex = new Mutex(initiallyOwned: true, MutexName, out bool createdNew);
+				_instanceWakeEvent = CreateOrOpenInstanceEvent(WakeEventName, EventResetMode.AutoReset, out _);
+				_instanceClosingEvent = CreateOrOpenInstanceEvent(ClosingEventName, EventResetMode.ManualReset, out _);
+				_singleInstanceMutex = CreateOrOpenInstanceMutex(MutexName, out bool createdNew);
 				_ownsInstanceMutex = createdNew;
 				if (!createdNew)
 				{
 					InstanceHandoffResult handoff = SingleInstanceHandoff.Acquire(_singleInstanceMutex, _instanceClosingEvent, () =>
 					{
-						_instanceWakeEvent.Set();
+						if (!SettingsWindow.IsSilentLaunch())
+						{
+							_instanceWakeEvent.Set();
+						}
 					});
 					_ownsInstanceMutex = handoff == InstanceHandoffResult.Acquired;
 					if (!_ownsInstanceMutex)
@@ -510,6 +515,65 @@ public partial class App : Application
 	{
 		try { action(); }
 		catch (Exception ex) { try { AppLogger.LogError(description, ex); } catch { } }
+	}
+
+	private static EventWaitHandle CreateOrOpenInstanceEvent(string name, EventResetMode mode, out bool createdNew)
+	{
+		try
+		{
+			return EventWaitHandleAcl.Create(initialState: false, mode, name, out createdNew, CreateInstanceEventSecurity());
+		}
+		catch (UnauthorizedAccessException)
+		{
+			createdNew = false;
+			return EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.Modify | EventWaitHandleRights.Synchronize);
+		}
+	}
+
+	private static Mutex CreateOrOpenInstanceMutex(string name, out bool createdNew)
+	{
+		try
+		{
+			return MutexAcl.Create(initiallyOwned: true, name, out createdNew, CreateInstanceMutexSecurity());
+		}
+		catch (UnauthorizedAccessException)
+		{
+			createdNew = false;
+			return MutexAcl.OpenExisting(name, MutexRights.Modify | MutexRights.Synchronize);
+		}
+	}
+
+	private static EventWaitHandleSecurity CreateInstanceEventSecurity()
+	{
+		var security = new EventWaitHandleSecurity();
+		foreach (SecurityIdentifier sid in GetKernelObjectAccessSids())
+		{
+			security.AddAccessRule(new EventWaitHandleAccessRule(sid, EventWaitHandleRights.FullControl, AccessControlType.Allow));
+		}
+		return security;
+	}
+
+	private static MutexSecurity CreateInstanceMutexSecurity()
+	{
+		var security = new MutexSecurity();
+		foreach (SecurityIdentifier sid in GetKernelObjectAccessSids())
+		{
+			security.AddAccessRule(new MutexAccessRule(sid, MutexRights.FullControl, AccessControlType.Allow));
+		}
+		return security;
+	}
+
+	private static SecurityIdentifier[] GetKernelObjectAccessSids()
+	{
+		var sids = new List<SecurityIdentifier>(3);
+		using var identity = WindowsIdentity.GetCurrent();
+		if (identity.User is SecurityIdentifier userSid)
+		{
+			sids.Add(userSid);
+		}
+		sids.Add(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null));
+		sids.Add(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null));
+		return sids.ToArray();
 	}
 
 	private static void DisposeInstanceHandles()

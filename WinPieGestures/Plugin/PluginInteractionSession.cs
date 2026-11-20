@@ -15,6 +15,7 @@ internal sealed class PluginInteractionSession : IDisposable
     private bool _ended;
     private InteractionEvent? _pendingEnd;
     private bool _expanded;
+    private int _expandedSector = -1;
     private bool _escaped;
     private bool _terminal;
     private InteractionTarget _target = InteractionTarget.None;
@@ -49,26 +50,35 @@ internal sealed class PluginInteractionSession : IDisposable
         }
     }
 
-    internal void Update(int sector, int sub, bool expanded, bool escaped)
+    internal void Update(int sector, int sub, bool expanded, bool escaped, bool preservePrimaryTarget = false)
     {
         lock (_gate)
         {
             if (_ended || _terminal) return;
-            var target = expanded && sub < 0 ? InteractionTarget.None : Target(sector, sub, escaped);
+            var target = expanded && sub < 0 && (!preservePrimaryTarget || sector < 0)
+                ? Target(sector < 0 ? sector : -2, -1, escaped)
+                : Target(sector, sub, escaped);
+            int nextExpandedSector = expanded
+                ? (sector >= 0 ? sector : _expandedSector)
+                : (preservePrimaryTarget && escaped ? _expandedSector : -1);
+            bool shouldEmitExpand = expanded &&
+                ((!_expanded && (_expandedSector < 0 || nextExpandedSector != _expandedSector)) ||
+                 (_expanded && nextExpandedSector >= 0 && _expandedSector >= 0 && nextExpandedSector != _expandedSector));
             if (_presented)
             {
                 if ((!_escaped && escaped) || (_expanded && !expanded))
                     Emit(InteractionEventKind.NavigationCancelled, escaped ? "Escaped" : "SubmenuCollapsed", target);
-                if (!_expanded && expanded) Emit(InteractionEventKind.SubmenuExpanded, target: target);
+                if (shouldEmitExpand) Emit(InteractionEventKind.SubmenuExpanded, target: target);
                 if (_target != target) Emit(InteractionEventKind.SelectionChanged, target: target);
             }
             _target = target;
             _expanded = expanded;
+            _expandedSector = nextExpandedSector;
             _escaped = escaped;
         }
     }
 
-    internal void Confirm(ActionItem? action, InteractionTarget target, string cancelReason = "NoAction")
+    internal static bool IsExecutableAction(ActionItem? action)
     {
         bool configured = WheelProfile.IsActionConfigured(action);
         if (action != null && (string.Equals(action.Type, "Hotkey", StringComparison.OrdinalIgnoreCase) ||
@@ -76,7 +86,12 @@ internal sealed class PluginInteractionSession : IDisposable
             configured &= !string.IsNullOrWhiteSpace(action.Parameter);
         if (string.Equals(action?.Type, "Plugin", StringComparison.OrdinalIgnoreCase))
             configured &= action.PluginActionRef?.IsValid == true;
-        if (!configured || target.Kind == InteractionTargetKind.None) Cancel(cancelReason);
+        return configured;
+    }
+
+    internal void Confirm(ActionItem? action, InteractionTarget target, string cancelReason = "NoAction")
+    {
+        if (!IsExecutableAction(action) || target.Kind == InteractionTargetKind.None) Cancel(cancelReason);
         else Commit(target);
     }
     internal void Commit(InteractionTarget target)

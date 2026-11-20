@@ -988,26 +988,49 @@ public static class PortableConfigBundle
 		try
 		{
 			Directory.CreateDirectory(validationRoot);
-			var paths = new List<string>();
+			string canonicalDir = Path.Combine(validationRoot, "canonical");
+			var xmlPaths = new List<string>();
 			for (int index = 0; index < assets.Count; index++)
 			{
+				if (TryExtractCanonicalBarePath(assets[index].Data, out string barePath))
+				{
+					SvgIconBatchImportResult bareResult = SvgIconBatchImporter.ImportBarePath(
+						barePath,
+						"asset_" + index.ToString(),
+						canonicalDir,
+						() => { },
+						CancellationToken.None);
+					if (bareResult.Cancelled || bareResult.SuccessCount != 1)
+					{
+						SvgIconBatchItemResult? failedBare = bareResult.Items.FirstOrDefault(item =>
+							item.Status != SvgIconBatchItemStatus.Success);
+						throw Fail(
+							PortableConfigBundleReasonCodes.SvgInvalid,
+							"An SVG asset is invalid" + (failedBare == null ? "." : ": " + failedBare.ReasonCode + "."));
+					}
+					continue;
+				}
+
 				string path = Path.Combine(validationRoot, "asset_" + index.ToString() + ".svg");
 				File.WriteAllBytes(path, assets[index].Data);
-				paths.Add(path);
+				xmlPaths.Add(path);
 			}
 
-			SvgIconBatchImportResult result = SvgIconBatchImporter.ImportFiles(
-				paths,
-				Path.Combine(validationRoot, "canonical"),
-				() => { },
-				CancellationToken.None);
-			if (result.Cancelled || result.SuccessCount != assets.Count)
+			if (xmlPaths.Count > 0)
 			{
-				SvgIconBatchItemResult? failed = result.Items.FirstOrDefault(item =>
-					item.Status != SvgIconBatchItemStatus.Success);
-				throw Fail(
-					PortableConfigBundleReasonCodes.SvgInvalid,
-					"An SVG asset is invalid" + (failed == null ? "." : ": " + failed.ReasonCode + "."));
+				SvgIconBatchImportResult result = SvgIconBatchImporter.ImportFiles(
+					xmlPaths,
+					canonicalDir,
+					() => { },
+					CancellationToken.None);
+				if (result.Cancelled || result.SuccessCount != xmlPaths.Count)
+				{
+					SvgIconBatchItemResult? failed = result.Items.FirstOrDefault(item =>
+						item.Status != SvgIconBatchItemStatus.Success);
+					throw Fail(
+						PortableConfigBundleReasonCodes.SvgInvalid,
+						"An SVG asset is invalid" + (failed == null ? "." : ": " + failed.ReasonCode + "."));
+				}
 			}
 		}
 		catch (PortableConfigBundleException)
@@ -1022,6 +1045,35 @@ public static class PortableConfigBundle
 		{
 			TryDeleteDirectory(validationRoot);
 		}
+	}
+
+	private static bool TryExtractCanonicalBarePath(byte[] data, out string barePath)
+	{
+		barePath = "";
+		if (data.Length == 0)
+		{
+			return false;
+		}
+		int offset = data.Length >= 3 && data[0] == 0xEF && data[1] == 0xBB && data[2] == 0xBF ? 3 : 0;
+		string text;
+		try
+		{
+			text = StrictUtf8.GetString(data, offset, data.Length - offset);
+		}
+		catch (DecoderFallbackException)
+		{
+			return false;
+		}
+		string trimmed = text.Trim().TrimStart('\uFEFF').Trim();
+		if (trimmed.Length == 0 ||
+			trimmed.Contains('<', StringComparison.Ordinal) ||
+			trimmed.Contains('>', StringComparison.Ordinal) ||
+			!trimmed.StartsWith("M", StringComparison.OrdinalIgnoreCase))
+		{
+			return false;
+		}
+		barePath = trimmed;
+		return true;
 	}
 
 	private static void ValidateAssetReferences(

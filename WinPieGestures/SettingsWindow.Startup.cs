@@ -7,6 +7,7 @@ namespace WinPieGestures;
 public partial class SettingsWindow
 {
     private bool _autoStartOperationBusy;
+    private AutoStartState? _lastAutoStartState;
 
     private void PinWheelCheckBox_Changed(object sender, RoutedEventArgs e)
     {
@@ -23,18 +24,43 @@ public partial class SettingsWindow
         RepairAutoStartButton.IsEnabled = !busy && _loadedAutoStartEnabled;
     }
 
+    private static string ResolveAutoStartStatusKey(AutoStartState state) =>
+        !state.IsKnown ? "AutoStartStateUnknown" :
+        state.NeedsRepair ? (state.AdminTaskEnabled ? "AutoStartTaskNeedsRepair" : "AutoStartRunNeedsRepair") :
+        state.AdminTaskEnabled ? "AutoStartTaskEnabled" :
+        state.RegistryEnabled ? "AutoStartRunEnabled" :
+        "AutoStartDisabled";
+
+    private void RefreshAutoStartStatusText()
+    {
+        if (AutoStartStatusText != null && _lastAutoStartState != null && !_autoStartOperationBusy)
+        {
+            AutoStartStatusText.Text = I18n.T(ResolveAutoStartStatusKey(_lastAutoStartState));
+        }
+    }
+
     private void ApplyAutoStartState(AutoStartState state)
     {
-        if (!state.IsKnown) { AutoStartStatusText.Text = I18n.T("AutoStartStateUnknown"); return; }
+        _lastAutoStartState = state;
         _isLoadingAutoStartState = true;
+        if (!state.IsKnown)
+        {
+            try
+            {
+                AutoStartCheckBox.IsChecked = _loadedAutoStartEnabled;
+                AutoStartAsAdminCheckBox.IsChecked = _loadedAutoStartAsAdmin;
+                AutoStartStatusText.Text = I18n.T("AutoStartStateUnknown");
+            }
+            finally { _isLoadingAutoStartState = false; }
+            return;
+        }
         try
         {
             _loadedAutoStartEnabled = state.IsEnabled;
             _loadedAutoStartAsAdmin = state.AdminTaskEnabled || (!state.IsEnabled && ConfigManager.CurrentConfig.AutoStartAsAdmin);
             AutoStartCheckBox.IsChecked = _loadedAutoStartEnabled;
             AutoStartAsAdminCheckBox.IsChecked = _loadedAutoStartAsAdmin;
-            AutoStartStatusText.Text = I18n.T(state.AdminTaskEnabled ? "AutoStartTaskEnabled" :
-                state.RegistryEnabled ? "AutoStartRunEnabled" : "AutoStartDisabled");
+            AutoStartStatusText.Text = I18n.T(ResolveAutoStartStatusKey(state));
         }
         finally { _isLoadingAutoStartState = false; }
     }

@@ -87,7 +87,9 @@
 ## 登录自启动的电源条件（beta.3）
 
 - 保留普通用户HKCU Run与当前用户交互登录的管理员任务，不创建Windows服务。管理员任务显式允许电池启动及拔电后继续运行，执行时限为PT0S，保留既有 `--autostart --minimized` 参数。
-- 初始化与浏览设置只读实际状态；不更新或重新启用任务。“修复自启动”只修复实际已启用的机制，不能依据过期偏好将普通启动升级为管理员任务，也不启用被禁用的任务。
+- 读回校验兼容 Windows 任务计划程序 `schtasks /xml` 规范化输出（触发器 `UserId` 由 SID 转为账户名、省略等同 XSD 默认值的 `Enabled`/`Delay`/`RunOnlyIfIdle`/`RunOnlyIfNetworkAvailable`/`MultipleInstancesPolicy`），仍严格拒绝缺失或非 `false` 的电池限制、`ExecutionTimeLimit != PT0S` 及可执行路径不匹配。
+- 初始化与浏览设置只读实际状态；不更新或重新启用任务。检测到已启用项存在旧版电池限制、路径不一致或遗留 `WinPieGestures` 键名时在设置状态栏明确提示需要修复；“修复自启动”只修复实际已启用的机制，不能依据过期偏好将普通启动升级为管理员任务，也不启用被禁用的任务。
+- 登录任务与 `HKCU\...\Run` 并存时，主实例在创建单实例互斥体、唤醒事件和关闭事件时通过 `EventWaitHandleAcl.Create` / `MutexAcl.Create` 原子写入安全描述符（为当前用户 SID、内置管理员与 SYSTEM 授予访问权限）；次实例权限受限时按 `Modify | Synchronize` 最小权限 `OpenExisting` 回退；静默自启（`--autostart --minimized`）发现主实例存活时仅在关闭交接中等待接管，不触发唤醒事件弹出设置窗口。
 - 注册/删除经过异步适配层，等待退出码并回读任务与Run值；UAC取消、权限拒绝、超时和无法确认的状态明确反馈。假适配器测试不修改本机注册表或任务，也不能证明某台机器的电池条件就是故障根因。
 - AC登录、电池登录、拔电持续运行及安装升级后的路径，由用户在当前候选上实机验收。
 

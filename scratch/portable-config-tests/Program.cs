@@ -87,6 +87,8 @@ internal static class Program
 			Run("asset size limit is enforced", AssetSizeLimit);
 			Run("asset count limit is enforced", AssetCountLimit);
 			Run("total asset size limit is enforced", TotalAssetLimit);
+			Run("standard monochrome W3C/Lucide SVGs roundtrip", StandardMonochromeSvgRoundTrip);
+			Run("canonical imported SVGs roundtrip", CanonicalImportedSvgRoundTrip);
 		}
 		catch (Exception ex)
 		{
@@ -125,6 +127,71 @@ internal static class Program
 		transaction.Commit();
 		transaction.Dispose();
 		Assert(File.Exists(Path.Combine(targetIcons, importedStem + ".svg")), "committed icon was removed");
+	}
+
+	private static void StandardMonochromeSvgRoundTrip()
+	{
+		string stdIcons = Path.Combine(_root, "standard-svg-icons");
+		string targetIcons = Path.Combine(_root, "standard-svg-target");
+		Directory.CreateDirectory(stdIcons);
+
+		File.WriteAllText(
+			Path.Combine(stdIcons, "lucide_badge.svg"),
+			"<?xml version=\"1.0\" standalone=\"no\"?>" +
+			"<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" +
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" t=\"1700000000\" class=\"lucide\" viewBox=\"0 0 24 24\" " +
+			"fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" " +
+			"aria-hidden=\"true\" role=\"img\" focusable=\"false\" xml:space=\"preserve\">" +
+			"<g transform=\"translate(1, 1) scale(0.9)\">" +
+			"<circle cx=\"12\" cy=\"12\" r=\"9\" p-id=\"1\"/>" +
+			"<rect x=\"9\" y=\"9\" width=\"6\" height=\"6\" rx=\"1\" data-shape=\"rect\"/>" +
+			"</g></svg>");
+
+		string package = Path.Combine(_root, "standard-svg.starpie-config");
+		JsonObject config = CreateConfig(Action("custom:lucide_badge"), null, null, null);
+		PortableConfigBundle.Export(config.ToJsonString(), package, stdIcons);
+		Assert(File.Exists(package), "standard SVG package was not created");
+
+		using var transaction = PortableConfigBundle.PrepareImport(package, targetIcons);
+		string importedKey = FindFirstIconKey(transaction.ConfigJson);
+		Assert(importedKey.StartsWith("custom:lucide_badge_portable_", StringComparison.Ordinal), "standard SVG key was not remapped");
+		string importedFile = Path.Combine(targetIcons, importedKey.Substring("custom:".Length) + ".svg");
+		Assert(File.Exists(importedFile), "standard SVG asset file was not created");
+		transaction.Commit();
+	}
+
+	private static void CanonicalImportedSvgRoundTrip()
+	{
+		string rawSourceDir = Path.Combine(_root, "canonical-raw-src");
+		string importedIconsDir = Path.Combine(_root, "canonical-custom-icons");
+		string targetIconsDir = Path.Combine(_root, "canonical-roundtrip-target");
+		Directory.CreateDirectory(rawSourceDir);
+		Directory.CreateDirectory(importedIconsDir);
+
+		string rawSvg = Path.Combine(rawSourceDir, "tabler_plus.svg");
+		File.WriteAllText(rawSvg,
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\">" +
+			"<path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\"/>" +
+			"<line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>" +
+			"<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/>" +
+			"</svg>");
+
+		var batch = SvgIconBatchImporter.ImportFiles(new[] { rawSvg }, importedIconsDir, () => { });
+		Assert(batch.SuccessCount == 1 && batch.Items[0].TargetPath != null, "batch import of stroked icon failed");
+
+		string stem = Path.GetFileNameWithoutExtension(batch.Items[0].TargetPath!);
+		string canonicalData = File.ReadAllText(batch.Items[0].TargetPath!);
+		Assert(canonicalData.StartsWith("M", StringComparison.Ordinal), "canonical path does not start with M");
+
+		string package = Path.Combine(_root, "canonical-svg.starpie-config");
+		JsonObject config = CreateConfig(Action("custom:" + stem), null, null, null);
+		PortableConfigBundle.Export(config.ToJsonString(), package, importedIconsDir);
+
+		using var transaction = PortableConfigBundle.PrepareImport(package, targetIconsDir);
+		string importedKey = FindFirstIconKey(transaction.ConfigJson);
+		string roundtripPath = Path.Combine(targetIconsDir, importedKey.Substring("custom:".Length) + ".svg");
+		Assert(File.Exists(roundtripPath) && File.ReadAllText(roundtripPath) == canonicalData, "canonical SVG data did not survive roundtrip");
+		transaction.Commit();
 	}
 
 	private static void NestedActions()

@@ -9,7 +9,8 @@
 - ApplicationIconPath 只为设置页图标提供本地路径提示，失效时显示后备图标，不影响动作和触发，不在钩子中读取。
 - `AppConfig.ProfileQuickSwitchDisplayMode` 为配置快捷列表三态显示方式（`IconAndText` 默认、`TextOnly`、`IconOnly`）；旧配置缺失或未知值均回退为 `IconAndText`，三种合法值在 JSON 与 `.starpie-config` 便携包往返保持。
 - 平行键与 Global 默认、有效层键、应用专属键、黑名单覆盖的相同完整按键冲突。冲突/无键的导入方案保留数据但不注册平行路由；旧 Global 与应用层复用语义保持。
-- 删除第一层须清除其旧根 ActivationTrigger，预先验证剩余路由，禁止隐藏旧键转移到新的第一层。
+- 删除层须清除被删层的 `WheelLayer.ActivationTrigger`，删除第一层同时清除旧根 `WheelProfile.ActivationTrigger`，预先验证剩余路由，禁止隐藏旧键转移到新的第一层；删除后立即同步落盘并重新发布路由快照。
+- `ConfigsFolder` 方案列表按实际 `.json` 文件名茎枚举；`DeleteSavedConfig`、`SwitchToConfig`、`RenameSavedConfig`、`ExportConfigToFile`、`GetConfigJsonForExport`、`SaveConfig` 与 `EnsureConfigsFolder` 均在 `ConfigsFolder` 目录边界内按精确名、忽略大小写名、去首尾空白名与清洗名安全解析目标文件并拒绝路径穿越。目标不存在或删除失败（含文件仍残留）时不得切走配置或返回成功；删除当前激活方案后选取后备方案须同时排除已删原始名与清洗名，并在不重建已删文件的前提下更新 `ActiveConfigProfileName`。
 - 原 JSON 接口保留；版本化 .starpie-config ZIP 携带有界 JSON、清单及实际引用的自定义 SVG。校验、资源准备和配置提交分步进行，准备期间配置改变则取消，失败只回滚本次资源。不迁移插件或位图。
 
 ## 基本原则

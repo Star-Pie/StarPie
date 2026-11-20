@@ -1,5 +1,6 @@
 using System;
 using System.CodeDom.Compiler;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -21,6 +22,143 @@ namespace WinPieGestures;
 
 public partial class RadialWindow : Window
 {
+	private const int MaxGeometryCacheEntries = 256;
+	private const int MaxBrushCacheEntries = 256;
+
+	private static readonly ConcurrentDictionary<string, Geometry> ParsedGeometryCache = new(StringComparer.Ordinal);
+	private static readonly ConcurrentDictionary<Color, SolidColorBrush> ColorBrushCache = new();
+	private static readonly SolidColorBrush CenterActionHighlightBrush = CreateFrozenBrush(Color.FromRgb(245, 158, 11));
+	private static readonly SolidColorBrush CenterExitHighlightBrush = CreateFrozenBrush(Color.FromRgb(244, 63, 94));
+	private static readonly SolidColorBrush DarkDefaultBadgeBgBrush = CreateFrozenBrush(Color.FromArgb(230, 15, 23, 42));
+	private static readonly SolidColorBrush CyanDefaultBadgeBorderBrush = CreateFrozenBrush(Color.FromRgb(56, 189, 248));
+	private static readonly SolidColorBrush FrostedLightBrush = CreateFrozenBrush(Color.FromArgb(88, byte.MaxValue, byte.MaxValue, byte.MaxValue));
+	private static readonly SolidColorBrush CoreTextLightBrush = CreateFrozenBrush(Color.FromRgb(248, 250, 252));
+	private static readonly SolidColorBrush CoreTextDarkBrush = CreateFrozenBrush(Color.FromRgb(15, 23, 42));
+
+	private static SolidColorBrush CreateFrozenBrush(Color color)
+	{
+		if (ColorBrushCache.TryGetValue(color, out SolidColorBrush? cached))
+		{
+			return cached;
+		}
+
+		var brush = new SolidColorBrush(color);
+		brush.Freeze();
+		if (ColorBrushCache.Count >= MaxBrushCacheEntries)
+		{
+			ColorBrushCache.Clear();
+		}
+		return ColorBrushCache.GetOrAdd(color, brush);
+	}
+
+	private static SolidColorBrush? TryGetFrozenBrush(string? hex)
+	{
+		if (string.IsNullOrWhiteSpace(hex))
+		{
+			return null;
+		}
+
+		try
+		{
+			if (ColorConverter.ConvertFromString(hex) is Color color)
+			{
+				return CreateFrozenBrush(color);
+			}
+		}
+		catch
+		{
+		}
+		return null;
+	}
+
+	private static Geometry ParseFrozenGeometry(string svgPath)
+	{
+		if (ParsedGeometryCache.TryGetValue(svgPath, out Geometry? cached))
+		{
+			return cached;
+		}
+
+		Geometry parsed = Geometry.Parse(svgPath);
+		if (parsed.CanFreeze && !parsed.IsFrozen)
+		{
+			parsed.Freeze();
+		}
+		if (ParsedGeometryCache.Count >= MaxGeometryCacheEntries)
+		{
+			ParsedGeometryCache.Clear();
+		}
+		return ParsedGeometryCache.GetOrAdd(svgPath, parsed);
+	}
+
+	private static T FreezeIfCanFreeze<T>(T value) where T : Freezable
+	{
+		if (!value.IsFrozen && value.CanFreeze)
+		{
+			value.Freeze();
+		}
+		return value;
+	}
+
+	private static Brush? FreezeBrushIfPossible(Brush? brush)
+	{
+		if (brush != null && !brush.IsFrozen && brush.CanFreeze)
+		{
+			brush.Freeze();
+		}
+		return brush;
+	}
+
+	private static Geometry CreateFrozenSectorGeometry(
+		double centerX,
+		double centerY,
+		double startAngle,
+		double endAngle,
+		double innerRadius,
+		double outerRadius,
+		string shape,
+		double gap,
+		double cornerRadius)
+	{
+		Geometry geo = IconHelper.CreateAdvancedSectorGeometry(centerX, centerY, startAngle, endAngle, innerRadius, outerRadius, shape, gap, cornerRadius);
+		if (geo.CanFreeze && !geo.IsFrozen)
+		{
+			geo.Freeze();
+		}
+		return geo;
+	}
+
+	private void FreezeStaticResources()
+	{
+		foreach (object key in base.Resources.Keys)
+		{
+			if (base.Resources[key] is Freezable freezable)
+			{
+				FreezeIfCanFreeze(freezable);
+			}
+		}
+
+		FreezeBrushIfPossible(OuterEllipse.Stroke);
+		if (CoreSelectionOverlay.Effect != null)
+		{
+			FreezeIfCanFreeze(CoreSelectionOverlay.Effect);
+		}
+		if (LayerIndicatorBadge.Effect != null)
+		{
+			FreezeIfCanFreeze(LayerIndicatorBadge.Effect);
+		}
+		foreach (UIElement child in CoreGrid.Children)
+		{
+			if (child is System.Windows.Shapes.Ellipse ellipse)
+			{
+				FreezeBrushIfPossible(ellipse.Fill);
+				FreezeBrushIfPossible(ellipse.Stroke);
+				if (ellipse.Effect != null)
+				{
+					FreezeIfCanFreeze(ellipse.Effect);
+				}
+			}
+		}
+	}
 	[StructLayout(LayoutKind.Sequential)]
 	public struct POINT
 	{
@@ -606,6 +744,7 @@ public partial class RadialWindow : Window
 		_borderThickness = 1.0;
 		_highlightBorderThickness = 1.5;
 		InitializeComponent();
+		FreezeStaticResources();
 		IsHitTestVisible = false;
 		_centerPoint = centerPoint;
 		_profile = profile;
@@ -626,11 +765,11 @@ public partial class RadialWindow : Window
 		Present(centerPoint, profile, configurationRevision, presentationVersion, null);
 
 	internal void Present(Point centerPoint, WheelProfile profile, long configurationRevision,
-		long presentationVersion, Action? onPresented, bool preserveTriggerOrigin = false)
+		long presentationVersion, Action? onPresented, bool preserveTriggerOrigin = false, Action? onIntroCompleted = null)
 	{
 		if (!Dispatcher.CheckAccess())
 		{
-			Dispatcher.Invoke(() => Present(centerPoint, profile, configurationRevision, presentationVersion, onPresented, preserveTriggerOrigin));
+			Dispatcher.Invoke(() => Present(centerPoint, profile, configurationRevision, presentationVersion, onPresented, preserveTriggerOrigin, onIntroCompleted));
 			return;
 		}
 		if (_isDisposed)
@@ -638,7 +777,6 @@ public partial class RadialWindow : Window
 			throw new InvalidOperationException("Cannot present a disposed RadialWindow.");
 		}
 
-		bool wasLoaded = IsLoaded;
 		bool needsRebuild = !_hasRenderedContent ||
 			_renderedConfigurationRevision != configurationRevision ||
 			!ReferenceEquals(_renderedProfile, profile) ||
@@ -650,13 +788,16 @@ public partial class RadialWindow : Window
 		_isPresented = true;
 		PresentationVersion = presentationVersion;
 		ResetPresentationState();
-		ApplyLayoutFromCurrentConfiguration(centerPoint);
 		// 先将入场动画的初始状态写入视觉树，再显示 HWND，避免先绘制完整圆盘后才切换到动画起始帧造成闪烁。
 		PrepareIntroAnimation();
 
-		if (wasLoaded && needsRebuild)
+		if (needsRebuild)
 		{
 			RebuildVisualsFromCurrentConfiguration(configurationRevision);
+		}
+		else
+		{
+			ApplyLayoutFromCurrentConfiguration(centerPoint);
 		}
 
 		if (ConfigManager.CurrentConfig.EnableMultiTier &&
@@ -686,7 +827,7 @@ public partial class RadialWindow : Window
 					MainGrid.Visibility = Visibility.Visible;
 				}, onPresented))
 			{
-				StartIntroAnimation(presentationVersion);
+				StartIntroAnimation(presentationVersion, onIntroCompleted);
 			}
 		}), DispatcherPriority.Render);
 	}
@@ -715,11 +856,31 @@ public partial class RadialWindow : Window
 		}
 	}
 
-	internal bool TryHitPinnedWheel(Point physicalPoint, out int sector, out int subSector)
+	internal static Point MapPhysicalPointForRestingWindowScale(Point physicalPoint, Point pivotScreen, double scaleX, double scaleY)
+	{
+		if (!double.IsFinite(scaleX) || scaleX <= 0) scaleX = 1.0;
+		if (!double.IsFinite(scaleY) || scaleY <= 0) scaleY = 1.0;
+		return new Point(
+			pivotScreen.X + (physicalPoint.X - pivotScreen.X) * scaleX,
+			pivotScreen.Y + (physicalPoint.Y - pivotScreen.Y) * scaleY);
+	}
+
+	internal bool TryHitPinnedWheel(Point physicalPoint, out int sector, out int subSector, bool ignoreWindowScale = false)
 	{
 		sector = -1;
 		subSector = -1;
-		if (!IsVisible) return false;
+		if (!IsVisible || !_isPresented || !MainGrid.IsVisible || PresentationSource.FromVisual(MainGrid) == null) return false;
+		if (ignoreWindowScale && MainGrid.ActualWidth > 0 && MainGrid.ActualHeight > 0)
+		{
+			double sx = WindowScale.ScaleX;
+			double sy = WindowScale.ScaleY;
+			if (Math.Abs(sx - 1.0) > 0.001 || Math.Abs(sy - 1.0) > 0.001)
+			{
+				// Map physical cursor coords back into resting 1.0x geometry before PointFromScreen inverts the intro scale.
+				Point pivotScreen = MainGrid.PointToScreen(new Point(MainGrid.ActualWidth / 2.0, MainGrid.ActualHeight / 2.0));
+				physicalPoint = MapPhysicalPointForRestingWindowScale(physicalPoint, pivotScreen, sx, sy);
+			}
+		}
 		// Use the rendered geometry, including gaps, rounded corners, fan petals and entrance transforms.
 		for (int i = _subSectorPaths.Count - 1; i >= 0; i--)
 		{
@@ -738,10 +899,31 @@ public partial class RadialWindow : Window
 				return true;
 			}
 		}
-		Point core = CoreEllipse.PointFromScreen(physicalPoint);
-		double rx = CoreEllipse.ActualWidth / 2, ry = CoreEllipse.ActualHeight / 2;
 		sector = subSector = -1;
-		return rx > 0 && ry > 0 && Math.Pow((core.X - rx) / rx, 2) + Math.Pow((core.Y - ry) / ry, 2) <= 1;
+		return TryHitPinnedCore(physicalPoint);
+	}
+
+	private bool TryHitPinnedCore(Point physicalPoint)
+	{
+		if (CoreEllipse.IsVisible)
+		{
+			double rx = CoreEllipse.ActualWidth / 2, ry = CoreEllipse.ActualHeight / 2;
+			if (rx > 0 && ry > 0)
+			{
+				Point core = CoreEllipse.PointFromScreen(physicalPoint);
+				return Math.Pow((core.X - rx) / rx, 2) + Math.Pow((core.Y - ry) / ry, 2) <= 1;
+			}
+		}
+		if (MainGrid.ActualWidth <= 0 || MainGrid.ActualHeight <= 0)
+		{
+			return false;
+		}
+		double deadzone = ConfigManager.CurrentConfig?.GetEffectiveCoreDeadzone() ?? 15.0;
+		if (deadzone <= 0.0) deadzone = 15.0;
+		Point gridPoint = MainGrid.PointFromScreen(physicalPoint);
+		double dx = gridPoint.X - MainGrid.ActualWidth / 2.0;
+		double dy = gridPoint.Y - MainGrid.ActualHeight / 2.0;
+		return dx * dx + dy * dy <= deadzone * deadzone;
 	}
 
 	/// <summary>隐藏当前手势，但保留 Window/HWND 供下一次呼出复用。旧手势的延迟回调不得隐藏新手势。</summary>
@@ -931,14 +1113,14 @@ public partial class RadialWindow : Window
 
 	private static SolidColorBrush TintBrush(Brush brush, byte alpha)
 	{
-		SolidColorBrush solid = brush as SolidColorBrush;
-		Color color = (solid != null) ? solid.Color : Colors.White;
-		return new SolidColorBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
+		SolidColorBrush? solid = brush as SolidColorBrush;
+		Color color = solid != null ? solid.Color : Colors.White;
+		return CreateFrozenBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
 	}
 
 	private static bool IsBrushDark(Brush brush)
 	{
-		SolidColorBrush solid = brush as SolidColorBrush;
+		SolidColorBrush? solid = brush as SolidColorBrush;
 		if (solid == null)
 		{
 			return false;
@@ -954,19 +1136,15 @@ public partial class RadialWindow : Window
 		AppConfig config = ConfigManager.CurrentConfig;
 		if (config != null && !config.CoreTextColorAuto && !string.IsNullOrWhiteSpace(config.CoreTextColor))
 		{
-			try
+			SolidColorBrush? customBrush = TryGetFrozenBrush(config.CoreTextColor);
+			if (customBrush != null)
 			{
-				return new SolidColorBrush((Color)ColorConverter.ConvertFromString(config.CoreTextColor));
-			}
-			catch
-			{
+				return customBrush;
 			}
 		}
 		if (coreImageLuminance.HasValue)
 		{
-			return (coreImageLuminance.Value < 0.5)
-				? new SolidColorBrush(Color.FromRgb(248, 250, 252))
-				: new SolidColorBrush(Color.FromRgb(15, 23, 42));
+			return (coreImageLuminance.Value < 0.5) ? CoreTextLightBrush : CoreTextDarkBrush;
 		}
 		return _textColorBrush ?? Brushes.White;
 	}
@@ -1028,13 +1206,13 @@ public partial class RadialWindow : Window
 		}
 		_styleRenderer = StyleRendererFactory.CreateRenderer(text2, ConfigManager.CurrentConfig);
 		_styleRenderer.Initialize(text, ConfigManager.CurrentConfig);
-		_defaultSectorBrush = _styleRenderer.DefaultSectorBrush;
-		_highlightSectorBrush = _styleRenderer.HighlightSectorBrush;
-		_sectorBorderBrush = _styleRenderer.SectorBorderBrush;
-		_highlightBorderBrush = _styleRenderer.HighlightBorderBrush;
-		_textColorBrush = _styleRenderer.TextColorBrush;
-		_coreBgBrush = _styleRenderer.CoreBgBrush;
-		_coreBorderBrush = _styleRenderer.CoreBorderBrush;
+		_defaultSectorBrush = FreezeBrushIfPossible(_styleRenderer.DefaultSectorBrush)!;
+		_highlightSectorBrush = FreezeBrushIfPossible(_styleRenderer.HighlightSectorBrush)!;
+		_sectorBorderBrush = FreezeBrushIfPossible(_styleRenderer.SectorBorderBrush)!;
+		_highlightBorderBrush = FreezeBrushIfPossible(_styleRenderer.HighlightBorderBrush)!;
+		_textColorBrush = FreezeBrushIfPossible(_styleRenderer.TextColorBrush)!;
+		_coreBgBrush = FreezeBrushIfPossible(_styleRenderer.CoreBgBrush)!;
+		_coreBorderBrush = FreezeBrushIfPossible(_styleRenderer.CoreBorderBrush)!;
 		_borderThickness = _styleRenderer.BorderThickness;
 		_highlightBorderThickness = _styleRenderer.HighlightBorderThickness;
 		string text3 = ConfigManager.CurrentConfig.SubWheelUiStyle ?? text2;
@@ -1053,33 +1231,18 @@ public partial class RadialWindow : Window
 			{
 				_subStyleRenderer = StyleRendererFactory.CreateRenderer(text3, ConfigManager.CurrentConfig, true);
 				_subStyleRenderer.Initialize(text4, ConfigManager.CurrentConfig);
-				_subDefaultSectorBrush = _subStyleRenderer.DefaultSectorBrush;
-				_subHighlightSectorBrush = _subStyleRenderer.HighlightSectorBrush;
-				_subSectorBorderBrush = _subStyleRenderer.SectorBorderBrush;
-				_subHighlightBorderBrush = _subStyleRenderer.HighlightBorderBrush;
-				_subTextColorBrush = _subStyleRenderer.TextColorBrush;
+				_subDefaultSectorBrush = FreezeBrushIfPossible(_subStyleRenderer.DefaultSectorBrush)!;
+				_subHighlightSectorBrush = FreezeBrushIfPossible(_subStyleRenderer.HighlightSectorBrush)!;
+				_subSectorBorderBrush = FreezeBrushIfPossible(_subStyleRenderer.SectorBorderBrush)!;
+				_subHighlightBorderBrush = FreezeBrushIfPossible(_subStyleRenderer.HighlightBorderBrush)!;
+				_subTextColorBrush = FreezeBrushIfPossible(_subStyleRenderer.TextColorBrush)!;
 				if (text4 == "Custom")
 				{
-					if (!string.IsNullOrWhiteSpace(ConfigManager.CurrentConfig.SubWheelCustomSectorBg))
-					{
-						_subDefaultSectorBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ConfigManager.CurrentConfig.SubWheelCustomSectorBg));
-					}
-					if (!string.IsNullOrWhiteSpace(ConfigManager.CurrentConfig.SubWheelCustomSectorBorder))
-					{
-						_subSectorBorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ConfigManager.CurrentConfig.SubWheelCustomSectorBorder));
-					}
-					if (!string.IsNullOrWhiteSpace(ConfigManager.CurrentConfig.SubWheelCustomHighlightBg))
-					{
-						_subHighlightSectorBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ConfigManager.CurrentConfig.SubWheelCustomHighlightBg));
-					}
-					if (!string.IsNullOrWhiteSpace(ConfigManager.CurrentConfig.SubWheelCustomHighlightBorder))
-					{
-						_subHighlightBorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ConfigManager.CurrentConfig.SubWheelCustomHighlightBorder));
-					}
-					if (!string.IsNullOrWhiteSpace(ConfigManager.CurrentConfig.SubWheelCustomText))
-					{
-						_subTextColorBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(ConfigManager.CurrentConfig.SubWheelCustomText));
-					}
+					_subDefaultSectorBrush = TryGetFrozenBrush(ConfigManager.CurrentConfig.SubWheelCustomSectorBg) ?? _subDefaultSectorBrush;
+					_subSectorBorderBrush = TryGetFrozenBrush(ConfigManager.CurrentConfig.SubWheelCustomSectorBorder) ?? _subSectorBorderBrush;
+					_subHighlightSectorBrush = TryGetFrozenBrush(ConfigManager.CurrentConfig.SubWheelCustomHighlightBg) ?? _subHighlightSectorBrush;
+					_subHighlightBorderBrush = TryGetFrozenBrush(ConfigManager.CurrentConfig.SubWheelCustomHighlightBorder) ?? _subHighlightBorderBrush;
+					_subTextColorBrush = TryGetFrozenBrush(ConfigManager.CurrentConfig.SubWheelCustomText) ?? _subTextColorBrush;
 				}
 				return;
 			}
@@ -1104,15 +1267,25 @@ public partial class RadialWindow : Window
 
 	private void RadialWindow_Loaded(object sender, RoutedEventArgs e)
 	{
-		RebuildVisualsFromCurrentConfiguration(_requestedConfigurationRevision);
-		PositionWindowOnTargetMonitor();
-		Dispatcher.BeginInvoke(new Action(() =>
+		bool needsRebuild = !_hasRenderedContent ||
+			_renderedConfigurationRevision != _requestedConfigurationRevision ||
+			!ReferenceEquals(_renderedProfile, _profile) ||
+			_renderedLayerIndex != _profile.ActiveLayerIndex;
+		if (needsRebuild)
 		{
-			if (!_isDisposed)
+			RebuildVisualsFromCurrentConfiguration(_requestedConfigurationRevision);
+		}
+		if (!_isPresented)
+		{
+			PositionWindowOnTargetMonitor();
+			Dispatcher.BeginInvoke(new Action(() =>
 			{
-				CenterOnPhysically(_centerPoint.X, _centerPoint.Y);
-			}
-		}), DispatcherPriority.Render);
+				if (!_isDisposed)
+				{
+					CenterOnPhysically(_centerPoint.X, _centerPoint.Y);
+				}
+			}), DispatcherPriority.Render);
+		}
 	}
 
 	private void RebuildVisualsFromCurrentConfiguration(long configurationRevision)
@@ -1173,7 +1346,7 @@ public partial class RadialWindow : Window
 		{
 			try
 			{
-				CoreSelectionText.FontFamily = new FontFamily(ConfigManager.CurrentConfig.CoreFontFamily);
+				CoreSelectionText.FontFamily = ArtStyles.ArtStyleResources.GetCachedFontFamily(ConfigManager.CurrentConfig.CoreFontFamily);
 			}
 			catch
 			{
@@ -1206,14 +1379,30 @@ public partial class RadialWindow : Window
 		WindowScale.ScaleY = 0.65;
 	}
 
-	private void StartIntroAnimation(long presentationVersion)
+	private void StartIntroAnimation(long presentationVersion, Action? onIntroCompleted = null)
 	{
 		if (_isDisposed || !_isPresented || !IsVisible || PresentationVersion != presentationVersion)
 		{
 			return;
 		}
 
-		WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, _introScaleAnimation);
+		if (onIntroCompleted == null)
+		{
+			WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, _introScaleAnimation);
+		}
+		else
+		{
+			DoubleAnimation scaleXAnimation = _introScaleAnimation.Clone();
+			scaleXAnimation.Completed += (_, _) =>
+			{
+				if (_isDisposed || !_isPresented || !IsVisible || PresentationVersion != presentationVersion)
+				{
+					return;
+				}
+				onIntroCompleted();
+			};
+			WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, scaleXAnimation);
+		}
 		WindowScale.BeginAnimation(ScaleTransform.ScaleYProperty, _introScaleAnimation);
 		MainGrid.BeginAnimation(UIElement.OpacityProperty, _introOpacityAnimation);
 	}
@@ -1319,7 +1508,7 @@ public partial class RadialWindow : Window
 			{
 				try
 				{
-					CoreExitIcon.Data = Geometry.Parse(centerAction.CustomIconSvg);
+					CoreExitIcon.Data = ParseFrozenGeometry(centerAction.CustomIconSvg);
 					CoreExitIcon.Width = actionIconDim;
 					CoreExitIcon.Height = actionIconDim;
 					CoreExitIcon.RenderTransform = null; // 确保不产生偏移！
@@ -1349,7 +1538,7 @@ public partial class RadialWindow : Window
 							AlignmentY = AlignmentY.Center
 						};
 						RenderOptions.SetBitmapScalingMode(imgBrush, BitmapScalingMode.HighQuality);
-						CoreCustomImageEllipse.Fill = imgBrush;
+						CoreCustomImageEllipse.Fill = FreezeBrushIfPossible(imgBrush);
 						CoreCustomImageEllipse.Visibility = Visibility.Visible;
 						CoreExitIcon.Visibility = Visibility.Collapsed;
 						centerRendered = true;
@@ -1370,7 +1559,7 @@ public partial class RadialWindow : Window
 						{
 							try
 							{
-								CoreExitIcon.Data = Geometry.Parse(customIconItem.SvgData);
+								CoreExitIcon.Data = ParseFrozenGeometry(customIconItem.SvgData);
 								CoreExitIcon.Width = actionIconDim;
 								CoreExitIcon.Height = actionIconDim;
 								CoreExitIcon.RenderTransform = null; // 确保不产生偏移！
@@ -1398,7 +1587,7 @@ public partial class RadialWindow : Window
 										AlignmentY = AlignmentY.Center
 									};
 									RenderOptions.SetBitmapScalingMode(imgBrush, BitmapScalingMode.HighQuality);
-									CoreCustomImageEllipse.Fill = imgBrush;
+									CoreCustomImageEllipse.Fill = FreezeBrushIfPossible(imgBrush);
 									CoreCustomImageEllipse.Visibility = Visibility.Visible;
 									CoreExitIcon.Visibility = Visibility.Collapsed;
 									centerRendered = true;
@@ -1415,7 +1604,7 @@ public partial class RadialWindow : Window
 					{
 						try
 						{
-							CoreExitIcon.Data = Geometry.Parse(svg);
+							CoreExitIcon.Data = ParseFrozenGeometry(svg);
 							CoreExitIcon.Width = actionIconDim;
 							CoreExitIcon.Height = actionIconDim;
 							CoreExitIcon.RenderTransform = null; // 确保不产生偏移！
@@ -1447,7 +1636,7 @@ public partial class RadialWindow : Window
 							AlignmentY = AlignmentY.Center
 						};
 						RenderOptions.SetBitmapScalingMode(imgBrush, BitmapScalingMode.HighQuality);
-						CoreCustomImageEllipse.Fill = imgBrush;
+						CoreCustomImageEllipse.Fill = FreezeBrushIfPossible(imgBrush);
 						CoreCustomImageEllipse.Visibility = Visibility.Visible;
 						CoreExitIcon.Visibility = Visibility.Collapsed;
 						centerRendered = true;
@@ -1475,7 +1664,7 @@ public partial class RadialWindow : Window
 				{
 					try
 					{
-						CoreExitIcon.Data = Geometry.Parse(fallbackSvg);
+						CoreExitIcon.Data = ParseFrozenGeometry(fallbackSvg);
 						CoreExitIcon.Width = actionIconDim;
 						CoreExitIcon.Height = actionIconDim;
 						CoreExitIcon.RenderTransform = null; // 确保不产生偏移！
@@ -1592,21 +1781,13 @@ public partial class RadialWindow : Window
 
 	private static bool TryParseSolidBrush(string? hex, out SolidColorBrush brush)
 	{
+		SolidColorBrush? parsed = TryGetFrozenBrush(hex);
+		if (parsed != null)
+		{
+			brush = parsed;
+			return true;
+		}
 		brush = Brushes.Transparent;
-		if (string.IsNullOrWhiteSpace(hex)) return false;
-		try
-		{
-			var colorObj = System.Windows.Media.ColorConverter.ConvertFromString(hex);
-			if (colorObj is Color c)
-			{
-				brush = new SolidColorBrush(c);
-				brush.Freeze();
-				return true;
-			}
-		}
-		catch
-		{
-		}
 		return false;
 	}
 
@@ -1649,8 +1830,8 @@ public partial class RadialWindow : Window
 
 		if (string.Equals(config.LayerIndicatorStyle, "FollowTheme", StringComparison.OrdinalIgnoreCase))
 		{
-			LayerIndicatorBadge.Background = _coreBgBrush ?? new SolidColorBrush(Color.FromArgb(230, 15, 23, 42));
-			LayerIndicatorBadge.BorderBrush = _highlightBorderBrush ?? new SolidColorBrush(Color.FromRgb(56, 189, 248));
+			LayerIndicatorBadge.Background = _coreBgBrush ?? DarkDefaultBadgeBgBrush;
+			LayerIndicatorBadge.BorderBrush = _highlightBorderBrush ?? CyanDefaultBadgeBorderBrush;
 			LayerIndicatorText.Foreground = _textColorBrush ?? Brushes.White;
 			LayerIndicatorIcon.Foreground = _highlightBorderBrush ?? Brushes.White;
 		}
@@ -1662,7 +1843,7 @@ public partial class RadialWindow : Window
 			}
 			else
 			{
-				LayerIndicatorBadge.Background = new SolidColorBrush(Color.FromArgb(230, 15, 23, 42));
+				LayerIndicatorBadge.Background = DarkDefaultBadgeBgBrush;
 			}
 
 			if (TryParseSolidBrush(config.LayerIndicatorBorder, out var borderBrush))
@@ -1671,7 +1852,7 @@ public partial class RadialWindow : Window
 			}
 			else
 			{
-				LayerIndicatorBadge.BorderBrush = new SolidColorBrush(Color.FromRgb(56, 189, 248));
+				LayerIndicatorBadge.BorderBrush = CyanDefaultBadgeBorderBrush;
 			}
 
 			if (TryParseSolidBrush(config.LayerIndicatorTextColor, out var textBrush))
@@ -1773,7 +1954,7 @@ public partial class RadialWindow : Window
 			double num6 = (_innerRadius + _outerRadius) / 2.0;
 			double num7 = num2 + Math.Cos(num5) * num6;
 			double num8 = num3 + Math.Sin(num5) * num6;
-			Geometry data = IconHelper.CreateAdvancedSectorGeometry(num2, num3, startAngle, endAngle, _innerRadius, _outerRadius, shape, gap, cornerRadius);
+			Geometry data = CreateFrozenSectorGeometry(num2, num3, startAngle, endAngle, _innerRadius, _outerRadius, shape, gap, cornerRadius);
 			TranslateTransform translateTransform = new TranslateTransform(0.0, 0.0);
 			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path
 			{
@@ -1828,13 +2009,7 @@ public partial class RadialWindow : Window
 			Brush sectorTextColorBrush = _textColorBrush;
 			if (currentAction != null && !string.IsNullOrWhiteSpace(currentAction.CustomTextColor))
 			{
-				try
-				{
-					sectorTextColorBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(currentAction.CustomTextColor));
-				}
-				catch
-				{
-				}
+				sectorTextColorBrush = TryGetFrozenBrush(currentAction.CustomTextColor) ?? sectorTextColorBrush;
 			}
 
 			string text2 = "未设置";
@@ -1869,7 +2044,7 @@ public partial class RadialWindow : Window
 					{
 						frameworkElement2 = new System.Windows.Shapes.Path
 						{
-							Data = Geometry.Parse(text5),
+							Data = ParseFrozenGeometry(text5),
 							Fill = sectorTextColorBrush,
 							Stretch = Stretch.Uniform,
 							Width = num11,
@@ -1915,7 +2090,7 @@ public partial class RadialWindow : Window
 								Source = IconHelper.GetCustomImageSource(customIconItem.FilePath)
 							}) : ((FrameworkElement)new System.Windows.Shapes.Path
 							{
-								Data = Geometry.Parse(customIconItem.SvgData),
+								Data = ParseFrozenGeometry(customIconItem.SvgData),
 								Fill = sectorTextColorBrush,
 								Stretch = Stretch.Uniform,
 								Width = num11,
@@ -1932,7 +2107,7 @@ public partial class RadialWindow : Window
 						{
 							frameworkElement2 = new System.Windows.Shapes.Path
 							{
-								Data = Geometry.Parse(svgPathByKey),
+								Data = ParseFrozenGeometry(svgPathByKey),
 								Fill = sectorTextColorBrush,
 								Stretch = Stretch.Uniform,
 								Width = num11,
@@ -1970,7 +2145,7 @@ public partial class RadialWindow : Window
 					{
 						frameworkElement2 = new System.Windows.Shapes.Path
 						{
-							Data = Geometry.Parse(vectorIconPath),
+							Data = ParseFrozenGeometry(vectorIconPath),
 							Fill = sectorTextColorBrush,
 							Stretch = Stretch.Uniform,
 							Width = num11,
@@ -2002,7 +2177,7 @@ public partial class RadialWindow : Window
 					Text = formattedSectorText,
 					Foreground = sectorTextColorBrush,
 					FontSize = num13,
-					FontFamily = new FontFamily(sectorFont),
+					FontFamily = ArtStyles.ArtStyleResources.GetCachedFontFamily(sectorFont),
 					FontWeight = FontWeights.Medium,
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,
@@ -2320,7 +2495,7 @@ public partial class RadialWindow : Window
 			double num13 = (num6 + num4) / 2.0;
 			double num14 = num2 + Math.Cos(num12) * num13;
 			double num15 = num3 + Math.Sin(num12) * num13;
-			Geometry data = IconHelper.CreateAdvancedSectorGeometry(num2, num3, num10, num11, num6, num4, shape, num5, cornerRadius);
+			Geometry data = CreateFrozenSectorGeometry(num2, num3, num10, num11, num6, num4, shape, num5, cornerRadius);
 			ScaleTransform scaleTransform = new ScaleTransform(animateEntrance ? 0.75 : 1.0, animateEntrance ? 0.75 : 1.0, num2, num3);
 			TranslateTransform translateTransform = new TranslateTransform(0.0, 0.0);
 			TransformGroup transformGroup = new TransformGroup();
@@ -2382,13 +2557,7 @@ public partial class RadialWindow : Window
 			Brush subTextColor = _subTextColorBrush;
 			if (actionItem2 != null && !string.IsNullOrWhiteSpace(actionItem2.CustomTextColor))
 			{
-				try
-				{
-					subTextColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(actionItem2.CustomTextColor));
-				}
-				catch
-				{
-				}
+				subTextColor = TryGetFrozenBrush(actionItem2.CustomTextColor) ?? subTextColor;
 			}
 			double subIconSize = ((actionItem2 != null && actionItem2.CustomIconSize.HasValue && actionItem2.CustomIconSize.Value > 0.0)
 				? actionItem2.CustomIconSize.Value
@@ -2403,7 +2572,7 @@ public partial class RadialWindow : Window
 					{
 						frameworkElement = new System.Windows.Shapes.Path
 						{
-							Data = Geometry.Parse(text5),
+							Data = ParseFrozenGeometry(text5),
 							Fill = subTextColor,
 							Stretch = Stretch.Uniform,
 							Width = subIconSize,
@@ -2449,7 +2618,7 @@ public partial class RadialWindow : Window
 								Source = IconHelper.GetCustomImageSource(customIconItem.FilePath)
 							}) : ((FrameworkElement)new System.Windows.Shapes.Path
 							{
-								Data = Geometry.Parse(customIconItem.SvgData),
+								Data = ParseFrozenGeometry(customIconItem.SvgData),
 								Fill = subTextColor,
 								Stretch = Stretch.Uniform,
 								Width = subIconSize,
@@ -2466,7 +2635,7 @@ public partial class RadialWindow : Window
 						{
 							frameworkElement = new System.Windows.Shapes.Path
 							{
-								Data = Geometry.Parse(svgPathByKey),
+								Data = ParseFrozenGeometry(svgPathByKey),
 								Fill = subTextColor,
 								Stretch = Stretch.Uniform,
 								Width = subIconSize,
@@ -2504,7 +2673,7 @@ public partial class RadialWindow : Window
 					{
 						frameworkElement = new System.Windows.Shapes.Path
 						{
-							Data = Geometry.Parse(vectorIconPath),
+							Data = ParseFrozenGeometry(vectorIconPath),
 							Fill = subTextColor,
 							Stretch = Stretch.Uniform,
 							Width = subIconSize,
@@ -2540,7 +2709,7 @@ public partial class RadialWindow : Window
 					Text = subFormattedText,
 					Foreground = subTextColor,
 					FontSize = subFinalFontSize,
-					FontFamily = new FontFamily(subFontFamily),
+					FontFamily = ArtStyles.ArtStyleResources.GetCachedFontFamily(subFontFamily),
 					FontWeight = FontWeights.Medium,
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,
@@ -2717,7 +2886,7 @@ public partial class RadialWindow : Window
 			bool hasCenterAction = _profile != null && _profile.EnableCenterAction && _profile.CenterAction != null && (!string.IsNullOrEmpty(_profile.CenterAction.Type) || !string.IsNullOrEmpty(_profile.CenterAction.IconKey) || !string.IsNullOrEmpty(_profile.CenterAction.Name));
 			if (hasCenterAction)
 			{
-				CoreExitIcon.Fill = new SolidColorBrush(Color.FromRgb(245, 158, 11));
+				CoreExitIcon.Fill = CenterActionHighlightBrush;
 				if (_styleRenderer != null)
 				{
 					_styleRenderer.ApplyExitHighlight(CoreExitIcon, isHighlighted: true);
@@ -2725,7 +2894,7 @@ public partial class RadialWindow : Window
 			}
 			else
 			{
-				CoreExitIcon.Fill = new SolidColorBrush(Color.FromRgb(244, 63, 94));
+				CoreExitIcon.Fill = CenterExitHighlightBrush;
 				if (_styleRenderer != null)
 				{
 					_styleRenderer.ApplyExitHighlight(CoreExitIcon, isHighlighted: true);
@@ -3114,10 +3283,10 @@ public partial class RadialWindow : Window
 		double luminance = (0.2126 * baseColor.R) + (0.7152 * baseColor.G) + (0.0722 * baseColor.B);
 		if (luminance >= 165.0)
 		{
-			return new SolidColorBrush(Color.FromArgb(88, byte.MaxValue, byte.MaxValue, byte.MaxValue));
+			return FrostedLightBrush;
 		}
 
-		return new SolidColorBrush(Color.FromArgb(
+		return CreateFrozenBrush(Color.FromArgb(
 			112,
 			(byte)Math.Min(255, baseColor.R + 48),
 			(byte)Math.Min(255, baseColor.G + 56),
@@ -3310,7 +3479,7 @@ public partial class RadialWindow : Window
 			double rOut = distFromCenter + radius * 0.88;
 			double cr = (cornerRadius >= 0.0) ? cornerRadius : 6.0;
 
-			return IconHelper.CreateAdvancedSectorGeometry(wheelCx, wheelCy, startDeg, endDeg, rIn, rOut, "Original", 0.0, cr);
+			return CreateFrozenSectorGeometry(wheelCx, wheelCy, startDeg, endDeg, rIn, rOut, "Original", 0.0, cr);
 		}
 	}
 
@@ -3434,13 +3603,7 @@ public partial class RadialWindow : Window
 			Brush subTextColor = _subTextColorBrush;
 			if (actionItem2 != null && !string.IsNullOrWhiteSpace(actionItem2.CustomTextColor))
 			{
-				try
-				{
-					subTextColor = new SolidColorBrush((Color)ColorConverter.ConvertFromString(actionItem2.CustomTextColor));
-				}
-				catch
-				{
-				}
+				subTextColor = TryGetFrozenBrush(actionItem2.CustomTextColor) ?? subTextColor;
 			}
 			double subIconSize = ((actionItem2 != null && actionItem2.CustomIconSize.HasValue && actionItem2.CustomIconSize.Value > 0.0)
 				? actionItem2.CustomIconSize.Value
@@ -3456,7 +3619,7 @@ public partial class RadialWindow : Window
 					{
 						frameworkElement = new System.Windows.Shapes.Path
 						{
-							Data = Geometry.Parse(text5),
+							Data = ParseFrozenGeometry(text5),
 							Fill = subTextColor,
 							Stretch = Stretch.Uniform,
 							Width = subIconSize,
@@ -3500,7 +3663,7 @@ public partial class RadialWindow : Window
 								Source = IconHelper.GetCustomImageSource(customIconItem.FilePath)
 							}) : ((FrameworkElement)new System.Windows.Shapes.Path
 							{
-								Data = Geometry.Parse(customIconItem.SvgData),
+								Data = ParseFrozenGeometry(customIconItem.SvgData),
 								Fill = subTextColor,
 								Stretch = Stretch.Uniform,
 								Width = subIconSize,
@@ -3517,7 +3680,7 @@ public partial class RadialWindow : Window
 						{
 							frameworkElement = new System.Windows.Shapes.Path
 							{
-								Data = Geometry.Parse(svgPathByKey),
+								Data = ParseFrozenGeometry(svgPathByKey),
 								Fill = subTextColor,
 								Stretch = Stretch.Uniform,
 								Width = subIconSize,
@@ -3555,7 +3718,7 @@ public partial class RadialWindow : Window
 					{
 						frameworkElement = new System.Windows.Shapes.Path
 						{
-							Data = Geometry.Parse(vectorIconPath),
+							Data = ParseFrozenGeometry(vectorIconPath),
 							Fill = subTextColor,
 							Stretch = Stretch.Uniform,
 							Width = subIconSize,
@@ -3591,7 +3754,7 @@ public partial class RadialWindow : Window
 					Text = honeyFormattedText,
 					Foreground = subTextColor,
 					FontSize = honeyFinalFontSize,
-					FontFamily = new FontFamily(subFontFamily),
+					FontFamily = ArtStyles.ArtStyleResources.GetCachedFontFamily(subFontFamily),
 					FontWeight = FontWeights.Medium,
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,

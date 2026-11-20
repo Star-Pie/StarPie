@@ -316,11 +316,11 @@ internal static class Program
             "5.2 App.xaml.cs uses non-blocking TrimMemory(force: false) for routine background trimming");
     }
 
-    // ------------------------------------------------------------------ [6] QuickSearch & NativeSearchEngine
-    private static async Task Test6_NativeSearchSnapshotSafetyAndAsyncEmptyQuery()
+    // ------------------------------------------------------------------ [6] Program picker and legacy Quick Search routing
+    private static async Task Test6_ProgramPickerSnapshotSafetyAndAsyncEmptyQuery()
     {
-        Console.WriteLine("\n=== [6] QuickSearchWindow & NativeSearchEngine: Snapshot Cache Clear & Async Empty Search ===");
-        var emptyResults = await NativeSearchEngine.SearchAsync("", "App", 40);
+        Console.WriteLine("\n=== [6] Program picker: Snapshot Cache Clear & Async Empty Search ===");
+        var emptyResults = await ProgramPickerCatalog.SearchAsync("");
         Check(emptyResults != null && emptyResults.Count > 0, "6.1 SearchAsync handles empty query asynchronously and returns recommendations", $"count={emptyResults?.Count ?? 0}");
 
         // Concurrent enumeration of SearchAsync while ClearCaches() is called repeatedly
@@ -332,7 +332,7 @@ internal static class Program
             {
                 try
                 {
-                    var res = await NativeSearchEngine.SearchAsync("c", "App", 20);
+                    var res = await ProgramPickerCatalog.SearchAsync("c");
                     foreach (var item in res)
                     {
                         _ = item.FileName;
@@ -351,7 +351,7 @@ internal static class Program
         {
             while (!cts.IsCancellationRequested)
             {
-                NativeSearchEngine.ClearCaches();
+                ProgramPickerCatalog.ClearCaches();
                 Thread.Sleep(5);
             }
         });
@@ -359,14 +359,55 @@ internal static class Program
         await Task.WhenAll(readerTask, clearerTask);
         Check(!faulted, "6.2 Concurrent SearchAsync and ClearCaches() never throw collection-modified exceptions");
 
-        string repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
-        string quickSearchCode = File.ReadAllText(Path.Combine(repoRoot, "WinPieGestures", "QuickSearchWindow.xaml.cs"));
-        Check(!quickSearchCode.Contains("NativeSearchEngine.GetInitialRecommendations("),
-            "6.3 QuickSearchWindow does not invoke synchronous GetInitialRecommendations on UI thread");
-        int showIdx = quickSearchCode.IndexOf("Show();", StringComparison.Ordinal);
-        int triggerIdx = quickSearchCode.IndexOf("TriggerSearch(immediate: true);", StringComparison.Ordinal);
-        Check(showIdx > 0 && triggerIdx > showIdx,
-            "6.4 QuickSearchWindow.ShowAndFocus calls Show() before TriggerSearch(immediate: true)");
+        TestQuickSearchBinding();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static PluginInstance LoadQuickSearchWithoutInvoking(string moduleDirectory)
+    {
+        var scan = PluginScanner.ScanInstalledPlugin(moduleDirectory, allowReservedIdPrefix: true);
+        if (!scan.Accepted || scan.Manifest?.Id != "starpie.plugin.quicksearch")
+            throw new InvalidDataException("Quick Search candidate rejected: " + scan.DescribeFailure());
+        var entry = new PluginRegistryEntry { Id = scan.Manifest.Id, Enabled = true, Official = true, ExternalPath = scan.DllPath };
+        var instance = new PluginInstance(entry.Id, entry, scan);
+        if (!instance.Load(out string failure)) throw new InvalidOperationException(failure);
+        try
+        {
+            var action = PluginHost.Catalog.SnapshotActions().Single(a => a.PluginId == entry.Id);
+            Check(action.FullId == LegacyQuickSearchBinding.Project(null).PluginActionRef?.FullId,
+                "Actual manifest registration matches the legacy target");
+            Check(action.Kind == ActionKind.Background, "Window presentation uses background action scheduling");
+            var assignment = new ActionItem { Name = "CAD search" };
+            Check(PluginActionBinding.Apply(assignment, action.FullId) && assignment.Type == "Plugin" &&
+                assignment.Name == "CAD search", "New assignment uses ordinary plugin model and keeps custom name");
+        }
+        finally { instance.Unload(); }
+        return instance;
+    }
+
+    private static void TestQuickSearchBinding()
+    {
+        Check(typeof(ActionExecutor).Assembly.GetType("WinPieGestures.QuickSearchWindow") == null,
+            "6.3 Host no longer owns or initializes the Quick Search window");
+        Check(typeof(ActionExecutor).Assembly.GetType("WinPieGestures.NativeSearchEngine") == null,
+            "Host no longer includes the general file search engine");
+        var legacy = new ActionItem { Type = "System", Name = "CAD", Parameter = " QuickFinder " };
+        Check(LegacyQuickSearchBinding.Matches(legacy) && legacy.Type == "System" && legacy.Name == "CAD",
+            "6.4 Legacy binding is recognized without changing the saved action");
+        var projected = LegacyQuickSearchBinding.Project(new AppConfig { QuickSearchWidth = 813, QuickSearchPinned = true });
+        Check(projected.PluginActionRef?.FullId == "starpie.plugin.quicksearch.show" &&
+              projected.ExtensionData?["QuickSearchWidth"] == "813" && projected.ExtensionData["QuickSearchPinned"] == "true",
+            "6.5 Legacy binding dispatches to the plugin with the previous window preferences");
+        foreach (string alias in new[] { "QuickSearch", "quickFinder", "NativeSearch", "快速秒搜", "文件秒搜", "原生秒搜" })
+        {
+            var item = new ActionItem { Type = "Plugin", PluginActionRef = new PluginActionRef {
+                PluginId = "starpie.builtin.system", ContributionId = "system" }, ExtensionData = new() { ["Parameter"] = alias } };
+            Check(LegacyQuickSearchBinding.Matches(item), $"Existing system contribution recognizes {alias}");
+            item.PluginActionRef.PluginId = "different.plugin";
+            Check(!LegacyQuickSearchBinding.Matches(item), $"Unrelated plugin retains {alias}");
+        }
+        legacy.ExtensionData = new() { ["Parameter"] = "VolumeUp" };
+        Check(!LegacyQuickSearchBinding.Matches(legacy), "6.6 Other system presets retain routing precedence");
     }
 
     // ------------------------------------------------------------------ [7] IconHelper Custom Image Decode Budget
@@ -453,9 +494,59 @@ internal static class Program
             $"actual={entry?.AverageInvokeMs:F2}ms");
     }
 
-    [STAThread]
-    private static int Main()
+    // Drop the registration (which owns plugin delegates) before probing collectible unload.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static string LoadPreviewActionId(string plugin) => PluginHost.LoadActionsForBinding(plugin).Single().FullId;
+
+    private static void CheckQuickSearchPreview(string profile)
     {
+        const string plugin = "starpie.plugin.quicksearch";
+        string sandbox = Directory.CreateTempSubdirectory("QuickSearchPreview-").FullName;
+        foreach (string relative in new[] { "StarPie/config.json", "StarPie/plugin-data/registry.json",
+            $"StarPie/plugin-data/{plugin}/plugin.json", $"StarPie/plugin-data/{plugin}/StarPie.Plugin.QuickSearch.dll" })
+        {
+            string destination = Path.Combine(sandbox, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(Path.Combine(profile, relative), destination);
+        }
+        Environment.SetEnvironmentVariable("LOCALAPPDATA", sandbox);
+        ConfigManager.DisableAutoStartSync = true;
+        PluginHost.HeadlessMode = true;
+        PluginPaths.OverrideRootsForTesting(Path.Combine(sandbox, "StarPie", "plugin-data"), Path.Combine(sandbox, "scan"));
+        PluginHost.Initialize();
+        try
+        {
+            var slots = ConfigManager.CurrentConfig.Profiles.Single(x => x.ProcessName == "Global").Actions;
+            var registeredId = LoadPreviewActionId(plugin);
+            Check(registeredId == slots[0].PluginActionRef?.FullId &&
+                LegacyQuickSearchBinding.Matches(slots[1]), "Preview loads both bindings and the registered plugin action");
+            Check(PluginHost.Disable(plugin, out _) && PluginHost.LoadActionsForBinding(plugin).Count == 0 &&
+                LegacyQuickSearchBinding.Matches(slots[1]), "Disabled preview plugin stays disabled and retains old binding");
+        }
+        finally { PluginHost.ShutdownAll(); }
+    }
+
+    [STAThread]
+    private static int Main(string[] args)
+    {
+        if (args.Length == 3 && args[0] == "--quick-search-preview" && args[2] == "--test-instance")
+        {
+            CheckQuickSearchPreview(Path.GetFullPath(args[1]));
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length is 1 or 2 && args[0] == "--quick-search-binding")
+        {
+            TestQuickSearchBinding();
+            if (args.Length == 2)
+            {
+                var sandbox = Directory.CreateTempSubdirectory("QuickSearch-").FullName;
+                Environment.SetEnvironmentVariable("LOCALAPPDATA", sandbox);
+                PluginPaths.OverrideRootsForTesting(Path.Combine(sandbox, "host"), Path.Combine(sandbox, "scan"));
+                var owner = LoadQuickSearchWithoutInvoking(args[1]);
+                Check(owner.WaitForUnloadVerdict(5000), "Idle plugin unload releases the collectible context");
+            }
+            return _failed == 0 ? 0 : 1;
+        }
         string? originalLocalAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
         string sandboxRoot = Path.Combine(Path.GetTempPath(), "StarPie-AuditOptTests-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(sandboxRoot);
@@ -468,7 +559,7 @@ internal static class Program
             Test2_PluginSyncBlockingTimeouts().GetAwaiter().GetResult();
             Test3_FailedInitializeRevokesSubscriptionsAndUnloadsAlc();
             Test4And5_HotpathLockAndMemoryTrimSourceInvariants();
-            Test6_NativeSearchSnapshotSafetyAndAsyncEmptyQuery().GetAwaiter().GetResult();
+            Test6_ProgramPickerSnapshotSafetyAndAsyncEmptyQuery().GetAwaiter().GetResult();
             Test7_CustomImageDecodePixelBudget(sandboxRoot);
             Test8_FlushHealthNoDoubleAccumulation();
         }

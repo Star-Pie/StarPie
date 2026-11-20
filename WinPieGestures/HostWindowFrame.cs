@@ -31,12 +31,26 @@ internal static class HostWindowFrame
 
     private sealed class Frame
     {
+        private static readonly Geometry MinimizeGeo = FrozenGeometry("M 1,6 L 11,6");
+        private static readonly Geometry MaximizeGeo = FrozenGeometry("M 2,2 L 10,2 L 10,10 L 2,10 Z");
+        private static readonly Geometry RestoreGeo = FrozenGeometry("M 4,2 L 11,2 L 11,9 M 1,5 L 8,5 L 8,12 L 1,12 Z");
+        private static readonly Geometry CloseGeo = FrozenGeometry("M 2,2 L 10,10 M 10,2 L 2,10");
+        private static readonly Style DefaultCaptionButtonStyle = ButtonStyle(false);
+        private static readonly Style CloseCaptionButtonStyle = ButtonStyle(true);
+
         private readonly Window window;
         private readonly Border border;
         private readonly Image mark;
         private readonly Button minimize;
         private readonly Button maximize;
         private readonly Path maximizeIcon;
+        private readonly WindowChrome chrome;
+        private ResizeMode? lastResizeMode;
+        private bool? lastRestored;
+        private LanguageCode? lastLanguage;
+        private double lastClipWidth = -1;
+        private double lastClipHeight = -1;
+        private double lastClipRadius = -1;
         public Button Close { get; }
 
         public Frame(Window window)
@@ -61,10 +75,10 @@ internal static class HostWindowFrame
             caption.Children.Add(identity);
             var controls = new StackPanel { Orientation = Orientation.Horizontal };
             Grid.SetColumn(controls, 1);
-            minimize = CaptionButton("M 1,6 L 11,6", false);
-            maximize = CaptionButton("M 2,2 L 10,2 L 10,10 L 2,10 Z", false);
+            minimize = CaptionButton(MinimizeGeo, false);
+            maximize = CaptionButton(MaximizeGeo, false);
             maximizeIcon = (Path)maximize.Content;
-            Close = CaptionButton("M 2,2 L 10,10 M 10,2 L 2,10", true);
+            Close = CaptionButton(CloseGeo, true);
             controls.Children.Add(minimize); controls.Children.Add(maximize); controls.Children.Add(Close);
             caption.Children.Add(controls);
 
@@ -78,12 +92,13 @@ internal static class HostWindowFrame
             border.SetResourceReference(Border.BorderBrushProperty, "CardBorderBrush");
             border.SetResourceReference(Border.BorderThicknessProperty, "ArtBorderThickness");
             window.Content = border;
-            WindowChrome.SetWindowChrome(window, new WindowChrome
+            chrome = new WindowChrome
             {
                 CaptionHeight = 36, GlassFrameThickness = new Thickness(0),
                 ResizeBorderThickness = new Thickness(CanResize ? 6 : 0),
                 UseAeroCaptionButtons = false, CornerRadius = new CornerRadius(0)
-            });
+            };
+            WindowChrome.SetWindowChrome(window, chrome);
             Bind(SystemCommands.MinimizeWindowCommand, () => SystemCommands.MinimizeWindow(window), () => window.ResizeMode != ResizeMode.NoResize);
             Bind(SystemCommands.MaximizeWindowCommand, () => SystemCommands.MaximizeWindow(window), () => CanResize);
             Bind(SystemCommands.RestoreWindowCommand, () => SystemCommands.RestoreWindow(window), () => window.WindowState != WindowState.Normal);
@@ -116,39 +131,73 @@ internal static class HostWindowFrame
 
         public void Refresh()
         {
-            mark.Source = ThemeBrandMark.Get(window);
-            WindowChrome.GetWindowChrome(window).ResizeBorderThickness = new Thickness(CanResize ? 6 : 0);
-            minimize.Visibility = window.ResizeMode == ResizeMode.NoResize ? Visibility.Collapsed : Visibility.Visible;
-            maximize.Visibility = CanResize ? Visibility.Visible : Visibility.Collapsed;
+            ImageSource nextMark = ThemeBrandMark.Get(window);
+            if (!ReferenceEquals(mark.Source, nextMark))
+            {
+                mark.Source = nextMark;
+            }
+
+            ResizeMode resizeMode = window.ResizeMode;
+            if (lastResizeMode != resizeMode)
+            {
+                lastResizeMode = resizeMode;
+                bool canResize = CanResize;
+                chrome.ResizeBorderThickness = new Thickness(canResize ? 6 : 0);
+                minimize.Visibility = resizeMode == ResizeMode.NoResize ? Visibility.Collapsed : Visibility.Visible;
+                maximize.Visibility = canResize ? Visibility.Visible : Visibility.Collapsed;
+            }
+
             bool restored = window.WindowState != WindowState.Maximized;
-            maximize.Command = restored ? SystemCommands.MaximizeWindowCommand : SystemCommands.RestoreWindowCommand;
-            maximizeIcon.Data = FrozenGeometry(restored ? "M 2,2 L 10,2 L 10,10 L 2,10 Z" : "M 4,2 L 11,2 L 11,9 M 1,5 L 8,5 L 8,12 L 1,12 Z");
-            border.Padding = new Thickness(window.WindowState == WindowState.Maximized ? 6 : 0);
-            double radius = window.WindowState == WindowState.Maximized ? 0 : 8;
-            border.CornerRadius = new CornerRadius(radius);
-            // Non-glass WindowChrome forwards this value as the Win32 rounding ellipse diameter.
-            WindowChrome.GetWindowChrome(window).CornerRadius = new CornerRadius(radius * 2);
+            bool restoredChanged = lastRestored != restored;
+            if (restoredChanged)
+            {
+                lastRestored = restored;
+                maximize.Command = restored ? SystemCommands.MaximizeWindowCommand : SystemCommands.RestoreWindowCommand;
+                maximizeIcon.Data = restored ? MaximizeGeo : RestoreGeo;
+                border.Padding = new Thickness(restored ? 0 : 6);
+                double radius = restored ? 8 : 0;
+                border.CornerRadius = new CornerRadius(radius);
+                // Non-glass WindowChrome forwards this value as the Win32 rounding ellipse diameter.
+                chrome.CornerRadius = new CornerRadius(radius * 2);
+            }
+
             RefreshClip();
-            Label(minimize, "CaptionMinimize");
-            Label(maximize, restored ? "CaptionMaximize" : "CaptionRestore");
-            Label(Close, window is SettingsWindow ? "CaptionHideSettings" : "CaptionClose");
+
+            LanguageCode lang = I18n.CurrentLanguage;
+            if (lastLanguage != lang)
+            {
+                lastLanguage = lang;
+                Label(minimize, "CaptionMinimize");
+                Label(maximize, restored ? "CaptionMaximize" : "CaptionRestore");
+                Label(Close, window is SettingsWindow ? "CaptionHideSettings" : "CaptionClose");
+            }
+            else if (restoredChanged)
+            {
+                Label(maximize, restored ? "CaptionMaximize" : "CaptionRestore");
+            }
         }
 
         private void RefreshClip()
         {
-            if (border.ActualWidth <= 0 || border.ActualHeight <= 0) return;
+            double width = border.ActualWidth;
+            double height = border.ActualHeight;
+            if (width <= 0 || height <= 0) return;
             double radius = border.CornerRadius.TopLeft;
-            var clip = new RectangleGeometry(new Rect(0, 0, border.ActualWidth, border.ActualHeight), radius, radius);
+            if (width == lastClipWidth && height == lastClipHeight && radius == lastClipRadius) return;
+            lastClipWidth = width;
+            lastClipHeight = height;
+            lastClipRadius = radius;
+            var clip = new RectangleGeometry(new Rect(0, 0, width, height), radius, radius);
             clip.Freeze();
             border.Clip = clip;
         }
 
-        private Button CaptionButton(string geometry, bool close)
+        private Button CaptionButton(Geometry geometry, bool close)
         {
-            var icon = new Path { Data = FrozenGeometry(geometry), Width = 12, Height = 12, Stretch = Stretch.Uniform, StrokeThickness = 1.25, SnapsToDevicePixels = true };
+            var icon = new Path { Data = geometry, Width = 12, Height = 12, Stretch = Stretch.Uniform, StrokeThickness = 1.25, SnapsToDevicePixels = true };
             icon.SetBinding(System.Windows.Shapes.Shape.StrokeProperty, new Binding(nameof(Control.Foreground)) { RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Button), 1) });
             var button = new Button { Content = icon, Width = 44, Height = 35, CommandTarget = window, Focusable = false, Padding = new Thickness(0), BorderThickness = new Thickness(0) };
-            button.Style = ButtonStyle(close);
+            button.Style = close ? CloseCaptionButtonStyle : DefaultCaptionButtonStyle;
             WindowChrome.SetIsHitTestVisibleInChrome(button, true);
             return button;
         }

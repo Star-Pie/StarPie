@@ -112,6 +112,65 @@ internal static class Program
         Check(seen[^1].Reason == "PresentationFailed" && seen[^1].ProfileId == "", "accepted request can end before profile or UI preparation");        var rejected = new PluginInteractionSession(InteractionSource.StickyWheel, "Other", e => { seen.Add(e); return 0; });
         int offset = seen.Count; rejected.End("PresentationFailed"); rejected.Presented();
         Check(seen.Count == offset + 1 && seen[^1].Kind == InteractionEventKind.SessionEnded, "failed presentation has no Presented");
+
+        var pinned = new List<InteractionEvent>();
+        var pin = new PluginInteractionSession(InteractionSource.NormalGesture, "CAD", e => { pinned.Add(e); return 1; });
+        pin.Presented();
+        pin.Update(0, -1, false, false, preservePrimaryTarget: true);
+        pin.Update(0, -1, true, false, preservePrimaryTarget: true);
+        Check(pinned.Count(e => e.Kind == InteractionEventKind.SubmenuExpanded) == 1, "initial submenu expansion emits once");
+        pin.Update(0, 1, true, false, preservePrimaryTarget: true);
+        Check(pinned[^1].Kind == InteractionEventKind.SelectionChanged && pinned[^1].Target == new InteractionTarget(InteractionTargetKind.SubSector, 0, 1),
+            "pinned enters subsector");
+        int beforeReturnParent = pinned.Count;
+        pin.Update(0, -1, true, false, preservePrimaryTarget: true);
+        Check(pinned.Skip(beforeReturnParent).Count() == 1 &&
+              pinned[^1].Kind == InteractionEventKind.SelectionChanged &&
+              pinned[^1].Target == new InteractionTarget(InteractionTargetKind.Sector, 0),
+            "pinned returning from subsector to open parent sector restores primary hover without duplicate expand");
+        pin.Update(0, 1, true, false, preservePrimaryTarget: true);
+        int beforeEmpty = pinned.Count;
+        pin.Update(-2, -1, true, false, preservePrimaryTarget: true);
+        pin.Update(0, 1, true, false, preservePrimaryTarget: true);
+        var fromEmpty = pinned.Skip(beforeEmpty).ToArray();
+        Check(fromEmpty.Length == 2 &&
+              fromEmpty[0].Kind == InteractionEventKind.SelectionChanged && fromEmpty[0].Target == InteractionTarget.None &&
+              fromEmpty[1].Kind == InteractionEventKind.SelectionChanged && fromEmpty[1].Target == new InteractionTarget(InteractionTargetKind.SubSector, 0, 1),
+            "pinned subsector -> empty -> subsector keeps silence outside and restores only current subsector hover without SubmenuExpanded");
+        int beforeCore = pinned.Count;
+        pin.Update(-1, -1, true, false, preservePrimaryTarget: true);
+        pin.Update(0, 1, true, false, preservePrimaryTarget: true);
+        var fromCore = pinned.Skip(beforeCore).ToArray();
+        Check(fromCore.Length == 2 &&
+              fromCore[0].Kind == InteractionEventKind.SelectionChanged && fromCore[0].Target == InteractionTarget.Core &&
+              fromCore[1].Kind == InteractionEventKind.SelectionChanged && fromCore[1].Target == new InteractionTarget(InteractionTargetKind.SubSector, 0, 1),
+            "pinned subsector -> center cancel core -> subsector emits only Core then current subsector hover without SubmenuExpanded or parent hover");
+        int beforeEscape = pinned.Count;
+        pin.Update(-1, -1, false, true, preservePrimaryTarget: true);
+        pin.Update(0, 1, true, false, preservePrimaryTarget: true);
+        var fromEscape = pinned.Skip(beforeEscape).ToArray();
+        Check(fromEscape.All(e => e.Kind != InteractionEventKind.SubmenuExpanded) &&
+              fromEscape[^1].Kind == InteractionEventKind.SelectionChanged && fromEscape[^1].Target == new InteractionTarget(InteractionTargetKind.SubSector, 0, 1),
+            "returning from escape cancel to same expanded parent subsector never replays SubmenuExpanded");
+        int beforeSwitchParent = pinned.Count;
+        pin.Update(2, -1, true, false, preservePrimaryTarget: true);
+        var switched = pinned.Skip(beforeSwitchParent).ToArray();
+        Check(switched.Count(e => e.Kind == InteractionEventKind.SubmenuExpanded) == 1 &&
+              switched.Last(e => e.Kind == InteractionEventKind.SelectionChanged).Target == new InteractionTarget(InteractionTargetKind.Sector, 2),
+            "switching directly to a different expanded parent emits SubmenuExpanded once for new parent");
+        pin.End();
+
+        var normalEscEvents = new List<InteractionEvent>();
+        var normalEscape = new PluginInteractionSession(InteractionSource.NormalGesture, "CAD", e => { normalEscEvents.Add(e); return 1; });
+        normalEscape.Presented();
+        normalEscape.Update(2, -1, true, false);
+        normalEscape.Update(2, 1, true, false);
+        normalEscape.Update(-1, -1, false, true);
+        int beforeReenter = normalEscEvents.Count;
+        normalEscape.Update(2, 1, true, false);
+        Check(normalEscEvents.Skip(beforeReenter).Any(e => e.Kind == InteractionEventKind.SubmenuExpanded),
+            "normal gesture mode (preservePrimaryTarget: false) re-emits SubmenuExpanded after outer escape collapse");
+        normalEscape.End();
     }
 
     private static void TestConfiguredConfirmation()
@@ -523,7 +582,9 @@ internal static class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static PluginInstance ExerciseRealSoundModule(bool invokeEvents = true)
     {
-        string dll = Path.GetFullPath("plugin/StarPie-Official-Plugins/src/StarPie.Plugin.Sound/bin/Release/net8.0-windows/StarPie.Plugin.Sound.dll");
+        string defaultDll = Path.GetFullPath("plugin/StarPie-Official-Plugins/src/StarPie.Plugin.Sound/bin/Release/net8.0-windows/StarPie.Plugin.Sound.dll");
+        string? envDll = Environment.GetEnvironmentVariable("STARPIE_SOUND_PLUGIN_DLL");
+        string dll = (!File.Exists(defaultDll) && !string.IsNullOrWhiteSpace(envDll)) ? Path.GetFullPath(envDll) : defaultDll;
         var scan = PluginScanner.ScanSelectedDll(dll, allowReservedIdPrefix: true);
         Check(scan.Accepted, "sound production DLL passes manifest/SDK scan");
         var owner = new PluginInstance("starpie.plugin.sound", new PluginRegistryEntry

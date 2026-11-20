@@ -130,11 +130,13 @@ public class WheelProfile : INotifyPropertyChanged
 
 	internal bool RemoveLayer(WheelLayer layer)
 	{
+		if (layer == null || Layers == null) return false;
 		int index = Layers.IndexOf(layer);
 		if (index < 0 || Layers.Count <= 1) return false;
 		// The legacy scheme trigger belonged to the original first layer. Deleting
 		// that layer must not silently transfer a hidden trigger to its successor.
 		if (index == 0) ActivationTrigger = null;
+		layer.ActivationTrigger = null;
 		Layers.RemoveAt(index);
 		ActiveLayerIndex = Math.Clamp(ActiveLayerIndex - (index <= ActiveLayerIndex ? 1 : 0), 0, Layers.Count - 1);
 		SyncRootPropertiesFromActiveLayer();

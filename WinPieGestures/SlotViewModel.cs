@@ -173,14 +173,6 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 		},
 		new SystemPresetItem
 		{
-			Key = "QuickSearch",
-			Category = "系统工具",
-			DisplayName = "全盘文件与程序秒搜 (Quick Finder)",
-			DefaultName = "快速秒搜",
-			DefaultIconKey = "Search"
-		},
-		new SystemPresetItem
-		{
 			Key = "ClipboardHistory",
 			Category = "系统工具",
 			DisplayName = "剪贴板历史 (Clipboard / Win+V)",

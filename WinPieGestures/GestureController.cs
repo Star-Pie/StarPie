@@ -655,7 +655,7 @@ public partial class GestureController : IDisposable
 			shouldSchedule = !_highlightUpdateScheduled;
 			_highlightUpdateScheduled = true;
 
-			_interactionSession?.Update(sectorIndex, subSectorIndex, showSubTier, isEscaped);
+			_interactionSession?.Update(sectorIndex, subSectorIndex, showSubTier, isEscaped, preservePrimaryTarget: _pinState.Enabled);
 
 
 		}
@@ -722,7 +722,7 @@ public partial class GestureController : IDisposable
 		}
 		radialWindow.SetOuterEscapeState(targetEscape);
 		radialWindow.HighlightSector(targetSector, targetSubSector, targetShowSubTier,
-			preserveSubTier: _pinState.Presented && targetSector < -1);
+			preserveSubTier: _pinState.Presented && targetSector < 0);
 	}
 
 	// 判断指定扇区是否为系统音量加/减动作（用于外甩豁免：音量扇区在任意拖距都可调音）
@@ -2095,6 +2095,7 @@ public partial class GestureController : IDisposable
 					_activeProfile.ActiveLayerIndex = nextIdx;
 					_activeProfile.SyncRootPropertiesFromActiveLayer();
 					_submenuLock.Reset();
+					_pinExpandedParent = -1;
 					_suppressPrimaryOnRelease = false;
 					QueueHighlightUpdate(-2, -1, false, false, GetCurrentGestureVersion());
 
@@ -2105,17 +2106,7 @@ public partial class GestureController : IDisposable
 					if (rw != null)
 					{
 						long version = GetCurrentGestureVersion();
-						DispatchUi(() =>
-						{
-							if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow)) return;
-							rw.SwitchToLayer(nextIdx);
-							if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu) _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
-							Point pt = (_lastMovePoint != default) ? _lastMovePoint : _startPoint;
-							if (_isGestureActive && pt != default)
-							{
-								RefreshHoverAfterUiChange(pt, version);
-							}
-						});
+						DispatchUi(() => SwitchRadialLayerOnUi(rw, nextIdx, version));
 					}
 					e.Handled = true;
 					return;
@@ -2162,6 +2153,7 @@ public partial class GestureController : IDisposable
 					_activeProfile.ActiveLayerIndex = nextIdx;
 					_activeProfile.SyncRootPropertiesFromActiveLayer();
 					_submenuLock.Reset();
+					_pinExpandedParent = -1;
 					_suppressPrimaryOnRelease = false;
 					QueueHighlightUpdate(-2, -1, false, false, GetCurrentGestureVersion());
 
@@ -2172,17 +2164,7 @@ public partial class GestureController : IDisposable
 					if (rw != null)
 					{
 						long version = GetCurrentGestureVersion();
-						DispatchUi(() =>
-						{
-							if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow)) return;
-							rw.SwitchToLayer(nextIdx);
-							if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu) _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
-							Point pt = (_lastMovePoint != default) ? _lastMovePoint : _startPoint;
-							if (_isGestureActive && pt != default)
-							{
-								RefreshHoverAfterUiChange(pt, version);
-							}
-						});
+						DispatchUi(() => SwitchRadialLayerOnUi(rw, nextIdx, version));
 					}
 					e.Handled = true;
 					return;
@@ -2777,20 +2759,20 @@ public partial class GestureController : IDisposable
 			}
 			window = _radialWindow!;
 			interaction = _interactionSession ??= new PluginInteractionSession(InteractionSource.NormalGesture, profile.ProcessName);
-			interaction.Update(_selectedSectorIndex, _selectedSubSectorIndex, _lastShowSubTier, _lastEscapedState);
+			interaction.Update(_selectedSectorIndex, _selectedSubSectorIndex, _lastShowSubTier, _lastEscapedState, preservePrimaryTarget: _pinState.Enabled);
 		}
 		createdWindow?.CloseFast();
 
 		try
 		{
 			bool pinned = _pinState.Enabled;
-			if (pinned) interaction.Update(-2, -1, false, false);
+			if (pinned) interaction.Update(-2, -1, false, false, preservePrimaryTarget: true);
 			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, () =>
 			{
 				// Hit testing needs the revealed geometry; publish no initial angular hover first.
-				if (pinned) ApplyPinnedHoverAtPresentation(gestureVersion);
+				if (pinned) ApplyPinnedHoverAtPresentation(gestureVersion, ignoreWindowScale: true);
 				interaction.Presented();
-			}, pinned);
+			}, pinned, pinned ? () => RefreshHoverAfterUiChange(_lastMovePoint, gestureVersion) : null);
 			if (_pinState.Enabled)
 			{
 				BeginPinnedPresentation(gestureVersion);
@@ -2815,8 +2797,7 @@ public partial class GestureController : IDisposable
 					_currentDpiScaleX = newDpiX;
 					_currentDpiScaleY = newDpiY;
 				}
-				if (_pinState.Enabled) ApplyPinnedHoverAtPresentation(gestureVersion);
-				else
+				if (!_pinState.Enabled)
 				{
 					SetCursorPos((int)Math.Round(actualCenter.X), (int)Math.Round(actualCenter.Y));
 					ProcessMove(actualCenter);

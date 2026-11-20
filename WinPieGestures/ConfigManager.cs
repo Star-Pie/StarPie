@@ -438,16 +438,26 @@ public static class ConfigManager
 			try
 			{
 				string? activeProfile = CurrentConfig?.ActiveConfigProfileName;
-				if (!string.IsNullOrWhiteSpace(activeProfile))
+				if (!string.IsNullOrWhiteSpace(activeProfile) && !HasInvalidPathOrTraversal(activeProfile))
 				{
 					if (!Directory.Exists(ConfigsFolder))
 					{
 						Directory.CreateDirectory(ConfigsFolder);
 					}
-					string clean = CleanFileName(activeProfile);
-					if (!string.IsNullOrWhiteSpace(clean))
+					string profilePath;
+					if (TryResolveSavedConfigFile(activeProfile, out string existingPath, out _))
 					{
-						string profilePath = Path.Combine(ConfigsFolder, $"{clean}.json");
+						profilePath = existingPath;
+					}
+					else
+					{
+						string clean = CleanFileName(activeProfile);
+						profilePath = !string.IsNullOrWhiteSpace(clean) && clean != "." && clean != ".."
+							? Path.Combine(ConfigsFolder, $"{clean}.json")
+							: string.Empty;
+					}
+					if (!string.IsNullOrEmpty(profilePath) && IsDirectChildJsonInConfigsFolder(profilePath))
+					{
 						WriteTextAtomically(profilePath, contents);
 					}
 				}
@@ -819,6 +829,156 @@ public static class ConfigManager
 
 	public static string ConfigsFolder => Path.Combine(AppDataFolder, "Configs");
 
+	private static bool HasInvalidPathOrTraversal(string? profileName)
+	{
+		if (string.IsNullOrWhiteSpace(profileName)) return true;
+		if (profileName.IndexOf('\0') >= 0 ||
+			profileName.IndexOf(Path.DirectorySeparatorChar) >= 0 ||
+			profileName.IndexOf(Path.AltDirectorySeparatorChar) >= 0 ||
+			profileName.IndexOf(Path.VolumeSeparatorChar) >= 0)
+		{
+			return true;
+		}
+		string trimmed = profileName.Trim();
+		return trimmed == "." || trimmed == "..";
+	}
+
+	private static bool IsDirectChildJsonInConfigsFolder(string filePath)
+	{
+		try
+		{
+			if (string.IsNullOrWhiteSpace(filePath)) return false;
+			string fullConfigsDir = Path.GetFullPath(ConfigsFolder)
+				.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			string fullFilePath = Path.GetFullPath(filePath);
+			string? parentDir = Path.GetDirectoryName(fullFilePath)?
+				.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			return string.Equals(parentDir, fullConfigsDir, StringComparison.OrdinalIgnoreCase) &&
+				string.Equals(Path.GetExtension(fullFilePath), ".json", StringComparison.OrdinalIgnoreCase);
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	private static List<(string FilePath, string Stem)> EnumerateSavedConfigFiles()
+	{
+		var entries = new List<(string FilePath, string Stem)>();
+		if (!Directory.Exists(ConfigsFolder))
+		{
+			return entries;
+		}
+		foreach (string file in Directory.GetFiles(ConfigsFolder, "*.json"))
+		{
+			if (!IsDirectChildJsonInConfigsFolder(file)) continue;
+			string stem = Path.GetFileNameWithoutExtension(file);
+			if (string.IsNullOrWhiteSpace(stem)) continue;
+			string trimmed = stem.Trim();
+			if (trimmed == "." || trimmed == "..") continue;
+			entries.Add((file, stem));
+		}
+		return entries;
+	}
+
+	private static bool TryResolveSavedConfigFile(string? profileName, out string resolvedFilePath, out string resolvedStem)
+	{
+		resolvedFilePath = string.Empty;
+		resolvedStem = string.Empty;
+		if (HasInvalidPathOrTraversal(profileName) || !Directory.Exists(ConfigsFolder))
+		{
+			return false;
+		}
+
+		List<(string FilePath, string Stem)> entries = EnumerateSavedConfigFiles();
+		if (entries.Count == 0)
+		{
+			return false;
+		}
+
+		string target = profileName!;
+		foreach (var entry in entries)
+		{
+			if (string.Equals(entry.Stem, target, StringComparison.Ordinal))
+			{
+				resolvedFilePath = entry.FilePath;
+				resolvedStem = entry.Stem;
+				return true;
+			}
+		}
+
+		foreach (var entry in entries)
+		{
+			if (string.Equals(entry.Stem, target, StringComparison.OrdinalIgnoreCase))
+			{
+				resolvedFilePath = entry.FilePath;
+				resolvedStem = entry.Stem;
+				return true;
+			}
+		}
+
+		string trimmed = target.Trim();
+		foreach (var entry in entries)
+		{
+			if (string.Equals(entry.Stem.Trim(), trimmed, StringComparison.OrdinalIgnoreCase))
+			{
+				resolvedFilePath = entry.FilePath;
+				resolvedStem = entry.Stem;
+				return true;
+			}
+		}
+
+		string clean = CleanFileName(target);
+		if (!string.IsNullOrWhiteSpace(clean) && clean != "." && clean != "..")
+		{
+			foreach (var entry in entries)
+			{
+				if (string.Equals(entry.Stem, clean, StringComparison.OrdinalIgnoreCase))
+				{
+					resolvedFilePath = entry.FilePath;
+					resolvedStem = entry.Stem;
+					return true;
+				}
+			}
+			foreach (var entry in entries)
+			{
+				if (string.Equals(CleanFileName(entry.Stem), clean, StringComparison.OrdinalIgnoreCase))
+				{
+					resolvedFilePath = entry.FilePath;
+					resolvedStem = entry.Stem;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private static bool MatchesConfigName(string? candidateName, string rawInput, string resolvedStem)
+	{
+		if (string.IsNullOrWhiteSpace(candidateName)) return false;
+		string cleanCandidate = CleanFileName(candidateName);
+		string cleanRaw = CleanFileName(rawInput);
+		string cleanStem = CleanFileName(resolvedStem);
+		return string.Equals(candidateName, resolvedStem, StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(candidateName, rawInput, StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(candidateName.Trim(), resolvedStem.Trim(), StringComparison.OrdinalIgnoreCase) ||
+			(!string.IsNullOrWhiteSpace(cleanCandidate) &&
+			 (string.Equals(cleanCandidate, cleanStem, StringComparison.OrdinalIgnoreCase) ||
+			  string.Equals(cleanCandidate, cleanRaw, StringComparison.OrdinalIgnoreCase)));
+	}
+
+	private static bool IsActiveProfileMatch(string rawInput, string resolvedStem, string resolvedFilePath)
+	{
+		string? activeName = CurrentConfig?.ActiveConfigProfileName;
+		if (string.IsNullOrWhiteSpace(activeName)) return false;
+		if (TryResolveSavedConfigFile(activeName, out string activeFile, out _))
+		{
+			return string.Equals(activeFile, resolvedFilePath, StringComparison.OrdinalIgnoreCase);
+		}
+		return MatchesConfigName(activeName, rawInput, resolvedStem);
+	}
+
 	public static void EnsureConfigsFolder()
 	{
 		try
@@ -834,7 +994,7 @@ public static class ConfigManager
 			}
 
 			string activeName = CurrentConfig?.ActiveConfigProfileName ?? "默认配置";
-			if (string.IsNullOrWhiteSpace(activeName))
+			if (string.IsNullOrWhiteSpace(activeName) || HasInvalidPathOrTraversal(activeName))
 			{
 				activeName = "默认配置";
 				if (CurrentConfig != null)
@@ -843,11 +1003,16 @@ public static class ConfigManager
 				}
 			}
 
+			if (TryResolveSavedConfigFile(activeName, out _, out _))
+			{
+				return;
+			}
+
 			string clean = CleanFileName(activeName);
-			if (string.IsNullOrWhiteSpace(clean)) clean = "默认配置";
+			if (string.IsNullOrWhiteSpace(clean) || clean == "." || clean == "..") clean = "默认配置";
 
 			string activeFile = Path.Combine(ConfigsFolder, $"{clean}.json");
-			if (!File.Exists(activeFile))
+			if (IsDirectChildJsonInConfigsFolder(activeFile) && !File.Exists(activeFile))
 			{
 				if (CurrentConfig != null)
 				{
@@ -872,17 +1037,9 @@ public static class ConfigManager
 		List<string> list = new List<string>();
 		try
 		{
-			if (Directory.Exists(ConfigsFolder))
+			foreach (var entry in EnumerateSavedConfigFiles())
 			{
-				string[] files = Directory.GetFiles(ConfigsFolder, "*.json");
-				foreach (string file in files)
-				{
-					string name = Path.GetFileNameWithoutExtension(file);
-					if (!string.IsNullOrWhiteSpace(name))
-					{
-						list.Add(name);
-					}
-				}
+				list.Add(entry.Stem);
 			}
 		}
 		catch (Exception ex)
@@ -900,9 +1057,9 @@ public static class ConfigManager
 
 	public static bool SaveConfigAs(string newProfileName)
 	{
-		if (string.IsNullOrWhiteSpace(newProfileName)) return false;
+		if (HasInvalidPathOrTraversal(newProfileName)) return false;
 		string cleanName = CleanFileName(newProfileName);
-		if (string.IsNullOrWhiteSpace(cleanName)) return false;
+		if (string.IsNullOrWhiteSpace(cleanName) || cleanName == "." || cleanName == "..") return false;
 
 		EnsureConfigsFolder();
 		string? previousProfileName = CurrentConfig?.ActiveConfigProfileName;
@@ -912,6 +1069,14 @@ public static class ConfigManager
 		}
 
 		string targetFile = Path.Combine(ConfigsFolder, $"{cleanName}.json");
+		if (!IsDirectChildJsonInConfigsFolder(targetFile))
+		{
+			if (CurrentConfig != null && previousProfileName != null)
+			{
+				CurrentConfig.ActiveConfigProfileName = previousProfileName;
+			}
+			return false;
+		}
 		try
 		{
 			JsonSerializerOptions options = new JsonSerializerOptions { WriteIndented = true };
@@ -939,13 +1104,19 @@ public static class ConfigManager
 		}
 	}
 
-	public static bool SwitchToConfig(string profileName)
+	public static bool SwitchToConfig(string profileName) => SwitchToConfigCore(profileName, ensureConfigsFolder: true);
+
+	private static bool SwitchToConfigCore(string profileName, bool ensureConfigsFolder)
 	{
 		if (string.IsNullOrWhiteSpace(profileName)) return false;
-		EnsureConfigsFolder();
-		string cleanName = CleanFileName(profileName);
-		string targetFile = Path.Combine(ConfigsFolder, $"{cleanName}.json");
-		if (!File.Exists(targetFile)) return false;
+		if (ensureConfigsFolder)
+		{
+			EnsureConfigsFolder();
+		}
+		if (!TryResolveSavedConfigFile(profileName, out string targetFile, out string resolvedStem))
+		{
+			return false;
+		}
 
 		try
 		{
@@ -958,7 +1129,7 @@ public static class ConfigManager
 			AppConfig? loaded = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(targetFile), options);
 			if (loaded != null)
 			{
-				loaded.ActiveConfigProfileName = cleanName;
+				loaded.ActiveConfigProfileName = resolvedStem;
 				EnsureConfigHealth(loaded);
 				AppConfig? previousConfig = CurrentConfig;
 				CurrentConfig = loaded;
@@ -975,30 +1146,39 @@ public static class ConfigManager
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError($"Failed to switch to config '{cleanName}'", ex);
+			AppLogger.LogError($"Failed to switch to config '{profileName}'", ex);
 		}
 		return false;
 	}
 
 	public static bool RenameSavedConfig(string oldName, string newName)
 	{
-		if (string.IsNullOrWhiteSpace(oldName) || string.IsNullOrWhiteSpace(newName)) return false;
-		string cleanOld = CleanFileName(oldName);
+		if (string.IsNullOrWhiteSpace(oldName) || HasInvalidPathOrTraversal(newName)) return false;
 		string cleanNew = CleanFileName(newName);
-		if (string.IsNullOrWhiteSpace(cleanOld) || string.IsNullOrWhiteSpace(cleanNew)) return false;
-		if (string.Equals(cleanOld, cleanNew, StringComparison.OrdinalIgnoreCase)) return true;
+		if (string.IsNullOrWhiteSpace(cleanNew) || cleanNew == "." || cleanNew == "..") return false;
 
 		EnsureConfigsFolder();
-		string oldFile = Path.Combine(ConfigsFolder, $"{cleanOld}.json");
+		if (!TryResolveSavedConfigFile(oldName, out string oldFile, out string oldStem))
+		{
+			return false;
+		}
+		if (string.Equals(oldStem, cleanNew, StringComparison.Ordinal)) return true;
+
 		string newFile = Path.Combine(ConfigsFolder, $"{cleanNew}.json");
-		if (!File.Exists(oldFile) || File.Exists(newFile)) return false;
+		if (!IsDirectChildJsonInConfigsFolder(newFile)) return false;
+		bool sameTargetPath = string.Equals(oldFile, newFile, StringComparison.OrdinalIgnoreCase);
+		if (!sameTargetPath && File.Exists(newFile)) return false;
 
 		try
 		{
-			File.Move(oldFile, newFile);
-			if (string.Equals(CurrentConfig?.ActiveConfigProfileName, cleanOld, StringComparison.OrdinalIgnoreCase))
+			bool wasActive = IsActiveProfileMatch(oldName, oldStem, oldFile);
+			if (!sameTargetPath || !string.Equals(oldFile, newFile, StringComparison.Ordinal))
 			{
-				CurrentConfig!.ActiveConfigProfileName = cleanNew;
+				File.Move(oldFile, newFile);
+			}
+			if (wasActive && CurrentConfig != null)
+			{
+				CurrentConfig.ActiveConfigProfileName = cleanNew;
 				if (!SaveConfig(allowOverwriteFallback: true))
 				{
 					return false;
@@ -1008,7 +1188,25 @@ public static class ConfigManager
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError($"Failed to rename config '{cleanOld}' to '{cleanNew}'", ex);
+			AppLogger.LogError($"Failed to rename config '{oldStem}' to '{cleanNew}'", ex);
+			return false;
+		}
+	}
+
+	private static bool CanLoadSavedConfig(string filePath)
+	{
+		try
+		{
+			JsonSerializerOptions options = new JsonSerializerOptions
+			{
+				PropertyNameCaseInsensitive = true,
+				AllowTrailingCommas = true,
+				ReadCommentHandling = JsonCommentHandling.Skip
+			};
+			return JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(filePath), options) != null;
+		}
+		catch
+		{
 			return false;
 		}
 	}
@@ -1017,24 +1215,63 @@ public static class ConfigManager
 	{
 		fallbackName = "";
 		if (string.IsNullOrWhiteSpace(profileName)) return false;
-		string clean = CleanFileName(profileName);
+		if (!TryResolveSavedConfigFile(profileName, out string targetFile, out string deletedStem))
+		{
+			return false;
+		}
 
-		EnsureConfigsFolder();
-		List<string> all = GetSavedConfigNames();
-		if (all.Count <= 1) return false;
+		List<(string FilePath, string Stem)> allBefore = EnumerateSavedConfigFiles();
+		if (allBefore.Count <= 1) return false;
 
-		string file = Path.Combine(ConfigsFolder, $"{clean}.json");
+		bool wasActive = IsActiveProfileMatch(profileName, deletedStem, targetFile);
+		string cleanProfile = CleanFileName(profileName);
+		string cleanStem = CleanFileName(deletedStem);
+
+		var remaining = allBefore
+			.Where(e => !string.Equals(e.FilePath, targetFile, StringComparison.OrdinalIgnoreCase))
+			.OrderBy(e => e.Stem, StringComparer.OrdinalIgnoreCase)
+			.ToList();
+		if (remaining.Count == 0) return false;
+
+		string? chosenFallback = null;
+		if (wasActive)
+		{
+			var preferred = remaining
+				.Where(e =>
+					!string.Equals(e.Stem, profileName, StringComparison.OrdinalIgnoreCase) &&
+					!string.Equals(e.Stem, deletedStem, StringComparison.OrdinalIgnoreCase) &&
+					(string.IsNullOrWhiteSpace(cleanProfile) || !string.Equals(e.Stem, cleanProfile, StringComparison.OrdinalIgnoreCase)) &&
+					(string.IsNullOrWhiteSpace(cleanStem) || !string.Equals(e.Stem, cleanStem, StringComparison.OrdinalIgnoreCase)))
+				.ToList();
+			var chosen = preferred.FirstOrDefault(e => CanLoadSavedConfig(e.FilePath));
+			if (string.IsNullOrEmpty(chosen.Stem))
+			{
+				chosen = remaining.FirstOrDefault(e => CanLoadSavedConfig(e.FilePath));
+			}
+			chosenFallback = chosen.Stem;
+			if (string.IsNullOrEmpty(chosenFallback))
+			{
+				return false;
+			}
+		}
+
 		try
 		{
-			if (File.Exists(file))
+			File.Delete(targetFile);
+			if (File.Exists(targetFile))
 			{
-				File.Delete(file);
+				AppLogger.LogError($"Deleted config file still exists on disk: '{targetFile}'", new IOException("File remains after delete."));
+				return false;
 			}
 
-			if (string.Equals(CurrentConfig?.ActiveConfigProfileName, clean, StringComparison.OrdinalIgnoreCase))
+			if (wasActive)
 			{
-				fallbackName = all.FirstOrDefault(x => !string.Equals(x, clean, StringComparison.OrdinalIgnoreCase)) ?? "默认配置";
-				return SwitchToConfig(fallbackName);
+				if (!SwitchToConfigCore(chosenFallback!, ensureConfigsFolder: false))
+				{
+					fallbackName = "";
+					return false;
+				}
+				fallbackName = CurrentConfig?.ActiveConfigProfileName ?? chosenFallback!;
 			}
 			else
 			{
@@ -1044,7 +1281,8 @@ public static class ConfigManager
 		}
 		catch (Exception ex)
 		{
-			AppLogger.LogError($"Failed to delete config '{clean}'", ex);
+			AppLogger.LogError($"Failed to delete config '{deletedStem}'", ex);
+			fallbackName = "";
 			return false;
 		}
 	}
@@ -1126,16 +1364,15 @@ public static class ConfigManager
 	{
 		try
 		{
+			if (HasInvalidPathOrTraversal(profileName)) return false;
 			EnsureConfigsFolder();
-			string clean = CleanFileName(profileName);
-			string profileFile = Path.Combine(ConfigsFolder, $"{clean}.json");
-			if (string.Equals(CurrentConfig?.ActiveConfigProfileName, clean, StringComparison.OrdinalIgnoreCase) || !File.Exists(profileFile))
+			if (TryResolveSavedConfigFile(profileName, out string profileFile, out string resolvedStem) &&
+				!IsActiveProfileMatch(profileName, resolvedStem, profileFile))
 			{
-				return ExportConfig(targetFilePath);
+				File.Copy(profileFile, targetFilePath, overwrite: true);
+				return true;
 			}
-
-			File.Copy(profileFile, targetFilePath, overwrite: true);
-			return true;
+			return ExportConfig(targetFilePath);
 		}
 		catch (Exception ex)
 		{
@@ -1146,11 +1383,16 @@ public static class ConfigManager
 
 	public static string GetConfigJsonForExport(string profileName)
 	{
-		string clean = CleanFileName(profileName);
-		string profileFile = Path.Combine(ConfigsFolder, $"{clean}.json");
-		if (!string.Equals(CurrentConfig?.ActiveConfigProfileName, clean, StringComparison.OrdinalIgnoreCase) && File.Exists(profileFile))
+		if (!HasInvalidPathOrTraversal(profileName) &&
+			TryResolveSavedConfigFile(profileName, out string profileFile, out string resolvedStem) &&
+			!IsActiveProfileMatch(profileName, resolvedStem, profileFile))
+		{
 			return File.ReadAllText(profileFile);
-		foreach (var profile in CurrentConfig.Profiles) profile?.SyncRootPropertiesFromActiveLayer();
+		}
+		if (CurrentConfig?.Profiles != null)
+		{
+			foreach (var profile in CurrentConfig.Profiles) profile?.SyncRootPropertiesFromActiveLayer();
+		}
 		return JsonSerializer.Serialize(CurrentConfig, new JsonSerializerOptions { WriteIndented = true });
 	}
 
