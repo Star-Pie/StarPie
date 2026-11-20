@@ -94,7 +94,7 @@ StarPie **v2.0.0** 汇总 v1.7.4 之后的改进，结束 v1.8.0 Beta 开发线�
 | **屏幕 OCR** | Windows 本地离线识别、AI 视觉接口与自定义 HTTP OCR |
 | **配置体验** | 双栏聚焦编辑、实时轮盘画布、级联动作编辑、复制粘贴、列表排序与撤销 / 重做 |
 | **外观定制** | 多种轮盘形态、独立一二级主题、单扇区覆盖，以及五套主题工作室风格与主题导入 / 导出 |
-| **原生极速搜索** | 不再依赖 Everything；应用预索引、分类过滤、搜索按钮与键盘操作 |
+| **内置极速搜索** | v2.0.0 自带应用预索引、分类筛选和键盘操作，无需安装 Everything |
 | **插件扩展** | 统一安装确认、能力说明、参数校验、按需加载与预加载；官方插件独立安装 |
 | **交互音效** | 由独立音效插件提供事件音效、本地 WAV 与方案导入 / 导出；需单独安装并启用 |
 | **安装与升级** | Setup 安装版、Standalone 独立便携版与 Lightweight 轻量版 |
@@ -274,7 +274,7 @@ StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用
 交互事件与轮盘结构路径也已建立可扩展入口，后续可以继续扩展而不复制整套插件生命周期代码。
 
 > 📖 **插件开发入口**：开发文档、当前 API、架构说明、示例工程和历史资料统一收录在 [《StarPie 插件开发资源》](plugin/README.md)。
-> 🔗 **官方插件仓库**：[StarPie-Official-Plugins](https://github.com/Star-Pie/StarPie-Official-Plugins)。主仓库中的 `plugin/StarPie-Official-Plugins/` 是该仓库的 Git 子模块检出目录；官方插件的源码、打包和发布流程均在这个独立仓库中维护，StarPie 主仓库不重复引用、构建或随发行包携带官方插件 DLL。
+> 🔗 **官方插件仓库**：[GitHub](https://github.com/Star-Pie/StarPie-Official-Plugins) · [AtomGit 镜像](https://atomgit.com/Star-Pie/StarPie-Official-Plugins)。`plugin/StarPie-Official-Plugins/` 是宿主固定的子模块快照，最新插件源码见独立仓库的 `main` 分支。
 
 - **官方插件手动安装与首次引导**：
   - **发行包零预置**：StarPie 发行包不随包携带官方插件 DLL，启动与后台运行保持零自动网络请求。
@@ -327,6 +327,8 @@ StarPie 使用轻量的 **.NET 进程内 DLL 插件架构**。插件只需引用
 ## 🚀 快速开始与下载
 
 **当前正式版：[v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0)（2026-10-17）**。安装版和独立便携版内置 .NET 8；轻量版需要目标电脑已安装 .NET 8 Desktop Runtime x64。
+
+也可在 [AtomGit 发行页](https://atomgit.com/Star-Pie/StarPie/releases) 按相同标签查找镜像附件。
 
 > [!WARNING]
 > **v2.0.0 的三个发行包均未签名**，正式 CA 证书仍在办理，Windows 可能显示「未知发布者」。请仅从官方 Release 下载并核对同页的 `SHA256SUMS.txt`；本版未使用测试证书发行。
@@ -391,6 +393,7 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 ![StarPie 仓库活动统计](https://repobeats.axiom.co/api/embed/29a1f2c3c5afeb2863ba5e71e72828420d645c14.svg "Repobeats analytics image")
 
 - **正式版**：[v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0)，发布于 2026-10-17。
+- **开发主线**：快速搜索 0.2.2 已拆为独立插件，自行索引所选磁盘和目录。宿主 `main` 将旧搜索绑定转交给插件。当前发布目录尚未提供 0.2.2 安装包。[快速搜索源码](https://github.com/Star-Pie/StarPie-Official-Plugins/tree/main/src/StarPie.Plugin.QuickSearch)
 - **版本沿革**：原计划的 v1.8.0 正式版因改动规模升级为 v2.0.0，结束 v1.8.0 Beta 系列；插件系统与主题工作室已正式发布。版本记录见 [Releases](https://github.com/Star-Pie/StarPie/releases) 和 [CHANGELOG.md](CHANGELOG.md)。
 
 ### Windows 代码签名支持

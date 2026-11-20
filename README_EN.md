@@ -91,7 +91,7 @@ StarPie **v2.0.0** consolidates the improvements since v1.7.4 and concludes the 
 | **Screen OCR** | Offline Windows recognition, AI vision APIs, and custom HTTP OCR |
 | **Configuration** | Two-pane focused editing, live wheel preview, cascading action editing, copy/paste, list sorting, and undo/redo |
 | **Visual Customization** | Multiple wheel shapes, independent primary/secondary themes, per-sector overrides, and five Theme Studio styles with theme import/export |
-| **Native Quick Finder** | No Everything dependency; app pre-indexing, category filters, search controls, and keyboard shortcuts |
+| **Built-in Quick Finder** | v2.0.0 includes app pre-indexing, category filters, and keyboard controls. It runs independently of Everything. |
 | **Plugin Extensions** | Installation confirmation, capability descriptions, parameter validation, lazy loading, and preloading; official plugins installed separately |
 | **Interaction Sounds** | Event sounds, local WAV, and preset import/export through a separate sound plugin; installation and enabling required |
 | **Installation and Upgrades** | Setup installer, Standalone portable package, and Lightweight portable package |
@@ -274,7 +274,7 @@ The action pipeline covers registration, configuration, parameter validation, an
 Interaction events and wheel structures also have extension points, allowing further expansion without duplicating the plugin lifecycle.
 
 > 📖 **Plugin development**: current documentation, APIs, architecture, examples, and historical material are collected in [StarPie Plugin Resources](plugin/README.md).
-> 🔗 **Official plugin repository**: [StarPie-Official-Plugins](https://github.com/Star-Pie/StarPie-Official-Plugins). Its checkout at `plugin/StarPie-Official-Plugins/` is a Git submodule. Official-plugin source, packaging, and releases are maintained there; the main repository does not duplicate their builds or bundle official plugin DLLs.
+> 🔗 **Official plugin repository**: [GitHub](https://github.com/Star-Pie/StarPie-Official-Plugins) · [AtomGit mirror](https://atomgit.com/Star-Pie/StarPie-Official-Plugins). The host pins a snapshot at `plugin/StarPie-Official-Plugins/`. The latest plugin source lives on the independent repository’s `main` branch.
 
 - **Manual official-plugin installation and first-time setup**:
   - **No pre-bundled modules**: release packages do not carry official plugin DLLs; plugin startup and background operation do not automatically make network requests.
@@ -320,6 +320,8 @@ See the [Theme Studio documentation](docs/art-style-themes.md) or [importable ex
 ## 🚀 Quick Start & Download
 
 **Current stable release: [v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0) (October 17, 2026)**. Setup and Standalone include .NET 8; Lightweight requires the .NET 8 Desktop Runtime x64 on the target computer.
+
+To find mirrored downloads, look up the same tag on the [AtomGit releases page](https://atomgit.com/Star-Pie/StarPie/releases).
 
 > [!WARNING]
 > **All three v2.0.0 release packages are unsigned** while the production CA certificate is being arranged. Windows may show an unknown publisher warning. Download only from the official Release and verify against its `SHA256SUMS.txt`; no test certificate was used for this release.
@@ -384,6 +386,7 @@ dotnet publish WinPieGestures/WinPieGestures.csproj -c Release -r win-x64 --self
 ![StarPie repository activity](https://repobeats.axiom.co/api/embed/29a1f2c3c5afeb2863ba5e71e72828420d645c14.svg "Repobeats analytics image")
 
 - **Stable release**: [v2.0.0](https://github.com/Star-Pie/StarPie/releases/tag/v2.0.0), released October 17, 2026.
+- **Development**: Quick Search 0.2.2 is a standalone plugin that indexes the drives and folders you select. The host’s `main` branch routes existing Quick Finder bindings to the plugin. The published plugin catalogs do not yet include a 0.2.2 package. [Quick Search source](https://github.com/Star-Pie/StarPie-Official-Plugins/tree/main/src/StarPie.Plugin.QuickSearch)
 - **Version history**: the release originally planned as v1.8.0 became v2.0.0 to reflect the scale of the changes, concluding the v1.8.0 Beta series. The plugin system and Theme Studio are now part of stable. See [Releases](https://github.com/Star-Pie/StarPie/releases) and [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ### Windows Code Signing Support

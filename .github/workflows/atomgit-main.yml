@@ -1,0 +1,44 @@
+name: Sync main to AtomGit
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      audit_releases:
+        description: Compare published releases and attachment names on both platforms
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atomgit-main-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main' && github.repository_owner == 'Star-Pie'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fast-forward and verify the mirror
+        env:
+          ATOMGIT_REPOSITORY: ${{ vars.ATOMGIT_REPOSITORY || github.repository }}
+          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
+          GIT_TERMINAL_PROMPT: '0'
+        run: bash .github/scripts/sync-atomgit-main.sh
+
+      - name: Audit published releases and attachments
+        if: ${{ !cancelled() && inputs.audit_releases }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
+          ATOMGIT_REPOSITORY: ${{ vars.ATOMGIT_REPOSITORY || github.repository }}
+        run: node .github/scripts/audit-atomgit-releases.mjs
