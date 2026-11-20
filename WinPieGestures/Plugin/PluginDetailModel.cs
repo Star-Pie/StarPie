@@ -31,6 +31,8 @@ internal sealed class PluginDetailModel
     public string CapabilitiesText { get; init; } = "";
     public string DependenciesText { get; init; } = "";
     public string InstallPath { get; init; } = "";
+    public string SignatureText { get; init; } = "";
+    public bool HasPackageDigest { get; init; }
     public string Sha256Text { get; init; } = "";
     public IReadOnlyList<PluginFeatureItem> Features { get; init; } = Array.Empty<PluginFeatureItem>();
 
@@ -75,12 +77,13 @@ internal static class PluginDetailModelBuilder
             SourceText = instance.Entry.Official ? I18n.T("PluginsDetailSourceOfficial") : I18n.T("PluginsDetailSourceLocal"),
             StateText = PluginListItem.DescribeState(instance).Text,
             TargetFramework = instance.Scan.TargetFramework,
-            CapabilitiesText = string.Join(I18n.T("PluginsEnumSeparator"), manifest?.Capabilities ?? new List<string>()),
+            CapabilitiesText = string.Join(I18n.T("PluginsEnumSeparator"), manifest?.Capabilities is { Count: > 0 } declared ? declared : instance.Entry.CapabilitiesAck ?? []),
             DependenciesText = manifest?.Dependencies == null
                 ? ""
                 : string.Join(I18n.T("PluginsEnumSeparator"), manifest.Dependencies.Select(dependency =>
                     string.IsNullOrWhiteSpace(dependency.VersionRange) ? dependency.Id : $"{dependency.Id} {dependency.VersionRange}")),
             InstallPath = instance.Directory,
+            SignatureText = I18n.T(instance.Scan.IsSigned ? "PluginsCardSigned" : "PluginsCardUnsigned"),
             Sha256Text = instance.Scan.Sha256,
             Features = features,
         };
@@ -115,6 +118,8 @@ internal static class PluginDetailModelBuilder
             CapabilitiesText = string.Join(I18n.T("PluginsEnumSeparator"), module.Capabilities),
             DependenciesText = local?.DependenciesText ?? "",
             InstallPath = local?.InstallPath ?? "",
+            SignatureText = local?.SignatureText ?? "",
+            HasPackageDigest = !string.IsNullOrWhiteSpace(module.Sha256),
             Sha256Text = string.IsNullOrWhiteSpace(module.Sha256) ? (local?.Sha256Text ?? "") : module.Sha256,
             Features = features,
         };

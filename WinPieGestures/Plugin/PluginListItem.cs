@@ -30,6 +30,11 @@ internal sealed class PluginListItem
 
     /// <summary>次级细节：安装路径、目标框架、摘要哈希、签名状态。</summary>
     public string DetailText { get; init; } = "";
+    public string CardDescription { get; init; } = "";
+    public bool IsOfficial { get; init; }
+    public string SourceText => I18n.T(IsOfficial ? "PluginsDetailSourceOfficial" : "PluginsDetailSourceLocal");
+    public string IconGlyph => PluginCardPresentation.Glyph(PluginId);
+    public string MoreActionsText => I18n.T("PluginsOfficialMoreActions");
 
     /// <summary>状态的当前语言名称，如「运行中」「已隔离」。</summary>
     public string StateText { get; init; } = "";
@@ -140,6 +145,8 @@ internal sealed class PluginListItem
             DisplayName = displayName,
             VersionText = string.IsNullOrWhiteSpace(entry.Version) ? "" : $"v{entry.Version}",
             SummaryText = summaryText,
+            CardDescription = PluginDisplayText.Description(instance),
+            IsOfficial = entry.Official,
             DetailText = string.Join("　·　", detail),
             StateText = stateText,
             StatusGlyph = glyph,

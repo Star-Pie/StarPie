@@ -43,7 +43,7 @@
         <TextBlock Name="MetadataHeaderText" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
         <Grid Margin="0,6,0,0">
           <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+          <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
           <TextBlock Name="AuthorLabelText" Grid.Row="0" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="AuthorValueText" Grid.Row="0" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,5" />
           <TextBlock Name="LicenseLabelText" Grid.Row="1" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="LicenseValueText" Grid.Row="1" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,5" />
           <TextBlock Name="VersionLabelText" Grid.Row="2" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="VersionValueText" Grid.Row="2" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5" />
@@ -52,6 +52,8 @@
           <TextBlock Name="TargetFrameworkLabelText" Grid.Row="5" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="TargetFrameworkValueText" Grid.Row="5" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5" />
           <TextBlock Name="DependenciesLabelText" Grid.Row="6" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="DependenciesValueText" Grid.Row="6" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,5" />
           <TextBlock Name="InstallPathLabelText" Grid.Row="7" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="InstallPathValueText" Grid.Row="7" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,5" />
+          <TextBlock Name="DigestLabelText" Grid.Row="8" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="DigestValueText" Grid.Row="8" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,5" />
+          <TextBlock Name="SignatureLabelText" Grid.Row="9" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,16,5" /><TextBlock Name="SignatureValueText" Grid.Row="9" Grid.Column="1" FontSize="10.5" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" Margin="0,0,0,5" />
         </Grid>
       </StackPanel>
     </ScrollViewer>

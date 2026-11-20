@@ -38,6 +38,12 @@ public partial class PluginDetailWindow : Window
         TargetFrameworkLabelText.Text = I18n.T("PluginsDetailTargetFramework");
         DependenciesLabelText.Text = I18n.T("PluginsDetailDependencies");
         InstallPathLabelText.Text = I18n.T("PluginsDetailInstallPath");
+        DigestLabelText.Text = I18n.T(_model.HasPackageDigest ? "PluginLibraryPackageHash" : "PluginLibraryFileHash");
+        DigestValueText.Text = string.IsNullOrWhiteSpace(_model.Sha256Text) ? "—" : _model.Sha256Text;
+        SignatureLabelText.Text = I18n.T("PluginLibrarySignature");
+        SignatureValueText.Text = _model.SignatureText;
+        SignatureLabelText.Visibility = SignatureValueText.Visibility = string.IsNullOrWhiteSpace(_model.SignatureText)
+            ? Visibility.Collapsed : Visibility.Visible;
         AuthorValueText.Text = _model.Author;
         LicenseValueText.Text = _model.License;
         VersionValueText.Text = _model.VersionText;
