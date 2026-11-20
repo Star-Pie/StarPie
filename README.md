@@ -1,6 +1,10 @@
 <div align="center">
 
-<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto" width="100%" alt="StarPie 齿轮背景横幅：项目 Logo 与 Stars、Forks、Issues、Pull Requests 统计" />
+<img src="assets/readme-banner.png" width="100%" alt="Star-Pie/StarPie 齿轮横幅" />
+
+<!-- github-stats:start -->
+GitHub 统计快照 (2026-11-20 UTC) · [Stars 1397](https://github.com/Star-Pie/StarPie/stargazers) · [Forks 48](https://github.com/Star-Pie/StarPie/forks) · [开放议题 18](https://github.com/Star-Pie/StarPie/issues) · [开放 PR 0](https://github.com/Star-Pie/StarPie/pulls)
+<!-- github-stats:end -->
 
 # StarPie (星盘)
 

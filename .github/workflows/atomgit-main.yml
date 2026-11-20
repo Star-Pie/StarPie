@@ -1,42 +1,54 @@
-name: Sync main to AtomGit
+name: Verify AtomGit mirror
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '17 4 * * *'
   workflow_dispatch:
     inputs:
       audit_releases:
-        description: Compare published releases and attachment names on both platforms
+        description: Compare published releases and attachments on both platforms
         type: boolean
         default: false
 
 permissions:
   contents: read
 
-concurrency:
-  group: atomgit-main-${{ github.repository }}
-  cancel-in-progress: false
-
 jobs:
-  sync:
+  source:
     if: github.ref == 'refs/heads/main' && github.repository_owner == 'Star-Pie'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compare public GitHub and AtomGit main commits
+        env:
+          ATOMGIT_REPOSITORY: ${{ vars.ATOMGIT_REPOSITORY || github.repository }}
+        run: bash .github/scripts/sync-atomgit-main.sh
+
+      - name: Inspect native Pull status after a manual mismatch
+        if: failure() && github.event_name == 'workflow_dispatch'
+        env:
+          ATOMGIT_REPOSITORY: ${{ vars.ATOMGIT_REPOSITORY || github.repository }}
+          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
+        run: |
+          [[ "$ATOMGIT_REPOSITORY" =~ ^[[:alnum:]_.-]+/[[:alnum:]_.-]+$ ]] || exit 1
+          curl --silent --show-error --fail --max-time 30 -H @- \
+            "https://api.atomgit.com/api/v5/repos/$ATOMGIT_REPOSITORY/repo_remote_mirror" \
+            <<< "PRIVATE-TOKEN: $ATOMGIT_TOKEN" |
+            jq '{mirroring_enabled, update_status, last_successful_update_at, number_of_failures}'
+
+  releases:
+    if: github.event_name == 'workflow_dispatch' && inputs.audit_releases && github.ref == 'refs/heads/main' && github.repository_owner == 'Star-Pie'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
-          fetch-depth: 0
           persist-credentials: false
 
-      - name: Fast-forward and verify the mirror
-        env:
-          ATOMGIT_REPOSITORY: ${{ vars.ATOMGIT_REPOSITORY || github.repository }}
-          ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}
-          GIT_TERMINAL_PROMPT: '0'
-        run: bash .github/scripts/sync-atomgit-main.sh
-
       - name: Audit published releases and attachments
-        if: ${{ !cancelled() && inputs.audit_releases }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
           ATOMGIT_TOKEN: ${{ secrets.ATOMGIT_TOKEN }}

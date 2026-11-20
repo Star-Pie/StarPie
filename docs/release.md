@@ -78,9 +78,13 @@ dotnet publish .\WinPieGestures\WinPieGestures.csproj `
 
 ## 7. AtomGit Release 镜像
 
-GitHub 的 main 更新时，工作流「Sync main to AtomGit」将同一提交快进到 AtomGit，并回读远端提交号。两个平台由此显示同一源码树和 README。分支分叉时工作流会报错，维护者可在核对差异后从 main 手动重跑。其他分支和 Tag 继续通过 AtomGit 的 Pull 镜像同步。
+AtomGit 的原生 Pull 镜像负责从 GitHub 拉取提交、分支和标签。可在 AtomGit 的「项目设置 → 仓库镜像 → Pull」查看来源与最近同步结果。两个平台的 `main` 指向同一提交时，README 与该提交的源码树也一致。
 
-工作流使用目标仓库的 ATOMGIT_TOKEN，快进需要 Git 写权限。手动运行时勾选 audit_releases 可只读对比历史发行版与附件清单。发行附件仍由「Sync Release to AtomGit」按已发布标签复制、校验。
+GitHub Actions 的「Verify AtomGit mirror」每天运行一次，也可在 `main` 手动运行。源码检查通过公开 Git 引用读取两端的实时提交号；检测到差异时会短暂复查，并在日志中列出两端 SHA。若差异持续，请检查 Pull 镜像的状态，在拉取完成后复验。
+
+手动运行时勾选 `audit_releases` 可另外核对历史发行版、附件清单及元数据。该步骤单独使用 `ATOMGIT_TOKEN`。复制发行附件和校验文件内容沿用「Sync Release to AtomGit」工作流。
+
+维护 README 时，在仓库中运行 `node .github/scripts/update-readme-stats.mjs`，可用已登录的 GitHub CLI 同时刷新中英文的 Stars、Forks、开放议题和开放 PR。两端首页展示随提交同步的带日期快照，点击数字可查看 GitHub 实时数据。
 
 ### 配置与入口
 

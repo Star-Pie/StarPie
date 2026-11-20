@@ -1,5 +1,9 @@
 <div align="center">
-<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto" width="100%" alt="StarPie Floating Cogs banner: project logo and Stars, Forks, Issues, and Pull Requests" />
+<img src="assets/readme-banner.png" width="100%" alt="Star-Pie/StarPie with a gear-pattern background" />
+
+<!-- github-stats:start -->
+GitHub snapshot (2026-11-20 UTC) · [Stars 1397](https://github.com/Star-Pie/StarPie/stargazers) · [Forks 48](https://github.com/Star-Pie/StarPie/forks) · [Open issues 18](https://github.com/Star-Pie/StarPie/issues) · [Open PRs 0](https://github.com/Star-Pie/StarPie/pulls)
+<!-- github-stats:end -->
 
 # StarPie
 
