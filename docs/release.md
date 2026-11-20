@@ -84,7 +84,7 @@ GitHub Actions 的「Verify AtomGit mirror」每天运行一次，也可在 `mai
 
 手动运行时勾选 `audit_releases` 可另外核对历史发行版、附件清单及元数据。该步骤单独使用 `ATOMGIT_TOKEN`。复制发行附件和校验文件内容沿用「Sync Release to AtomGit」工作流。
 
-维护 README 时，在仓库中运行 `node .github/scripts/update-readme-stats.mjs`，可用已登录的 GitHub CLI 同时刷新中英文的 Stars、Forks、开放议题和开放 PR。两端首页展示随提交同步的带日期快照，点击数字可查看 GitHub 实时数据。
+维护 README 时，在仓库中运行 `node .github/scripts/update-readme-stats.mjs`，可用已登录的 GitHub CLI 同时刷新中英文的 Stars、Forks、开放议题和开放 PR。两端首页共用仓库内的 `assets/readme-banner.svg`。四项统计位于黑色齿轮横幅内，快照日期记录在 SVG 标题中。刷新后将横幅随提交同步。
 
 ### 配置与入口
 
