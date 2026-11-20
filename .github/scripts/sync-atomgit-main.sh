@@ -1,31 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo=${ATOMGIT_REPOSITORY:?Missing AtomGit owner/repository}
-[[ "$repo" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ ]] || { echo "Invalid AtomGit repository" >&2; exit 1; }
-mirror="https://atomgit.com/$repo.git"
-branch=refs/heads/main
-source_sha=$(git rev-parse HEAD)
-mirror_sha() {
-  git ls-remote --exit-code "$mirror" "$branch" | cut -f1
-}
-
-before=$(mirror_sha)
-if [[ "$before" != "$source_sha" ]]; then
-  if ! git merge-base --is-ancestor "$before" "$source_sha"; then
-    echo "AtomGit main ($before) is outside the checked out history ($source_sha). Check both branches before retrying." >&2
+source_repo=${GITHUB_REPOSITORY:?Missing GitHub owner/repository}
+mirror_repo=${ATOMGIT_REPOSITORY:-$source_repo}
+for repo in "$source_repo" "$mirror_repo"; do
+  if [[ ! "$repo" =~ ^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$ || "$repo" =~ (^|/)[.]{1,2}(/|$) ]]; then
+    echo 'Invalid repository name; expected owner/repository.' >&2
     exit 1
   fi
-  : "${ATOMGIT_TOKEN:?Set the AtomGit repository access token}"
-  git -c http.followRedirects=false -c "credential.username=oauth2" \
-    -c credential.helper= \
-    -c 'credential.https://atomgit.com.helper=!f() { if test "$1" = get; then printf "password=%s\n" "$ATOMGIT_TOKEN"; fi; }; f' \
-    push --no-follow-tags "$mirror" "$source_sha:$branch"
-fi
+done
 
-after=$(mirror_sha)
-if [[ "$after" != "$source_sha" ]]; then
-  echo "Read-back mismatch: expected $source_sha, AtomGit reports $after" >&2
-  exit 1
-fi
-echo "Verified AtomGit $repo main at $after (previously $before)."
+main_sha() {
+  local row sha
+  row=$(GIT_TERMINAL_PROMPT=0 git -c credential.helper= -c http.followRedirects=false \
+    ls-remote --exit-code "$1" refs/heads/main) || return 1
+  sha=${row%%$'\t'*}
+  [[ "$sha" =~ ^[a-f0-9]{40}$ && "$row" == "$sha"$'\t'refs/heads/main ]] || return 1
+  printf '%s\n' "$sha"
+}
+
+source="https://github.com/$source_repo.git"
+mirror="https://atomgit.com/$mirror_repo.git"
+for attempt in 1 2 3; do
+  # Read GitHub on both sides of the mirror lookup, because main can move mid-check.
+  before=$(main_sha "$source") && target=$(main_sha "$mirror") && after=$(main_sha "$source") || {
+    echo 'Could not read a valid public main reference; source equality is unknown.' >&2
+    exit 1
+  }
+  printf 'Observation %d: GitHub %s -> %s; AtomGit %s\n' "$attempt" "$before" "$after" "$target"
+  if [[ "$before" == "$after" && "$after" == "$target" ]]; then
+    echo 'Verified identical public main commits (including README and the source tree).'
+    exit 0
+  fi
+  if [[ "$attempt" != 3 ]]; then sleep 2; fi
+done
+echo 'Public main commits did not settle on the same SHA. Check the AtomGit Pull mirror status and rerun this verification.' >&2
+exit 1
