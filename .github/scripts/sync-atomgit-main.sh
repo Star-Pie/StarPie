@@ -17,9 +17,7 @@ if [[ "$before" != "$source_sha" ]]; then
     exit 1
   fi
   : "${ATOMGIT_TOKEN:?Set the AtomGit repository access token}"
-  # Get the actual account name; keep the token out of the push URL and Git config.
-  account=$(curl -fsS --retry 2 --max-time 30 -H @- https://api.atomgit.com/api/v5/user <<< "PRIVATE-TOKEN: $ATOMGIT_TOKEN" | jq -er '.login | strings | select(length > 0)')
-  git -c http.followRedirects=false -c "credential.username=$account" \
+  git -c http.followRedirects=false -c "credential.username=oauth2" \
     -c credential.helper= \
     -c 'credential.https://atomgit.com.helper=!f() { if test "$1" = get; then printf "password=%s\n" "$ATOMGIT_TOKEN"; fi; }; f' \
     push --no-follow-tags "$mirror" "$source_sha:$branch"
