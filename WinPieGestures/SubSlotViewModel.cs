@@ -353,6 +353,20 @@ public class SubSlotViewModel : INotifyPropertyChanged
 		}
 	}
 
+	public bool SupportsLaunchPlacement => LaunchMonitorPlacement.IsSupportedAction(Action);
+	public string LaunchPlacementLabel => I18n.T("LaunchPlacementLabel");
+
+	public bool LaunchOnCursorMonitor
+	{
+		get => Action.LaunchOnCursorMonitor;
+		set
+		{
+			if (!SupportsLaunchPlacement || Action.LaunchOnCursorMonitor == value) return;
+			Action.LaunchOnCursorMonitor = value;
+			OnPropertyChanged(nameof(LaunchOnCursorMonitor));
+		}
+	}
+
 	public string Arguments
 	{
 		get => Action.Arguments ?? "";
@@ -687,6 +701,9 @@ public class SubSlotViewModel : INotifyPropertyChanged
 		OnPropertyChanged(nameof(InheritStatusLabel));
 		OnPropertyChanged(nameof(IsHotkeyType));
 		OnPropertyChanged(nameof(IsLaunchType));
+		OnPropertyChanged(nameof(SupportsLaunchPlacement));
+		OnPropertyChanged(nameof(LaunchPlacementLabel));
+		OnPropertyChanged(nameof(LaunchOnCursorMonitor));
 		OnPropertyChanged(nameof(IsWebUrlType));
 		OnPropertyChanged(nameof(IsFolderType));
 		OnPropertyChanged(nameof(IsSystemType));

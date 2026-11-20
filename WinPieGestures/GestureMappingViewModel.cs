@@ -374,6 +374,9 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 		OnPropertyChanged(nameof(AggregatedType));
 		OnPropertyChanged(nameof(IsHotkeyType));
 		OnPropertyChanged(nameof(IsLaunchType));
+		OnPropertyChanged(nameof(SupportsLaunchPlacement));
+		OnPropertyChanged(nameof(LaunchPlacementLabel));
+		OnPropertyChanged(nameof(LaunchOnCursorMonitor));
 		OnPropertyChanged(nameof(IsWebUrlType));
 		OnPropertyChanged(nameof(IsFolderType));
 		OnPropertyChanged(nameof(IsSystemType));
@@ -478,6 +481,9 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 				OnPropertyChanged(nameof(AggregatedType));
 				OnPropertyChanged(nameof(IsHotkeyType));
 				OnPropertyChanged(nameof(IsLaunchType));
+				OnPropertyChanged(nameof(SupportsLaunchPlacement));
+				OnPropertyChanged(nameof(LaunchPlacementLabel));
+				OnPropertyChanged(nameof(LaunchOnCursorMonitor));
 				OnPropertyChanged(nameof(IsWebUrlType));
 				OnPropertyChanged(nameof(IsFolderType));
 				OnPropertyChanged(nameof(IsSystemType));
@@ -573,6 +579,20 @@ public class GestureMappingViewModel : INotifyPropertyChanged
 	}
 
 	public System.Action? OnExclusiveRecordingCancelledRequest { get; set; }
+
+	public bool SupportsLaunchPlacement => LaunchMonitorPlacement.IsSupportedAction(Mapping.Action);
+	public string LaunchPlacementLabel => I18n.T("LaunchPlacementLabel");
+
+	public bool LaunchOnCursorMonitor
+	{
+		get => Mapping.Action.LaunchOnCursorMonitor;
+		set
+		{
+			if (!SupportsLaunchPlacement || Mapping.Action.LaunchOnCursorMonitor == value) return;
+			Mapping.Action.LaunchOnCursorMonitor = value;
+			OnPropertyChanged(nameof(LaunchOnCursorMonitor));
+		}
+	}
 
 	public string Arguments
 	{

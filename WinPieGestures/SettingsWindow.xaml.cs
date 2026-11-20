@@ -3484,6 +3484,7 @@ public partial class SettingsWindow : Window
 		if (FocusLaunchPickProgramBtn != null) { FocusLaunchPickProgramBtn.Content = I18n.T("FocusLaunchPickProgramBtnText"); FocusLaunchPickProgramBtn.ToolTip = I18n.T("FocusLaunchPickProgramBtnToolTip"); }
 		if (FocusLaunchCaptureWindowBtn != null) { FocusLaunchCaptureWindowBtn.Content = I18n.T("FocusLaunchCaptureWindowBtnText"); FocusLaunchCaptureWindowBtn.ToolTip = I18n.T("FocusLaunchCaptureWindowBtnToolTip"); }
 		if (FocusLaunchBrowseExeBtn != null) { FocusLaunchBrowseExeBtn.Content = I18n.T("FocusLaunchBrowseExeBtnText"); FocusLaunchBrowseExeBtn.ToolTip = I18n.T("FocusLaunchBrowseExeBtnToolTip"); }
+		if (FocusLaunchPlacementCheckBox != null) FocusLaunchPlacementCheckBox.Content = I18n.T("LaunchPlacementLabel");
 		if (FocusLaunchArgsLabel != null) FocusLaunchArgsLabel.Text = I18n.T("FocusLaunchArgsLabel");
 		if (FocusLaunchArgsTextBox != null) FocusLaunchArgsTextBox.ToolTip = I18n.T("FocusLaunchArgsToolTip");
 		if (FocusLaunchAsUserTitleText != null) FocusLaunchAsUserTitleText.Text = I18n.T("FocusLaunchAsUserTitle");
@@ -6347,6 +6348,11 @@ public partial class SettingsWindow : Window
 			}
 
 			if (FocusHotkeyPanel != null) FocusHotkeyPanel.Visibility = type == "Hotkey" ? Visibility.Visible : Visibility.Collapsed;
+			if (FocusLaunchPlacementCheckBox != null)
+			{
+				FocusLaunchPlacementCheckBox.Visibility = LaunchMonitorPlacement.IsSupportedAction(displayItem) ? Visibility.Visible : Visibility.Collapsed;
+				FocusLaunchPlacementCheckBox.IsChecked = displayItem.LaunchOnCursorMonitor;
+			}
 			if (FocusLaunchPanel != null) FocusLaunchPanel.Visibility = (type == "Launch" || type == "App") ? Visibility.Visible : Visibility.Collapsed;
 			if (FocusWebUrlPanel != null) FocusWebUrlPanel.Visibility = (type == "WebUrl" || type == "Url") ? Visibility.Visible : Visibility.Collapsed;
 			if (FocusFolderPanel != null) FocusFolderPanel.Visibility = (type == "Folder" || type == "OpenFolder") ? Visibility.Visible : Visibility.Collapsed;
@@ -9172,6 +9178,31 @@ public partial class SettingsWindow : Window
 	private void ApplyFolderPreset_Desktop(object sender, RoutedEventArgs e) { SetFocusFolder(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "桌面"); }
 	private void ApplyFolderPreset_Downloads(object sender, RoutedEventArgs e) { SetFocusFolder(System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), "下载"); }
 	private void ApplyFolderPreset_Documents(object sender, RoutedEventArgs e) { SetFocusFolder(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "文档"); }
+
+	private void BoundLaunchPlacement_Click(object sender, RoutedEventArgs e)
+	{
+		if (!_isUpdatingUi && _isUiInitialized) ScheduleAutoSave();
+	}
+
+	private void FocusLaunchPlacement_Click(object sender, RoutedEventArgs e)
+	{
+		if (_isUpdatingFocusUi || _isUpdatingUi || !_isUiInitialized) return;
+		var item = GetCurrentFocusActionItem(ensureLocalForEdit: true);
+		if (_selectedSlotIndex == -1 && _selectedProfile is { } profile &&
+			profile.GetEffectiveCenterAction() is { IsInherited: true } inherited &&
+			LaunchMonitorPlacement.IsSupportedAction(inherited))
+		{
+			inherited.IsInherited = false;
+			profile.CenterAction = item = inherited;
+			profile.EnableCenterAction = true;
+			profile.SyncActiveLayerFromRootProperties();
+		}
+		if (item == null || !LaunchMonitorPlacement.IsSupportedAction(item)) return;
+		item.LaunchOnCursorMonitor = FocusLaunchPlacementCheckBox.IsChecked == true;
+		UpdateFocusEditorUi();
+		RecordFocusPropertyChange("EditActionProperty", coalesce: false);
+		ScheduleAutoSave();
+	}
 
 	private void FocusLaunchStandardUserCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
@@ -15286,6 +15317,7 @@ public partial class SettingsWindow : Window
 						dataContext.Action.Type = eff.Type;
 						dataContext.Action.Parameter = eff.Parameter;
 						dataContext.Action.Arguments = eff.Arguments;
+						dataContext.Action.LaunchOnCursorMonitor = eff.LaunchOnCursorMonitor;
 						dataContext.Action.IconKey = eff.IconKey;
 						dataContext.Action.CustomIconSvg = eff.CustomIconSvg;
 						dataContext.Action.InheritAppIconPath = eff.InheritAppIconPath;

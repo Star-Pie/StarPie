@@ -31,6 +31,8 @@ public class ActionItem
 	/// <summary>是否以普通桌面用户常规权限启动（通过 Shell 令牌降权，解决高权限下外部文件无法拖入目标软件的问题）</summary>
 	public bool RunAsStandardUser { get; set; } = false;
 
+	public bool LaunchOnCursorMonitor { get; set; }
+
 	/// <summary>独立排版模式覆盖："Inherit" (继承全局), "IconAndText", "IconOnly", "TextOnly"</summary>
 	public string? LayoutMode { get; set; } = "Inherit";
 
@@ -104,6 +106,7 @@ public class ActionItem
 			BrowserPath = this.BrowserPath,
 			InheritAppIconPath = this.InheritAppIconPath,
 			RunAsStandardUser = this.RunAsStandardUser,
+			LaunchOnCursorMonitor = this.LaunchOnCursorMonitor,
 			LayoutMode = this.LayoutMode,
 			CustomTextColor = this.CustomTextColor,
 			CustomFontFamily = this.CustomFontFamily,

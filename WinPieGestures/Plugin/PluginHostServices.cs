@@ -205,7 +205,8 @@ internal sealed class PluginHostActionInvoker : IHostActionInvoker
     public bool Launch(string path, string arguments = "", bool runAsStandardUser = false)
     {
         if (string.IsNullOrWhiteSpace(path)) return false;
-        return Guard(nameof(Launch), () => ActionExecutor.ExecuteLaunch(path, arguments ?? "", runAsStandardUser));
+        return Guard(nameof(Launch), () => ActionExecutor.ExecuteLaunch(path, arguments ?? "", runAsStandardUser,
+            targetMonitor: LaunchMonitorPlacement.TakeForPlugin(_pluginId)));
     }
 
     public bool LaunchWithMode(string path, ProcessLaunchMode mode, string arguments = "")
@@ -213,7 +214,8 @@ internal sealed class PluginHostActionInvoker : IHostActionInvoker
         if ((_capabilities & PluginCapability.Process) != PluginCapability.Process)
             throw new PluginCapabilityDeniedException(PluginCapability.Process, nameof(LaunchWithMode), _pluginId);
         if (string.IsNullOrWhiteSpace(path)) return false;
-        return Guard(nameof(LaunchWithMode), () => ActionExecutor.ExecuteLaunchWithMode(path, arguments ?? "", mode));
+        return Guard(nameof(LaunchWithMode), () => ActionExecutor.ExecuteLaunchWithMode(path, arguments ?? "", mode,
+            targetMonitor: LaunchMonitorPlacement.TakeForPlugin(_pluginId)));
     }
 
     public bool OpenFolder(string folderPath)

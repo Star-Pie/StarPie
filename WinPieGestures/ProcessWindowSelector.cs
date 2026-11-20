@@ -296,6 +296,34 @@ public static class ProcessWindowSelector
         };
     }
 
+    internal static List<WindowSnapshot> SnapshotWindows(HashSet<int> targetPids, HashSet<nint>? mainHints = null)
+    {
+        nint foregroundHwnd = GetForegroundWindow();
+        var candidates = new List<WindowSnapshot>();
+
+        EnumWindows((hWnd, lParam) =>
+        {
+            try
+            {
+                GetWindowThreadProcessId(hWnd, out uint pid);
+                if (targetPids.Contains((int)pid))
+                {
+                    bool isHint = mainHints?.Contains(hWnd) == true;
+                    var snapshot = CreateSnapshotFromHwnd(hWnd, foregroundHwnd, isHint ? hWnd : IntPtr.Zero);
+                    if (snapshot != null)
+                    {
+                        candidates.Add(snapshot);
+                    }
+                }
+            }
+            catch
+            {
+            }
+            return true;
+        }, IntPtr.Zero);
+        return candidates;
+    }
+
     /// <summary>
     /// 查找指定可执行程序当前运行实例的最佳可用窗口候选。
     /// 确保内部 Process 实例在使用后及时释放，不留下未释放的句柄资源。
@@ -349,31 +377,7 @@ public static class ProcessWindowSelector
             if (targetPids.Count == 0)
                 return null;
 
-            nint foregroundHwnd = GetForegroundWindow();
-            var candidates = new List<WindowSnapshot>();
-
-            EnumWindows((hWnd, lParam) =>
-            {
-                try
-                {
-                    GetWindowThreadProcessId(hWnd, out uint pid);
-                    if (targetPids.Contains((int)pid))
-                    {
-                        bool isHint = mainHints.Contains(hWnd);
-                        var snapshot = CreateSnapshotFromHwnd(hWnd, foregroundHwnd, isHint ? hWnd : IntPtr.Zero);
-                        if (snapshot != null)
-                        {
-                            candidates.Add(snapshot);
-                        }
-                    }
-                }
-                catch
-                {
-                }
-                return true;
-            }, IntPtr.Zero);
-
-            return SelectCandidate(candidates);
+            return SelectCandidate(SnapshotWindows(targetPids, mainHints));
         }
         finally
         {

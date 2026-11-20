@@ -1004,6 +1004,8 @@
                                             ToolTip="{Binding HotkeyBuilderToolTip}"
                                             Click="GestureHotkeyBuilder_Click" />
                                   </Grid>
+                                  <CheckBox Content="{Binding LaunchPlacementLabel}" IsChecked="{Binding LaunchOnCursorMonitor, Mode=TwoWay}" Click="BoundLaunchPlacement_Click"
+                                            Visibility="{Binding SupportsLaunchPlacement, Converter={StaticResource BoolToVis}}" Margin="0,4,0,6" />
                                   <StackPanel Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}" HorizontalAlignment="Stretch">
                                     <Grid Margin="0,0,0,4">
                                       <Grid.ColumnDefinitions>
@@ -1246,6 +1248,8 @@
                                 </StackPanel>
 
                                 <!-- B. 启动程序 -->
+                                <CheckBox Content="{Binding LaunchPlacementLabel}" IsChecked="{Binding LaunchOnCursorMonitor, Mode=TwoWay}" Click="BoundLaunchPlacement_Click"
+                                          Visibility="{Binding SupportsLaunchPlacement, Converter={StaticResource BoolToVis}}" Margin="0,4,0,6" />
                                 <StackPanel Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}">
                                   <TextBlock Name="Tab0_CancelActionAppPathLabel" Text="目标应用程序路径:" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
                                   <Grid>
@@ -3078,6 +3082,8 @@
                         </StackPanel>
 
                         <!-- 2. 启动程序面板 -->
+                        <CheckBox Name="FocusLaunchPlacementCheckBox" Visibility="Collapsed" Margin="0,4,0,6"
+                                  Click="FocusLaunchPlacement_Click" />
                         <StackPanel Name="FocusLaunchPanel" Visibility="Collapsed">
                           <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
@@ -3701,6 +3707,7 @@
                                   <ColumnDefinition Width="Auto" />
                                   <ColumnDefinition Width="58" />
                                 </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
 
                                 <Button Grid.Column="0" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="6,0" Margin="0,0,8,0" Click="PickIcon_Click" ToolTip="{Binding PickIconToolTip}">
                                   <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -3766,6 +3773,9 @@
                                   <ComboBox SelectedValuePath="Tag" DisplayMemberPath="DisplayText" ItemsSource="{Binding TileLayoutOptions}" SelectedValue="{Binding TileLayout, Mode=TwoWay}" SelectionChanged="TileLayoutComboBox_SelectionChanged" Style="{StaticResource FlatComboBoxStyle}" Height="30" FontSize="11" Visibility="{Binding IsTileType, Converter={StaticResource BoolToVis}}" ToolTip="{Binding TileLayoutToolTip}" />
                                 </Grid>
 
+                                <CheckBox Grid.Row="1" Grid.ColumnSpan="8" Content="{Binding LaunchPlacementLabel}" Margin="0,5,0,0"
+                                          IsChecked="{Binding LaunchOnCursorMonitor, Mode=TwoWay}" Click="BoundLaunchPlacement_Click"
+                                          Visibility="{Binding SupportsLaunchPlacement, Converter={StaticResource BoolToVis}}" />
                                 <TextBox Grid.Column="4" Width="68" Margin="0,0,8,0" Height="30" FontSize="11" ToolTip="{Binding LaunchArgsToolTip}" VerticalContentAlignment="Center" Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsLaunchType}" Visibility="{Binding IsLaunchType, Converter={StaticResource BoolToVis}}" />
                                 <Button Grid.Column="5" Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="0,0,6,0" ToolTip="{Binding ManageSubActionsToolTip}" Content="{Binding SubActionButtonText}" Click="ManageSubActions_Click" />
 

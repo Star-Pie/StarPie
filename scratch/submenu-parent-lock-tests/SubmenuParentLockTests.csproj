@@ -9,6 +9,13 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="..\..\WinPieGestures\App.xaml" LogicalName="Fixture.HostStyles.xaml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <Reference Include="StarPie" HintPath="$(StarPieCandidateDir)/StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" HintPath="$(StarPieCandidateDir)/StarPie.Plugin.Abstractions.dll" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(StarPieCandidateDir)' == ''">
     <ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" />
   </ItemGroup>
 </Project>

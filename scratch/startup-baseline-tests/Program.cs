@@ -33,6 +33,12 @@ internal static class Program
                 Environment.SetEnvironmentVariable(variable, directory);
             string configPath = Path.Combine(directory, "StarPie", "config.json");
             Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+            if (scenario == "launch-editors")
+            {
+                TestLaunchEditors();
+                Console.WriteLine($"PASS {_checks} launch editor checks (offscreen).");
+                return 0;
+            }
             if (scenario == "ui")
             {
                 TestSettingsControls(directory);
@@ -152,6 +158,7 @@ internal static class Program
         ConfigManager.DisableAutoStartSync = true;
         ConfigManager.CurrentConfig.AutoCheckUpdate = false;
         ConfigManager.CurrentConfig.StartInTray = true;
+        using var blockDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher.DisableProcessing();
         var app = new App();
         app.InitializeComponent();
         var settings = new SettingsWindow();
@@ -191,6 +198,86 @@ internal static class Program
         tray.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
         Check(!ConfigManager.CurrentConfig.StartInTray, "compiled checkbox click updates preference");
         Check(!settings.IsVisible, "test completed without showing a window");
+        AppLogger.Shutdown();
+    }
+
+    private static void TestLaunchEditors()
+    {
+        ConfigManager.DisableAutoStartSync = true;
+        var config = ConfigManager.CurrentConfig;
+        config.AutoCheckUpdate = false;
+        config.EnableGlobalInheritance = true;
+        var global = ConfigManager.GetGlobalProfile()!;
+        var launch = new ActionItem { Type = "Launch", Parameter = "fixture.exe" };
+        var child = new ActionItem { Type = "Plugin", PluginActionRef = new()
+            { PluginId = "starpie.builtin.launch", ContributionId = "launch" } };
+        launch.SubActions = new() { child };
+        global.EnsureLayers();
+        global.Actions[0] = launch;
+        global.CenterAction = launch.Clone();
+        global.EnableCenterAction = true;
+        global.SyncActiveLayerFromRootProperties();
+        using var blockDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher.DisableProcessing();
+        var app = new App();
+        app.InitializeComponent();
+        var window = new SettingsWindow();
+        window.EnsureUiInitialized();
+        var box = (System.Windows.Controls.CheckBox)window.FindName("FocusLaunchPlacementCheckBox");
+        const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance;
+        void Set(string name, object? value) => typeof(SettingsWindow).GetField(name, flags)!.SetValue(window, value);
+        void Refresh() => typeof(SettingsWindow).GetMethod("UpdateFocusEditorUi", flags)!.Invoke(window, null);
+        void Click(bool value)
+        {
+            box.IsChecked = value;
+            box.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+        }
+
+        Set("_selectedProfile", global);
+        Set("_selectedSlotIndex", 0);
+        Set("_selectedSubActionIndex", null);
+        Refresh();
+        Check(box.Visibility == System.Windows.Visibility.Visible && box.IsChecked == false, "legacy Launch control defaults off");
+        Click(true);
+        Check(global.Actions[0].LaunchOnCursorMonitor, "main slot click updates action");
+        Set("_selectedSubActionIndex", 0);
+        Refresh();
+        Check(box.Visibility == System.Windows.Visibility.Visible && box.IsChecked == false, "official launch contribution has independent control");
+        Click(true);
+        Check(global.Actions[0].SubActions![0].LaunchOnCursorMonitor, "subaction click updates correct action");
+        foreach (string language in new[] { "zh-CN", "zh-TW", "en", "ja" })
+        {
+            I18n.SetLanguage(language);
+            window.ApplyLocalization();
+            Check((string)box.Content == I18n.T("LaunchPlacementLabel") && (string)box.Content != "LaunchPlacementLabel", language + " launch label");
+        }
+
+        var local = new WheelProfile { ProcessName = "T6", EnableCenterAction = false };
+        local.EnsureLayers();
+        config.Profiles.Add(local);
+        Set("_selectedProfile", local);
+        Set("_selectedSlotIndex", -1);
+        Set("_selectedSubActionIndex", null);
+        Refresh();
+        Check(box.Visibility == System.Windows.Visibility.Visible && box.IsChecked == false, "inherited center displays global preference");
+        Click(true);
+        Check(local.GetEffectiveCenterAction() is { LaunchOnCursorMonitor: true, IsInherited: false } &&
+              global.GetEffectiveCenterAction() is { LaunchOnCursorMonitor: false }, "editing inherited center creates only local override");
+        var other = new ActionItem { Type = "Plugin", PluginActionRef = new()
+            { PluginId = "fixture.other", ContributionId = "launch" } };
+        global.Actions[0] = other;
+        Set("_selectedProfile", global);
+        Set("_selectedSlotIndex", 0);
+        Refresh();
+        Check(box.Visibility == System.Windows.Visibility.Collapsed, "other plugin with same short id hides control");
+        var slot = new SlotViewModel("test", other);
+        var sub = new SubSlotViewModel { Action = child };
+        var mapping = new GestureMappingViewModel(new GestureMapping { Action = launch });
+        slot.LaunchOnCursorMonitor = true;
+        sub.LaunchOnCursorMonitor = false;
+        mapping.LaunchOnCursorMonitor = false;
+        Check(!other.LaunchOnCursorMonitor && !child.LaunchOnCursorMonitor && !launch.LaunchOnCursorMonitor, "editor bindings target the right models and preserve unrelated actions");
+        slot.Dispose();
+        Check(!window.IsVisible, "settings remained offscreen");
         AppLogger.Shutdown();
     }
 

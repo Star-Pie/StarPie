@@ -431,7 +431,8 @@ internal static class StickyWheelSession
         Session? session = CurrentSession();
         if (session is not { Live: true } || session.Wheel == null) return;
 
-        HitResult hit = HitTest(session, ScreenHelper.GetCursorPhysicalPosition());
+        var triggerPoint = ScreenHelper.GetCursorPhysicalPosition();
+        HitResult hit = HitTest(session, triggerPoint);
 
         // 先收摊再派发：与 CompleteMouseTriggerRelease 的顺序一致（CloseGestureWindow 在前），
         // 动作执行可能耗时，轮盘不该干等着。
@@ -448,7 +449,7 @@ internal static class StickyWheelSession
             session.Interaction?.Cancel(hit.Escaped ? "Escaped" : "Cancelled");
             if (hit.Escaped)
             {
-                DispatchCancelAction();
+                DispatchCancelAction(triggerPoint);
             }
             return;
         }
@@ -461,7 +462,7 @@ internal static class StickyWheelSession
             if (target != null)
             {
                 session.Interaction?.Confirm(target, PluginInteractionSession.Target(hit.Sector, hit.Sub));
-                ActionExecutor.EnqueueAction(target);
+                ActionExecutor.EnqueueActionAtPoint(target, triggerPoint);
             }
             else session.Interaction?.Cancel("NoAction");
         }
@@ -511,7 +512,7 @@ internal static class StickyWheelSession
     /// 环外取消的动作派发 —— 与 <c>GestureController</c> 外甩收尾同一组条件
     /// （EnableCancelAction 开着且 CancelAction 配了真东西才执行）。
     /// </summary>
-    private static void DispatchCancelAction()
+    private static void DispatchCancelAction(System.Windows.Point triggerPoint)
     {
         try
         {
@@ -519,7 +520,7 @@ internal static class StickyWheelSession
             if (ConfigManager.CurrentConfig?.EnableCancelAction == true &&
                 cancelAction != null && !string.IsNullOrEmpty(cancelAction.Type))
             {
-                ActionExecutor.EnqueueAction(cancelAction);
+                ActionExecutor.EnqueueActionAtPoint(cancelAction, triggerPoint);
             }
         }
         catch (Exception ex)
