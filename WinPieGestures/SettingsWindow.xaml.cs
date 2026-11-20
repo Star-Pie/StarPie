@@ -943,6 +943,7 @@ public partial class SettingsWindow : Window
 	{
 		ReloadArtStyleStudio();
 		ReloadUiFontOptions();
+		StartInTrayCheckBox.IsChecked = ConfigManager.CurrentConfig.StartInTray;
 		ProfilesListBox.ItemsSource = null;
 		ProfilesListBox.ItemsSource = ConfigManager.CurrentConfig.Profiles;
 		if (MappingsProfileComboBox != null)
@@ -1697,7 +1698,7 @@ public partial class SettingsWindow : Window
 				{
 					UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 245, 158, 11));
 				}
-				UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusFoundNewDesc"), _latestReleaseInfo.TagName, $"{_latestReleaseInfo.PublishedAt:yyyy-MM-dd HH:mm}");
+				UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusFoundNewDesc"), _latestReleaseInfo.TagName, FormatReleaseDate(_latestReleaseInfo));
 
 				if (UpdateNewVersionTagText != null)
 				{
@@ -1709,7 +1710,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateReleaseDateText != null)
 				{
-					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{_latestReleaseInfo.PublishedAt:yyyy-MM-dd HH:mm}", UpdateSourceDisplayName);
+					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), FormatReleaseDate(_latestReleaseInfo), ReleaseProviderName(_latestReleaseInfo));
 				}
 			}
 			else
@@ -1720,7 +1721,7 @@ public partial class SettingsWindow : Window
 				{
 					UpdateStatusBadge.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(30, 16, 185, 129));
 				}
-				UpdateStatusDescText.Text = I18n.TF("UpdateSourceUpToDateDesc", AppVersionInfo.DisplayVersion, _latestReleaseInfo.TagName, UpdateSourceDisplayName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
+				UpdateStatusDescText.Text = I18n.TF("UpdateSourceUpToDateDesc", AppVersionInfo.DisplayVersion, _latestReleaseInfo.TagName, ReleaseProviderName(_latestReleaseInfo), ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
 			}
 		}
 		else
@@ -2487,6 +2488,10 @@ public partial class SettingsWindow : Window
 		{
 			LanguageDescText.Text = I18n.T("LanguageDesc");
 		}
+		StartInTrayTitle.Text = I18n.T("StartInTrayTitle");
+		StartInTrayHint.Text = I18n.T("StartInTrayHint");
+		DataLocationText.Text = I18n.TF("DataLocation", ApplicationDataPaths.Root);
+		DataLocationText.ToolTip = I18n.T("PortableDataHint");
 		if (StartupTitleText != null)
 		{
 			StartupTitleText.Text = I18n.T("StartupTitle");
@@ -16122,7 +16127,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateStatusDescText != null)
 				{
-					UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusFoundNewDesc"), rel.TagName, $"{rel.PublishedAt:yyyy-MM-dd HH:mm}");
+					UpdateStatusDescText.Text = string.Format(I18n.T("UpdateStatusFoundNewDesc"), rel.TagName, FormatReleaseDate(rel));
 				}
 
 				if (UpdateNewVersionTagText != null)
@@ -16135,7 +16140,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateReleaseDateText != null)
 				{
-					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), $"{rel.PublishedAt:yyyy-MM-dd HH:mm}", UpdateSourceDisplayName);
+					UpdateReleaseDateText.Text = string.Format(I18n.T("UpdateReleaseDateFmt"), FormatReleaseDate(rel), ReleaseProviderName(rel));
 				}
 				if (UpdateChangelogTextBlock != null)
 				{
@@ -16169,7 +16174,7 @@ public partial class SettingsWindow : Window
 				}
 				if (UpdateStatusDescText != null)
 				{
-					UpdateStatusDescText.Text = I18n.TF("UpdateSourceUpToDateDesc", AppVersionInfo.DisplayVersion, rel.TagName, UpdateSourceDisplayName, ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
+					UpdateStatusDescText.Text = I18n.TF("UpdateSourceUpToDateDesc", AppVersionInfo.DisplayVersion, rel.TagName, ReleaseProviderName(rel), ConfigManager.CurrentConfig?.LastCheckUpdateTime ?? "");
 				}
 				if (UpdateNewVersionPanel != null)
 				{
@@ -16203,11 +16208,12 @@ public partial class SettingsWindow : Window
 
 	private async void StartDownloadUpdateBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if (_latestReleaseInfo == null || _latestReleaseInfo.Source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		if (_latestReleaseInfo == null || !UpdateManager.AcceptsReleaseSource(CurrentUpdateReleaseSource, _latestReleaseInfo.Source) || _resourcesReleased) return;
 		ReleaseInfo release = _latestReleaseInfo;
-		string source = CurrentUpdateReleaseSource;
+		string selection = CurrentUpdateReleaseSource;
 
 		bool isStandalone = (UpdatePkgStandaloneRadio?.IsChecked == true);
+		release = release.ForPackage(isStandalone);
 		string? rawAssetUrl = isStandalone ? release.StandaloneAssetUrl : release.LightweightAssetUrl;
 
 		if (string.IsNullOrEmpty(rawAssetUrl))
@@ -16223,7 +16229,7 @@ public partial class SettingsWindow : Window
 			? $"StarPie-{release.TagName}-Standalone-win-x64.zip"
 			: $"StarPie-{release.TagName}-Lightweight-win-x64.zip";
 
-		if (source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		if (selection != CurrentUpdateReleaseSource || _resourcesReleased) return;
 		int revision = ++_updateDownloadRevision;
 		string destPath = CreateUpdateDownloadPath(fileName);
 		_downloadedZipPath = null;
@@ -16252,7 +16258,7 @@ public partial class SettingsWindow : Window
 
 		try
 		{
-			await UpdateManager.Instance.DownloadReleaseAssetAsync(release, isStandalone, destPath, progress, downloadCts.Token, proxy, customProxy, source);
+			await UpdateManager.Instance.DownloadReleaseAssetAsync(release, isStandalone, destPath, progress, downloadCts.Token, proxy, customProxy, release.Source);
 			if (!CanApplyUpdateDownload(revision))
 			{
 				try { System.IO.File.Delete(destPath); } catch { }
@@ -16336,11 +16342,15 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	private static string FormatReleaseDate(ReleaseInfo release, string format = "yyyy-MM-dd HH:mm") => release.PublishedAt == default ? "—" : release.PublishedAt.ToString(format);
+
+	private static string ReleaseProviderName(ReleaseInfo release) => I18n.T(release.Source == "atomgit" ? "UpdateSourceAtomGit" : "UpdateSourceGitHub");
+
 	private void OpenWebReleaseBtn_Click(object sender, RoutedEventArgs e)
 	{
 		try
 		{
-			string url = UpdateManager.GetReleasePageUrl(_latestReleaseInfo, CurrentUpdateReleaseSource);
+			string url = UpdateManager.GetReleasePageUrl(_latestReleaseInfo, _latestReleaseInfo?.Source ?? CurrentUpdateReleaseSource);
 			Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 		}
 		catch (Exception ex)
@@ -16433,7 +16443,7 @@ public partial class SettingsWindow : Window
 			string typeTag = rel.IsPrerelease ? "测试版" : "正式版";
 			ComboBoxItem item = new ComboBoxItem
 			{
-				Content = $"{rel.TagName}  [{typeTag}] · {rel.PublishedAt:yyyy-MM-dd}",
+				Content = $"{rel.TagName}  [{typeTag}] · {FormatReleaseDate(rel, "yyyy-MM-dd")}",
 				Tag = rel
 			};
 			RollbackVersionComboBox.Items.Add(item);
@@ -16469,7 +16479,7 @@ public partial class SettingsWindow : Window
 		}
 		if (RollbackDetailDateText != null)
 		{
-			RollbackDetailDateText.Text = string.Format(I18n.T("RollbackDetailDateFmt"), $"{rel.PublishedAt:yyyy-MM-dd HH:mm}");
+			RollbackDetailDateText.Text = string.Format(I18n.T("RollbackDetailDateFmt"), FormatReleaseDate(rel));
 		}
 		if (RollbackInstallTypeText != null)
 		{
@@ -16485,9 +16495,9 @@ public partial class SettingsWindow : Window
 
 	private async void StartRollbackBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if (_selectedRollbackRelease == null || _selectedRollbackRelease.Source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		if (_selectedRollbackRelease == null || !UpdateManager.AcceptsReleaseSource(CurrentUpdateReleaseSource, _selectedRollbackRelease.Source) || _resourcesReleased) return;
 		ReleaseInfo release = _selectedRollbackRelease;
-		string source = CurrentUpdateReleaseSource;
+		string selection = CurrentUpdateReleaseSource;
 
 		string confirmMsg = string.Format(I18n.T("RollbackConfirmMsg"), release.TagName);
 		string confirmTitle = I18n.T("RollbackConfirmTitle");
@@ -16496,11 +16506,12 @@ public partial class SettingsWindow : Window
 		if (result != MessageBoxResult.Yes) return;
 
 		bool isStandalone = UpdateManager.Instance.IsCurrentInstallationStandalone();
+		release = release.ForPackage(isStandalone);
 		string? rawAssetUrl = isStandalone ? release.StandaloneAssetUrl : release.LightweightAssetUrl;
 
 		if (string.IsNullOrEmpty(rawAssetUrl))
 		{
-			Process.Start(new ProcessStartInfo(UpdateManager.GetReleasePageUrl(release, source)) { UseShellExecute = true });
+			Process.Start(new ProcessStartInfo(UpdateManager.GetReleasePageUrl(release, release.Source)) { UseShellExecute = true });
 			return;
 		}
 
@@ -16511,7 +16522,7 @@ public partial class SettingsWindow : Window
 			? $"StarPie-{release.TagName}-Standalone-win-x64.zip"
 			: $"StarPie-{release.TagName}-Lightweight-win-x64.zip";
 
-		if (source != CurrentUpdateReleaseSource || _resourcesReleased) return;
+		if (selection != CurrentUpdateReleaseSource || _resourcesReleased) return;
 		int revision = ++_updateDownloadRevision;
 		string destPath = CreateUpdateDownloadPath(fileName);
 		_downloadedZipPath = null;
@@ -16541,7 +16552,7 @@ public partial class SettingsWindow : Window
 
 		try
 		{
-			await UpdateManager.Instance.DownloadReleaseAssetAsync(release, isStandalone, destPath, progress, downloadCts.Token, proxy, customProxy, source);
+			await UpdateManager.Instance.DownloadReleaseAssetAsync(release, isStandalone, destPath, progress, downloadCts.Token, proxy, customProxy, release.Source);
 			if (!CanApplyUpdateDownload(revision))
 			{
 				try { System.IO.File.Delete(destPath); } catch { }

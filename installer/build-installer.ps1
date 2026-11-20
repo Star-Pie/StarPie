@@ -88,6 +88,9 @@ if ([string]::IsNullOrWhiteSpace($SourceDir)) {
     }
 }
 
+. (Join-Path $PSScriptRoot 'Assert-CleanDistributionRoot.ps1')
+Assert-CleanDistributionRoot $SourceDir
+
 if ($BuildStandaloneFirst -or -not (Test-Path "$SourceDir\StarPie.exe")) {
     Write-Host "[*] Publishing Standalone binary via dotnet publish..." -ForegroundColor Yellow
     dotnet publish "$RepoRoot\WinPieGestures\WinPieGestures.csproj" `
@@ -104,6 +107,7 @@ if (-not (Test-Path "$SourceDir\StarPie.exe")) {
     exit 1
 }
 
+Assert-CleanDistributionRoot $SourceDir
 Write-Host "[OK] Source directory: $SourceDir" -ForegroundColor Green
 
 # 4. Output directory

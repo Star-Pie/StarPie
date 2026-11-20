@@ -66,9 +66,9 @@ public static class ConfigManager
 
 	private static string GetAppDataFolder()
 	{
-		string path = (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LOCALAPPDATA")) ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) : Environment.GetEnvironmentVariable("LOCALAPPDATA"));
-		string text = Path.Combine(path, "StarPie");
-		string text2 = Path.Combine(path, "WinPieGestures");
+		string text = ApplicationDataPaths.Root;
+		if (ApplicationDataPaths.IsPortable) return text;
+		string text2 = Path.Combine(ApplicationDataPaths.LocalAppData, "WinPieGestures");
 		if (!Directory.Exists(text) && Directory.Exists(text2))
 		{
 			try
@@ -371,6 +371,9 @@ public static class ConfigManager
 
 	private static void WriteTextAtomically(string targetPath, string contents, string? backupPath = null)
 	{
+		ApplicationDataPaths.CheckPortableFile(targetPath);
+		ApplicationDataPaths.CheckPortableFile(targetPath + ".tmp");
+		if (backupPath != null) ApplicationDataPaths.CheckPortableFile(backupPath);
 		string? directory = Path.GetDirectoryName(targetPath);
 		if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
 		{

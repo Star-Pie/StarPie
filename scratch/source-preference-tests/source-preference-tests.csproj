@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>test_catalog</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="StarPie" HintPath="$(StarPieCandidateDir)/StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" HintPath="$(StarPieCandidateDir)/StarPie.Plugin.Abstractions.dll" />
+  </ItemGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(StarPieCandidateDir)/StarPie.dll')">
+    <Error Text="Set StarPieCandidateDir to the exact candidate output directory." />
+  </Target>
+</Project>

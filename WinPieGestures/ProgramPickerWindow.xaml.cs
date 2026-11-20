@@ -906,7 +906,7 @@ public partial class ProgramPickerWindow : Window
 	{
 		try
 		{
-			string text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StarPie");
+			string text = ApplicationDataPaths.ProgramCacheDirectory;
 			if (!Directory.Exists(text))
 			{
 				Directory.CreateDirectory(text);
@@ -938,7 +938,7 @@ public partial class ProgramPickerWindow : Window
 	{
 		try
 		{
-			string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StarPie", "program_cache.json");
+			string path = Path.Combine(ApplicationDataPaths.ProgramCacheDirectory, "program_cache.json");
 			if (!File.Exists(path))
 			{
 				return null;

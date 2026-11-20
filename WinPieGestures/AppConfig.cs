@@ -191,6 +191,8 @@ public class AppConfig
 
 	public bool AutoStartAsAdmin { get; set; }
 
+	public bool StartInTray { get; set; }
+
 	public bool ShowText { get; set; } = false;
 
 	public bool ShowSelectedActionText { get; set; } = true;

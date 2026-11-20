@@ -31,14 +31,14 @@ internal static class OfficialPluginReleaseDiscovery
     /// </summary>
     public static async Task<IReadOnlyList<string>> DiscoverCandidateTagsAsync(
         HttpClient client,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, Func<string, string>? transportUrl = null)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         // 1. 首先尝试官方 Atom Feed
         try
         {
-            using var atomRequest = new HttpRequestMessage(HttpMethod.Get, ReleasesFeedUrl);
+            using var atomRequest = new HttpRequestMessage(HttpMethod.Get, transportUrl?.Invoke(ReleasesFeedUrl) ?? ReleasesFeedUrl);
             atomRequest.Headers.Accept.Clear();
             atomRequest.Headers.Accept.ParseAdd("application/atom+xml");
 
@@ -69,7 +69,7 @@ internal static class OfficialPluginReleaseDiscovery
         // 2. 若 Atom 未发现任何候选标签，使用官方 Releases API 列表补足
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var apiRequest = new HttpRequestMessage(HttpMethod.Get, ReleasesApiUrl);
+        using var apiRequest = new HttpRequestMessage(HttpMethod.Get, transportUrl?.Invoke(ReleasesApiUrl) ?? ReleasesApiUrl);
         apiRequest.Headers.Accept.Clear();
         apiRequest.Headers.Accept.ParseAdd("application/vnd.github+json");
         apiRequest.Headers.Accept.ParseAdd("application/json");

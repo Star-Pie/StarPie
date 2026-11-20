@@ -149,6 +149,10 @@ internal static class Program
                      "folder/CON.txt",
                      "plugin-data/private.json",
                      "config.json",
+                     "daTa/settings.txt",
+                     "DATA",
+                     "STARPIE.portable",
+                     "portable.flag",
                      "a//b.txt",
                  })
         {

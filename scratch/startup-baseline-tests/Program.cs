@@ -33,11 +33,29 @@ internal static class Program
                 Environment.SetEnvironmentVariable(variable, directory);
             string configPath = Path.Combine(directory, "StarPie", "config.json");
             Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+            if (scenario == "ui")
+            {
+                TestSettingsControls(directory);
+                Console.WriteLine($"PASS {_checks} candidate-bound settings checks; offscreen only.");
+                return 0;
+            }
             if (scenario != "missing")
                 File.WriteAllText(configPath, scenario == "corrupt" ? "{invalid" : JsonSerializer.Serialize(Fixture()));
 
             var entry = typeof(App).GetMethod("OnStartup", BindingFlags.NonPublic | BindingFlags.Instance)!;
             var calls = Calls(entry).ToArray();
+            var policy = typeof(App).GetMethod("ShouldOpenStartupSettings", BindingFlags.Static | BindingFlags.NonPublic)!;
+            Check(calls.Contains(policy), "cold startup uses the tested settings policy");
+            Check(!JsonSerializer.Deserialize<AppConfig>("{}")!.StartInTray, "legacy profiles open Settings");
+            foreach (bool silent in new[] { false, true })
+            foreach (bool tray in new[] { false, true })
+            foreach (bool pending in new[] { false, true })
+            {
+                bool open = (bool)policy.Invoke(null, new object[] { silent, tray, pending })!;
+                bool expectedOpen = pending || (!silent && !tray);
+                Check(open == expectedOpen, $"startup window: silent={silent}, tray={tray}, pending={pending}");
+            }
+
             // Replay only configuration operations from the real entrypoint IL. Never invoke
             // OnStartup: it installs hooks, creates a tray and may show settings.
             var operations = calls.Where(m => m.DeclaringType == typeof(ConfigManager) ||
@@ -83,6 +101,16 @@ internal static class Program
             {
                 Check(!fallback && File.Exists(configPath), "missing config generates normal defaults");
                 Check(JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath))?.Profiles.Count > 0, "default config is complete and readable");
+                foreach (bool preference in new[] { true, false })
+                {
+                    ConfigManager.CurrentConfig.StartInTray = preference;
+                    Check(ConfigManager.SaveConfig(), "tray preference saves");
+                    ConfigManager.LoadConfig();
+                    using var saved = JsonDocument.Parse(File.ReadAllText(configPath));
+                    Check(saved.RootElement.GetProperty("StartInTray").GetBoolean() == preference &&
+                        ConfigManager.CurrentConfig.StartInTray == preference, "explicit tray preference round-trips");
+                }
+
             }
             else
             {
@@ -117,6 +145,53 @@ internal static class Program
             Console.Error.WriteLine($"FAIL {_checks}: {e}");
             return 1;
         }
+    }
+
+    private static void TestSettingsControls(string directory)
+    {
+        ConfigManager.DisableAutoStartSync = true;
+        ConfigManager.CurrentConfig.AutoCheckUpdate = false;
+        ConfigManager.CurrentConfig.StartInTray = true;
+        var app = new App();
+        app.InitializeComponent();
+        var settings = new SettingsWindow();
+        settings.EnsureUiInitialized();
+        var tray = (System.Windows.Controls.CheckBox)settings.FindName("StartInTrayCheckBox");
+        Check(tray.IsChecked == true, "compiled checkbox loads saved preference");
+        foreach (string language in new[] { "zh-CN", "zh-TW", "en", "ja" })
+        {
+            I18n.SetLanguage(language);
+            settings.ApplyLocalization();
+            foreach (string name in new[] { "ProbePluginSourcesButton", "ProbeUpdateSourcesButton" })
+            {
+                var button = (System.Windows.Controls.Button)settings.FindName(name);
+                Check((string)button.Content == I18n.T("SourceProbeButton") && button.IsEnabled, name + " localized and available");
+            }
+            var formatter = typeof(SettingsWindow).GetMethod("FormatProbeResult", BindingFlags.Static | BindingFlags.NonPublic)!;
+            var pluginChannels = ((System.Windows.Controls.ComboBox)settings.FindName("PluginDownloadChannelComboBox"))
+                .Items.OfType<System.Windows.Controls.ComboBoxItem>().Where(item => (string)item.Tag != "auto").ToArray();
+            var labels = pluginChannels.Select(item => (string)formatter.Invoke(null, new object[] {
+                new SourceMeasurement((string)item.Tag, 123) })!).ToArray();
+            Check(labels.Length == 5 && labels.Distinct().Count() == 5 && labels.All(label => label.Contains("123 ms")),
+                "each selectable transport has its own localized timing");
+            string limited = (string)formatter.Invoke(null, new object[] { new SourceMeasurement("atomgit", null, "SourceProbeHttp", 429) })!;
+            string tls = (string)formatter.Invoke(null, new object[] { new SourceMeasurement("mirror", null, "SourceProbeTls") })!;
+            Check(limited.Contains("HTTP 429") && tls.Contains(I18n.T("SourceProbeTls")), "transport failure reasons remain distinguishable");
+            foreach (string name in new[] { "UpdateSourceComboBox", "PluginDownloadChannelComboBox" })
+            {
+                var combo = (System.Windows.Controls.ComboBox)settings.FindName(name);
+                var auto = combo.Items.OfType<System.Windows.Controls.ComboBoxItem>().Single(i => (string)i.Tag == "auto");
+                Check((string)auto.Content == I18n.T("SourceAuto"), name + " has localized automatic choice");
+            }
+        }
+        var location = (System.Windows.Controls.TextBlock)settings.FindName("DataLocationText");
+        Check(location.Text.Contains(Path.Combine(directory, "StarPie")), "settings shows active isolated data location");
+        tray.IsChecked = false;
+        Check(ConfigManager.CurrentConfig.StartInTray, "programmatic checkbox initialization does not mutate preference");
+        tray.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+        Check(!ConfigManager.CurrentConfig.StartInTray, "compiled checkbox click updates preference");
+        Check(!settings.IsVisible, "test completed without showing a window");
+        AppLogger.Shutdown();
     }
 
     private static AppConfig Fixture()

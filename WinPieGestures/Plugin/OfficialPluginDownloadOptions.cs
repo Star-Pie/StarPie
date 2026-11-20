@@ -11,8 +11,12 @@ internal sealed class OfficialPluginDownloadOptions
     public const string ChannelGhFast = "ghfast";
     public const string ChannelGhProxy = "gh-proxy";
     public const string ChannelMirror = "mirror";
+    public const string ChannelAuto = "auto";
     public const string ChannelDirect = "direct";
     public const string ChannelAtomGit = "atomgit";
+
+    internal static IReadOnlyList<string> FixedChannels { get; } = Array.AsReadOnly(
+        new[] { ChannelAtomGit, ChannelDirect, ChannelGhFast, ChannelGhProxy, ChannelMirror });
 
     /// <summary>
     /// 标准化后的下载通道标识：ghfast / gh-proxy / mirror / direct。
@@ -41,6 +45,7 @@ internal sealed class OfficialPluginDownloadOptions
             "gh-proxy" or "akams" => ChannelGhProxy,
             "mirror" => ChannelMirror,
             "direct" => ChannelDirect,
+            "auto" => ChannelAuto,
             "atomgit" => ChannelAtomGit,
             _ => ChannelDirect
         };
@@ -52,7 +57,7 @@ internal sealed class OfficialPluginDownloadOptions
     /// </summary>
     public string GetProxiedUrl(string rawUrl)
     {
-        if (Channel == ChannelAtomGit) throw new InvalidOperationException("AtomGit assets require release metadata resolution.");
+        if (Channel is ChannelAtomGit or ChannelAuto) throw new InvalidOperationException("AtomGit assets require release metadata resolution.");
         if (string.IsNullOrWhiteSpace(rawUrl))
         {
             return string.Empty;
@@ -69,6 +74,7 @@ internal sealed class OfficialPluginDownloadOptions
         return Channel switch
         {
             ChannelAtomGit => I18n.T("UpdateSourceAtomGit"),
+            ChannelAuto => I18n.T("SourceAuto"),
             ChannelGhFast => I18n.T("UpdateProxyGhproxy"),
             ChannelGhProxy => I18n.T("UpdateProxyMoeyy"),
             ChannelMirror => I18n.T("UpdateProxyAkams"),

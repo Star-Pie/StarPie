@@ -16,6 +16,13 @@ public partial class SettingsWindow
         SyncUiToConfigAndSave();
     }
 
+    private void StartInTrayCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isUpdatingUi || _isUiInitializing || _resourcesReleased) return;
+        ConfigManager.CurrentConfig.StartInTray = StartInTrayCheckBox.IsChecked == true;
+        ScheduleAutoSave();
+    }
+
     private void AutoStartBusy(bool busy)
     {
         _autoStartOperationBusy = busy;

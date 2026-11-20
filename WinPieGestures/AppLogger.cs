@@ -21,16 +21,13 @@ public static class AppLogger
 	{
 		try
 		{
-			string localAppData = string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LOCALAPPDATA"))
-				? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-				: Environment.GetEnvironmentVariable("LOCALAPPDATA");
-			LogDirectory = Path.Combine(localAppData, "StarPie", "logs");
+			LogDirectory = Path.Combine(ApplicationDataPaths.Root, "logs");
 			if (!Directory.Exists(LogDirectory))
 			{
 				Directory.CreateDirectory(LogDirectory);
 			}
 		}
-		catch
+		catch when (!ApplicationDataPaths.IsPortable)
 		{
 			LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
 			try

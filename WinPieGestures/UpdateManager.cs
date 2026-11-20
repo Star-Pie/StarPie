@@ -157,6 +157,18 @@ public class ReleaseInfo
 	public string? LightweightAssetUrl { get; set; }
 
 	public long LightweightAssetSize { get; set; }
+
+    // A mirror may publish only one of the two packages for a given tag.
+    internal ReleaseInfo? AlternateSource { get; set; }
+    internal string? StandaloneChecksum { get; set; }
+    internal string? LightweightChecksum { get; set; }
+
+    internal ReleaseInfo ForPackage(bool standalone)
+    {
+        if (!string.IsNullOrEmpty(standalone ? StandaloneAssetUrl : LightweightAssetUrl)) return this;
+        if (AlternateSource is { } other && !string.IsNullOrEmpty(standalone ? other.StandaloneAssetUrl : other.LightweightAssetUrl)) return other;
+        return this;
+    }
 }
 
 public class UpdateProgressInfo
@@ -187,7 +199,7 @@ public partial class UpdateManager
 	public static UpdateManager Instance => _instance.Value;
 
 	private readonly HttpClient _httpClient;
-	private const string RepoOwner = "SoftBlack42";
+	private const string RepoOwner = "Star-Pie";
 	private const string RepoName = "StarPie";
 
 	private UpdateManager()
@@ -268,8 +280,22 @@ public partial class UpdateManager
 
 	public async Task<List<ReleaseInfo>> FetchAllReleasesAsync(string proxySource = "ghfast", string customProxy = "", CancellationToken ct = default, string releaseSource = "github")
 	{
+		if (NormalizeReleaseSource(releaseSource) == "auto")
+        {
+            var responses = await CompareReleasesAsync(ct).ConfigureAwait(false);
+            // Keep unique historical tags even when the faster mirror has an incomplete history.
+            return responses.Where(r => r.Value != null).OrderBy(r => r.Measurement.Milliseconds)
+                .SelectMany(r => r.Value!).GroupBy(r => r.TagName, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var primary = group.First();
+                    primary.AlternateSource = group.FirstOrDefault(r => r.Source != primary.Source);
+                    return primary;
+                })
+                .OrderByDescending(r => r.ComparableVersion).ThenByDescending(r => r.PublishedAt).ToList();
+        }
 		if (NormalizeReleaseSource(releaseSource) == "atomgit")
-			return await FetchAtomGitReleasesAsync(ct).ConfigureAwait(false);
+			return await ReadReleaseIndexAsync("atomgit", ct).ConfigureAwait(false);
 		ct.ThrowIfCancellationRequested();
 		List<ReleaseInfo> allReleases = new List<ReleaseInfo>();
 		try
@@ -575,7 +601,7 @@ public partial class UpdateManager
 		};
 	}
 
-	private ReleaseInfo? ParseReleaseElement(JsonElement elem)
+	private ReleaseInfo? ParseReleaseElement(JsonElement elem, bool synthesizeMissingAssets = true)
 	{
 		try
 		{
@@ -625,11 +651,11 @@ public partial class UpdateManager
 				}
 			}
 
-			if (string.IsNullOrEmpty(info.StandaloneAssetUrl) && !string.IsNullOrEmpty(tagName))
+			if (synthesizeMissingAssets && string.IsNullOrEmpty(info.StandaloneAssetUrl) && !string.IsNullOrEmpty(tagName))
 			{
 				info.StandaloneAssetUrl = $"https://github.com/{RepoOwner}/{RepoName}/releases/download/{tagName}/StarPie-{tagName}-Standalone-win-x64.zip";
 			}
-			if (string.IsNullOrEmpty(info.LightweightAssetUrl) && !string.IsNullOrEmpty(tagName))
+			if (synthesizeMissingAssets && string.IsNullOrEmpty(info.LightweightAssetUrl) && !string.IsNullOrEmpty(tagName))
 			{
 				info.LightweightAssetUrl = $"https://github.com/{RepoOwner}/{RepoName}/releases/download/{tagName}/StarPie-{tagName}-Lightweight-win-x64.zip";
 			}

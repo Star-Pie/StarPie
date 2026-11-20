@@ -17,7 +17,8 @@ public partial class SettingsWindow
     {
         if (PluginDownloadChannelComboBox == null) return;
         PluginDownloadChannelComboBox.ToolTip = I18n.T("OfficialPluginsOnboardingChannelHint");
-        string selected = CapturePluginDownloadOptions().Channel;
+        ProbePluginSourcesButton.Content = I18n.T("SourceProbeButton");
+        string selected = OfficialPluginDownloadOptions.NormalizeChannel(ConfigManager.CurrentConfig?.OfficialPluginDownloadSource ?? OfficialPluginDownloadOptions.ChannelAtomGit);
         _localizingPluginChannels = true;
         try
         {
@@ -36,6 +37,8 @@ public partial class SettingsWindow
         if (_isUpdatingUi || _localizingPluginChannels || _isUiInitializing || _resourcesReleased || ConfigManager.CurrentConfig == null) return;
         string source = CapturePluginDownloadOptions().Channel;
         if (ConfigManager.CurrentConfig.OfficialPluginDownloadSource == source) return;
+        _pluginProbeCts?.Cancel();
+        PluginSourceProbeResult.Text = "";
         ConfigManager.CurrentConfig.OfficialPluginDownloadSource = source;
         ScheduleAutoSave();
     }

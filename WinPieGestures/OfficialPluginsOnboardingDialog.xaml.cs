@@ -148,6 +148,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
         _isUpdatingLocalization = true;
         try
         {
+            if (ChannelAutoItem != null) ChannelAutoItem.Content = I18n.T("SourceAuto");
             if (ChannelAtomGitItem != null) ChannelAtomGitItem.Content = I18n.T("UpdateSourceAtomGit");
             if (ChannelGhfastItem != null) ChannelGhfastItem.Content = I18n.T("UpdateProxyGhproxy");
             if (ChannelGhproxyItem != null) ChannelGhproxyItem.Content = I18n.T("UpdateProxyMoeyy");

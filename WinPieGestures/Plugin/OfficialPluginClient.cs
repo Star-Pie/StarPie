@@ -40,6 +40,10 @@ internal sealed class OfficialPluginModule
 {
     [JsonIgnore]
     public string Id { get; set; } = "";
+    [JsonIgnore]
+    internal string? PreferredCatalogSource { get; set; }
+    [JsonIgnore]
+    internal bool UsePublicAtomGitAssets { get; set; }
     public string Name { get; set; } = "";
     public string Version { get; set; } = "";
     public string ReleaseTag { get; set; } = "";
@@ -108,6 +112,7 @@ internal static partial class OfficialPluginClient
     private const long MaxPackageSize = 100L * 1024L * 1024L;
 
     internal static HttpMessageHandler? HttpHandlerOverrideForTesting { get; set; }
+    internal static TimeSpan? ResponseHeaderTimeoutOverrideForTesting { get; set; }
     internal static TimeSpan? DownloadTimeoutOverrideForTesting { get; set; }
     internal static TimeSpan? CatalogTimeoutOverrideForTesting { get; set; }
 
@@ -152,6 +157,58 @@ internal static partial class OfficialPluginClient
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        OfficialPluginCatalog catalog;
+        if (downloadOptions?.Channel == OfficialPluginDownloadOptions.ChannelAuto)
+        {
+            var probes = await CompareCatalogsAsync(cancellationToken).ConfigureAwait(false);
+            var chosen = probes.Where(r => r.Value != null)
+                .OrderByDescending(r => r.Value!.GeneratedAt)
+                .ThenBy(r => r.Measurement.Milliseconds).FirstOrDefault()
+                ?? throw new HttpRequestException(I18n.T("SourceProbeUnavailable"));
+            catalog = chosen.Value!;
+            foreach (var module in catalog.Modules.SelectMany(entry => entry.Versions))
+                module.PreferredCatalogSource = chosen.Measurement.Source;
+        }
+        else catalog = await ReadCatalogAsync(downloadOptions, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        // 下载成功后写入本地缓存。缓存失败不应把成功的目录刷新误报成失败。
+        try
+        {
+            SaveCachedCatalog(catalog);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogWarn($"[plugin] 保存官方插件目录缓存失败：{ex.Message}");
+        }
+
+        return catalog;
+    }
+
+    internal static async Task<SourceMeasurement[]> ProbeCatalogSourcesAsync(CancellationToken token) =>
+        (await CompareCatalogsAsync(token).ConfigureAwait(false)).Select(result => result.Measurement).ToArray();
+
+    private static Task<SourceResponse<OfficialPluginCatalog>[]> CompareCatalogsAsync(CancellationToken token, IReadOnlyList<string>? channels = null) =>
+        MirrorSourceProbe.CompareAsync(channels ?? OfficialPluginDownloadOptions.FixedChannels, async (source, ct) =>
+        {
+            var catalog = await ReadCatalogAsync(new OfficialPluginDownloadOptions(source), ct).ConfigureAwait(false);
+            if (!catalog.Modules.SelectMany(entry => entry.Versions).Any(module => OfficialPluginVersionSelector.Evaluate(module).IsCompatible))
+                throw new InvalidDataException("No compatible official modules.");
+            return catalog;
+        }, token);
+
+    private static async Task<IReadOnlyList<string>> ReadGitReleaseTagsAsync(bool atomGit, OfficialPluginDownloadOptions? options, CancellationToken token)
+    {
+        string repository = atomGit ? AtomGitRepositoryUrl : RepositoryUrl;
+        var tags = await MirrorGitTags.ReadAsync(atomGit ? SendAtomGitAsync : (url, ct) =>
+            GetHttpClient().GetAsync(options!.GetProxiedUrl(url), HttpCompletionOption.ResponseHeadersRead, ct), repository, token).ConfigureAwait(false);
+        // Official plugin tags carry the publication date and sequence. Only a matching
+        // downloadable v2 catalog makes a tag a published release.
+        return tags.Where(tag => tag.StartsWith("modules-", StringComparison.Ordinal) && Version.TryParse(tag.AsSpan(8), out _))
+            .OrderByDescending(tag => Version.Parse(tag.AsSpan(8))).Take(OfficialPluginReleaseDiscovery.MaxCandidates).ToArray();
+    }
+
+    private static async Task<OfficialPluginCatalog> ReadCatalogAsync(OfficialPluginDownloadOptions? downloadOptions, CancellationToken cancellationToken)
+    {
         TimeSpan timeout = CatalogTimeoutOverrideForTesting ?? TimeSpan.FromSeconds(30);
         using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         linkedCts.CancelAfter(timeout);
@@ -164,10 +221,23 @@ internal static partial class OfficialPluginClient
         {
             if (atomGit)
             {
-                mirrorReleases = await FetchAtomGitPluginReleasesAsync(effectiveToken).ConfigureAwait(false);
-                candidateTags = mirrorReleases.Select(item => item.Tag).Take(OfficialPluginReleaseDiscovery.MaxCandidates).ToArray();
+                try
+                {
+                    mirrorReleases = await FetchAtomGitPluginReleasesAsync(effectiveToken).ConfigureAwait(false);
+                    candidateTags = mirrorReleases.Select(item => item.Tag).Take(OfficialPluginReleaseDiscovery.MaxCandidates).ToArray();
+                }
+                catch (Exception ex) when (!effectiveToken.IsCancellationRequested && ApiUnavailable(ex))
+                {
+                    candidateTags = await ReadGitReleaseTagsAsync(true, null, effectiveToken).ConfigureAwait(false);
+                }
             }
-            else candidateTags = await OfficialPluginReleaseDiscovery.DiscoverCandidateTagsAsync(GetHttpClient(), effectiveToken).ConfigureAwait(false);
+            else if (downloadOptions?.Channel == OfficialPluginDownloadOptions.ChannelGhFast)
+                candidateTags = await ReadGitReleaseTagsAsync(false, downloadOptions, effectiveToken).ConfigureAwait(false);
+            else
+            {
+                Func<string, string>? transport = downloadOptions == null ? null : downloadOptions.GetProxiedUrl;
+                candidateTags = await OfficialPluginReleaseDiscovery.DiscoverCandidateTagsAsync(GetHttpClient(), effectiveToken, transport).ConfigureAwait(false);
+            }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -191,15 +261,23 @@ internal static partial class OfficialPluginClient
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            byte[] catalogBytes;
+            string catalogText;
             string catalogUrl = $"{RepositoryUrl}/releases/download/{Uri.EscapeDataString(releaseTag)}/module-catalog.json";
-            string transportCatalogUrl = atomGit ? mirrorReleases!.Single(item => item.Tag == releaseTag).Assets["module-catalog.json"]
+            string transportCatalogUrl = atomGit ? mirrorReleases?.Single(item => item.Tag == releaseTag).Assets["module-catalog.json"] ?? PublicAtomGitAssetUrl(releaseTag, "module-catalog.json")
                 : downloadOptions?.GetProxiedUrl(catalogUrl) ?? catalogUrl;
 
             try
             {
-                catalogBytes = atomGit ? Encoding.UTF8.GetBytes(await ReadAtomGitJsonAsync(transportCatalogUrl, effectiveToken).ConfigureAwait(false))
-                    : await GetHttpClient().GetByteArrayAsync(transportCatalogUrl, effectiveToken).ConfigureAwait(false);
+                if (atomGit) catalogText = await ReadAtomGitJsonAsync(transportCatalogUrl, effectiveToken).ConfigureAwait(false);
+                else
+                {
+                    using var response = await GetHttpClient().GetAsync(transportCatalogUrl, HttpCompletionOption.ResponseHeadersRead, effectiveToken).ConfigureAwait(false);
+                    catalogText = await ReadCatalogTextAsync(response, effectiveToken).ConfigureAwait(false);
+                }
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.Gone)
+            {
+                continue;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -210,7 +288,7 @@ internal static partial class OfficialPluginClient
                 throw new TimeoutException(I18n.T("OfficialPluginTimeoutCatalog"), ex);
             }
 
-            OfficialPluginCatalog? parsedCatalog = JsonSerializer.Deserialize<OfficialPluginCatalog>(catalogBytes, JsonOptions);
+            OfficialPluginCatalog? parsedCatalog = JsonSerializer.Deserialize<OfficialPluginCatalog>(catalogText, JsonOptions);
             if (parsedCatalog == null)
             {
                 throw new InvalidDataException("官方插件 catalog 为空。");
@@ -231,7 +309,7 @@ internal static partial class OfficialPluginClient
 
             // Older interrupted synchronizations may already expose a catalog.
             // Do not replace the local cache until its new packages are visible.
-            if (atomGit && parsedCatalog.Modules.SelectMany(item => item.Versions)
+            if (mirrorReleases != null && parsedCatalog.Modules.SelectMany(item => item.Versions)
                 .Where(item => item.ReleaseTag == releaseTag)
                 .Any(item => !mirrorReleases!.Single(release => release.Tag == releaseTag).Assets.ContainsKey(item.AssetName)))
             {
@@ -239,6 +317,19 @@ internal static partial class OfficialPluginClient
                 continue;
             }
 
+            if (atomGit && mirrorReleases == null)
+            {
+                var modules = parsedCatalog.Modules.SelectMany(entry => entry.Versions).ToList();
+                bool complete = true;
+                foreach (var module in modules.Where(m => m.ReleaseTag == releaseTag))
+                {
+                    if (await IsPublicArchiveAvailableAsync(module, effectiveToken).ConfigureAwait(false)) continue;
+                    complete = false;
+                    break;
+                }
+                if (!complete) { lastSchemaError = new InvalidDataException(I18n.T("OfficialPluginAtomGitUnavailable")); continue; }
+                foreach (var module in modules) module.UsePublicAtomGitAssets = true;
+            }
             catalog = parsedCatalog;
             break;
         }
@@ -250,16 +341,6 @@ internal static partial class OfficialPluginClient
                 throw lastSchemaError;
             }
             throw new InvalidDataException("官方插件仓库尚未发布可用的 v2 模块 catalog。");
-        }
-
-        // 下载成功后写入本地缓存。缓存失败不应把成功的目录刷新误报成失败。
-        try
-        {
-            SaveCachedCatalog(catalog);
-        }
-        catch (Exception ex)
-        {
-            AppLogger.LogWarn($"[plugin] 保存官方插件目录缓存失败：{ex.Message}");
         }
 
         return catalog;
@@ -551,14 +632,75 @@ internal static partial class OfficialPluginClient
         linkedCts.CancelAfter(timeout);
         CancellationToken effectiveToken = linkedCts.Token;
 
+        if (downloadOptions?.Channel != OfficialPluginDownloadOptions.ChannelAuto)
+        {
+            await DownloadFromSourceAsync(module, destination, downloadOptions, effectiveToken, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        string? preferred = module.PreferredCatalogSource;
+        Exception? lastNetworkError = null;
+        if (preferred != null && await TrySourceAsync(preferred, module).ConfigureAwait(false)) return;
+
+        // Cached catalogs have no transport provenance. A different source must advertise
+        // the identical immutable package before it may supply any bytes.
+        var remaining = OfficialPluginDownloadOptions.FixedChannels.Where(channel => channel != preferred).ToArray();
+        SourceResponse<OfficialPluginCatalog>[] probes;
+        try { probes = await CompareCatalogsAsync(effectiveToken, remaining).ConfigureAwait(false); }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(I18n.T("OfficialPluginTimeoutPackage"), ex);
+        }
+        foreach (var probe in probes.Where(r => r.Value != null).OrderBy(r => r.Measurement.Milliseconds))
+        {
+            var match = probe.Value!.Modules.SelectMany(entry => entry.Versions)
+                .FirstOrDefault(candidate => IsSamePackage(candidate, module));
+            if (match != null && await TrySourceAsync(probe.Measurement.Source, match).ConfigureAwait(false)) return;
+        }
+        throw lastNetworkError ?? new HttpRequestException(I18n.T("SourceProbeUnavailable"));
+
+        async Task<bool> TrySourceAsync(string channel, OfficialPluginModule candidate)
+        {
+            string attempt = destination + ".part-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                await DownloadFromSourceAsync(candidate, attempt, new(channel), effectiveToken, cancellationToken, automatic: true).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(attempt, destination);
+                return true;
+            }
+            catch (Exception ex) when (!effectiveToken.IsCancellationRequested && ex is HttpRequestException or TimeoutException)
+            {
+                // A network failure or unpublished asset is recoverable. Digest, size, path
+                // and disk errors remain terminal and cannot be bypassed by trying another source.
+                lastNetworkError = ex;
+                return false;
+            }
+            finally { if (File.Exists(attempt)) File.Delete(attempt); }
+        }
+    }
+
+    private static bool IsSamePackage(OfficialPluginModule m, OfficialPluginModule module) =>
+        m.Id == module.Id &&
+            m.Version == module.Version && m.PackageUrl == module.PackageUrl && m.Size == module.Size &&
+            string.Equals(m.Sha256, module.Sha256, StringComparison.OrdinalIgnoreCase);
+
+    private static async Task DownloadFromSourceAsync(OfficialPluginModule module, string destination,
+        OfficialPluginDownloadOptions? downloadOptions, CancellationToken effectiveToken, CancellationToken cancellationToken, bool automatic = false)
+    {
         try
         {
             bool atomGit = downloadOptions?.Channel == OfficialPluginDownloadOptions.ChannelAtomGit;
             string transportUrl = atomGit ? await ResolveAtomGitPackageAsync(module, effectiveToken).ConfigureAwait(false)
                 : downloadOptions?.GetProxiedUrl(module.PackageUrl) ?? module.PackageUrl;
             if (!Uri.TryCreate(transportUrl, UriKind.Absolute, out Uri? transportUri)) throw new InvalidDataException("Invalid official plugin transport URL.");
-            using HttpResponseMessage response = atomGit ? await SendAtomGitAsync(transportUrl, effectiveToken).ConfigureAwait(false)
-                : await GetHttpClient().GetAsync(transportUri, HttpCompletionOption.ResponseHeadersRead, effectiveToken).ConfigureAwait(false);
+            // Only the time to obtain headers is capped per automatic route. The body
+            // keeps the operation's full transfer budget even for a slow, healthy stream.
+            using var connection = CancellationTokenSource.CreateLinkedTokenSource(effectiveToken);
+            if (automatic) connection.CancelAfter(ResponseHeaderTimeoutOverrideForTesting ?? TimeSpan.FromSeconds(10));
+            using HttpResponseMessage response = atomGit ? await SendAtomGitAsync(transportUrl, connection.Token).ConfigureAwait(false)
+                : await GetHttpClient().GetAsync(transportUri, HttpCompletionOption.ResponseHeadersRead, connection.Token).ConfigureAwait(false);
+            connection.CancelAfter(Timeout.InfiniteTimeSpan);
             response.EnsureSuccessStatusCode();
             if (response.Content.Headers.ContentLength is long length && length > MaxPackageSize)
                 throw new InvalidDataException("插件包超过 100 MiB 安全上限。");

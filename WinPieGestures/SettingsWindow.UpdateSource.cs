@@ -14,7 +14,7 @@ public partial class SettingsWindow
     private int _updateDownloadRevision;
 
     private string CurrentUpdateReleaseSource => UpdateManager.NormalizeReleaseSource(ConfigManager.CurrentConfig?.UpdateReleaseSource);
-    private string UpdateSourceDisplayName => I18n.T(CurrentUpdateReleaseSource == "atomgit" ? "UpdateSourceAtomGit" : "UpdateSourceGitHub");
+    private string UpdateSourceDisplayName => I18n.T(CurrentUpdateReleaseSource switch { "atomgit" => "UpdateSourceAtomGit", "auto" => "SourceAuto", _ => "UpdateSourceGitHub" });
     private bool CanApplyUpdateDownload(int revision) => revision == _updateDownloadRevision &&
         !_resourcesReleased && !App.IsExiting;
 
@@ -25,6 +25,8 @@ public partial class SettingsWindow
         UpdateSourceDescText.Text = I18n.T("UpdateSourceDesc");
         UpdateSourceGitHubItem.Content = I18n.T("UpdateSourceGitHub");
         UpdateSourceAtomGitItem.Content = I18n.T("UpdateSourceAtomGit");
+        UpdateSourceAutoItem.Content = I18n.T("SourceAuto");
+        ProbeUpdateSourcesButton.Content = I18n.T("SourceProbeButton");
         RefreshUpdateReleaseSourceUi();
     }
 
@@ -33,7 +35,7 @@ public partial class SettingsWindow
         if (UpdateSourceComboBox == null) return;
         if (_updateSourceState.SelectSource(CurrentUpdateReleaseSource)) InvalidateUpdateSourceResults();
         SetComboBoxSelectedValue(UpdateSourceComboBox, CurrentUpdateReleaseSource);
-        if (UpdateProxyComboBox != null) UpdateProxyComboBox.IsEnabled = CurrentUpdateReleaseSource == "github";
+        if (UpdateProxyComboBox != null) UpdateProxyComboBox.IsEnabled = CurrentUpdateReleaseSource != "atomgit";
         if (UpdateProxyDescText != null) UpdateProxyDescText.Text = I18n.T(CurrentUpdateReleaseSource == "atomgit" ? "UpdateSourceProxyUnused" : "UpdateProxyDesc");
         if (ViewReleasesWebBtn != null) ViewReleasesWebBtn.ToolTip = I18n.TF("UpdateSourceWebHint", UpdateSourceDisplayName);
     }
@@ -51,6 +53,8 @@ public partial class SettingsWindow
 
     private void InvalidateUpdateSourceResults()
     {
+        _updateProbeCts?.Cancel();
+        if (UpdateSourceProbeResult != null) UpdateSourceProbeResult.Text = "";
         _updateCheckRevision++;
         _updateDownloadRevision++;
         _updateCheckCts?.Cancel();
