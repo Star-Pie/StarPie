@@ -1,10 +1,6 @@
 <div align="center">
 
-<img src="assets/readme-banner.png" width="100%" alt="Star-Pie/StarPie 齿轮横幅" />
-
-<!-- github-stats:start -->
-GitHub 统计快照 (2026-11-20 UTC) · [Stars 1397](https://github.com/Star-Pie/StarPie/stargazers) · [Forks 48](https://github.com/Star-Pie/StarPie/forks) · [开放议题 18](https://github.com/Star-Pie/StarPie/issues) · [开放 PR 0](https://github.com/Star-Pie/StarPie/pulls)
-<!-- github-stats:end -->
+<img src="assets/readme-banner.svg" width="100%" alt="Star-Pie/StarPie 黑色齿轮横幅，内含 GitHub Stars、Forks、开放议题和开放 PR 四项统计" />
 
 # StarPie (星盘)
 
