@@ -9,6 +9,10 @@ internal sealed class OfficialPluginListItem
     public string DisplayName => Module.Name;
     public string VersionText => string.IsNullOrWhiteSpace(Module.Version) ? "" : $"v{Module.Version}";
     public string SummaryText => !string.IsNullOrWhiteSpace(Module.Description) ? Module.Description : Module.Id;
+    public string CardDescription => SummaryText;
+    public string SourceText => I18n.T("PluginsDetailSourceOfficial");
+    public string IconGlyph => PluginCardPresentation.Glyph(Module.Id);
+    public IReadOnlyList<string> Categories { get; }
     public string StateText { get; }
     public string InstallButtonText { get; }
     public string DetailsText => I18n.T("PluginsDetailButton");
@@ -22,6 +26,8 @@ internal sealed class OfficialPluginListItem
     {
         OfficialPluginSelection selection = OfficialPluginVersionSelector.Select(entry, environment);
         Module = selection.Display ?? new OfficialPluginModule { Id = entry.Id, Name = entry.Id };
+        Categories = (Module.Features ?? []).Where(f => !string.IsNullOrWhiteSpace(f?.Category))
+            .Select(f => f.Category.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         IsInstalled = !string.IsNullOrWhiteSpace(installedVersion);
         if (selection.Compatible == null)
         {

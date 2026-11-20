@@ -75,6 +75,11 @@ internal static class Program
         var window = (SettingsWindow)RuntimeHelpers.GetUninitializedObject(typeof(SettingsWindow));
         var status = new TextBlock();
         var button = new Button();
+        // The fake transport serves the direct GitHub feed and catalog.
+        var channel = new ComboBox();
+        channel.Items.Add(new ComboBoxItem { Tag = OfficialPluginDownloadOptions.ChannelDirect });
+        channel.SelectedIndex = 0;
+        Set(window, "PluginDownloadChannelComboBox", channel);
         Set(window, "OfficialPluginsStatusText", status);
         Set(window, "RefreshOfficialPluginsButton", button);
         var oldCatalog = new OfficialPluginCatalog { SchemaVersion = 2, CatalogVersion = "old", ReleaseTag = "test" };

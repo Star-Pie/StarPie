@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
@@ -7254,6 +7254,7 @@ public partial class SettingsWindow : Window
 	private void FocusOpenPluginPageBtn_Click(object sender, RoutedEventArgs e)
 	{
 		SwitchToTab(5);
+		InstalledTabButton.IsChecked = true;
 	}
 
 	private async void FocusReloadPluginBtn_Click(object sender, RoutedEventArgs e)
@@ -7434,36 +7435,13 @@ public partial class SettingsWindow : Window
 		}
 	}
 
-	private static void ResizeOfficialPluginList(System.Windows.Controls.ScrollViewer list, double delta)
-	{
-		list.MaxHeight = Math.Clamp(list.MaxHeight + delta, 160, 800);
-	}
-
-	private void OfficialPluginsResizeThumb_DragDelta(object sender, DragDeltaEventArgs e)
-	{
-		ResizeOfficialPluginList(OfficialPluginsScrollViewer, e.VerticalChange);
-		e.Handled = true;
-	}
-
-	private void OfficialPluginsResizeThumb_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-	{
-		double delta = e.Key switch
-		{
-			Key.Up => -20,
-			Key.Down => 20,
-			_ => 0,
-		};
-		if (delta == 0) return;
-		ResizeOfficialPluginList(OfficialPluginsScrollViewer, delta);
-		e.Handled = true;
-	}
-
 	private void RenderOfficialPluginItems()
 	{
-		if (OfficialPluginItemsControl == null || _officialPluginCatalog == null) return;
+		if (OfficialPluginItemsControl == null) return;
 		var installed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		foreach (PluginInstance instance in PluginHost.ListInstances()) installed[instance.PluginId] = instance.Entry.Version;
-		OfficialPluginItemsControl.ItemsSource = _officialPluginCatalog.Modules.Select(module => new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null)).OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList();
+		_marketCards = (_officialPluginCatalog?.Modules ?? []).Select(module => new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null)).OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList();
+		RenderPluginLibraryFilters();
 	}
 
 	private void OpenOfficialPluginDetailsButton_Click(object sender, RoutedEventArgs e)
@@ -7522,7 +7500,6 @@ public partial class SettingsWindow : Window
 			{
 				button.IsEnabled = true;
 				RefreshPluginManagerUi();
-				RenderOfficialPluginItems();
 			}
 		}
 	}
@@ -7570,12 +7547,7 @@ public partial class SettingsWindow : Window
 			AppLogger.LogWarn($"[plugin] 读取插件列表失败：{ex.Message}");
 		}
 
-		PluginListBox.ItemsSource = items;
-
-		if (PluginsEmptyStatePanel != null)
-		{
-			PluginsEmptyStatePanel.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-		}
+		_installedCards = items;
 
 		if (PluginSystemEnabledCheckBox != null)
 		{
@@ -7592,10 +7564,7 @@ public partial class SettingsWindow : Window
 		if (PluginsStatusSummaryText != null)
 		{
 			int enabledCount = items.Count(i => i.IsEnabled);
-			string directoryHint = I18n.TF("PluginsDataDirectoryHint", PluginPaths.Root);
-			PluginsStatusSummaryText.Text = items.Count == 0
-				? I18n.TF("PluginsStatusEmpty", directoryHint)
-				: I18n.TF("PluginsStatusSummary", items.Count, enabledCount, directoryHint);
+			PluginsStatusSummaryText.Text = I18n.TF("PluginLibraryCounts", items.Count, enabledCount);
 		}
 
 		if (PluginsSafeModeText != null)
@@ -7638,19 +7607,13 @@ public partial class SettingsWindow : Window
 		}
 		if (PluginsPageSubheader != null)
 		{
-			PluginsPageSubheader.Text = I18n.T("PluginsPageSubheader");
+			PluginsPageSubheader.Text = I18n.T("PluginLibraryIntro");
 		}
 		if (InstallPluginButton != null)
 		{
 			InstallPluginButton.Content = I18n.T("PluginsInstallButton");
 		}
 		if (PluginsOfflineGuideText != null) PluginsOfflineGuideText.Text = I18n.T("PluginsOfflineGuide");
-		if (OfficialPluginsResizeThumb != null)
-		{
-			string resizeHint = I18n.T("PluginsOfficialResizeHint");
-			OfficialPluginsResizeThumb.ToolTip = resizeHint;
-			System.Windows.Automation.AutomationProperties.SetName(OfficialPluginsResizeThumb, resizeHint);
-		}
 		LocalizePluginDownloadChannels();
 		if (RescanPluginsButton != null)
 		{
@@ -7680,10 +7643,6 @@ public partial class SettingsWindow : Window
 
 		// 官方在线目录那一块。进度行是状态推导出来的（三种状态各一句），
 		// 所以这里不能只设一个固定文案 —— 得让状态机自己重渲染一次。
-		if (OfficialPluginsHeaderText != null)
-		{
-			OfficialPluginsHeaderText.Text = I18n.T("PluginsOfficialHeader");
-		}
 		if (RefreshOfficialPluginsButton != null)
 		{
 			RefreshOfficialPluginsButton.Content = I18n.T("PluginsOfficialRefreshButton");
@@ -7763,40 +7722,6 @@ public partial class SettingsWindow : Window
 		}
 
 		if (!App.IsExiting) RefreshPluginManagerUi();
-	}
-
-	private void PluginListContainer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-	{
-		if (e.Handled) return;
-		if (PluginsSettingsGrid == null) return;
-
-		double lines = SystemParameters.WheelScrollLines;
-		if (lines <= 0) lines = 3;
-		double scrollAmount = (e.Delta / 120.0) * (lines * 16.0);
-		PluginsSettingsGrid.ScrollToVerticalOffset(PluginsSettingsGrid.VerticalOffset - scrollAmount);
-		e.Handled = true;
-	}
-
-	private void NestedScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
-	{
-		if (e.Handled) return;
-		if (sender is not System.Windows.Controls.ScrollViewer scroller) return;
-
-		bool scrollingUp = e.Delta > 0;
-		bool canScrollUp = scroller.VerticalOffset > 0.0001;
-		bool canScrollDown = scroller.VerticalOffset < (scroller.ScrollableHeight - 0.0001);
-
-		if ((scrollingUp && !canScrollUp) || (!scrollingUp && !canScrollDown))
-		{
-			if (PluginsSettingsGrid != null)
-			{
-				double lines = SystemParameters.WheelScrollLines;
-				if (lines <= 0) lines = 3;
-				double scrollAmount = (e.Delta / 120.0) * (lines * 16.0);
-				PluginsSettingsGrid.ScrollToVerticalOffset(PluginsSettingsGrid.VerticalOffset - scrollAmount);
-				e.Handled = true;
-			}
-		}
 	}
 
 	private bool EnsurePluginSystemReady()
@@ -7991,13 +7916,13 @@ public partial class SettingsWindow : Window
 	/// </summary>
 	private void PluginRowPreloadCheckBox_Click(object sender, RoutedEventArgs e)
 	{
-		if (sender is not System.Windows.Controls.CheckBox { Tag: string pluginId } box ||
+		if (sender is not System.Windows.Controls.MenuItem { Tag: string pluginId } item ||
 			string.IsNullOrWhiteSpace(pluginId))
 		{
 			return;
 		}
 
-		bool desired = box.IsChecked == true;
+		bool desired = item.IsChecked;
 		PluginHost.SetPreload(pluginId, desired);
 		if (desired && !PluginHost.PreloadNow(pluginId, out string preloadError))
 		{
@@ -8114,7 +8039,7 @@ public partial class SettingsWindow : Window
 	private void PluginRowSettingsButton_Click(object sender, RoutedEventArgs e)
 	{
 		// 与另外两个按钮一样从 Tag 取插件 ID：ItemTemplate 里的控件拿不到 Name。
-		if (sender is not System.Windows.Controls.Button { Tag: string pluginId } ||
+		if (sender is not FrameworkElement { Tag: string pluginId } ||
 			string.IsNullOrWhiteSpace(pluginId))
 		{
 			return;
@@ -8137,7 +8062,7 @@ public partial class SettingsWindow : Window
 
 	private async void UninstallPluginButton_Click(object sender, RoutedEventArgs e)
 	{
-		if (sender is not System.Windows.Controls.Button { Tag: string pluginId } button ||
+		if (sender is not FrameworkElement { Tag: string pluginId } button ||
 			string.IsNullOrWhiteSpace(pluginId))
 		{
 			return;
