@@ -537,7 +537,7 @@
       </Style>
     </ResourceDictionary>
   </FrameworkElement.Resources>
-  <Grid>
+  <Grid Name="RootScaleGrid">
     <Grid.LayoutTransform>
       <ScaleTransform x:Name="RootUiScaleTransform" ScaleX="1" ScaleY="1" />
     </Grid.LayoutTransform>
@@ -2518,7 +2518,7 @@
                   </Border>
                 </StackPanel>
                 <Border Grid.Row="1" Background="{DynamicResource PreviewCanvasBackgroundBrush}" BorderBrush="{DynamicResource PreviewCanvasBorderBrush}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" Margin="0,4,0,10">
-                  <Grid Name="PreviewViewportContainer" ClipToBounds="True" Background="Transparent" MouseWheel="PreviewViewport_MouseWheel" MouseDown="PreviewViewport_MouseDown" MouseMove="PreviewViewport_MouseMove" MouseUp="PreviewViewport_MouseUp">
+                  <Grid Name="PreviewViewportContainer" ClipToBounds="True" Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" MouseWheel="PreviewViewport_MouseWheel" MouseDown="PreviewViewport_MouseDown" MouseMove="PreviewViewport_MouseMove" MouseUp="PreviewViewport_MouseUp">
                     <Path Stroke="{DynamicResource PreviewGridLineBrush}" StrokeThickness="0.5" Data="M0,150 L300,150 M150,0 L150,300" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
                     
                     <!-- 画布实时预览：层级提示徽标 -->
@@ -2532,7 +2532,16 @@
                       </StackPanel>
                     </Border>
 
-                    <Canvas Name="LiveWheelPreviewCanvas" Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center" MouseMove="LiveWheelPreviewCanvas_MouseMove" MouseLeave="LiveWheelPreviewCanvas_MouseLeave">
+                    <Canvas Name="LiveWheelPreviewCanvas" Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center" UseLayoutRounding="False" SnapsToDevicePixels="False" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" MouseMove="LiveWheelPreviewCanvas_MouseMove" MouseLeave="LiveWheelPreviewCanvas_MouseLeave">
+                      <Canvas.Resources>
+                        <Style TargetType="{x:Type TextBlock}">
+                          <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
+                          <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
+                          <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled" />
+                          <Setter Property="FrameworkElement.UseLayoutRounding" Value="False" />
+                          <Setter Property="UIElement.SnapsToDevicePixels" Value="False" />
+                        </Style>
+                      </Canvas.Resources>
                       <Canvas.RenderTransform>
                         <TransformGroup>
                           <ScaleTransform x:Name="PreviewScaleTransform" ScaleX="1.0" ScaleY="1.0" CenterX="150" CenterY="150" />
@@ -3556,9 +3565,18 @@
                 <!-- 画布视口容器 (支持平移、缩放与扇区/中心圆拖拽交互) -->
                 <Border Grid.Row="1" Background="{DynamicResource PreviewCanvasBackgroundBrush}" BorderBrush="{DynamicResource PreviewCanvasBorderBrush}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" Margin="0,2,0,8">
                   <Grid>
-                    <Grid Name="MappingsPreviewViewportContainer" ClipToBounds="True" Background="Transparent" MouseWheel="MappingsPreviewViewport_MouseWheel" PreviewMouseDown="MappingsPreviewViewport_MouseDown" PreviewMouseMove="MappingsPreviewViewport_MouseMove" PreviewMouseUp="MappingsPreviewViewport_MouseUp">
+                    <Grid Name="MappingsPreviewViewportContainer" ClipToBounds="True" Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" MouseWheel="MappingsPreviewViewport_MouseWheel" PreviewMouseDown="MappingsPreviewViewport_MouseDown" PreviewMouseMove="MappingsPreviewViewport_MouseMove" PreviewMouseUp="MappingsPreviewViewport_MouseUp">
                       <Path Stroke="{DynamicResource PreviewGridLineBrush}" StrokeThickness="0.5" Data="M0,150 L300,150 M150,0 L150,300" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
-                      <Canvas Name="MappingsWheelPreviewCanvas" Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center">
+                      <Canvas Name="MappingsWheelPreviewCanvas" Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center" UseLayoutRounding="False" SnapsToDevicePixels="False" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality">
+                        <Canvas.Resources>
+                          <Style TargetType="{x:Type TextBlock}">
+                            <Setter Property="TextOptions.TextFormattingMode" Value="Ideal" />
+                            <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
+                            <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled" />
+                            <Setter Property="FrameworkElement.UseLayoutRounding" Value="False" />
+                            <Setter Property="UIElement.SnapsToDevicePixels" Value="False" />
+                          </Style>
+                        </Canvas.Resources>
                         <Canvas.RenderTransform>
                           <TransformGroup>
                             <ScaleTransform x:Name="MappingsPreviewScaleTransform" ScaleX="1.0" ScaleY="1.0" CenterX="150" CenterY="150" />

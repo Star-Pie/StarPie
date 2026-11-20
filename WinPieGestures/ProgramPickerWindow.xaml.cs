@@ -803,7 +803,7 @@ public partial class ProgramPickerWindow : Window
 			string queryTrimmed = text.Trim();
 			if (!string.IsNullOrEmpty(queryTrimmed) && queryTrimmed.Length >= 2)
 			{
-				var nativeItems = await NativeSearchEngine.SearchAsync(queryTrimmed, "App", 50, cts.Token);
+				var nativeItems = await ProgramPickerCatalog.SearchAsync(queryTrimmed, cts.Token);
 				if (cts.Token.IsCancellationRequested) return;
 
 				var existingPaths = new HashSet<string>(list.Select(m => m.Path), StringComparer.OrdinalIgnoreCase);

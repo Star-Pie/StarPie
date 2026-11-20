@@ -18,12 +18,13 @@ public partial class GestureController
     private long _pendingPinnedHoverVersion = -1;
     internal Func<Point, (bool Hit, int Sector, int SubSector)>? TestPinnedHitTest { get; set; }
 
-    private bool TryHitPinnedPoint(Point point, out int sector, out int subSector)
+    private bool TryHitPinnedPoint(Point point, out int sector, out int subSector, bool ignoreWindowScale = false)
     {
         var testHit = TestPinnedHitTest?.Invoke(point);
         sector = testHit?.Sector ?? -1;
         subSector = testHit?.SubSector ?? -1;
-        return testHit?.Hit ?? (_radialWindow != null && _radialWindow.TryHitPinnedWheel(point, out sector, out subSector));
+        return testHit?.Hit ?? (_radialWindow is { IsVisible: true, MainGrid.IsVisible: true } rw
+            && rw.TryHitPinnedWheel(point, out sector, out subSector, ignoreWindowScale));
     }
 
     private void QueuePinnedHover(Point point)
@@ -64,15 +65,15 @@ public partial class GestureController
         }
     }
 
-    private void ApplyPinnedHoverAtPresentation(long version)
+    private void ApplyPinnedHoverAtPresentation(long version, bool ignoreWindowScale = false)
     {
         Point latest;
         lock (_uiUpdateSync)
             latest = _pinnedPointerVersion == version ? _pendingPinnedHoverPoint : _lastMovePoint;
-        ApplyPinnedHover(latest, version);
+        ApplyPinnedHover(latest, version, ignoreWindowScale);
         lock (_uiUpdateSync)
             if (_isGestureActive && _pinState.Presented && _gestureVersion == version)
-                _interactionSession?.Update(_selectedSectorIndex, _selectedSubSectorIndex, _lastShowSubTier, _lastEscapedState);
+                _interactionSession?.Update(_selectedSectorIndex, _selectedSubSectorIndex, _lastShowSubTier, _lastEscapedState, preservePrimaryTarget: true);
     }
 
     private void RefreshHoverAfterUiChange(Point fallback, long version)
@@ -82,17 +83,34 @@ public partial class GestureController
         else ProcessMove(fallback);
     }
 
-    private void ApplyPinnedHover(Point point, long version)
+    private void SwitchRadialLayerOnUi(RadialWindow rw, int nextIdx, long version)
+    {
+        Point pt;
+        lock (_uiUpdateSync)
+        {
+            if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow)) return;
+            _pinExpandedParent = -1;
+            pt = (_lastMovePoint != default) ? _lastMovePoint : _startPoint;
+        }
+        rw.SwitchToLayer(nextIdx);
+        if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu) _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
+        if (_isGestureActive && IsCurrentGesture(version) && pt != default)
+        {
+            RefreshHoverAfterUiChange(pt, version);
+        }
+    }
+
+    private void ApplyPinnedHover(Point point, long version, bool ignoreWindowScale = false)
     {
         if (Application.Current?.Dispatcher.CheckAccess() != true) return;
         lock (_uiUpdateSync)
             if (!_isGestureActive || !_pinState.Presented || _gestureVersion != version) return;
-        bool hit = TryHitPinnedPoint(point, out int sector, out int subSector);
+        bool hit = TryHitPinnedPoint(point, out int sector, out int subSector, ignoreWindowScale);
         lock (_uiUpdateSync)
         {
             if (!_isGestureActive || !_pinState.Presented || _gestureVersion != version) return;
             bool expanded = _lastShowSubTier;
-            if (hit)
+            if (hit && sector >= 0)
             {
                 if (_pinExpandedParent != sector) _pinExpandedParent = -1;
                 Point center = _radialWindow?.ActualPhysicalCenter ?? _startPoint;
@@ -100,12 +118,12 @@ public partial class GestureController
                 double dy = (point.Y - center.Y) / (_currentDpiScaleY > 0 ? _currentDpiScaleY : 1);
                 double threshold = ConfigManager.CurrentConfig.SubWheelTriggerDistance > 20
                     ? ConfigManager.CurrentConfig.SubWheelTriggerDistance : 95;
-                expanded = sector >= 0 && ConfigManager.CurrentConfig.EnableMultiTier &&
+                expanded = ConfigManager.CurrentConfig.EnableMultiTier &&
                     (_activeProfile?.GetEffectiveAction(sector)?.SubActions?.Count ?? 0) > 0 &&
                     (subSector >= 0 || _pinExpandedParent == sector || Math.Sqrt(dx * dx + dy * dy) >= threshold);
                 if (expanded) _pinExpandedParent = sector;
             }
-            // -1 is the core; -2 is no target. Keeping expanded suppresses false collapse feedback.
+            // -1 is the core; -2 is no target. Keeping expanded over core/outside suppresses false collapse feedback.
             QueueHighlightUpdate(hit ? sector : -2, hit ? subSector : -1, false, expanded, version);
         }
     }
@@ -228,6 +246,8 @@ public partial class GestureController
 
     private bool DrainPinnedKey(uint key, bool down) => down ? _pinState.OwnsKeyUp(key) : _pinState.ConsumeKeyUp(key);
 
+    private static bool IsExecutablePinnedAction(ActionItem? action) => WinPieGestures.Plugins.PluginInteractionSession.IsExecutableAction(action);
+
     private void ConfirmPinnedSelection(Point point, long version)
     {
         if (!_pinState.Presented || !IsCurrentGesture(version)) return;
@@ -252,9 +272,7 @@ public partial class GestureController
             _selectedSectorIndex = hitSector;
             _selectedSubSectorIndex = hitSubSector;
             bool hasAction = TryResolveReleasedAction(_activeProfile, CaptureReleaseLayer(_activeProfile), _selectedSectorIndex,
-                _selectedSubSectorIndex, false, false, out var action) && action != null &&
-                !string.Equals(action.Type, "None", StringComparison.OrdinalIgnoreCase) &&
-                !(action.Type == "Hotkey" && string.IsNullOrWhiteSpace(action.Parameter));
+                _selectedSubSectorIndex, false, false, out var action) && IsExecutablePinnedAction(action);
             if (!hasAction)
             {
                 // A configured primary action remains clickable when it also owns child actions.

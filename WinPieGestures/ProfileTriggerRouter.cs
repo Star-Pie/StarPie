@@ -255,6 +255,7 @@ internal static class ProfileTriggerRouter
 
 	internal static ProfileTriggerValidationError ValidateLayerRemoval(AppConfig config, WheelProfile profile, WheelLayer layer)
 	{
+		if (config == null || profile == null || layer == null || profile.Layers == null) return ProfileTriggerValidationError.InvalidTrigger;
 		int index = profile.Layers.IndexOf(layer);
 		if (index < 0 || profile.Layers.Count <= 1) return ProfileTriggerValidationError.InvalidTrigger;
 		WheelProfile proposed = profile.Clone(profile.ProcessName);
@@ -262,7 +263,7 @@ internal static class ProfileTriggerRouter
 		var proposedConfig = new AppConfig {
 			Trigger = config.Trigger,
 			BlacklistTriggerOverrides = config.BlacklistTriggerOverrides,
-			Profiles = config.Profiles.Select(p => ReferenceEquals(p, profile) ? proposed : p).ToList()
+			Profiles = (config.Profiles ?? new List<WheelProfile>()).Select(p => ReferenceEquals(p, profile) ? proposed : p).ToList()
 		};
 		return ValidateBindings(proposedConfig, proposed);
 	}

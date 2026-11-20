@@ -26,6 +26,7 @@ internal static class Program
             Routing();
             ValidationAndCompatibility();
             InputStateWithoutNativeActions();
+            DeletedLayerTriggerRouting();
             _checks += LayerTriggerTests.Run();
             if (args.Length != 0) UiStructure(args[0]);
             Console.WriteLine($"PASS {_checks} checks; no GUI, hooks, plugin actions or input injection.");
@@ -221,6 +222,64 @@ internal static class Program
             && (string?)activation.Attribute("Grid.Column") == "1", "trigger toolbar shares identification row in the right column");
         Check(activation.Ancestors().All(e => (string?)e.Attribute("Name") != "MappingsCanvasModeGrid" && (string?)e.Attribute("Name") != "MappingsListModeGrid"), "entry not stranded in one view");
         Check((string?)identification.Attribute("HorizontalAlignment") == "Left", "accepted compact identification layout retained");
+    }
+
+    private static void DeletedLayerTriggerRouting()
+    {
+        var global = Profile("Global", "", null);
+        global.Layers = new()
+        {
+            new WheelLayer { Name = "G0", ActivationTrigger = Mouse("XButton1") },
+            new WheelLayer { Name = "G1", ActivationTrigger = Key(114, ModifierKeys.Alt) },
+            new WheelLayer { Name = "G2" }
+        };
+        global.EnsureLayers();
+
+        var cad = Profile("CAD", "cad.exe", Mouse("XButton1"));
+        var l0 = new WheelLayer { Name = "L0", ActivationTrigger = Mouse("MiddleButton") };
+        var l1 = new WheelLayer { Name = "L1", ActivationTrigger = Key(112, ModifierKeys.Control) };
+        var l2 = new WheelLayer { Name = "L2", ActivationTrigger = Mouse("XButton2") };
+        cad.Layers = new() { l0, l1, l2 };
+        cad.EnsureLayers();
+
+        var config = Config(global, cad);
+        Publish(config);
+        Check(ResolveMouse("cad.exe", "MiddleButton")?.Layer == l0, "deleted-layer suite precheck: layer0 route");
+        Check(ResolveKey("cad.exe", 112, ModifierKeys.Control)?.Layer == l1, "deleted-layer suite precheck: layer1 route");
+        Check(ResolveMouse("cad.exe", "XButton2")?.Layer == l2, "deleted-layer suite precheck: layer2 route");
+
+        Check(cad.RemoveLayer(l1), "RemoveLayer removes layer N");
+        Check(l1.ActivationTrigger == null, "RemoveLayer clears deleted layer N ActivationTrigger");
+        Publish(config);
+        Check(ProfileTriggerRouter.TryResolveKeyboard("cad.exe", 112, ModifierKeys.Control, out _) == ProfileTriggerResolution.None,
+            "deleted layer N route immediately returns None");
+
+        Check(cad.RemoveLayer(l0), "RemoveLayer removes layer 0");
+        Check(l0.ActivationTrigger == null, "RemoveLayer clears deleted layer 0 ActivationTrigger");
+        Check(cad.ActivationTrigger == null, "RemoveLayer clears legacy profile ActivationTrigger when layer 0 removed");
+        Publish(config);
+        Check(ProfileTriggerRouter.TryResolveMouse("cad.exe", "MiddleButton", ModifierKeys.None, out _) == ProfileTriggerResolution.None,
+            "deleted layer 0 explicit route immediately returns None");
+        Check(ProfileTriggerRouter.TryResolveMouse("cad.exe", "XButton1", ModifierKeys.None, out _) == ProfileTriggerResolution.Match
+            && ResolveMouse("cad.exe", "XButton1")?.Profile == global,
+            "deleted cad layer 0 legacy root trigger no longer routes to cad");
+        Check(ResolveMouse("cad.exe", "XButton2")?.Layer == l2, "surviving layer still routes after layer 0 deletion");
+
+        // Deleting Global layer 0 removes its route cleanly too
+        var g0 = global.Layers[0];
+        Check(global.RemoveLayer(g0) && g0.ActivationTrigger == null && global.ActivationTrigger == null,
+            "Global RemoveLayer(0) clears triggers");
+        Publish(config);
+        Check(ProfileTriggerRouter.TryResolveMouse("cad.exe", "XButton1", ModifierKeys.None, out _) == ProfileTriggerResolution.None,
+            "deleted Global layer 0 route returns None");
+
+        // ValidateLayerRemoval catches missing trigger on parallel profile even if legacy root trigger existed on layer 0
+        var parallel = new WheelProfile { ProcessName = "Parallel", UseApplicationContext = false, ActivationTrigger = Mouse("XButton1") };
+        parallel.Layers = new() { new WheelLayer { Name = "P0", ActivationTrigger = Mouse("MiddleButton") }, new WheelLayer { Name = "P1" } };
+        parallel.EnsureLayers();
+        config.Profiles.Add(parallel);
+        Check(ProfileTriggerRouter.ValidateLayerRemoval(config, parallel, parallel.Layers[0]) == ProfileTriggerValidationError.MissingTrigger,
+            "ValidateLayerRemoval rejects removing only triggered layer of parallel profile");
     }
 
     private static TriggerConfig Mouse(string button, ModifierKeys mods = ModifierKeys.None) => Trigger("Mouse", button, 0, mods);

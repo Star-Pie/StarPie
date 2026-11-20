@@ -19,9 +19,19 @@ public enum AutoStartChangeStatus
     Success, Failed, Cancelled, TimedOut, VerificationFailed, NotEnabled, Suppressed
 }
 
-public sealed record AutoStartState(bool RegistryEnabled, bool AdminTaskEnabled, bool IsKnown)
+public sealed record AutoStartState(
+    bool RegistryEnabled,
+    bool AdminTaskEnabled,
+    bool IsKnown,
+    bool RegistryMatchesCurrent = false,
+    bool AdminTaskMatchesCurrent = false,
+    bool HasLegacyRunAlias = false)
 {
     public bool IsEnabled => RegistryEnabled || AdminTaskEnabled;
+    public bool NeedsRepair => IsKnown && IsEnabled && (
+        HasLegacyRunAlias ||
+        (AdminTaskEnabled && (!AdminTaskMatchesCurrent || !RegistryMatchesCurrent)) ||
+        (!AdminTaskEnabled && RegistryEnabled && !RegistryMatchesCurrent));
 }
 
 public sealed record AutoStartChangeResult(AutoStartChangeStatus Status, AutoStartState State, int? ErrorCode = null)
@@ -43,12 +53,53 @@ internal interface IAutoStartSystem
     Task<AutoStartCommandResult> DeleteTaskAsync(CancellationToken cancellationToken);
 }
 
-internal sealed class AutoStartRegistration(IAutoStartSystem system, string executablePath, string userSid)
+internal sealed class AutoStartRegistration(
+    IAutoStartSystem system,
+    string executablePath,
+    string userSid,
+    Func<string, string?>? accountSidResolver = null)
 {
     internal const string TaskName = "StarPie_AdminAutoStart";
     internal const string Arguments = "--autostart --minimized";
     private static readonly string[] RunNames = ["StarPie", "WinPieGestures"];
     private readonly SemaphoreSlim _changes = new(1, 1);
+
+    private static string ExpectedRunCommand(string executablePath) => $"\"{executablePath}\" {Arguments}";
+
+    internal static bool MatchesRegistry(IReadOnlyDictionary<string, string> values, string executablePath) =>
+        values.TryGetValue(RunNames[0], out var actual) &&
+        string.Equals(actual, ExpectedRunCommand(executablePath), StringComparison.OrdinalIgnoreCase) &&
+        !values.ContainsKey(RunNames[1]);
+
+    private static string? ResolveAccountSid(string accountName)
+    {
+        try
+        {
+            return new NTAccount(accountName).Translate(typeof(SecurityIdentifier)).Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool MatchesUserId(
+        XElement parent,
+        XNamespace ns,
+        string userSid,
+        Func<string, string?>? accountSidResolver)
+    {
+        string? actual = parent.Element(ns + "UserId")?.Value;
+        if (string.IsNullOrWhiteSpace(actual)) { return false; }
+        if (string.Equals(actual, userSid, StringComparison.OrdinalIgnoreCase)) { return true; }
+        if (!actual.StartsWith("S-1-", StringComparison.OrdinalIgnoreCase))
+        {
+            string? resolved = (accountSidResolver ?? ResolveAccountSid)(actual);
+            return !string.IsNullOrWhiteSpace(resolved) &&
+                string.Equals(resolved, userSid, StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
+    }
 
     internal static string BuildTaskXml(string executablePath, string userSid)
     {
@@ -75,7 +126,11 @@ internal sealed class AutoStartRegistration(IAutoStartSystem system, string exec
             .ToString();
     }
 
-    internal static bool MatchesTask(string? xml, string executablePath, string userSid)
+    internal static bool MatchesTask(
+        string? xml,
+        string executablePath,
+        string userSid,
+        Func<string, string?>? accountSidResolver = null)
     {
         try
         {
@@ -90,15 +145,32 @@ internal sealed class AutoStartRegistration(IAutoStartSystem system, string exec
             var trigger = triggers[0];
             var principal = principals[0];
             var action = actions[0];
-            bool Is(XElement parent, string name, string value) => string.Equals(parent.Element(ns + name)?.Value, value, StringComparison.OrdinalIgnoreCase);
-            return trigger.Name == ns + "LogonTrigger" && Is(trigger, "UserId", userSid) && Is(trigger, "Enabled", "true") &&
-                (trigger.Element(ns + "Delay") == null || Is(trigger, "Delay", "PT0S")) &&
-                Is(principal, "UserId", userSid) && Is(principal, "LogonType", "InteractiveToken") && Is(principal, "RunLevel", "HighestAvailable") &&
-                action.Name == ns + "Exec" && Is(action, "Command", executablePath) && Is(action, "Arguments", Arguments) &&
+            bool Is(XElement parent, string name, string value) =>
+                string.Equals(parent.Element(ns + name)?.Value, value, StringComparison.OrdinalIgnoreCase);
+            // Task Scheduler omits elements equal to XSD defaults when exporting via schtasks /xml.
+            bool IsOrOmitted(XElement parent, string name, string defaultValue)
+            {
+                var element = parent.Element(ns + name);
+                return element == null || string.Equals(element.Value, defaultValue, StringComparison.OrdinalIgnoreCase);
+            }
+            return trigger.Name == ns + "LogonTrigger" &&
+                MatchesUserId(trigger, ns, userSid, accountSidResolver) &&
+                IsOrOmitted(trigger, "Enabled", "true") &&
+                IsOrOmitted(trigger, "Delay", "PT0S") &&
+                MatchesUserId(principal, ns, userSid, accountSidResolver) &&
+                Is(principal, "LogonType", "InteractiveToken") &&
+                Is(principal, "RunLevel", "HighestAvailable") &&
+                action.Name == ns + "Exec" &&
+                Is(action, "Command", executablePath) &&
+                Is(action, "Arguments", Arguments) &&
                 Is(action, "WorkingDirectory", Path.GetDirectoryName(executablePath) ?? string.Empty) &&
-                Is(settings, "MultipleInstancesPolicy", "IgnoreNew") && Is(settings, "DisallowStartIfOnBatteries", "false") &&
-                Is(settings, "StopIfGoingOnBatteries", "false") && Is(settings, "RunOnlyIfNetworkAvailable", "false") &&
-                Is(settings, "RunOnlyIfIdle", "false") && Is(settings, "Enabled", "true") && Is(settings, "ExecutionTimeLimit", "PT0S");
+                IsOrOmitted(settings, "MultipleInstancesPolicy", "IgnoreNew") &&
+                Is(settings, "DisallowStartIfOnBatteries", "false") &&
+                Is(settings, "StopIfGoingOnBatteries", "false") &&
+                IsOrOmitted(settings, "RunOnlyIfNetworkAvailable", "false") &&
+                IsOrOmitted(settings, "RunOnlyIfIdle", "false") &&
+                IsOrOmitted(settings, "Enabled", "true") &&
+                Is(settings, "ExecutionTimeLimit", "PT0S");
         }
         catch (System.Xml.XmlException) { return false; }
     }
@@ -106,11 +178,15 @@ internal sealed class AutoStartRegistration(IAutoStartSystem system, string exec
     internal async Task<AutoStartState> ReadStateAsync(CancellationToken cancellationToken = default)
     {
         bool registryEnabled = false;
+        bool registryMatchesCurrent = false;
+        bool hasLegacyRunAlias = false;
         bool registryKnown = false;
         try
         {
             var values = system.ReadRunValues();
             registryEnabled = RunNames.Any(values.ContainsKey);
+            registryMatchesCurrent = MatchesRegistry(values, executablePath);
+            hasLegacyRunAlias = values.ContainsKey(RunNames[1]);
             registryKnown = true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { }
@@ -118,13 +194,19 @@ internal sealed class AutoStartRegistration(IAutoStartSystem system, string exec
         {
             var task = await system.QueryTaskAsync(cancellationToken).ConfigureAwait(false);
             bool taskEnabled = task.Exists;
+            bool taskMatchesCurrent = false;
             if (task.Exists && task.Xml != null)
             {
                 XNamespace ns = "http://schemas.microsoft.com/windows/2004/02/mit/task";
                 var enabled = XDocument.Parse(task.Xml).Root?.Element(ns + "Settings")?.Element(ns + "Enabled")?.Value;
                 taskEnabled = !string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase);
+                if (taskEnabled)
+                {
+                    taskMatchesCurrent = MatchesTask(task.Xml, executablePath, userSid, accountSidResolver);
+                }
             }
-            return new AutoStartState(registryEnabled, taskEnabled, registryKnown && task.IsKnown);
+            return new AutoStartState(registryEnabled, taskEnabled, registryKnown && task.IsKnown,
+                registryMatchesCurrent, taskMatchesCurrent, hasLegacyRunAlias);
         }
         catch (Exception ex) when (ex is not OperationCanceledException) { return new(registryEnabled, false, false); }
     }
@@ -148,7 +230,7 @@ internal sealed class AutoStartRegistration(IAutoStartSystem system, string exec
             if (enable)
             {
                 // Retain ordinary HKCU startup as fallback if elevated task registration is denied.
-                system.WriteRunValue(RunNames[0], $"\"{executablePath}\" {Arguments}");
+                system.WriteRunValue(RunNames[0], ExpectedRunCommand(executablePath));
                 system.RemoveRunValue(RunNames[1]);
             }
             else
@@ -172,10 +254,10 @@ internal sealed class AutoStartRegistration(IAutoStartSystem system, string exec
             if (command.Status != AutoStartChangeStatus.Success) { return new(command.Status, state, command.ExitCode); }
             var runValues = system.ReadRunValues();
             bool registryMatches = enable
-                ? runValues.TryGetValue(RunNames[0], out var actual) && actual == $"\"{executablePath}\" {Arguments}" && !runValues.ContainsKey(RunNames[1])
+                ? MatchesRegistry(runValues, executablePath)
                 : RunNames.All(name => !runValues.ContainsKey(name));
             var readback = await system.QueryTaskAsync(CancellationToken.None).ConfigureAwait(false);
-            bool taskMatches = enable && asAdmin ? readback.Exists && MatchesTask(readback.Xml, executablePath, userSid) :
+            bool taskMatches = enable && asAdmin ? readback.Exists && MatchesTask(readback.Xml, executablePath, userSid, accountSidResolver) :
                 repairOnly ? state.AdminTaskEnabled == before.AdminTaskEnabled : !readback.Exists;
             return new(state.IsKnown && registryMatches && readback.IsKnown && taskMatches ? AutoStartChangeStatus.Success : AutoStartChangeStatus.VerificationFailed, state);
         }

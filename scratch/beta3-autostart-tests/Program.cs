@@ -6,7 +6,7 @@ var cases = new List<(string Name, Func<Task> Run)>();
 string executable = Path.Combine(Path.GetTempPath(), "StarPie tests & 中文", "StarPie.exe");
 const string sid = "S-1-5-21-100-200-300-1001";
 void Check(bool condition, string message) { if (!condition) { throw new InvalidOperationException(message); } }
-AutoStartRegistration Service(FakeSystem system) => new(system, executable, sid);
+AutoStartRegistration Service(FakeSystem system, Func<string, string?>? accountResolver = null) => new(system, executable, sid, accountResolver);
 void Test(string name, Func<Task> run) => cases.Add((name, run));
 
 Test("XML preserves escaped path, SID, interactive desktop and battery policy", () =>
@@ -204,6 +204,72 @@ Test("Pending registration remains awaitable until completion", async () =>
     Check(!pending.IsCompleted, "Registration reported success before process completion");
     gate.SetResult();
     Check((await pending).IsSuccess, "Completed registration did not finish");
+});
+
+Test("Readback accepts normalized schtasks export XML while still rejecting battery or limit mutations", () =>
+{
+    var exported = XDocument.Parse(AutoStartRegistration.BuildTaskXml(executable, sid));
+    XNamespace ns = exported.Root!.Name.Namespace;
+    var trigger = exported.Root.Element(ns + "Triggers")!.Element(ns + "LogonTrigger")!;
+    trigger.Element(ns + "UserId")!.Value = @"TESTDOMAIN\TestUser";
+    trigger.Element(ns + "Enabled")?.Remove();
+    var settings = exported.Root.Element(ns + "Settings")!;
+    settings.Element(ns + "Enabled")?.Remove();
+    settings.Element(ns + "RunOnlyIfNetworkAvailable")?.Remove();
+    settings.Element(ns + "RunOnlyIfIdle")?.Remove();
+    settings.Element(ns + "MultipleInstancesPolicy")?.Remove();
+    settings.Add(new XElement(ns + "IdleSettings", new XElement(ns + "StopOnIdleEnd", true), new XElement(ns + "RestartOnIdle", false)));
+    string normalizedXml = exported.ToString();
+    string? Resolve(string name) => string.Equals(name, @"TESTDOMAIN\TestUser", StringComparison.OrdinalIgnoreCase) ? sid : null;
+    Check(AutoStartRegistration.MatchesTask(normalizedXml, executable, sid, Resolve), "Normalized Task Scheduler XML should match");
+    Check(!AutoStartRegistration.MatchesTask(normalizedXml, executable, sid, _ => "S-1-5-21-999"), "Different account SID must be rejected");
+    var noBattery = XDocument.Parse(normalizedXml);
+    noBattery.Root!.Element(ns + "Settings")!.Element(ns + "DisallowStartIfOnBatteries")!.Remove();
+    Check(!AutoStartRegistration.MatchesTask(noBattery.ToString(), executable, sid, Resolve), "Missing DisallowStartIfOnBatteries must be rejected");
+    var stopBattery = XDocument.Parse(normalizedXml);
+    stopBattery.Root!.Element(ns + "Settings")!.Element(ns + "StopIfGoingOnBatteries")!.Value = "true";
+    Check(!AutoStartRegistration.MatchesTask(stopBattery.ToString(), executable, sid, Resolve), "StopIfGoingOnBatteries=true must be rejected");
+    return Task.CompletedTask;
+});
+
+Test("ReadStateAsync detects legacy battery limit, path mismatch, legacy Run alias, and clears NeedsRepair on repair", async () =>
+{
+    var legacyBatteryDoc = XDocument.Parse(AutoStartRegistration.BuildTaskXml(executable, sid));
+    XNamespace ns = legacyBatteryDoc.Root!.Name.Namespace;
+    legacyBatteryDoc.Root.Element(ns + "Settings")!.Element(ns + "DisallowStartIfOnBatteries")!.Value = "true";
+    legacyBatteryDoc.Root.Element(ns + "Settings")!.Element(ns + "StopIfGoingOnBatteries")!.Value = "true";
+    var fakeBattery = new FakeSystem { TaskXml = legacyBatteryDoc.ToString() };
+    fakeBattery.Run["StarPie"] = $"\"{executable}\" --autostart --minimized";
+    var stateBattery = await Service(fakeBattery).ReadStateAsync();
+    Check(stateBattery.AdminTaskEnabled && !stateBattery.AdminTaskMatchesCurrent && stateBattery.NeedsRepair, "Legacy battery task must report NeedsRepair");
+    var repairedBattery = await Service(fakeBattery).ChangeAsync(true, true, repairOnly: true);
+    Check(repairedBattery.IsSuccess && !repairedBattery.State.NeedsRepair && repairedBattery.State.AdminTaskMatchesCurrent, "Repair must fix battery flags and clear NeedsRepair");
+
+    var legacyPathXml = AutoStartRegistration.BuildTaskXml(@"G:\OldDir\StarPie.exe", sid);
+    var fakeOldPath = new FakeSystem { TaskXml = legacyPathXml };
+    fakeOldPath.Run["StarPie"] = $"\"{executable}\" --autostart --minimized";
+    var stateOldPath = await Service(fakeOldPath).ReadStateAsync();
+    Check(stateOldPath.AdminTaskEnabled && !stateOldPath.AdminTaskMatchesCurrent && stateOldPath.NeedsRepair, "Outdated task EXE path must report NeedsRepair");
+    var repairedOldPath = await Service(fakeOldPath).ChangeAsync(true, true, repairOnly: true);
+    Check(repairedOldPath.IsSuccess && !repairedOldPath.State.NeedsRepair && repairedOldPath.State.AdminTaskMatchesCurrent, "Repair must update outdated task EXE path");
+
+    var fakeMissingRun = new FakeSystem { TaskXml = AutoStartRegistration.BuildTaskXml(executable, sid) };
+    var stateMissingRun = await Service(fakeMissingRun).ReadStateAsync();
+    Check(stateMissingRun.AdminTaskMatchesCurrent && !stateMissingRun.RegistryEnabled && stateMissingRun.NeedsRepair, "Missing HKCU fallback under admin task must report NeedsRepair");
+
+    var fakeLegacyRun = new FakeSystem();
+    fakeLegacyRun.Run["WinPieGestures"] = $"\"{executable}\" --autostart --minimized";
+    var stateLegacyRun = await Service(fakeLegacyRun).ReadStateAsync();
+    Check(stateLegacyRun.RegistryEnabled && stateLegacyRun.HasLegacyRunAlias && stateLegacyRun.NeedsRepair, "Legacy WinPieGestures Run key must report NeedsRepair");
+    var repairedRun = await Service(fakeLegacyRun).ChangeAsync(true, false, repairOnly: true);
+    Check(repairedRun.IsSuccess && !repairedRun.State.NeedsRepair && !repairedRun.State.HasLegacyRunAlias && repairedRun.State.RegistryMatchesCurrent, "Repair must replace legacy Run alias");
+
+    var disabledDoc = XDocument.Parse(AutoStartRegistration.BuildTaskXml(executable, sid));
+    disabledDoc.Root!.Element(ns + "Settings")!.Element(ns + "Enabled")!.Value = "false";
+    var fakeDisabledTaskCurrentRun = new FakeSystem { TaskXml = disabledDoc.ToString() };
+    fakeDisabledTaskCurrentRun.Run["StarPie"] = $"\"{executable}\" --autostart --minimized";
+    var stateDisabledTask = await Service(fakeDisabledTaskCurrentRun).ReadStateAsync();
+    Check(!stateDisabledTask.AdminTaskEnabled && stateDisabledTask.RegistryEnabled && !stateDisabledTask.NeedsRepair, "Deliberately disabled admin task with current Run must not request repair");
 });
 
 int failures = 0;

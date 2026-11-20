@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Security.Cryptography;
@@ -229,6 +230,82 @@ internal static class Program
                 Call(controller, "ProcessMove", new Point(10000, 0)); Pump();
                 Check((bool)Field(controller, "_lastShowSubTier") && (int)Field(controller, "_pinExpandedParent") == 0,
                     "leaving geometry clears feedback without collapsing expanded submenu");
+
+                // Verify live GestureController pinned cross-tier hover sequences (expand -> sub -> core/empty -> sub, sub -> parent, parent A -> parent B).
+                profile.Layers[0].Actions[0].SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+V" } };
+                profile.Layers[0].Actions[1].SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+X" } };
+                double expandDist = Math.Max(25, ConfigManager.CurrentConfig.SubWheelTriggerDistance);
+                Activate(1500);
+                Set(controller, "_selectedSectorIndex", -2);
+                Set(controller, "_selectedSubSectorIndex", -1);
+                Set(controller, "_lastShowSubTier", false);
+                Set(controller, "_pinExpandedParent", -1);
+                var crossEvents = new List<StarPie.Plugin.InteractionEvent>();
+                object crossSession = Call(controller, "TestBeginInteractionSession", (Func<StarPie.Plugin.InteractionEvent, int>)(evt => { crossEvents.Add(evt); return 0; }))!;
+                Call(crossSession, "Presented");
+                (bool Hit, int Sector, int Sub) nextHit = (true, 0, -1);
+                controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => nextHit));
+                Call(controller, "ProcessMove", new Point(10, 0)); Pump();
+                Check(crossEvents.Last().Kind == StarPie.Plugin.InteractionEventKind.SelectionChanged &&
+                      crossEvents.Last().Target == new StarPie.Plugin.InteractionTarget(StarPie.Plugin.InteractionTargetKind.Sector, 0),
+                    "pinned primary hover reports Sector(0)");
+                Call(controller, "ProcessMove", new Point(expandDist + 10, 0)); Pump();
+                Check(crossEvents.Count(e => e.Kind == StarPie.Plugin.InteractionEventKind.SubmenuExpanded) == 1 &&
+                      (int)Field(controller, "_pinExpandedParent") == 0,
+                    "crossing subwheel threshold expands parent 0 once");
+                nextHit = (true, 0, 0);
+                Call(controller, "ProcessMove", new Point(expandDist + 20, 0)); Pump();
+                Check(crossEvents.Last().Target == new StarPie.Plugin.InteractionTarget(StarPie.Plugin.InteractionTargetKind.SubSector, 0, 0),
+                    "entering SubSector(0, 0) publishes child target");
+                nextHit = (true, 0, -1);
+                int beforeBackPrimary = crossEvents.Count;
+                Call(controller, "ProcessMove", new Point(expandDist - 15, 0)); Pump();
+                Check(crossEvents.Skip(beforeBackPrimary).Count() == 1 &&
+                      crossEvents.Last().Kind == StarPie.Plugin.InteractionEventKind.SelectionChanged &&
+                      crossEvents.Last().Target == new StarPie.Plugin.InteractionTarget(StarPie.Plugin.InteractionTargetKind.Sector, 0),
+                    "returning from subsector to open parent restores primary hover event");
+                nextHit = (true, 0, 0);
+                Call(controller, "ProcessMove", new Point(expandDist + 20, 0)); Pump();
+                nextHit = (true, -1, -1);
+                int beforeCoreCancel = crossEvents.Count;
+                Call(controller, "ProcessMove", new Point(0, 0)); Pump();
+                Check((bool)Field(controller, "_lastShowSubTier") && (int)Field(controller, "_pinExpandedParent") == 0 &&
+                      crossEvents.Last().Kind == StarPie.Plugin.InteractionEventKind.SelectionChanged &&
+                      crossEvents.Last().Target == StarPie.Plugin.InteractionTarget.Core,
+                    "center cancel core retains expanded parent state and emits Core target");
+                nextHit = (true, 0, 0);
+                int beforeReturnSub = crossEvents.Count;
+                Call(controller, "ProcessMove", new Point(expandDist + 25, 0)); Pump();
+                var coreToSub = crossEvents.Skip(beforeReturnSub).ToArray();
+                Check(coreToSub.Length == 1 &&
+                      coreToSub[0].Kind == StarPie.Plugin.InteractionEventKind.SelectionChanged &&
+                      coreToSub[0].Target == new StarPie.Plugin.InteractionTarget(StarPie.Plugin.InteractionTargetKind.SubSector, 0, 0) &&
+                      crossEvents.Count(e => e.Kind == StarPie.Plugin.InteractionEventKind.SubmenuExpanded) == 1,
+                    "center cancel core -> subsector emits only current subsector hover without repeating SubmenuExpanded or parent hover");
+                nextHit = (false, -1, -1);
+                Call(controller, "ProcessMove", new Point(10000, 0)); Pump();
+                Check(crossEvents.Last().Target == StarPie.Plugin.InteractionTarget.None && (bool)Field(controller, "_lastShowSubTier"),
+                    "outside empty area emits None without collapsing submenu");
+                nextHit = (true, 0, 0);
+                int beforeEmptyToSub = crossEvents.Count;
+                Call(controller, "ProcessMove", new Point(expandDist + 26, 0)); Pump();
+                Check(crossEvents.Skip(beforeEmptyToSub).Count() == 1 &&
+                      crossEvents.Last().Target == new StarPie.Plugin.InteractionTarget(StarPie.Plugin.InteractionTargetKind.SubSector, 0, 0) &&
+                      crossEvents.Count(e => e.Kind == StarPie.Plugin.InteractionEventKind.SubmenuExpanded) == 1,
+                    "empty area -> subsector emits only current subsector hover without SubmenuExpanded");
+                nextHit = (true, 1, -1);
+                int beforeSwitchOtherParent = crossEvents.Count;
+                Call(controller, "ProcessMove", new Point(expandDist + 10, 10)); Pump();
+                Check((int)Field(controller, "_pinExpandedParent") == 1 &&
+                      crossEvents.Skip(beforeSwitchOtherParent).Count(e => e.Kind == StarPie.Plugin.InteractionEventKind.SubmenuExpanded) == 1 &&
+                      crossEvents.Last().Target == new StarPie.Plugin.InteractionTarget(StarPie.Plugin.InteractionTargetKind.Sector, 1),
+                    "switching to another expanded parent emits SubmenuExpanded once for new parent");
+                Call(crossSession, "End", "Done");
+                profile.Layers[0].Actions[0].SubActions = new List<ActionItem>();
+                profile.Layers[0].Actions[1].SubActions = new List<ActionItem>();
+                Set(controller, "_lastShowSubTier", false);
+                Set(controller, "_pinExpandedParent", -1);
+                Activate(150);
                 double protrudingX = Math.Ceiling(ConfigManager.CurrentConfig.WheelRadius) + 5;
                 controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
                     (Func<Point, (bool, int, int)>)(point => (point.X == protrudingX, 0, -1)));
@@ -265,7 +342,7 @@ internal static class Program
                 controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 0, -1)));
                 Call(controller, "ProcessMove", new Point(50, 0)); Pump();
                 Call(input, "Present");
-                Call(controller, "ApplyPinnedHoverAtPresentation", 151L);
+                Call(controller, "ApplyPinnedHoverAtPresentation", 151L, false);
                 Check((int)Field(controller, "_selectedSectorIndex") == 0, "presentation completion recalculates stationary pointer");
                 Call(controller, "ProcessMove", new Point(50, 0));
                 Call(controller, "RefreshHoverAfterUiChange", new Point(10000, 0), 151L); Pump();
@@ -273,7 +350,7 @@ internal static class Program
                     "UI refresh never overwrites latest input with stale fallback point");
                 controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
                     (Func<Point, (bool, int, int)>)(_ => { Activate(152); Set(controller, "_selectedSectorIndex", -1); return (true, 0, -1); }));
-                Call(controller, "ApplyPinnedHover", new Point(50, 0), 151L);
+                Call(controller, "ApplyPinnedHover", new Point(50, 0), 151L, false);
                 Check((int)Field(controller, "_selectedSectorIndex") == -1, "generation change during hit test rejects old hover publication");
                 controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller,
                     (Func<Point, (bool, int, int)>)(_ => { Activate(153); return (false, -1, -1); }));
@@ -380,6 +457,255 @@ internal static class Program
                     Pump();
                     Check(executions == beforeClick && (bool)Field(controller, "_isGestureActive") && (int)Field(controller, "_pinExpandedParent") == 0,
                         $"actionless parent remains navigation-only through real packet pairing (before={beforeClick}, after={executions}, active={Field(controller, "_isGestureActive")}, expanded={Field(controller, "_pinExpandedParent")})");
+                    profile.Layers[0].Actions[0] = new ActionItem { Type = "Text", Parameter = "", SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+V" } } };
+                    Activate(506); Set(controller, "_activeActivation", activation); Set(controller, "_pinExpandedParent", -1);
+                    beforeClick = executions;
+                    Call(controller, "ConfirmPinnedSelection", new Point(50, 0), 506L); Pump();
+                    Check(executions == beforeClick && (bool)Field(controller, "_isGestureActive") && (int)Field(controller, "_pinExpandedParent") == 0,
+                        "empty Text parent with subactions stays navigation-only on pinned click and expands parent");
+                    profile.Layers[0].Actions[0] = new ActionItem { Type = "Plugin", SubActions = new List<ActionItem> { new() { Type = "Hotkey", Parameter = "Ctrl+V" } } };
+                    Activate(507); Set(controller, "_activeActivation", activation); Set(controller, "_pinExpandedParent", -1);
+                    beforeClick = executions;
+                    Call(controller, "ConfirmPinnedSelection", new Point(50, 0), 507L); Pump();
+                    Check(executions == beforeClick && (bool)Field(controller, "_isGestureActive") && (int)Field(controller, "_pinExpandedParent") == 0,
+                        "invalid Plugin parent with subactions stays navigation-only on pinned click and expands parent");
+                    var secondLayer = new WheelLayer { Name = "Layer 2", SectorCount = 8, Actions = Enumerable.Range(0, 8).Select(_ => new ActionItem()).ToList() };
+                    profile.Layers.Add(secondLayer);
+                    profile.ActiveLayerIndex = 0;
+                    string savedSwitchTrigger = ConfigManager.CurrentConfig.LayerSwitchTrigger;
+                    object dummyWindow = RuntimeHelpers.GetUninitializedObject(typeof(RadialWindow));
+                    try
+                    {
+                        ConfigManager.CurrentConfig.LayerSwitchTrigger = "Wheel";
+                        Activate(508); Set(controller, "_radialWindow", dummyWindow); Set(controller, "_pinExpandedParent", 0);
+                        Call(controller, "Hook_OnMouseWheel", new object(), new MouseWheelHookEventArgs(120, 0.0, 0.0));
+                        Check(profile.ActiveLayerIndex == 1 && (int)Field(controller, "_pinExpandedParent") == -1,
+                            "wheel layer switch clears _pinExpandedParent while switching pinned layer");
+                        ConfigManager.CurrentConfig.LayerSwitchTrigger = "Tab";
+                        Set(controller, "_pinExpandedParent", 0);
+                        Call(controller, "KeyboardHook_OnKeyDown", new object(), new GlobalKeyEventArgs(9, ModifierKeys.None));
+                        Check(profile.ActiveLayerIndex == 0 && (int)Field(controller, "_pinExpandedParent") == -1,
+                            "Tab keyboard layer switch clears _pinExpandedParent while switching pinned layer");
+
+                        var mapMethod = typeof(RadialWindow).GetMethod("MapPhysicalPointForRestingWindowScale", Private | BindingFlags.Static)!;
+                        var pivot = new Point(1000, 500);
+                        var mappedCore1x = (Point)mapMethod.Invoke(null, new object[] { new Point(1026, 500), pivot, 0.65, 0.65 })!;
+                        Check(Math.Abs(((mappedCore1x.X - pivot.X) / 0.65) - 26.0) < 0.001 && Math.Abs(mappedCore1x.Y - 500.0) < 0.001,
+                            "intro scale coordinate mapping restores exact 1.0x core radius at 100% DPI");
+                        var mappedCore2x = (Point)mapMethod.Invoke(null, new object[] { new Point(1052, 500), pivot, 0.65, 0.65 })!;
+                        Check(Math.Abs((((mappedCore2x.X - pivot.X) / 2.0) / 0.65) - 26.0) < 0.001,
+                            "intro scale coordinate mapping restores exact 1.0x core radius at 200% DPI");
+                        var mappedSector1x = (Point)mapMethod.Invoke(null, new object[] { new Point(1100, 500), pivot, 0.65, 0.65 })!;
+                        Check(Math.Abs(((mappedSector1x.X - pivot.X) / 0.65) - 100.0) < 0.001,
+                            "intro scale coordinate mapping restores exact 1.0x sector offset");
+                        var mappedFallback = (Point)mapMethod.Invoke(null, new object[] { new Point(1026, 500), pivot, 0.0, double.NaN })!;
+                        Check(mappedFallback == new Point(1026, 500), "invalid intro scales fall back to 1.0");
+
+                        var hiddenWindow = new RadialWindow(pivot, profile);
+                        try
+                        {
+                            var tryHit = typeof(RadialWindow).GetMethod("TryHitPinnedWheel", Private)!;
+                            object?[] hitArgs = { pivot, 2, 1, true };
+                            bool hiddenHit = (bool)tryHit.Invoke(hiddenWindow, hitArgs)!;
+                            Check(!hiddenHit && (int)hitArgs[1]! == -1 && (int)hitArgs[2]! == -1,
+                                "TryHitPinnedWheel returns false cleanly when window is hidden / not presented");
+
+                            int introCallbacks = 0;
+                            Call(hiddenWindow, "StartIntroAnimation", 1L, new Action(() => introCallbacks++));
+                            Check(introCallbacks == 0, "StartIntroAnimation skips callback cleanly when hidden / not presented");
+
+                            Activate(509);
+                            Set(controller, "_pendingPinnedHoverPoint", new Point(1026, 500));
+                            Set(controller, "_pinnedPointerVersion", 509L);
+                            controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, 2, -1)));
+                            Call(controller, "ApplyPinnedHoverAtPresentation", 509L, true);
+                            Pump();
+                            Check((int)Field(controller, "_selectedSectorIndex") == 2,
+                                "ApplyPinnedHoverAtPresentation supports resting-scale initial presentation hit test");
+
+                            Set(controller, "_radialWindow", null);
+                            Set(controller, "_pinExpandedParent", 0);
+                            Call(controller, "SwitchRadialLayerOnUi", hiddenWindow, 1, 509L);
+                            Check((int)Field(controller, "_pinExpandedParent") == 0,
+                                "SwitchRadialLayerOnUi ignores stale dispatch when radial window is detached");
+
+                            Set(controller, "_radialWindow", hiddenWindow);
+                            Set(controller, "_pinExpandedParent", 0);
+                            Set(controller, "_lastMovePoint", pivot);
+                            controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, -1, -1)));
+                            Call(controller, "SwitchRadialLayerOnUi", hiddenWindow, 1, 509L);
+                            Pump();
+                            Check(profile.ActiveLayerIndex == 1 && (int)Field(controller, "_pinExpandedParent") == -1,
+                                "SwitchRadialLayerOnUi resets _pinExpandedParent inside lock on UI dispatch before switching layer");
+                        }
+                        finally { hiddenWindow.Close(); }
+
+                        profile.ActiveLayerIndex = 0;
+                        profile.SyncRootPropertiesFromActiveLayer();
+                        var savedAction0 = profile.Layers[0].Actions[0];
+                        bool savedShowCore = ConfigManager.CurrentConfig.ShowCoreCircle;
+                        bool savedMultiTier = ConfigManager.CurrentConfig.EnableMultiTier;
+                        string savedSubStyle = ConfigManager.CurrentConfig.SubmenuStyle;
+                        bool savedAutoExpand = ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup;
+                        var work = ScreenHelper.GetScreenContextAtPoint(new Point(400, 400)).PhysicalWorkArea;
+                        var workCenter = new Point(work.Left + work.Width / 2.0, work.Top + work.Height / 2.0);
+                        double dpiX = Math.Max(0.5, ScreenHelper.GetScreenContextAtPoint(workCenter).DpiScale.DpiScaleX);
+                        RadialWindow? presented = null;
+                        try
+                        {
+                            ConfigManager.CurrentConfig.ShowCoreCircle = false;
+                            ConfigManager.CurrentConfig.EnableMultiTier = true;
+                            ConfigManager.CurrentConfig.SubmenuStyle = "Wheel";
+                            ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup = true;
+                            profile.Layers[0].Actions[0] = new ActionItem
+                            {
+                                Name = "Primary",
+                                Type = "Hotkey",
+                                Parameter = "Ctrl+C",
+                                SubActions = new List<ActionItem>
+                                {
+                                    new() { Name = "Child", Type = "Hotkey", Parameter = "Ctrl+V" }
+                                }
+                            };
+
+                            presented = new RadialWindow(workCenter, profile)
+                            {
+                                Opacity = 0.0,
+                                ShowActivated = false,
+                                ShowInTaskbar = false
+                            };
+                            presented.Show();
+                            Call(presented, "SetMousePassThrough", true);
+
+                            static Point FindRestingScreenPoint(System.Windows.Shapes.Path shape, Point pivotScreen, double sx, double sy)
+                            {
+                                var b = shape.Data!.Bounds;
+                                for (int ix = 1; ix <= 9; ix++)
+                                {
+                                    for (int iy = 1; iy <= 9; iy++)
+                                    {
+                                        var local = new Point(b.Left + b.Width * (ix / 10.0), b.Top + b.Height * (iy / 10.0));
+                                        if (!shape.Data.FillContains(local)) continue;
+                                        Point scaled = shape.PointToScreen(local);
+                                        return new Point(pivotScreen.X + (scaled.X - pivotScreen.X) / sx, pivotScreen.Y + (scaled.Y - pivotScreen.Y) / sy);
+                                    }
+                                }
+                                throw new Exception("Failed to sample interior point for path");
+                            }
+
+                            var tryHit = typeof(RadialWindow).GetMethod("TryHitPinnedWheel", Private)!;
+                            var presentMethod = typeof(RadialWindow).GetMethod("Present", Private, null,
+                                new[] { typeof(Point), typeof(WheelProfile), typeof(long), typeof(long), typeof(Action), typeof(bool), typeof(Action) }, null)!;
+                            int presentedCount = 0;
+                            int introCompletedCount = 0;
+                            Point pivotScreen = default;
+                            Point restingSectorPt = default;
+                            Point restingSubPt = default;
+
+                            var bgPresentTask = Task.Run(() => presentMethod.Invoke(presented, new object?[]
+                            {
+                                workCenter,
+                                profile,
+                                ConfigManager.ConfigurationRevision,
+                                510L,
+                                new Action(() =>
+                                {
+                                    presentedCount++;
+                                    var mainGrid = (FrameworkElement)Field(presented, "MainGrid");
+                                    var coreEllipse = (UIElement)Field(presented, "CoreEllipse");
+                                    var windowScale = (System.Windows.Media.ScaleTransform)Field(presented, "WindowScale");
+                                    Check(presented.IsVisible && mainGrid.IsVisible && !coreEllipse.IsVisible,
+                                        "Presented RadialWindow with ShowCoreCircle=false hides CoreEllipse while MainGrid stays visible");
+
+                                    pivotScreen = mainGrid.PointToScreen(new Point(mainGrid.ActualWidth / 2.0, mainGrid.ActualHeight / 2.0));
+                                    double sx = windowScale.ScaleX > 0 ? windowScale.ScaleX : 1.0;
+                                    double sy = windowScale.ScaleY > 0 ? windowScale.ScaleY : 1.0;
+
+                                    var sectorPath = ((System.Collections.IEnumerable)Field(presented, "_sectorPaths")!)
+                                        .Cast<System.Windows.Shapes.Path>().First(p => p.IsVisible && p.Data != null && Equals(p.Tag, 0));
+                                    var subPath = ((System.Collections.IEnumerable)Field(presented, "_subSectorPaths")!)
+                                        .Cast<System.Windows.Shapes.Path>().First(p => p.IsVisible && p.Opacity > 0 && p.Data != null && (p.Tag as string)?.StartsWith("sub_0_", StringComparison.Ordinal) == true);
+                                    restingSectorPt = FindRestingScreenPoint(sectorPath, pivotScreen, sx, sy);
+                                    restingSubPt = FindRestingScreenPoint(subPath, pivotScreen, sx, sy);
+
+                                    object?[] dzArgs = { new Point(pivotScreen.X + 4.0, pivotScreen.Y), -99, -99, true };
+                                    Check((bool)tryHit.Invoke(presented, dzArgs)! && (int)dzArgs[1]! == -1 && (int)dzArgs[2]! == -1,
+                                        "ShowCoreCircle=false still hits center deadzone at presentation");
+
+                                    object?[] gapArgs = { new Point(pivotScreen.X + 50.0 * dpiX, pivotScreen.Y), -99, -99, true };
+                                    Check(!(bool)tryHit.Invoke(presented, gapArgs)! && (int)gapArgs[1]! == -1 && (int)gapArgs[2]! == -1,
+                                        "ShowCoreCircle=false still misses transparent gap between deadzone and sectors");
+
+                                    object?[] secArgs = { restingSectorPt, -99, -99, true };
+                                    Check((bool)tryHit.Invoke(presented, secArgs)! && (int)secArgs[1]! == 0 && (int)secArgs[2]! == -1,
+                                        "ShowCoreCircle=false hits resting 1.0x sector despite 0.65x intro scale");
+
+                                    object?[] subArgs = { restingSubPt, -99, -99, true };
+                                    Check((bool)tryHit.Invoke(presented, subArgs)! && (int)subArgs[1]! == 0 && (int)subArgs[2]! >= 0,
+                                        "ShowCoreCircle=false hits resting 1.0x subsector despite 0.65x intro scale");
+
+                                    Activate(510);
+                                    Set(controller, "_radialWindow", presented);
+                                    controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, null);
+                                    Set(controller, "_pendingPinnedHoverPoint", restingSectorPt);
+                                    Set(controller, "_pinnedPointerVersion", 510L);
+                                    Call(controller, "ApplyPinnedHoverAtPresentation", 510L, true);
+                                    Check((int)Field(controller, "_selectedSectorIndex") == 0,
+                                        "Controller TryHitPinnedPoint hits sector when ShowCoreCircle=false at presentation");
+                                }),
+                                true,
+                                new Action(() => introCompletedCount++)
+                            }));
+
+                            var sw = System.Diagnostics.Stopwatch.StartNew();
+                            while ((!bgPresentTask.IsCompleted || introCompletedCount == 0) && sw.ElapsedMilliseconds < 2000)
+                            {
+                                Pump();
+                                Thread.Sleep(15);
+                            }
+                            bgPresentTask.GetAwaiter().GetResult();
+                            Check(presentedCount == 1 && introCompletedCount == 1,
+                                "Off-Dispatcher Present forwards onIntroCompleted and fires once intro scale reaches 1.0");
+
+                            object?[] settledSecArgs = { restingSectorPt, -99, -99, false };
+                            Check((bool)tryHit.Invoke(presented, settledSecArgs)! && (int)settledSecArgs[1]! == 0 && (int)settledSecArgs[2]! == -1,
+                                "Settled 1.0x wheel hits same resting sector point without scale compensation");
+
+                            object?[] settledSubArgs = { restingSubPt, -99, -99, false };
+                            Check((bool)tryHit.Invoke(presented, settledSubArgs)! && (int)settledSubArgs[1]! == 0 && (int)settledSubArgs[2]! >= 0,
+                                "Settled 1.0x wheel hits same resting subsector point without scale compensation");
+
+                            object?[] settledDzArgs = { new Point(pivotScreen.X + 4.0, pivotScreen.Y), -99, -99, false };
+                            Check((bool)tryHit.Invoke(presented, settledDzArgs)! && (int)settledDzArgs[1]! == -1 && (int)settledDzArgs[2]! == -1,
+                                "Settled 1.0x wheel with ShowCoreCircle=false retains center deadzone hit test");
+
+                            presented.Dismiss(510L);
+                            object?[] dismissedArgs = { restingSectorPt, -99, -99, false };
+                            Check(!(bool)tryHit.Invoke(presented, dismissedArgs)!,
+                                "Dismissed RadialWindow returns false even while HWND remains visible");
+                        }
+                        finally
+                        {
+                            Set(controller, "_radialWindow", null);
+                            controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, null);
+                            presented?.Close();
+                            Pump();
+                            profile.Layers[0].Actions[0] = savedAction0;
+                            ConfigManager.CurrentConfig.ShowCoreCircle = savedShowCore;
+                            ConfigManager.CurrentConfig.EnableMultiTier = savedMultiTier;
+                            ConfigManager.CurrentConfig.SubmenuStyle = savedSubStyle;
+                            ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup = savedAutoExpand;
+                        }
+                    }
+                    finally
+                    {
+                        Set(controller, "_radialWindow", null);
+                        Pump();
+                        ConfigManager.CurrentConfig.LayerSwitchTrigger = savedSwitchTrigger;
+                        profile.Layers.Remove(secondLayer);
+                        profile.ActiveLayerIndex = 0;
+                        profile.SyncRootPropertiesFromActiveLayer();
+                    }
                 }
                 finally { Marshal.FreeHGlobal(packet); }
             }

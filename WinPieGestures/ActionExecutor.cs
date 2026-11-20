@@ -498,6 +498,11 @@ public static class ActionExecutor
 			}
 			else
 				AppLogger.LogInfo($"Executing Action: Name='{action.Name}', Type='{action.Type}', Param='{action.Parameter}', Args='{action.Arguments}', Term='{action.CommandTerminal}'");
+			if (Plugins.LegacyQuickSearchBinding.Matches(action))
+			{
+				ExecuteLegacyQuickSearch();
+				return;
+			}
 			if (Plugins.BuiltinActionCatalog.TryGet(action.Type, out Plugins.BuiltinActionRegistration builtin))
 			{
 				ExecuteBuiltinActionItem(action, builtin);
@@ -591,6 +596,17 @@ public static class ActionExecutor
 			Plugins.PluginHost.NotifyUser("内置动作执行失败", outcome.Message);
 		}
 	}
+	private static void ExecuteLegacyQuickSearch()
+	{
+		var action = Plugins.LegacyQuickSearchBinding.Project(ConfigManager.CurrentConfig);
+		var outcome = Plugins.PluginHost.ExecutePluginAction(action);
+		if (!outcome.Success && !outcome.QueuedToBackground)
+		{
+			AppLogger.LogWarn($"Quick Search unavailable: {outcome.Message}");
+			Plugins.PluginHost.NotifyUser(I18n.T("QuickSearchUnavailableTitle"), I18n.T("QuickSearchUnavailableHint"));
+		}
+	}
+
 	private static void ExecutePluginActionItem(ActionItem action, ActionExecutionContext? target = null)
 	{
 		Plugins.PluginExecuteOutcome outcome = Plugins.PluginHost.ExecutePluginAction(action, target);
@@ -2920,6 +2936,12 @@ public static class ActionExecutor
 		}
 		string text = presetName.Trim().ToLowerInvariant();
 
+		if (Plugins.LegacyQuickSearchBinding.IsSearchPreset(text))
+		{
+			ExecuteLegacyQuickSearch();
+			return true;
+		}
+
 		switch (text)
 		{
 		case "windowswitcher":
@@ -3061,17 +3083,6 @@ public static class ActionExecutor
 			return true;
 		case "windowssearch":
 			ExecuteHotkey("Win+S");
-			return true;
-		case "quicksearch":
-		case "quickfinder":
-		case "nativesearch":
-		case "文件秒搜":
-		case "快速秒搜":
-		case "原生秒搜":
-			Application.Current?.Dispatcher?.BeginInvoke((Action)delegate
-			{
-				QuickSearchWindow.ShowOrActivate();
-			});
 			return true;
 		case "clipboardhistory":
 			ExecuteHotkey("Win+V");

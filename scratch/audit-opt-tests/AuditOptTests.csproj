@@ -11,7 +11,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Fixture\**\*.cs" />
-    <ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" />
+    <ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" Condition="'$(StarPieCandidateDir)' == ''" />
+    <Reference Include="StarPie" Condition="'$(StarPieCandidateDir)' != ''" HintPath="$(StarPieCandidateDir)\StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" Condition="'$(StarPieCandidateDir)' != ''" HintPath="$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll" />
     <ProjectReference Include="Fixture\AuditOptFixture.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

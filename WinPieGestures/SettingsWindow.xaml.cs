@@ -645,6 +645,45 @@ public partial class SettingsWindow : Window
 		return Math.Round(Math.Clamp(scale, 0.8, 2.0) * 20.0) / 20.0;
 	}
 
+	private bool _hasScaledTextStyleOverride;
+	private Style? _defaultWindowTextBoxStyle;
+
+	private void UpdateScaledTextFormattingStyles(bool isScaled)
+	{
+		if (isScaled == _hasScaledTextStyleOverride)
+		{
+			return;
+		}
+		_hasScaledTextStyleOverride = isScaled;
+		if (!isScaled)
+		{
+			Resources.Remove(typeof(TextBlock));
+			if (_defaultWindowTextBoxStyle != null)
+			{
+				Resources[typeof(System.Windows.Controls.TextBox)] = _defaultWindowTextBoxStyle;
+			}
+			return;
+		}
+		try
+		{
+			Style? appTextBlockStyle = System.Windows.Application.Current?.TryFindResource(typeof(TextBlock)) as Style;
+			Style scaledTextBlockStyle = appTextBlockStyle != null ? new Style(typeof(TextBlock), appTextBlockStyle) : new Style(typeof(TextBlock));
+			scaledTextBlockStyle.Setters.Add(new Setter(TextOptions.TextFormattingModeProperty, TextFormattingMode.Ideal));
+			scaledTextBlockStyle.Seal();
+			Resources[typeof(TextBlock)] = scaledTextBlockStyle;
+
+			_defaultWindowTextBoxStyle ??= Resources[typeof(System.Windows.Controls.TextBox)] as Style;
+			Style? baseTextBoxStyle = _defaultWindowTextBoxStyle ?? (System.Windows.Application.Current?.TryFindResource(typeof(System.Windows.Controls.TextBox)) as Style);
+			Style scaledTextBoxStyle = baseTextBoxStyle != null ? new Style(typeof(System.Windows.Controls.TextBox), baseTextBoxStyle) : new Style(typeof(System.Windows.Controls.TextBox));
+			scaledTextBoxStyle.Setters.Add(new Setter(TextOptions.TextFormattingModeProperty, TextFormattingMode.Ideal));
+			scaledTextBoxStyle.Seal();
+			Resources[typeof(System.Windows.Controls.TextBox)] = scaledTextBoxStyle;
+		}
+		catch
+		{
+		}
+	}
+
 	/// <summary>
 	/// 应用设置控制台全局缩放：仅给根节点挂 LayoutTransform，等比放大字号/边距与控件尺寸
 	/// （等同浏览器缩放语义）。窗口尺寸一律不代为调整——大小由用户自己决定，
@@ -653,11 +692,17 @@ public partial class SettingsWindow : Window
 	private void ApplySettingsUiScale(double scale)
 	{
 		scale = NormalizeSettingsUiScale(scale);
+		bool isScaled = Math.Abs(scale - 1.0) > 0.001;
 		if (RootUiScaleTransform != null)
 		{
 			RootUiScaleTransform.ScaleX = scale;
 			RootUiScaleTransform.ScaleY = scale;
 		}
+		if (RootScaleGrid != null)
+		{
+			TextOptions.SetTextFormattingMode(RootScaleGrid, isScaled ? TextFormattingMode.Ideal : TextFormattingMode.Display);
+		}
+		UpdateScaledTextFormattingStyles(isScaled);
 		_appliedSettingsUiScale = scale;
 		if (SidebarScaleValueText != null)
 		{
@@ -964,9 +1009,12 @@ public partial class SettingsWindow : Window
 				CoreDeadzoneValueLabel.Text = $"{deadzone:0} px";
 			}
 		}
-		if (LongPressTriggerCheckBox != null)
+		if (PinWheelCheckBox != null)
 		{
 			PinWheelCheckBox.IsChecked = ConfigManager.CurrentConfig.PinWheelAfterTrigger;
+		}
+		if (LongPressTriggerCheckBox != null)
+		{
 			LongPressTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressTrigger;
 		}
 		if (LongPressOnlyTriggerCheckBox != null)
@@ -1147,51 +1195,92 @@ public partial class SettingsWindow : Window
 			SubCustomHighlightGlowPanel.Visibility = ((!(subGlow == "Custom") && string.IsNullOrEmpty(ConfigManager.CurrentConfig.SubWheelHighlightGlowColor)) ? Visibility.Collapsed : Visibility.Visible);
 		}
 
-		// Primary Geometry & Dimensions
-		WheelRadiusSlider.Value = ConfigManager.CurrentConfig.WheelRadius;
-		WheelRadiusLabel.Text = ConfigManager.CurrentConfig.WheelRadius.ToString("0");
-		InnerRadiusSlider.Value = ConfigManager.CurrentConfig.InnerRadius;
-		InnerRadiusLabel.Text = ConfigManager.CurrentConfig.InnerRadius.ToString("0");
-		CoreRadiusSlider.Value = ConfigManager.CurrentConfig.CoreRadius;
-		CoreRadiusLabel.Text = ConfigManager.CurrentConfig.CoreRadius.ToString("0");
-		SectorGapSlider.Value = ConfigManager.CurrentConfig.SectorGap;
-		SectorGapLabel.Text = $"{ConfigManager.CurrentConfig.SectorGap:0} px";
-		SectorCornerRadiusSlider.Value = ConfigManager.CurrentConfig.SectorCornerRadius;
-		SectorCornerRadiusLabel.Text = $"{ConfigManager.CurrentConfig.SectorCornerRadius:0} px";
-		SectorIconSizeSlider.Value = ((ConfigManager.CurrentConfig.SectorIconSize > 0.0) ? ConfigManager.CurrentConfig.SectorIconSize : 20.0);
-		SectorIconSizeLabel.Text = $"{SectorIconSizeSlider.Value:0} px";
-		SectorFontSizeSlider.Value = ((ConfigManager.CurrentConfig.SectorFontSize > 0.0) ? ConfigManager.CurrentConfig.SectorFontSize : 10.5);
-		SectorFontSizeLabel.Text = $"{SectorFontSizeSlider.Value:0.0} px";
+		// Primary Geometry & Dimensions — expand/sync bounds before setting .Value so larger imported sizes are never clamped
+		double cfgWheelRadius = (double.IsFinite(ConfigManager.CurrentConfig.WheelRadius) && ConfigManager.CurrentConfig.WheelRadius > 0.0)
+			? ConfigManager.CurrentConfig.WheelRadius
+			: 133.0;
+		double cfgInnerRadius = (double.IsFinite(ConfigManager.CurrentConfig.InnerRadius) && ConfigManager.CurrentConfig.InnerRadius > 0.0)
+			? ConfigManager.CurrentConfig.InnerRadius
+			: 70.0;
+		double cfgCoreRadius = (double.IsFinite(ConfigManager.CurrentConfig.CoreRadius) && ConfigManager.CurrentConfig.CoreRadius > 0.0)
+			? ConfigManager.CurrentConfig.CoreRadius
+			: 36.0;
+		double cfgSubOuterRadius = (double.IsFinite(ConfigManager.CurrentConfig.SubWheelOuterRadius) && ConfigManager.CurrentConfig.SubWheelOuterRadius > 0.0)
+			? ConfigManager.CurrentConfig.SubWheelOuterRadius
+			: 196.0;
+		SyncDimensionSliderBounds(cfgWheelRadius, cfgInnerRadius, cfgCoreRadius, cfgSubOuterRadius, shrinkOuterMaxToTarget: true);
+
+		if (WheelRadiusSlider != null) WheelRadiusSlider.Value = cfgWheelRadius;
+		if (WheelRadiusLabel != null) WheelRadiusLabel.Text = cfgWheelRadius.ToString("0");
+		if (InnerRadiusSlider != null) InnerRadiusSlider.Value = cfgInnerRadius;
+		if (InnerRadiusLabel != null) InnerRadiusLabel.Text = cfgInnerRadius.ToString("0");
+		if (CoreRadiusSlider != null) CoreRadiusSlider.Value = cfgCoreRadius;
+		if (CoreRadiusLabel != null) CoreRadiusLabel.Text = cfgCoreRadius.ToString("0");
+		double cfgSectorGap = (double.IsFinite(ConfigManager.CurrentConfig.SectorGap) && ConfigManager.CurrentConfig.SectorGap >= 0.0)
+			? ConfigManager.CurrentConfig.SectorGap
+			: 4.0;
+		SetSliderValueWithBounds(SectorGapSlider, cfgSectorGap, 0.0, 12.0, resetBoundsToDefault: true);
+		if (SectorGapLabel != null) SectorGapLabel.Text = $"{cfgSectorGap:0} px";
+		double cfgSectorCorner = (double.IsFinite(ConfigManager.CurrentConfig.SectorCornerRadius) && ConfigManager.CurrentConfig.SectorCornerRadius >= 0.0)
+			? ConfigManager.CurrentConfig.SectorCornerRadius
+			: 13.0;
+		SetSliderValueWithBounds(SectorCornerRadiusSlider, cfgSectorCorner, 0.0, 16.0, resetBoundsToDefault: true);
+		if (SectorCornerRadiusLabel != null) SectorCornerRadiusLabel.Text = $"{cfgSectorCorner:0} px";
+		double cfgSectorIconSize = (double.IsFinite(ConfigManager.CurrentConfig.SectorIconSize) && ConfigManager.CurrentConfig.SectorIconSize > 0.0)
+			? ConfigManager.CurrentConfig.SectorIconSize
+			: 20.0;
+		SetSliderValueWithBounds(SectorIconSizeSlider, cfgSectorIconSize, 14.0, 36.0, resetBoundsToDefault: true);
+		if (SectorIconSizeLabel != null) SectorIconSizeLabel.Text = $"{cfgSectorIconSize:0} px";
+		double cfgSectorFontSize = (double.IsFinite(ConfigManager.CurrentConfig.SectorFontSize) && ConfigManager.CurrentConfig.SectorFontSize > 0.0)
+			? ConfigManager.CurrentConfig.SectorFontSize
+			: 10.5;
+		SetSliderValueWithBounds(SectorFontSizeSlider, cfgSectorFontSize, 8.0, 18.0, resetBoundsToDefault: true);
+		if (SectorFontSizeLabel != null) SectorFontSizeLabel.Text = $"{cfgSectorFontSize:0.0} px";
 
 		// Sub-Wheel Dimensions
 		if (SubWheelOuterRadiusSlider != null)
 		{
-			SubWheelOuterRadiusSlider.Value = ((ConfigManager.CurrentConfig.SubWheelOuterRadius > 0.0) ? ConfigManager.CurrentConfig.SubWheelOuterRadius : 196.0);
-			SubWheelOuterRadiusLabel.Text = $"{SubWheelOuterRadiusSlider.Value:0} px";
+			SubWheelOuterRadiusSlider.Value = cfgSubOuterRadius;
+			if (SubWheelOuterRadiusLabel != null) SubWheelOuterRadiusLabel.Text = $"{SubWheelOuterRadiusSlider.Value:0} px";
 		}
 		if (SubWheelInnerGapSlider != null)
 		{
-			SubWheelInnerGapSlider.Value = ((ConfigManager.CurrentConfig.SubWheelInnerGap >= 0.0) ? ConfigManager.CurrentConfig.SubWheelInnerGap : 7.0);
-			SubWheelInnerGapLabel.Text = $"{SubWheelInnerGapSlider.Value:0} px";
+			double cfgSubGap = (double.IsFinite(ConfigManager.CurrentConfig.SubWheelInnerGap) && ConfigManager.CurrentConfig.SubWheelInnerGap >= 0.0)
+				? ConfigManager.CurrentConfig.SubWheelInnerGap
+				: 7.0;
+			SetSliderValueWithBounds(SubWheelInnerGapSlider, cfgSubGap, 0.0, 20.0, resetBoundsToDefault: true);
+			if (SubWheelInnerGapLabel != null) SubWheelInnerGapLabel.Text = $"{SubWheelInnerGapSlider.Value:0} px";
 		}
 		if (SubWheelCornerRadiusSlider != null)
 		{
-			SubWheelCornerRadiusSlider.Value = ((ConfigManager.CurrentConfig.SubWheelCornerRadius >= 0.0) ? ConfigManager.CurrentConfig.SubWheelCornerRadius : 14.0);
-			SubWheelCornerRadiusLabel.Text = $"{SubWheelCornerRadiusSlider.Value:0} px";
+			double cfgSubCorner = (double.IsFinite(ConfigManager.CurrentConfig.SubWheelCornerRadius) && ConfigManager.CurrentConfig.SubWheelCornerRadius >= 0.0)
+				? ConfigManager.CurrentConfig.SubWheelCornerRadius
+				: 14.0;
+			SetSliderValueWithBounds(SubWheelCornerRadiusSlider, cfgSubCorner, 0.0, 20.0, resetBoundsToDefault: true);
+			if (SubWheelCornerRadiusLabel != null) SubWheelCornerRadiusLabel.Text = $"{SubWheelCornerRadiusSlider.Value:0} px";
 		}
 		if (SubWheelIconSizeSlider != null)
 		{
-			SubWheelIconSizeSlider.Value = ((ConfigManager.CurrentConfig.SubWheelIconSize > 0.0) ? ConfigManager.CurrentConfig.SubWheelIconSize : 16.0);
-			SubWheelIconSizeLabel.Text = $"{SubWheelIconSizeSlider.Value:0} px";
+			double cfgSubIcon = (double.IsFinite(ConfigManager.CurrentConfig.SubWheelIconSize) && ConfigManager.CurrentConfig.SubWheelIconSize > 0.0)
+				? ConfigManager.CurrentConfig.SubWheelIconSize
+				: 16.0;
+			SetSliderValueWithBounds(SubWheelIconSizeSlider, cfgSubIcon, 10.0, 32.0, resetBoundsToDefault: true);
+			if (SubWheelIconSizeLabel != null) SubWheelIconSizeLabel.Text = $"{SubWheelIconSizeSlider.Value:0} px";
 		}
 		if (SubWheelFontSizeSlider != null)
 		{
-			SubWheelFontSizeSlider.Value = ((ConfigManager.CurrentConfig.SubWheelFontSize > 0.0) ? ConfigManager.CurrentConfig.SubWheelFontSize : 9.5);
-			SubWheelFontSizeLabel.Text = $"{SubWheelFontSizeSlider.Value:0.0} px";
+			double cfgSubFont = (double.IsFinite(ConfigManager.CurrentConfig.SubWheelFontSize) && ConfigManager.CurrentConfig.SubWheelFontSize > 0.0)
+				? ConfigManager.CurrentConfig.SubWheelFontSize
+				: 9.5;
+			SetSliderValueWithBounds(SubWheelFontSizeSlider, cfgSubFont, 7.0, 16.0, resetBoundsToDefault: true);
+			if (SubWheelFontSizeLabel != null) SubWheelFontSizeLabel.Text = $"{SubWheelFontSizeSlider.Value:0.0} px";
 		}
 		if (SubWheelTriggerDistanceSlider != null)
 		{
-			SubWheelTriggerDistanceSlider.Value = ((ConfigManager.CurrentConfig.SubWheelTriggerDistance > 0.0) ? ConfigManager.CurrentConfig.SubWheelTriggerDistance : 141.0);
+			double cfgSubTriggerDist = (double.IsFinite(ConfigManager.CurrentConfig.SubWheelTriggerDistance) && ConfigManager.CurrentConfig.SubWheelTriggerDistance > 0.0)
+				? ConfigManager.CurrentConfig.SubWheelTriggerDistance
+				: 141.0;
+			SetSliderValueWithBounds(SubWheelTriggerDistanceSlider, cfgSubTriggerDist, 30.0, 260.0, resetBoundsToDefault: true);
 			if (SubWheelTriggerDistanceValueText != null)
 			{
 				SubWheelTriggerDistanceValueText.Text = $"{SubWheelTriggerDistanceSlider.Value:0} px";
@@ -1904,11 +1993,24 @@ public partial class SettingsWindow : Window
 		{
 			TriggerPageHeader.Text = I18n.T("TriggerHeader");
 		}
-		if (LongPressTriggerTitleText != null)
+		if (PinWheelTitleText != null)
 		{
 			PinWheelTitleText.Text = I18n.T("PinWheelTitle");
+		}
+		if (PinWheelCheckBox != null)
+		{
 			PinWheelCheckBox.ToolTip = I18n.T("PinWheelDescription");
+		}
+		if (RepairAutoStartButton != null)
+		{
 			RepairAutoStartButton.Content = I18n.T("RepairAutoStart");
+		}
+		if (AutoStartStatusText != null)
+		{
+			RefreshAutoStartStatusText();
+		}
+		if (LongPressTriggerTitleText != null)
+		{
 			LongPressTriggerTitleText.Text = I18n.T("LongPressTriggerTitle");
 		}
 		if (LongPressTriggerDescText != null)
@@ -3859,7 +3961,7 @@ public partial class SettingsWindow : Window
 		else if (_autoSaveSucceeded)
 		{
 			AutoSaveStatusText.Text = I18n.T("AutoSaveSaved");
-			AutoSaveStatusText.Foreground = (Brush)FindResource("TextSecondaryBrush");
+			AutoSaveStatusText.Foreground = (Brush)(TryFindResource("TextSecondaryBrush") ?? Brushes.Gray);
 		}
 		else
 		{
@@ -5590,33 +5692,46 @@ public partial class SettingsWindow : Window
 			MessageBoxImage.Question);
 		if (result == MessageBoxResult.Yes)
 		{
-			if (!_selectedProfile.RemoveLayer(layerToDelete)) return;
-
-			RefreshLayersUi();
-
-			bool oldUpdating = _isUpdatingUi;
-			try
-			{
-				_isUpdatingUi = true;
-				ApplySectorCountSelectionToUi(_selectedProfile.SectorCount);
-
-				_selectedSlotIndex = 0;
-				_selectedSubActionIndex = null;
-				RefreshSlots();
-				UpdateFocusEditorUi();
-				RenderMappingsWheelPreview();
-				if (AppearanceSettingsGrid != null && AppearanceSettingsGrid.Visibility == Visibility.Visible)
-				{
-					RenderLiveWheelPreview();
-				}
-			}
-			finally
-			{
-				_isUpdatingUi = oldUpdating;
-			}
-
-			ScheduleAutoSave();
+			DeleteLayerCore(layerToDelete);
 		}
+	}
+
+	internal bool DeleteLayerCore(WheelLayer layerToDelete)
+	{
+		if (_selectedProfile == null || !_selectedProfile.RemoveLayer(layerToDelete)) return false;
+
+		RefreshLayersUi();
+
+		bool oldUpdating = _isUpdatingUi;
+		try
+		{
+			_isUpdatingUi = true;
+			ApplySectorCountSelectionToUi(_selectedProfile.SectorCount);
+
+			_selectedSlotIndex = 0;
+			_selectedSubActionIndex = null;
+			RefreshSlots();
+			UpdateFocusEditorUi();
+			RenderMappingsWheelPreview();
+			if (AppearanceSettingsGrid != null && AppearanceSettingsGrid.Visibility == Visibility.Visible)
+			{
+				RenderLiveWheelPreview();
+			}
+		}
+		finally
+		{
+			_isUpdatingUi = oldUpdating;
+		}
+
+		_autoSaveDebounceTimer?.Stop();
+		bool saved = SyncUiToConfigAndSave();
+		if (!saved && ConfigManager.CurrentConfig != null)
+		{
+			saved = ConfigManager.SaveConfig();
+		}
+		ProfileTriggerRouter.Publish(ConfigManager.CurrentConfig);
+		UpdateAutoSaveStatus(isSaving: false, success: saved);
+		return true;
 	}
 
 	private void UpdateLayerSwitchTriggerUi()
@@ -9343,6 +9458,104 @@ public partial class SettingsWindow : Window
 		RenderMappingsWheelPreview();
 	}
 
+	private static void ConfigurePreviewTextElement(TextBlock textBlock)
+	{
+		TextOptions.SetTextFormattingMode(textBlock, TextFormattingMode.Ideal);
+		TextOptions.SetTextRenderingMode(textBlock, TextRenderingMode.ClearType);
+		RenderOptions.SetClearTypeHint(textBlock, ClearTypeHint.Enabled);
+	}
+
+	private static void ConfigurePreviewImageElement(System.Windows.Controls.Image image)
+	{
+		RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+	}
+
+	private static FrameworkElement? CreateMappingsSubIconElement(ActionItem subItem, Brush subIconBrush, double subIconSize)
+	{
+		ImageSource? subImg = null;
+		if (!string.IsNullOrEmpty(subItem.InheritAppIconPath))
+		{
+			try { subImg = IconHelper.GetIcon(subItem.InheritAppIconPath); } catch { }
+		}
+		else if (subItem.Type == "Launch" && !string.IsNullOrEmpty(subItem.Parameter))
+		{
+			try { subImg = IconHelper.GetIcon(subItem.Parameter); } catch { }
+		}
+
+		string subIconKey = subItem.IconKey ?? "";
+		string subSvg = !string.IsNullOrEmpty(subItem.CustomIconSvg) ? subItem.CustomIconSvg : "";
+
+		if (subImg == null && string.IsNullOrEmpty(subSvg) && subIconKey.StartsWith("custom:", StringComparison.OrdinalIgnoreCase))
+		{
+			IconHelper.CustomIconItem? customItem = IconHelper.GetCustomIcons()
+				.FirstOrDefault(c => string.Equals(c.Key, subIconKey, StringComparison.OrdinalIgnoreCase));
+			if (customItem != null)
+			{
+				if (customItem.IsSvg)
+				{
+					subSvg = customItem.SvgData ?? "";
+				}
+				else if (File.Exists(customItem.FilePath))
+				{
+					try { subImg = IconHelper.GetCustomImageSource(customItem.FilePath); } catch { }
+				}
+			}
+		}
+
+		if (subImg == null && string.IsNullOrEmpty(subSvg))
+		{
+			subSvg = IconHelper.GetSvgPathByKey(subIconKey);
+			if (string.IsNullOrEmpty(subSvg))
+			{
+				subSvg = subItem.Type switch
+				{
+					"WebUrl" or "Url" => IconHelper.GetSvgPathByKey("Browser") ?? IconHelper.GetSvgPathByKey("ShowDesktop"),
+					"Folder" or "OpenFolder" => IconHelper.GetSvgPathByKey("Folder"),
+					"Ocr" or "ScreenOcr" => "M2,4C2,2.89 2.9,2 4,2H8V4H4V8H2V4M22,4V8H20V4H16V2H20C21.1,2 22,2.89 22,4M2,20V16H4V20H8V22H4C2.9,22 2,21.1 2,20M20,20H16V22H20C21.1,22 22,21.1 22,20V16H20V20M7,7H17V9H13V17H11V9H7V7Z",
+					"System" when !string.IsNullOrEmpty(subItem.Parameter) => IconHelper.GetSvgPathByKey(subItem.Parameter),
+					_ => ""
+				};
+			}
+		}
+
+		if (subImg != null)
+		{
+			var subImgElement = new System.Windows.Controls.Image
+			{
+				Source = subImg,
+				Width = subIconSize,
+				Height = subIconSize,
+				Stretch = Stretch.Uniform,
+				HorizontalAlignment = HorizontalAlignment.Center,
+				VerticalAlignment = VerticalAlignment.Center,
+				IsHitTestVisible = false
+			};
+			ConfigurePreviewImageElement(subImgElement);
+			return subImgElement;
+		}
+
+		if (!string.IsNullOrEmpty(subSvg))
+		{
+			try
+			{
+				return new System.Windows.Shapes.Path
+				{
+					Data = Geometry.Parse(subSvg),
+					Fill = subIconBrush,
+					Width = subIconSize,
+					Height = subIconSize,
+					Stretch = Stretch.Uniform,
+					HorizontalAlignment = HorizontalAlignment.Center,
+					VerticalAlignment = VerticalAlignment.Center,
+					IsHitTestVisible = false
+				};
+			}
+			catch { }
+		}
+
+		return null;
+	}
+
 	private void RenderMappingsWheelPreview()
 	{
 		if (MappingsWheelPreviewCanvas == null || ConfigManager.CurrentConfig == null) return;
@@ -9832,6 +10045,16 @@ public partial class SettingsWindow : Window
 				if (isMultiSelected)
 				{
 					int order = _selectedMultiSlots.IndexOf(slotIdx) + 1;
+					TextBlock multiBadgeText = new TextBlock
+					{
+						Text = order.ToString(),
+						FontSize = 10,
+						FontWeight = FontWeights.Bold,
+						Foreground = System.Windows.Media.Brushes.White,
+						HorizontalAlignment = HorizontalAlignment.Center,
+						VerticalAlignment = VerticalAlignment.Center
+					};
+					ConfigurePreviewTextElement(multiBadgeText);
 					Border badge = new Border
 					{
 						Width = 19,
@@ -9848,15 +10071,7 @@ public partial class SettingsWindow : Window
 							ShadowDepth = 1,
 							Opacity = 0.45
 						},
-						Child = new TextBlock
-						{
-							Text = order.ToString(),
-							FontSize = 10,
-							FontWeight = FontWeights.Bold,
-							Foreground = System.Windows.Media.Brushes.White,
-							HorizontalAlignment = HorizontalAlignment.Center,
-							VerticalAlignment = VerticalAlignment.Center
-						}
+						Child = multiBadgeText
 					};
 					double badgeR = (innerR + outerR) / 2.0 + (outerR - innerR) * 0.28;
 					double badgeX = centerX + Math.Cos(rad) * badgeR;
@@ -10058,7 +10273,18 @@ public partial class SettingsWindow : Window
 					catch { }
 				}
 
-				bool showText = ConfigManager.CurrentConfig?.MappingsCanvasShowText ?? false;
+				if (iconElement is System.Windows.Controls.Image primaryImgEl)
+				{
+					ConfigurePreviewImageElement(primaryImgEl);
+				}
+
+				bool showCanvasText = ConfigManager.CurrentConfig?.MappingsCanvasShowText ?? false;
+				string globalLayoutMode = ConfigManager.CurrentConfig?.IconLayoutMode ?? "IconAndText";
+				string sectorLayout = (action != null && !string.IsNullOrWhiteSpace(action.LayoutMode) && !string.Equals(action.LayoutMode, "Inherit", StringComparison.OrdinalIgnoreCase))
+					? action.LayoutMode!
+					: globalLayoutMode;
+				bool isPrimaryTextOnly = string.Equals(sectorLayout, "TextOnly", StringComparison.OrdinalIgnoreCase);
+				bool showText = showCanvasText || isPrimaryTextOnly;
 
 				if (showText)
 				{
@@ -10072,7 +10298,7 @@ public partial class SettingsWindow : Window
 
 					// 这个判空不能删：上面的兜底块是 try { iconElement = new Path { Data = Geometry.Parse(...) } }
 					// catch { } —— 空 catch 吞掉异常时 iconElement 依然是 null。CA1508 报「恒真」是误报。
-					if (iconElement != null)
+					if (!isPrimaryTextOnly && iconElement != null)
 					{
 						if (action != null && action.IsInherited)
 						{
@@ -10112,6 +10338,7 @@ public partial class SettingsWindow : Window
 						MaxWidth = Math.Max(42.0, (outerR - innerR) * 1.35),
 						Opacity = (action != null && action.IsInherited) ? 0.65 : 1.0
 					};
+					ConfigurePreviewTextElement(nameBlock);
 					comboPanel.Children.Add(nameBlock);
 
 					comboPanel.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
@@ -10138,7 +10365,7 @@ public partial class SettingsWindow : Window
 					}
 				}
 
-				// 3. Draw SubActions (Icons only, NO TEXT!)
+				// 3. Draw SubActions (icon, icon+text, or centered/truncated text label in TextOnly / ShowText / iconless fallback)
 				bool isFanMode = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
 				bool shouldShowSub = !isFanMode ? true : (isTier2Mode || isParentSlot);
 
@@ -10204,75 +10431,98 @@ public partial class SettingsWindow : Window
 						_mappingsSubSectorKeys.Add(Tuple.Create(slotIdx, subIdx));
 
 						ActionItem subItem = action.SubActions[j];
-						string subIconKey = subItem.IconKey ?? "";
-						string subSvg = !string.IsNullOrEmpty(subItem.CustomIconSvg) ? subItem.CustomIconSvg : IconHelper.GetSvgPathByKey(subIconKey);
-						if (string.IsNullOrEmpty(subSvg))
-						{
-							subSvg = subItem.Type switch
-							{
-								"WebUrl" or "Url" => IconHelper.GetSvgPathByKey("Browser") ?? IconHelper.GetSvgPathByKey("ShowDesktop"),
-								"Folder" or "OpenFolder" => IconHelper.GetSvgPathByKey("Folder"),
-								"Ocr" or "ScreenOcr" => "M2,4C2,2.89 2.9,2 4,2H8V4H4V8H2V4M22,4V8H20V4H16V2H20C21.1,2 22,2.89 22,4M2,20V16H4V20H8V22H4C2.9,22 2,21.1 2,20M20,20H16V22H20C21.1,22 22,21.1 22,20V16H20V20M7,7H17V9H13V17H11V9H7V7Z",
-								"System" when !string.IsNullOrEmpty(subItem.Parameter) => IconHelper.GetSvgPathByKey(subItem.Parameter),
-								_ => ""
-							};
-						}
+						string subLayout = (subItem != null && !string.IsNullOrWhiteSpace(subItem.LayoutMode) && !string.Equals(subItem.LayoutMode, "Inherit", StringComparison.OrdinalIgnoreCase))
+							? subItem.LayoutMode!
+							: globalLayoutMode;
+						bool isSubTextOnly = string.Equals(subLayout, "TextOnly", StringComparison.OrdinalIgnoreCase);
 
 						Brush subIconBrush = isSubSelected ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(168, 85, 247)) : textBrush;
-						double subIconSize = 11.0;
-
-						ImageSource? subImg = null;
-						if (!string.IsNullOrEmpty(subItem.InheritAppIconPath))
+						if (subItem != null && !string.IsNullOrWhiteSpace(subItem.CustomTextColor) && !isSubSelected)
 						{
-							subImg = IconHelper.GetIcon(subItem.InheritAppIconPath);
-						}
-						else if (subItem.Type == "Launch" && !string.IsNullOrEmpty(subItem.Parameter))
-						{
-							subImg = IconHelper.GetIcon(subItem.Parameter);
+							subIconBrush = CreateBrushFromHexSafe(subItem.CustomTextColor, textBrush);
 						}
 
-						if (subImg != null)
+						double subContentOpacity = isExceededInFan ? 0.5 : (action.IsInherited ? 0.65 : 1.0);
+						FrameworkElement? subIconElement = (!isSubTextOnly && subItem != null)
+							? CreateMappingsSubIconElement(subItem, subIconBrush, 11.0)
+							: null;
+
+						bool showSubIcon = !isSubTextOnly && subIconElement != null;
+						bool showSubText = showCanvasText || isSubTextOnly || !showSubIcon;
+
+						if (showSubText)
 						{
-							try
+							double subArcWidth = subMidR * (subSweep * Math.PI / 180.0);
+							double subMaxWidth = Math.Max(22.0, Math.Min(64.0, subArcWidth * 1.05));
+							double subLabelFontSize = showSubIcon
+								? Math.Max(6.5, Math.Min(8.0, 7.2 * scaleFactor + 2.4))
+								: ((subItem != null && subItem.CustomFontSize.HasValue && subItem.CustomFontSize.Value > 0.0)
+									? Math.Max(6.8, Math.Min(9.5, subItem.CustomFontSize.Value * 0.72 * scaleFactor))
+									: Math.Max(7.2, Math.Min(9.2, 8.0 * scaleFactor + 2.6)));
+							string subLabelText = !string.IsNullOrWhiteSpace(subItem?.Name)
+								? subItem.Name.Trim()
+								: (!string.IsNullOrWhiteSpace(subItem?.Parameter)
+									? subItem.Parameter.Trim()
+									: $"{subIdx + 1}");
+
+							TextBlock subNameBlock = new TextBlock
 							{
-								System.Windows.Controls.Image subImgElement = new System.Windows.Controls.Image
+								Text = subLabelText,
+								FontSize = subLabelFontSize,
+								FontWeight = isSubTextOnly ? FontWeights.SemiBold : FontWeights.Medium,
+								Foreground = subIconBrush,
+								HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+								VerticalAlignment = VerticalAlignment.Center,
+								TextAlignment = TextAlignment.Center,
+								TextWrapping = showSubIcon ? TextWrapping.NoWrap : TextWrapping.Wrap,
+								TextTrimming = TextTrimming.CharacterEllipsis,
+								LineHeight = Math.Max(8.0, subLabelFontSize * 1.12),
+								LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
+								MaxWidth = subMaxWidth,
+								MaxHeight = showSubIcon ? 11.0 : 20.0,
+								Opacity = subContentOpacity,
+								IsHitTestVisible = false
+							};
+							ConfigurePreviewTextElement(subNameBlock);
+
+							FrameworkElement subVisual;
+							if (showSubIcon && subIconElement != null)
+							{
+								subIconElement.Width = 9.0;
+								subIconElement.Height = 9.0;
+								subIconElement.Margin = new Thickness(0, 0, 0, 0.5);
+								subIconElement.Opacity = subContentOpacity;
+								StackPanel subPanel = new StackPanel
 								{
-									Source = subImg,
-									Width = subIconSize,
-									Height = subIconSize,
-									Stretch = Stretch.Uniform,
-									HorizontalAlignment = HorizontalAlignment.Center,
+									Orientation = System.Windows.Controls.Orientation.Vertical,
+									HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
 									VerticalAlignment = VerticalAlignment.Center,
 									IsHitTestVisible = false
 								};
-								Canvas.SetLeft(subImgElement, subContentX - subIconSize / 2.0);
-								Canvas.SetTop(subImgElement, subContentY - subIconSize / 2.0);
-								Panel.SetZIndex(subImgElement, 6);
-								MappingsWheelPreviewCanvas.Children.Add(subImgElement);
+								subPanel.Children.Add(subIconElement);
+								subPanel.Children.Add(subNameBlock);
+								subVisual = subPanel;
 							}
-							catch { }
-						}
-						else if (!string.IsNullOrEmpty(subSvg))
-						{
-							try
+							else
 							{
-								System.Windows.Shapes.Path subIconPath = new System.Windows.Shapes.Path
-								{
-									Data = Geometry.Parse(subSvg),
-									Fill = subIconBrush,
-									Width = subIconSize,
-									Height = subIconSize,
-									Stretch = Stretch.Uniform,
-									HorizontalAlignment = HorizontalAlignment.Center,
-									VerticalAlignment = VerticalAlignment.Center,
-									IsHitTestVisible = false
-								};
-								Canvas.SetLeft(subIconPath, subContentX - subIconSize / 2.0);
-								Canvas.SetTop(subIconPath, subContentY - subIconSize / 2.0);
-								Panel.SetZIndex(subIconPath, 6);
-								MappingsWheelPreviewCanvas.Children.Add(subIconPath);
+								subVisual = subNameBlock;
 							}
-							catch { }
+
+							subVisual.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+							double subW = subVisual.DesiredSize.Width;
+							double subH = subVisual.DesiredSize.Height;
+							Canvas.SetLeft(subVisual, subContentX - subW / 2.0);
+							Canvas.SetTop(subVisual, subContentY - subH / 2.0);
+							Panel.SetZIndex(subVisual, 6);
+							MappingsWheelPreviewCanvas.Children.Add(subVisual);
+						}
+						else if (subIconElement != null)
+						{
+							subIconElement.Opacity = subContentOpacity;
+							Canvas.SetLeft(subIconElement, subContentX - subIconElement.Width / 2.0);
+							Canvas.SetTop(subIconElement, subContentY - subIconElement.Height / 2.0);
+							Panel.SetZIndex(subIconElement, 6);
+							MappingsWheelPreviewCanvas.Children.Add(subIconElement);
 						}
 					}
 				}
@@ -11748,6 +11998,10 @@ public partial class SettingsWindow : Window
 		{
 			RenderLiveWheelPreview();
 		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
+		}
 		ScheduleAutoSave();
 	}
 
@@ -12629,6 +12883,85 @@ public partial class SettingsWindow : Window
 		}
 	}
 
+	private static void SetSliderValueWithBounds(Slider? slider, double value, double defaultMin, double defaultMax, bool resetBoundsToDefault = false)
+	{
+		if (slider == null || !double.IsFinite(value))
+		{
+			return;
+		}
+		double min = resetBoundsToDefault ? defaultMin : Math.Min(defaultMin, slider.Minimum);
+		double max = resetBoundsToDefault ? defaultMax : Math.Max(defaultMax, slider.Maximum);
+		if (value < min)
+		{
+			min = value;
+		}
+		if (value > max)
+		{
+			max = value;
+		}
+		slider.Minimum = min;
+		slider.Maximum = max;
+		slider.Value = value;
+	}
+
+	private void SyncDimensionSliderBounds(double wheelRadius, double innerRadius, double coreRadius, double subWheelOuterRadius, bool shrinkOuterMaxToTarget = true)
+	{
+		double safeWheel = double.IsFinite(wheelRadius) && wheelRadius > 0.0 ? wheelRadius : 133.0;
+		double safeInner = double.IsFinite(innerRadius) && innerRadius > 0.0 ? innerRadius : 70.0;
+		double safeCore = double.IsFinite(coreRadius) && coreRadius > 0.0 ? coreRadius : 36.0;
+		double safeSubOuter = double.IsFinite(subWheelOuterRadius) && subWheelOuterRadius > 0.0 ? subWheelOuterRadius : 196.0;
+
+		if (WheelRadiusSlider != null)
+		{
+			double minW = Math.Min(70.0, safeWheel);
+			double maxW = Math.Max(280.0, Math.Max(safeWheel, safeInner + 18.0));
+			if (!shrinkOuterMaxToTarget)
+			{
+				minW = Math.Min(minW, WheelRadiusSlider.Minimum);
+				maxW = Math.Max(maxW, WheelRadiusSlider.Maximum);
+			}
+			WheelRadiusSlider.Minimum = minW;
+			WheelRadiusSlider.Maximum = maxW;
+		}
+
+		if (InnerRadiusSlider != null)
+		{
+			double minI = Math.Min(20.0, safeInner);
+			double maxI = Math.Max(Math.Max(25.0, safeWheel - 18.0), safeInner);
+			if (!shrinkOuterMaxToTarget)
+			{
+				minI = Math.Min(minI, InnerRadiusSlider.Minimum);
+			}
+			InnerRadiusSlider.Minimum = minI;
+			InnerRadiusSlider.Maximum = maxI;
+		}
+
+		if (CoreRadiusSlider != null)
+		{
+			double minC = Math.Min(15.0, safeCore);
+			double maxC = Math.Max(20.0, Math.Max(safeInner, safeCore));
+			if (!shrinkOuterMaxToTarget)
+			{
+				minC = Math.Min(minC, CoreRadiusSlider.Minimum);
+			}
+			CoreRadiusSlider.Minimum = minC;
+			CoreRadiusSlider.Maximum = maxC;
+		}
+
+		if (SubWheelOuterRadiusSlider != null)
+		{
+			double minS = Math.Min(120.0, safeSubOuter);
+			double maxS = Math.Max(480.0, Math.Max(safeSubOuter, safeWheel + 20.0));
+			if (!shrinkOuterMaxToTarget)
+			{
+				minS = Math.Min(minS, SubWheelOuterRadiusSlider.Minimum);
+				maxS = Math.Max(maxS, SubWheelOuterRadiusSlider.Maximum);
+			}
+			SubWheelOuterRadiusSlider.Minimum = minS;
+			SubWheelOuterRadiusSlider.Maximum = maxS;
+		}
+	}
+
 	private void WheelRadiusSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
 	{
 		if (_isUpdatingUi || ConfigManager.CurrentConfig == null || WheelRadiusLabel == null)
@@ -12641,28 +12974,31 @@ public partial class SettingsWindow : Window
 		_isUpdatingUi = true;
 		try
 		{
-			double num2 = Math.Max(25.0, num - 18.0);
-			if (InnerRadiusSlider != null)
+			double maxInner = Math.Max(25.0, num - 18.0);
+			double currentInner = InnerRadiusSlider?.Value ?? ConfigManager.CurrentConfig.InnerRadius;
+			if (InnerRadiusSlider != null && InnerRadiusSlider.Value > maxInner)
 			{
-				InnerRadiusSlider.Maximum = num2;
-				if (InnerRadiusSlider.Value > num2)
+				currentInner = maxInner;
+				InnerRadiusSlider.Value = maxInner;
+				if (InnerRadiusLabel != null)
 				{
-					InnerRadiusSlider.Value = num2;
-					InnerRadiusLabel.Text = num2.ToString("0");
-					ConfigManager.CurrentConfig.InnerRadius = num2;
+					InnerRadiusLabel.Text = maxInner.ToString("0");
 				}
+				ConfigManager.CurrentConfig.InnerRadius = maxInner;
 			}
-			double num3 = Math.Max(20.0, InnerRadiusSlider?.Value ?? ConfigManager.CurrentConfig.InnerRadius);
-			if (CoreRadiusSlider != null)
+			double maxCore = Math.Max(20.0, currentInner);
+			double currentCore = CoreRadiusSlider?.Value ?? ConfigManager.CurrentConfig.CoreRadius;
+			if (CoreRadiusSlider != null && CoreRadiusSlider.Value > maxCore)
 			{
-				CoreRadiusSlider.Maximum = num3;
-				if (CoreRadiusSlider.Value > num3)
+				currentCore = maxCore;
+				CoreRadiusSlider.Value = maxCore;
+				if (CoreRadiusLabel != null)
 				{
-					CoreRadiusSlider.Value = num3;
-					CoreRadiusLabel.Text = num3.ToString("0");
-					ConfigManager.CurrentConfig.CoreRadius = num3;
+					CoreRadiusLabel.Text = maxCore.ToString("0");
 				}
+				ConfigManager.CurrentConfig.CoreRadius = maxCore;
 			}
+			SyncDimensionSliderBounds(num, currentInner, currentCore, ConfigManager.CurrentConfig.SubWheelOuterRadius, shrinkOuterMaxToTarget: false);
 		}
 		finally
 		{
@@ -12672,6 +13008,10 @@ public partial class SettingsWindow : Window
 		if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 		{
 			RenderLiveWheelPreview();
+		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
 		}
 		ScheduleAutoSave();
 	}
@@ -12688,23 +13028,35 @@ public partial class SettingsWindow : Window
 		_isUpdatingUi = true;
 		try
 		{
+			double currentWheel = WheelRadiusSlider?.Value ?? ConfigManager.CurrentConfig.WheelRadius;
 			if (WheelRadiusSlider != null && num + 18.0 > WheelRadiusSlider.Value)
 			{
-				double num2 = Math.Min(WheelRadiusSlider.Maximum, num + 18.0);
-				WheelRadiusSlider.Value = num2;
-				WheelRadiusLabel.Text = num2.ToString("0");
-				ConfigManager.CurrentConfig.WheelRadius = num2;
-			}
-			if (CoreRadiusSlider != null)
-			{
-				CoreRadiusSlider.Maximum = num;
-				if (CoreRadiusSlider.Value > num)
+				double expandedWheel = num + 18.0;
+				if (expandedWheel > WheelRadiusSlider.Maximum)
 				{
-					CoreRadiusSlider.Value = num;
-					CoreRadiusLabel.Text = num.ToString("0");
-					ConfigManager.CurrentConfig.CoreRadius = num;
+					WheelRadiusSlider.Maximum = expandedWheel;
 				}
+				WheelRadiusSlider.Value = expandedWheel;
+				if (WheelRadiusLabel != null)
+				{
+					WheelRadiusLabel.Text = expandedWheel.ToString("0");
+				}
+				ConfigManager.CurrentConfig.WheelRadius = expandedWheel;
+				currentWheel = expandedWheel;
 			}
+			double currentCore = CoreRadiusSlider?.Value ?? ConfigManager.CurrentConfig.CoreRadius;
+			if (CoreRadiusSlider != null && CoreRadiusSlider.Value > num)
+			{
+				double clampedCore = Math.Max(CoreRadiusSlider.Minimum, num);
+				CoreRadiusSlider.Value = clampedCore;
+				if (CoreRadiusLabel != null)
+				{
+					CoreRadiusLabel.Text = clampedCore.ToString("0");
+				}
+				ConfigManager.CurrentConfig.CoreRadius = clampedCore;
+				currentCore = clampedCore;
+			}
+			SyncDimensionSliderBounds(currentWheel, num, currentCore, ConfigManager.CurrentConfig.SubWheelOuterRadius, shrinkOuterMaxToTarget: false);
 		}
 		finally
 		{
@@ -12714,6 +13066,10 @@ public partial class SettingsWindow : Window
 		if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 		{
 			RenderLiveWheelPreview();
+		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
 		}
 		ScheduleAutoSave();
 	}
@@ -12730,20 +13086,38 @@ public partial class SettingsWindow : Window
 		_isUpdatingUi = true;
 		try
 		{
+			double currentInner = InnerRadiusSlider?.Value ?? ConfigManager.CurrentConfig.InnerRadius;
+			double currentWheel = WheelRadiusSlider?.Value ?? ConfigManager.CurrentConfig.WheelRadius;
 			if (InnerRadiusSlider != null && num > InnerRadiusSlider.Value)
 			{
-				double num2 = Math.Min(InnerRadiusSlider.Maximum, num);
-				InnerRadiusSlider.Value = num2;
-				InnerRadiusLabel.Text = num2.ToString("0");
-				ConfigManager.CurrentConfig.InnerRadius = num2;
-				if (WheelRadiusSlider != null && num2 + 18.0 > WheelRadiusSlider.Value)
+				if (num > InnerRadiusSlider.Maximum)
 				{
-					double num3 = Math.Min(WheelRadiusSlider.Maximum, num2 + 18.0);
-					WheelRadiusSlider.Value = num3;
-					WheelRadiusLabel.Text = num3.ToString("0");
-					ConfigManager.CurrentConfig.WheelRadius = num3;
+					InnerRadiusSlider.Maximum = num;
+				}
+				InnerRadiusSlider.Value = num;
+				if (InnerRadiusLabel != null)
+				{
+					InnerRadiusLabel.Text = num.ToString("0");
+				}
+				ConfigManager.CurrentConfig.InnerRadius = num;
+				currentInner = num;
+				if (WheelRadiusSlider != null && currentInner + 18.0 > WheelRadiusSlider.Value)
+				{
+					double expandedWheel = currentInner + 18.0;
+					if (expandedWheel > WheelRadiusSlider.Maximum)
+					{
+						WheelRadiusSlider.Maximum = expandedWheel;
+					}
+					WheelRadiusSlider.Value = expandedWheel;
+					if (WheelRadiusLabel != null)
+					{
+						WheelRadiusLabel.Text = expandedWheel.ToString("0");
+					}
+					ConfigManager.CurrentConfig.WheelRadius = expandedWheel;
+					currentWheel = expandedWheel;
 				}
 			}
+			SyncDimensionSliderBounds(currentWheel, currentInner, num, ConfigManager.CurrentConfig.SubWheelOuterRadius, shrinkOuterMaxToTarget: false);
 		}
 		finally
 		{
@@ -12753,6 +13127,10 @@ public partial class SettingsWindow : Window
 		if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 		{
 			RenderLiveWheelPreview();
+		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
 		}
 		ScheduleAutoSave();
 	}
@@ -12895,7 +13273,7 @@ public partial class SettingsWindow : Window
 				if (SectorIconSizeSlider != null)
 				{
 					double sz = ((ConfigManager.CurrentConfig.SectorIconSize > 0.0) ? ConfigManager.CurrentConfig.SectorIconSize : 20.0);
-					SectorIconSizeSlider.Value = sz;
+					SetSliderValueWithBounds(SectorIconSizeSlider, sz, 14.0, 36.0, resetBoundsToDefault: true);
 					if (SectorIconSizeLabel != null)
 					{
 						SectorIconSizeLabel.Text = $"{sz:0} px";
@@ -12904,7 +13282,7 @@ public partial class SettingsWindow : Window
 				if (SectorFontSizeSlider != null)
 				{
 					double fsz = ((ConfigManager.CurrentConfig.SectorFontSize > 0.0) ? ConfigManager.CurrentConfig.SectorFontSize : 11.0);
-					SectorFontSizeSlider.Value = fsz;
+					SetSliderValueWithBounds(SectorFontSizeSlider, fsz, 8.0, 18.0, resetBoundsToDefault: true);
 					if (SectorFontSizeLabel != null)
 					{
 						SectorFontSizeLabel.Text = $"{fsz:0.0} px";
@@ -12997,7 +13375,7 @@ public partial class SettingsWindow : Window
 				if (SectorIconSizeSlider != null)
 				{
 					double sz = ((action != null && action.CustomIconSize.HasValue && action.CustomIconSize.Value > 0.0) ? action.CustomIconSize.Value : ((ConfigManager.CurrentConfig.SectorIconSize > 0.0) ? ConfigManager.CurrentConfig.SectorIconSize : 20.0));
-					SectorIconSizeSlider.Value = sz;
+					SetSliderValueWithBounds(SectorIconSizeSlider, sz, 14.0, 36.0, resetBoundsToDefault: true);
 					if (SectorIconSizeLabel != null)
 					{
 						SectorIconSizeLabel.Text = $"{sz:0} px";
@@ -13006,7 +13384,7 @@ public partial class SettingsWindow : Window
 				if (SectorFontSizeSlider != null)
 				{
 					double fsz = ((action != null && action.CustomFontSize.HasValue && action.CustomFontSize.Value > 0.0) ? action.CustomFontSize.Value : ((ConfigManager.CurrentConfig.SectorFontSize > 0.0) ? ConfigManager.CurrentConfig.SectorFontSize : 11.0));
-					SectorFontSizeSlider.Value = fsz;
+					SetSliderValueWithBounds(SectorFontSizeSlider, fsz, 8.0, 18.0, resetBoundsToDefault: true);
 					if (SectorFontSizeLabel != null)
 					{
 						SectorFontSizeLabel.Text = $"{fsz:0.0} px";
@@ -13214,6 +13592,10 @@ public partial class SettingsWindow : Window
 		{
 			RenderLiveWheelPreview();
 		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
+		}
 		ScheduleAutoSave();
 	}
 
@@ -13296,6 +13678,10 @@ public partial class SettingsWindow : Window
 		{
 			RenderLiveWheelPreview();
 		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
+		}
 		ScheduleAutoSave();
 	}
 
@@ -13363,6 +13749,10 @@ public partial class SettingsWindow : Window
 		{
 			RenderLiveWheelPreview();
 		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
+		}
 		ScheduleAutoSave();
 	}
 
@@ -13384,6 +13774,10 @@ public partial class SettingsWindow : Window
 		{
 			RenderLiveWheelPreview();
 		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
+		}
 		ScheduleAutoSave();
 	}
 
@@ -13403,6 +13797,10 @@ public partial class SettingsWindow : Window
 		if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 		{
 			RenderLiveWheelPreview();
+		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
 		}
 		ScheduleAutoSave();
 	}
@@ -14032,23 +14430,29 @@ public partial class SettingsWindow : Window
 
 	private void ResetDimensionsButton_Click(object sender, RoutedEventArgs e)
 	{
+		if (ConfigManager.CurrentConfig == null)
+		{
+			return;
+		}
+		bool oldUpdating = _isUpdatingUi;
 		_isUpdatingUi = true;
 		try
 		{
-			WheelRadiusSlider.Value = 133.0;
-			WheelRadiusLabel.Text = "133";
-			InnerRadiusSlider.Value = 70.0;
-			InnerRadiusLabel.Text = "70";
-			CoreRadiusSlider.Value = 36.0;
-			CoreRadiusLabel.Text = "36";
-			SectorGapSlider.Value = 4.0;
-			SectorGapLabel.Text = "4 px";
-			SectorCornerRadiusSlider.Value = 13.0;
-			SectorCornerRadiusLabel.Text = "13 px";
-			SectorIconSizeSlider.Value = 20.0;
-			SectorIconSizeLabel.Text = "20 px";
-			SectorFontSizeSlider.Value = 13.0;
-			SectorFontSizeLabel.Text = "13 px";
+			SyncDimensionSliderBounds(133.0, 70.0, 36.0, ConfigManager.CurrentConfig.SubWheelOuterRadius, shrinkOuterMaxToTarget: true);
+			if (WheelRadiusSlider != null) WheelRadiusSlider.Value = 133.0;
+			if (WheelRadiusLabel != null) WheelRadiusLabel.Text = "133";
+			if (InnerRadiusSlider != null) InnerRadiusSlider.Value = 70.0;
+			if (InnerRadiusLabel != null) InnerRadiusLabel.Text = "70";
+			if (CoreRadiusSlider != null) CoreRadiusSlider.Value = 36.0;
+			if (CoreRadiusLabel != null) CoreRadiusLabel.Text = "36";
+			SetSliderValueWithBounds(SectorGapSlider, 4.0, 0.0, 12.0, resetBoundsToDefault: true);
+			if (SectorGapLabel != null) SectorGapLabel.Text = "4 px";
+			SetSliderValueWithBounds(SectorCornerRadiusSlider, 13.0, 0.0, 16.0, resetBoundsToDefault: true);
+			if (SectorCornerRadiusLabel != null) SectorCornerRadiusLabel.Text = "13 px";
+			SetSliderValueWithBounds(SectorIconSizeSlider, 20.0, 14.0, 36.0, resetBoundsToDefault: true);
+			if (SectorIconSizeLabel != null) SectorIconSizeLabel.Text = "20 px";
+			SetSliderValueWithBounds(SectorFontSizeSlider, 13.0, 8.0, 18.0, resetBoundsToDefault: true);
+			if (SectorFontSizeLabel != null) SectorFontSizeLabel.Text = "13 px";
 			ConfigManager.CurrentConfig.WheelRadius = 133.0;
 			ConfigManager.CurrentConfig.InnerRadius = 70.0;
 			ConfigManager.CurrentConfig.CoreRadius = 36.0;
@@ -14067,7 +14471,7 @@ public partial class SettingsWindow : Window
 		}
 		finally
 		{
-			_isUpdatingUi = false;
+			_isUpdatingUi = oldUpdating;
 		}
 		RenderLiveWheelPreview();
 		SyncUiToConfigAndSave();
@@ -14282,33 +14686,39 @@ public partial class SettingsWindow : Window
 
 	private void ResetSubDimensionsButton_Click(object sender, RoutedEventArgs e)
 	{
+		if (ConfigManager.CurrentConfig == null)
+		{
+			return;
+		}
+		bool oldUpdating = _isUpdatingUi;
 		_isUpdatingUi = true;
 		try
 		{
+			SyncDimensionSliderBounds(ConfigManager.CurrentConfig.WheelRadius, ConfigManager.CurrentConfig.InnerRadius, ConfigManager.CurrentConfig.CoreRadius, 196.0, shrinkOuterMaxToTarget: true);
 			if (SubWheelOuterRadiusSlider != null)
 			{
 				SubWheelOuterRadiusSlider.Value = 196.0;
-				SubWheelOuterRadiusLabel.Text = "196 px";
+				if (SubWheelOuterRadiusLabel != null) SubWheelOuterRadiusLabel.Text = "196 px";
 			}
 			if (SubWheelInnerGapSlider != null)
 			{
-				SubWheelInnerGapSlider.Value = 7.0;
-				SubWheelInnerGapLabel.Text = "7 px";
+				SetSliderValueWithBounds(SubWheelInnerGapSlider, 7.0, 0.0, 20.0, resetBoundsToDefault: true);
+				if (SubWheelInnerGapLabel != null) SubWheelInnerGapLabel.Text = "7 px";
 			}
 			if (SubWheelCornerRadiusSlider != null)
 			{
-				SubWheelCornerRadiusSlider.Value = 14.0;
-				SubWheelCornerRadiusLabel.Text = "14 px";
+				SetSliderValueWithBounds(SubWheelCornerRadiusSlider, 14.0, 0.0, 20.0, resetBoundsToDefault: true);
+				if (SubWheelCornerRadiusLabel != null) SubWheelCornerRadiusLabel.Text = "14 px";
 			}
 			if (SubWheelIconSizeSlider != null)
 			{
-				SubWheelIconSizeSlider.Value = 16.0;
-				SubWheelIconSizeLabel.Text = "16 px";
+				SetSliderValueWithBounds(SubWheelIconSizeSlider, 16.0, 10.0, 32.0, resetBoundsToDefault: true);
+				if (SubWheelIconSizeLabel != null) SubWheelIconSizeLabel.Text = "16 px";
 			}
 			if (SubWheelFontSizeSlider != null)
 			{
-				SubWheelFontSizeSlider.Value = 9.5;
-				SubWheelFontSizeLabel.Text = "9.5 px";
+				SetSliderValueWithBounds(SubWheelFontSizeSlider, 9.5, 7.0, 16.0, resetBoundsToDefault: true);
+				if (SubWheelFontSizeLabel != null) SubWheelFontSizeLabel.Text = "9.5 px";
 			}
 			ConfigManager.CurrentConfig.SubWheelOuterRadius = 196.0;
 			ConfigManager.CurrentConfig.SubWheelInnerGap = 7.0;
@@ -14318,7 +14728,7 @@ public partial class SettingsWindow : Window
 		}
 		finally
 		{
-			_isUpdatingUi = false;
+			_isUpdatingUi = oldUpdating;
 		}
 		RenderLiveWheelPreview();
 		SyncUiToConfigAndSave();
@@ -14510,6 +14920,10 @@ public partial class SettingsWindow : Window
 		if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
 		{
 			RenderLiveWheelPreview();
+		}
+		if (MappingsSettingsGrid != null && MappingsSettingsGrid.Visibility == Visibility.Visible)
+		{
+			RenderMappingsWheelPreview();
 		}
 		ScheduleAutoSave();
 	}
@@ -15239,21 +15653,14 @@ public partial class SettingsWindow : Window
 			ConfigManager.CurrentConfig.SelectedArtStyleId = "";
 			ConfigManager.CurrentConfig.AppTheme = themeTag;
 			AppThemeManager.ApplyTheme(this, themeTag);
-			UpdateSidebarThemeVisualState(themeTag);
-			bool isDark = IsCurrentThemeDark();
-			UpdateLogoTheme(isDark);
-			App.ApplyTrayTheme(isDark);
-			if (AppearanceSettingsGrid != null && AppearanceSettingsGrid.Visibility == Visibility.Visible)
-			{
-				RenderLiveWheelPreview();
-			}
-			SyncUiToConfigAndSave();
+			ScheduleAutoSave();
 			ArtStyles.ArtStyleService.NotifyChanged();
 		}
 	}
 
 	private void UpdateSidebarThemeVisualState(string themeTag)
 	{
+		bool wasUpdating = _isUpdatingUi;
 		_isUpdatingUi = true;
 		try
 		{
@@ -15290,7 +15697,7 @@ public partial class SettingsWindow : Window
 		}
 		finally
 		{
-			_isUpdatingUi = false;
+			_isUpdatingUi = wasUpdating;
 		}
 	}
 
@@ -16660,36 +17067,48 @@ public partial class SettingsWindow : Window
 
 	private void DeleteProfileBtn_Click(object sender, RoutedEventArgs e)
 	{
+		_autoSaveDebounceTimer?.Stop();
 		string currentName = GetSelectedConfigProfileName();
 		var list = ConfigManager.GetSavedConfigNames();
 		if (list.Count <= 1)
 		{
-			AppMessageBox.Show(this, "至少需要保留一个配置方案，无法删除最后一份配置。", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+			AppMessageBox.Show(this, I18n.T("DeleteSavedConfigMinError"), I18n.T("Notice"), MessageBoxButton.OK, MessageBoxImage.Warning);
 			return;
 		}
 
 		var res = AppMessageBox.Show(
 			this,
-			$"确定要删除配置方案「{currentName}」吗？\n删除后该方案配置文件将被永久移除。",
-			"确认删除配置方案",
+			I18n.TF("DeleteSavedConfigConfirmMessage", currentName),
+			I18n.T("DeleteSavedConfigConfirmTitle"),
 			MessageBoxButton.YesNo,
 			MessageBoxImage.Question);
 		if (res == MessageBoxResult.Yes)
 		{
-			if (ConfigManager.DeleteSavedConfig(currentName, out string fallbackName))
+			if (DeleteSavedConfigProfileCore(currentName, out string fallbackName))
 			{
-				_selectedProfile = null;
-				_isUpdatingUi = true;
-				try
-				{
-					LoadConfigToUi();
-					AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig.AppTheme ?? "System");
-				}
-				finally
-				{
-					_isUpdatingUi = false;
-				}
-				_selectedProfile = ConfigManager.CurrentConfig.Profiles?.FirstOrDefault();
+				AppMessageBox.Show(this, I18n.TF("DeleteSavedConfigSuccessMessage", currentName, fallbackName), I18n.T("DeleteSavedConfigSuccessTitle"), MessageBoxButton.OK, MessageBoxImage.Asterisk);
+			}
+			else
+			{
+				AppMessageBox.Show(this, I18n.T("DeleteSavedConfigFailed"), I18n.T("Error"), MessageBoxButton.OK, MessageBoxImage.Hand);
+			}
+		}
+	}
+
+	internal bool DeleteSavedConfigProfileCore(string currentName, out string fallbackName)
+	{
+		_autoSaveDebounceTimer?.Stop();
+		if (ConfigManager.DeleteSavedConfig(currentName, out fallbackName))
+		{
+			_autoSaveDebounceTimer?.Stop();
+			_selectedProfile = null;
+			bool wasUpdating = _isUpdatingUi;
+			_isUpdatingUi = true;
+			try
+			{
+				LoadConfigToUi();
+				AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig?.AppTheme ?? "System");
+				_selectedProfile = ConfigManager.CurrentConfig?.Profiles?.FirstOrDefault();
 				if (ProfilesListBox != null) ProfilesListBox.SelectedItem = _selectedProfile;
 				if (MappingsProfileComboBox != null) MappingsProfileComboBox.SelectedItem = _selectedProfile;
 				ReloadThemePresets();
@@ -16698,13 +17117,18 @@ public partial class SettingsWindow : Window
 				RenderMappingsWheelPreview();
 				RenderLiveWheelPreview();
 				RefreshConfigProfilesUi();
-				AppMessageBox.Show(this, $"已成功删除配置方案「{currentName}」，当前已切换至方案「{fallbackName}」。", "删除成功", MessageBoxButton.OK, MessageBoxImage.Asterisk);
 			}
-			else
+			finally
 			{
-				AppMessageBox.Show(this, "删除配置方案失败。", "错误", MessageBoxButton.OK, MessageBoxImage.Hand);
+				_isUpdatingUi = wasUpdating;
 			}
+			_autoSaveDebounceTimer?.Stop();
+			UpdateAutoSaveStatus(isSaving: false, success: true);
+			return true;
 		}
+
+		RefreshConfigProfilesUi();
+		return false;
 	}
 
 	private async void ExportConfigButton_Click(object sender, RoutedEventArgs e) => await ExportSelectedConfigAsync();
@@ -17550,6 +17974,10 @@ public partial class SettingsWindow : Window
 				_previewCoreUsesCustomImage = false;
 				grid.Children.Add(_previewExitIcon);
 			}
+			if (_previewCoreIconElement is System.Windows.Controls.Image corePreviewImg)
+			{
+				ConfigurePreviewImageElement(corePreviewImg);
+			}
 			_previewCoreSelectionOverlay = new Ellipse
 			{
 				Width = num10 * 2.0,
@@ -17597,6 +18025,7 @@ public partial class SettingsWindow : Window
 					Opacity = 0.4
 				}
 			};
+			ConfigurePreviewTextElement(_previewCoreSelectionText);
 			grid.Children.Add(_previewCoreSelectionText);
 			_previewStyleRenderer.RenderDecorations(LiveWheelPreviewCanvas, grid, num, num2, num8, num10, 1);
 			int num19 = ((wheelProfile.SectorCount > 0) ? wheelProfile.SectorCount : 8);
@@ -17654,6 +18083,16 @@ public partial class SettingsWindow : Window
 				if (isMultiSelected)
 				{
 					int order = _selectedMultiSlots.IndexOf(num21) + 1;
+					TextBlock badgeText = new TextBlock
+					{
+						Text = order.ToString(),
+						FontSize = 10,
+						FontWeight = FontWeights.Bold,
+						Foreground = System.Windows.Media.Brushes.White,
+						HorizontalAlignment = HorizontalAlignment.Center,
+						VerticalAlignment = VerticalAlignment.Center
+					};
+					ConfigurePreviewTextElement(badgeText);
 					Border badge = new Border
 					{
 						Width = 19,
@@ -17670,15 +18109,7 @@ public partial class SettingsWindow : Window
 							ShadowDepth = 1,
 							Opacity = 0.45
 						},
-						Child = new TextBlock
-						{
-							Text = order.ToString(),
-							FontSize = 10,
-							FontWeight = FontWeights.Bold,
-							Foreground = System.Windows.Media.Brushes.White,
-							HorizontalAlignment = HorizontalAlignment.Center,
-							VerticalAlignment = VerticalAlignment.Center
-						}
+						Child = badgeText
 					};
 					double badgeR = (num9 + num8) / 2.0 + (num8 - num9) * 0.28;
 					double badgeX = num + Math.Cos(num24) * badgeR;
@@ -17932,6 +18363,12 @@ public partial class SettingsWindow : Window
 						LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
 						MaxWidth = maxWidth
 					};
+					ConfigurePreviewTextElement(textElement);
+				}
+
+				if (iconElement is System.Windows.Controls.Image primaryPreviewImg)
+				{
+					ConfigurePreviewImageElement(primaryPreviewImg);
 				}
 
 				string textPlacement = (!string.IsNullOrWhiteSpace(action?.CustomTextPlacement))
@@ -18259,6 +18696,10 @@ public partial class SettingsWindow : Window
 
 						if (subIconEl != null)
 						{
+							if (subIconEl is Image subPreviewImg)
+							{
+								ConfigurePreviewImageElement(subPreviewImg);
+							}
 							stackPanel2.Children.Add(subIconEl);
 						}
 					}
@@ -18319,6 +18760,7 @@ public partial class SettingsWindow : Window
 							MaxWidth = Math.Max(48.0 * num7, num45 - 4.0 * num7),
 							MaxHeight = Math.Max(subFontSize * 2.6 + 4.0 * num7, num46 - (subShouldShowIcon ? currentSubIconDim + 4.0 * num7 : 6.0 * num7))
 						};
+						ConfigurePreviewTextElement(element8);
 						stackPanel2.Children.Add(element8);
 					}
 					Grid grid3 = new Grid

@@ -2289,6 +2289,8 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("PluginsPanelProviderWithId", "提供插件：{0}（{1}）", "提供外掛：{0}（{1}）", "Plugin: {0} ({1})", "提供プラグイン：{0}（{1}）");
 		Add("PluginsPanelRequiredParams", "此动作有 {0} 个必填参数，留空会在触发时被拦下。", "此動作有 {0} 個必填參數，留空會在觸發時被攔下。", "This action has {0} required parameter(s); leaving them empty blocks the trigger.", "この動作には必須パラメーターが {0} 個あります。空欄のまま実行するとブロックされます。");
 		Add("PluginsPanelTimeout", "超时：{0} 秒", "逾時：{0} 秒", "Timeout: {0} s", "タイムアウト：{0} 秒");
+		Add("QuickSearchUnavailableTitle", "快捷搜索", "快速搜尋", "Quick Search", "クイック検索");
+		Add("QuickSearchUnavailableHint", "请在插件管理页安装并启用快捷搜索，或检查插件状态。原轮盘绑定已保留。", "請在外掛管理頁安裝並啟用快速搜尋，或檢查外掛狀態。原轉盤綁定已保留。", "Install and enable Quick Search on the plugins page, or check its status. Your wheel binding is preserved.", "プラグイン画面でクイック検索をインストールして有効にするか、状態を確認してください。ホイールの割り当ては保持されています。");
 		Add("PluginsPanelUnavailable", "所引用的插件动作当前不可用：{0}\n可能是该插件已被停用或卸载，也可能是插件升级后移除了这个动作。\n到「插件与扩展」页确认插件状态，或直接在上方「插件动作」下拉框里改选另一个动作。", "所引用的外掛動作目前無法使用：{0}\n可能是該外掛已被停用或解除安裝，也可能是外掛升級後移除了這個動作。\n到「外掛與擴充」頁確認外掛狀態，或直接在上方「外掛動作」下拉選單裡改選另一個動作。", "The referenced plugin action is currently unavailable: {0}\nThe plugin may have been disabled or uninstalled, or an upgrade removed this action.\nCheck the plugin's state on the plugins page, or pick another action in the dropdown above.", "参照しているプラグイン動作は現在利用できません：{0}\nプラグインが無効化／アンインストールされたか、更新でこの動作が削除された可能性があります。\n「プラグインと拡張」ページで状態を確認するか、上の「プラグイン動作」ドロップダウンで別の動作を選び直してください。");
 		Add("PluginsPanelUnavailableHint", "⚠️ 触发时会明确提示「插件动作不可用」，不会静默无操作。", "⚠️ 觸發時會明確提示「外掛動作無法使用」，不會靜默無操作。", "⚠️ Triggering it reports \"plugin action unavailable\" — it will not silently do nothing.", "⚠️ 実行時は「プラグイン動作を利用できません」と明示されます。無言で何も起きることはありません。");
 		Add("PluginsPickDllFilter", "插件程序集 (*.dll)|*.dll|所有文件 (*.*)|*.*", "外掛組件 (*.dll)|*.dll|所有檔案 (*.*)|*.*", "Plugin assemblies (*.dll)|*.dll|All files (*.*)|*.*", "プラグイン アセンブリ (*.dll)|*.dll|すべてのファイル (*.*)|*.*");
@@ -2465,7 +2467,9 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("RepairAutoStart", "修复自启动", "修復自動啟動", "Repair startup", "自動起動を修復");
 		Add("AutoStartStateUnknown", "无法读取自启动状态，请稍后重试。", "無法讀取自動啟動狀態，請稍後重試。", "Cannot read startup state. Try again later.", "自動起動の状態を読み取れません。後で再試行してください。");
 		Add("AutoStartTaskEnabled", "管理员登录任务已启用", "管理員登入工作已啟用", "Elevated login task enabled", "管理者ログオンタスクは有効です");
+		Add("AutoStartTaskNeedsRepair", "管理员登录任务需修复（路径不一致或含旧版电池限制），请点击“修复自启动”。", "管理員登入工作需要修復（路徑不一致或含舊版電池限制），請點擊「修復自動啟動」。", "Elevated login task needs repair (path mismatch or legacy battery limit). Click \"Repair startup\".", "管理者ログオンタスクの修復が必要です（パス不一致または旧来のバッテリー制限）。「自動起動を修復」をクリックしてください。");
 		Add("AutoStartRunEnabled", "普通用户登录自启动已启用", "一般使用者登入自動啟動已啟用", "User login startup enabled", "ユーザーログオン時の自動起動は有効です");
+		Add("AutoStartRunNeedsRepair", "普通用户自启动项与当前程序路径不一致，请点击“修复自启动”。", "一般使用者自動啟動項目與目前程式路徑不一致，請點擊「修復自動啟動」。", "User login startup entry does not match the current program path. Click \"Repair startup\".", "ユーザーログオン自動起動のパスが現在のプログラムと一致しません。「自動起動を修復」をクリックしてください。");
 		Add("AutoStartDisabled", "自启动已关闭", "自動啟動已關閉", "Startup disabled", "自動起動は無効です");
 		Add("AutoStartWorking", "正在更新自启动…", "正在更新自動啟動…", "Updating startup…", "自動起動を更新中…");
 		Add("AutoStartResultFailed", "自启动修改失败，请检查权限后重试。当前状态已重新读取。", "自動啟動修改失敗，請檢查權限後重試。目前狀態已重新讀取。", "Startup change failed. Check permissions and retry. Current state was re-read.", "自動起動の変更に失敗しました。権限を確認して再試行してください。現在の状態を再取得しました。");
@@ -2517,6 +2521,12 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("ActionPanelSaveFailed", "保存失败，原配置已保留。", "儲存失敗，原設定已保留。", "Save failed. Original configuration retained.", "保存に失敗しました。元の設定は保持されています。");
 		Add("ActionPanelUnreadable", "动作面板数据无效，已只读打开，原配置未改动。请从有效备份恢复配置后重试。", "動作面板資料無效，已唯讀開啟，原設定未改動。請從有效備份還原後重試。", "Action panel data is invalid. Opened read-only; original configuration retained. Restore a valid configuration backup to edit.", "アクションパネル設定が無効なため読み取り専用です。元の設定を保持しています。有効なバックアップから復元してください。");
 		Add("ActionPanelBusy", "队列繁忙或目标已失效。", "佇列忙碌或目標已失效。", "Queue busy or target no longer available.", "キューが混雑中か、入力先が無効です。");
+		Add("DeleteSavedConfigMinError", "至少需要保留一个配置方案，无法删除最后一份配置。", "至少需要保留一個設定方案，無法刪除最後一份設定。", "At least one configuration scheme must be kept. The last scheme cannot be deleted.", "少なくとも1つの構成スキームを残す必要があります。最後の構成は削除できません。");
+		Add("DeleteSavedConfigConfirmTitle", "确认删除配置方案", "確認刪除設定方案", "Confirm Scheme Deletion", "構成スキーム削除の確認");
+		Add("DeleteSavedConfigConfirmMessage", "确定要删除配置方案「{0}」吗？\n删除后该方案配置文件将被永久移除。", "確定要刪除設定方案「{0}」嗎？\n刪除後該方案設定檔將被永久移除。", "Are you sure you want to delete scheme \"{0}\"?\nIts configuration file will be permanently removed.", "構成スキーム「{0}」を削除してもよろしいですか？\n削除すると設定ファイルは完全に削除されます。");
+		Add("DeleteSavedConfigSuccessTitle", "删除成功", "刪除成功", "Deleted", "削除完了");
+		Add("DeleteSavedConfigSuccessMessage", "已成功删除配置方案「{0}」，当前已切换至方案「{1}」。", "已成功刪除設定方案「{0}」，目前已切換至方案「{1}」。", "Deleted scheme \"{0}\" and switched to \"{1}\".", "構成スキーム「{0}」を削除し、「{1}」に切り替えました。");
+		Add("DeleteSavedConfigFailed", "删除配置方案失败，原配置与列表已保留。", "刪除設定方案失敗，原設定與清單已保留。", "Failed to delete the configuration scheme. The existing configuration and list were kept.", "構成スキームの削除に失敗しました。現在の構成と一覧は保持されています。");
 		Translations = dictionary;
 	}
 }
