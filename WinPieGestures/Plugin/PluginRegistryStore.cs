@@ -334,6 +334,8 @@ internal static class PluginRegistryStore
     {
         try
         {
+            PluginPaths.CheckWritableHostFile(path);
+            PluginPaths.CheckWritableHostFile(path + ".tmp");
             string? dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir)) Directory.CreateDirectory(dir);
 

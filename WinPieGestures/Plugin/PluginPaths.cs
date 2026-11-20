@@ -84,19 +84,14 @@ internal static class PluginPaths
     /// <summary>插件日志目录（与主日志同根，按插件分文件）。</summary>
     public static string LogDirectory => Path.Combine(AppLogger.GetLogFolderPath(), "plugins");
 
-    private static string LocalAppData =>
-        string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LOCALAPPDATA"))
-            ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-            : Environment.GetEnvironmentVariable("LOCALAPPDATA")!;
-
-    private static string DefaultRoot => Path.Combine(LocalAppData, "StarPie", HostDirectoryName);
+    private static string DefaultRoot => Path.Combine(ApplicationDataPaths.Root, HostDirectoryName);
 
     private static string PortableRoot => Path.Combine(AppContext.BaseDirectory, HostDirectoryName);
 
     /// <summary>迁移前的旧可写宿主区。按当前是否便携分别对应程序目录或 <c>%LOCALAPPDATA%</c>。</summary>
     private static string ResolveLegacyRoot() => IsPortable
         ? Path.Combine(AppContext.BaseDirectory, LegacyHostDirectoryName)
-        : Path.Combine(LocalAppData, "StarPie", LegacyHostDirectoryName);
+        : Path.Combine(ApplicationDataPaths.Root, LegacyHostDirectoryName);
 
     /// <summary>主程序目录下是否存在 <c>portable.flag</c>。</summary>
     public static bool PortableFlagPresent
@@ -120,6 +115,13 @@ internal static class PluginPaths
     public static void Configure(bool portableRequested)
     {
         if (_rootsPinned) return;
+
+        if (ApplicationDataPaths.IsPortable)
+        {
+            // The explicitly selected profile owns its plugins. Never import another profile here.
+            _rootOverride = DefaultRoot;
+            return;
+        }
 
         bool portable = portableRequested || PortableFlagPresent;
         _rootOverride = portable ? PortableRoot : DefaultRoot;
@@ -209,10 +211,15 @@ internal static class PluginPaths
 
     /// <summary>当前生效的可写宿主区是否位于程序目录下（即便携模式）。</summary>
     public static bool IsPortable =>
-        string.Equals(
+        (!_rootsPinned && ApplicationDataPaths.IsPortable) || string.Equals(
             Path.GetFullPath(Root).TrimEnd(Path.DirectorySeparatorChar),
             Path.GetFullPath(PortableRoot).TrimEnd(Path.DirectorySeparatorChar),
             StringComparison.OrdinalIgnoreCase);
+
+    internal static void CheckWritableHostFile(string path)
+    {
+        if (!_rootsPinned) ApplicationDataPaths.CheckPortableFile(path);
+    }
 
     public static string GetPluginDirectory(string pluginId) => Path.Combine(Root, pluginId);
 

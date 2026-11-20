@@ -11,6 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
+. (Join-Path $repoRoot 'installer/Assert-CleanDistributionRoot.ps1')
 $cleanVersion = $Version.TrimStart('v', 'V')
 $tag = "v$cleanVersion"
 
@@ -40,7 +41,12 @@ Write-Host " [PASS] csproj 版本已就绪: Version=$csprojVersion, AssemblyVers
 
 # 2. 准备输出目录
 Write-Host "`n[2/7] 准备目标目录结构..." -ForegroundColor DarkCyan
+# These output directories can also have been launched as a portable installation.
+foreach ($dir in @($TargetDir, "$TargetDir/Lightweight", "$TargetDir/Standalone", "$TargetDir/StarPie-$tag-Lightweight-win-x64")) {
+    Assert-CleanDistributionRoot $dir
+}
 if ($Clean -and (Test-Path $TargetDir)) {
+    Assert-NoPortableProfileInCleanupTree $TargetDir
     Write-Host "  清理已有目录: $TargetDir" -ForegroundColor Yellow
     Remove-Item -LiteralPath $TargetDir -Recurse -Force
 }
@@ -73,6 +79,9 @@ Write-Host " [PASS] Standalone 发布成功: $standaloneDir" -ForegroundColor Gr
 
 # 5. 同步生成已解包目录与 ZIP 压缩归档
 Write-Host "`n[5/7] 打包 ZIP 压缩包与解包目录..." -ForegroundColor DarkCyan
+
+Assert-CleanDistributionRoot $lightweightDir
+Assert-CleanDistributionRoot $standaloneDir
 
 # 5.1 生成轻量解包文件夹 (与历史结构完全对齐)
 $unpackedLightweightDir = Join-Path $TargetDir "StarPie-$tag-Lightweight-win-x64"

@@ -381,7 +381,7 @@ public partial class SettingsWindow
 						string? path = iconHint;
 						if (string.IsNullOrWhiteSpace(path))
 						{
-							string cache = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StarPie", "program_cache.json");
+							string cache = Path.Combine(ApplicationDataPaths.ProgramCacheDirectory, "program_cache.json");
 							if (File.Exists(cache) && new FileInfo(cache).Length <= 4 * 1024 * 1024)
 							{
 								using var json = JsonDocument.Parse(File.ReadAllText(cache));

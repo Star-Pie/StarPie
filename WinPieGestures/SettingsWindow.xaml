@@ -3977,10 +3977,14 @@
                           Margin="0,0,8,4" SelectionChanged="PluginDownloadChannel_SelectionChanged">
                   <ComboBoxItem Tag="atomgit" /><ComboBoxItem Tag="ghfast" /><ComboBoxItem Tag="gh-proxy" />
                   <ComboBoxItem Tag="mirror" /><ComboBoxItem Tag="direct" />
+                  <ComboBoxItem x:Name="PluginChannelAutoItem" Tag="auto" />
                 </ComboBox>
+                <Button Name="ProbePluginSourcesButton" Style="{StaticResource ModernButtonStyle}" MinHeight="28" Padding="10,3"
+                        Margin="0,0,8,4" Click="ProbePluginSources_Click" />
                 <Button Name="RefreshOfficialPluginsButton" Style="{StaticResource ModernButtonStyle}" MinHeight="28" Padding="10,3"
                         Margin="0,0,0,4" Click="RefreshOfficialPluginsButton_Click" />
               </WrapPanel>
+              <TextBlock Name="PluginSourceProbeResult" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
               <TextBlock Name="OfficialPluginsStatusText" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
               <TextBlock Name="PluginsOfflineGuideText" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,3,0,10" TextWrapping="Wrap" />
               <Border Name="OfficialPluginsOnboardingBanner" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
@@ -4352,6 +4356,19 @@
                   <DynamicResource ResourceKey="CardShadowEffect" />
                 </UIElement.Effect>
                 <StackPanel>
+                  <Grid Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                      <TextBlock Name="StartInTrayTitle" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Name="StartInTrayHint" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" />
+                      <TextBlock Name="DataLocationText" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <CheckBox Name="StartInTrayCheckBox" Grid.Column="1" VerticalAlignment="Center" Style="{StaticResource ToggleSwitchStyle}"
+                              AutomationProperties.Name="{Binding Text, ElementName=StartInTrayTitle}" Click="StartInTrayCheckBox_Click" />
+                  </Grid>
                   <Grid>
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*" />
@@ -4725,12 +4742,18 @@
                               </Grid.ColumnDefinitions>
                               <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
                                 <TextBlock Name="UpdateSourceTitleText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Name="UpdateSourceProbeResult" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Visibility="Collapsed" />
                                 <TextBlock Name="UpdateSourceDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap" />
                               </StackPanel>
-                              <ComboBox Name="UpdateSourceComboBox" Grid.Column="1" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateSourceComboBox_SelectionChanged">
+                              <StackPanel Grid.Column="1">
+                              <ComboBox Name="UpdateSourceComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="30" VerticalAlignment="Center" SelectionChanged="UpdateSourceComboBox_SelectionChanged">
                                 <ComboBoxItem x:Name="UpdateSourceGitHubItem" Tag="github" />
                                 <ComboBoxItem x:Name="UpdateSourceAtomGitItem" Tag="atomgit" />
+                                <ComboBoxItem x:Name="UpdateSourceAutoItem" Tag="auto" />
                               </ComboBox>
+                              <Button Name="ProbeUpdateSourcesButton" Style="{StaticResource ModernButtonStyle}" MinHeight="26"
+                                      HorizontalAlignment="Right" Margin="0,4,0,0" Padding="10,2" Click="ProbeUpdateSources_Click" />
+                              </StackPanel>
                             </Grid>
 
                             <!-- 国内加速下载镜像源 -->

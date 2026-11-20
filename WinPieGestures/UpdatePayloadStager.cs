@@ -372,6 +372,11 @@ internal static class UpdatePayloadStager
         }
 
         string[] segments = normalized.Split('/');
+        if (string.Equals(segments[0], ApplicationDataPaths.PortableDataDirectory, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(segments[0], ApplicationDataPaths.PortableMarker, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(segments[0], "portable.flag", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidDataException($"Update archive contains a portable profile path: {fullName}");
+
         foreach (string segment in segments)
         {
             if (segment.Length == 0 ||

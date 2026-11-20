@@ -56,14 +56,7 @@ public static class IconHelper
 	private static readonly ConcurrentDictionary<string, BitmapSource> _dynamicIcons;
 	private static readonly LinkedList<string> _dynamicLruList;
 	private static readonly object _dynamicLruLock;
-	public static string PersistentIconCacheFolder
-	{
-		get
-		{
-			string localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA") ?? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-			return Path.Combine(localAppData, "StarPie", "IconCache");
-		}
-	}
+	public static string PersistentIconCacheFolder => Path.Combine(ApplicationDataPaths.Root, "IconCache");
 	public static void ClearPinnedIcons()
 	{
 		_pinnedIcons.Clear();
@@ -1200,6 +1193,8 @@ public static class IconHelper
 	public static BitmapSource? LoadPersistentIconSnapshot(string sourcePath)
 	{
 		string cachePath = GetPersistentIconCachePath(sourcePath);
+		try { ApplicationDataPaths.CheckPortableFile(cachePath); }
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
 		try
 		{
 			if (!File.Exists(cachePath))
@@ -1244,6 +1239,7 @@ public static class IconHelper
 		{
 			Directory.CreateDirectory(PersistentIconCacheFolder);
 			string cachePath = GetPersistentIconCachePath(sourcePath);
+			ApplicationDataPaths.CheckPortableFile(cachePath);
 			PngBitmapEncoder encoder = new PngBitmapEncoder();
 			encoder.Frames.Add(BitmapFrame.Create(icon));
 			byte[] pngBytes;
@@ -1474,7 +1470,7 @@ public static class IconHelper
 
 	public static string GetCustomIconsDirectory()
 	{
-		string text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StarPie", "CustomIcons");
+		string text = Path.Combine(ApplicationDataPaths.Root, "CustomIcons");
 		if (!Directory.Exists(text))
 		{
 			Directory.CreateDirectory(text);
@@ -1628,6 +1624,7 @@ public static class IconHelper
 			}
 			string path = $"{text}_{DateTime.Now:yyyyMMddHHmmss}{value}";
 			string targetPath = Path.Combine(customIconsDirectory, path);
+			ApplicationDataPaths.CheckPortableFile(targetPath);
 			File.Copy(sourceFilePath, targetPath, overwrite: true);
 			_cachedCustomIcons = null;
 			return GetCustomIcons().FirstOrDefault((CustomIconItem customIconItem) => customIconItem.FilePath == targetPath);
@@ -1655,6 +1652,7 @@ public static class IconHelper
 			}
 			string path = $"{text}_{DateTime.Now:yyyyMMddHHmmss}.svg";
 			string targetPath = Path.Combine(customIconsDirectory, path);
+			ApplicationDataPaths.CheckPortableFile(targetPath);
 			File.WriteAllText(targetPath, svgPathData.Trim());
 			_cachedCustomIcons = null;
 			return GetCustomIcons().FirstOrDefault((CustomIconItem customIconItem) => customIconItem.FilePath == targetPath);

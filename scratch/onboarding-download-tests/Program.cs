@@ -306,16 +306,31 @@ public static class Program
         string validV2CatalogJson = CreateValidCatalogJson(newTag);
         string validV1CatalogJson = System.Text.RegularExpressions.Regex.Replace(CreateValidCatalogJson(oldTag), "\"schemaversion\"\\s*:\\s*2", "\"schemaVersion\":1", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
+        static HttpResponseMessage GitTags(params string[] tags)
+        {
+            var data = new StringBuilder();
+            foreach (string tag in tags)
+            {
+                string line = new string('0', 40) + " refs/tags/" + tag + "\n";
+                data.Append((line.Length + 4).ToString("x4")).Append(line);
+            }
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(data.Append("0000").ToString()) };
+            response.Content.Headers.ContentType = new("application/x-git-upload-pack-advertisement");
+            return response;
+        }
+
         // 4.1 官方 Atom 包含旧稳定 v1 与新 pre-release v2 时，所有四通道采用相同 tag，使用所选通道下载资产，不请求 /latest
         foreach (string channel in new[] { "direct", "ghfast", "gh-proxy", "mirror" })
         {
+            var options = new OfficialPluginDownloadOptions(channel);
             var requestedUrls = new List<string>();
             var mockHandler = new DelegatingMockHttpHandler(req =>
             {
                 string url = req.RequestUri?.ToString() ?? "";
                 requestedUrls.Add(url);
 
-                if (url == repo + "/releases.atom")
+                if (channel == "ghfast" && url == options.GetProxiedUrl(repo + ".git/info/refs?service=git-upload-pack")) return GitTags(oldTag, newTag);
+                if (url == options.GetProxiedUrl(repo + "/releases.atom"))
                 {
                     string atom = $"<feed xmlns=\"http://www.w3.org/2005/Atom\"><entry><updated>2026-10-01T00:00:00Z</updated><link href=\"{repo}/releases/tag/{newTag}\" /></entry><entry><updated>2026-09-30T00:00:00Z</updated><link href=\"{repo}/releases/tag/{oldTag}\" /></entry></feed>";
                     return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(atom) };
@@ -331,7 +346,6 @@ public static class Program
             OfficialPluginClient.HttpHandlerOverrideForTesting = mockHandler;
             try
             {
-                var options = new OfficialPluginDownloadOptions(channel);
                 OfficialPluginCatalog catalog = await OfficialPluginClient.FetchCatalogAsync(options);
 
                 Assert(catalog != null && catalog.SchemaVersion == 2 && catalog.ReleaseTag == newTag,
@@ -343,9 +357,10 @@ public static class Program
                 Assert(!requestedUrls.Any(u => u.Contains("/releases/latest/")),
                     "4.1.3", $"No /releases/latest/ shortcut used on channel {channel}");
 
-                // 验证 Atom 请求始终直连官方源（未被镜像代理前缀污染）
-                Assert(requestedUrls.Any(u => u == repo + "/releases.atom"),
-                    "4.1.4", $"Atom feed discovery strictly uses canonical GitHub URL on channel {channel}");
+                string discovery = channel == "ghfast" ? repo + ".git/info/refs?service=git-upload-pack" : repo + "/releases.atom";
+                Assert(requestedUrls.Contains(options.GetProxiedUrl(discovery)) &&
+                    requestedUrls.All(url => new Uri(url).Host == new Uri(expectedCatalogUrl).Host),
+                    "4.1.4", $"Discovery and catalog both honor the fixed channel {channel}");
             }
             finally
             {
@@ -356,6 +371,7 @@ public static class Program
         // 4.2 Atom 不可达或 403 时，有界 GitHub Releases REST API 发现（过滤 draft、错误源，按时间排序）
         foreach (string channel in new[] { "direct", "ghfast", "gh-proxy", "mirror" })
         {
+            var options = new OfficialPluginDownloadOptions(channel);
             var requestedUrls = new List<string>();
             var releasesApiList = JsonSerializer.Serialize(new object[]
             {
@@ -370,11 +386,12 @@ public static class Program
                 string url = req.RequestUri?.ToString() ?? "";
                 requestedUrls.Add(url);
 
-                if (url == repo + "/releases.atom")
+                if (channel == "ghfast" && url == options.GetProxiedUrl(repo + ".git/info/refs?service=git-upload-pack")) return GitTags(oldTag, newTag);
+                if (url == options.GetProxiedUrl(repo + "/releases.atom"))
                 {
                     return new HttpResponseMessage(HttpStatusCode.Forbidden); // Atom 失败触发 API 回退
                 }
-                if (req.RequestUri?.Host == "api.github.com" && req.RequestUri.AbsolutePath == "/repos/Star-Pie/StarPie-Official-Plugins/releases")
+                if (url == options.GetProxiedUrl(OfficialPluginReleaseDiscovery.ReleasesApiUrl))
                 {
                     return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(releasesApiList) };
                 }
@@ -389,7 +406,6 @@ public static class Program
             OfficialPluginClient.HttpHandlerOverrideForTesting = mockHandler;
             try
             {
-                var options = new OfficialPluginDownloadOptions(channel);
                 OfficialPluginCatalog catalog = await OfficialPluginClient.FetchCatalogAsync(options);
 
                 Assert(catalog != null && catalog.SchemaVersion == 2 && catalog.ReleaseTag == newTag,
@@ -400,6 +416,8 @@ public static class Program
                     "4.2.2", $"Catalog URL uses selected channel {channel} on API fallback");
                 Assert(!requestedUrls.Any(u => u.Contains("/releases/latest/")),
                     "4.2.3", $"No /releases/latest/ shortcut used on API fallback {channel}");
+                Assert(requestedUrls.All(url => channel == "direct" || new Uri(url).Host == new Uri(expectedCatalogUrl).Host),
+                    "4.2.4", $"Fallback keeps discovery within {channel}");
             }
             finally
             {
@@ -468,6 +486,7 @@ public static class Program
             var mockHandler = new DelegatingMockHttpHandler(req =>
             {
                 string url = req.RequestUri?.ToString() ?? "";
+                if (url == new OfficialPluginDownloadOptions("ghfast").GetProxiedUrl(repo + ".git/info/refs?service=git-upload-pack")) return GitTags(oldTag);
                 if (url == repo + "/releases.atom")
                 {
                     string atom = $"<feed xmlns=\"http://www.w3.org/2005/Atom\"><entry><updated>2026-09-30T00:00:00Z</updated><link href=\"{repo}/releases/tag/{oldTag}\" /></entry></feed>";

@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Condition="'$(StarPieCandidateDir)' == ''" Include="..\..\WinPieGestures\ApplicationDataPaths.cs" Link="ApplicationDataPaths.cs" />
     <Compile Condition="'$(StarPieCandidateDir)' == ''" Include="..\..\WinPieGestures\UpdatePayloadStager.cs" Link="UpdatePayloadStager.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(StarPieCandidateDir)' != ''">

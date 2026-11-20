@@ -23,6 +23,7 @@ public partial class App : Application
 	private static readonly AppShutdownSequence ExitSequence = new();
 	private static RegisteredWaitHandle? _waitHandleRegistration;
 	private static bool _isDuplicateInstance;
+	private static bool _dataRootUnavailable;
 	private static bool _isExiting;
 	private static bool _startupCompleted;
 	private static bool _pendingSettingsRequest;
@@ -110,7 +111,7 @@ public partial class App : Application
 		{
 			// 接不上控制台不影响任何功能：报告与日志都在。但要留下痕迹，
 			// 免得下次又出现「命令跑了、什么也没看见」却查不出原因的情况。
-			AppLogger.LogInfo($"未能接入父控制台，本次仅在日志中输出：{ex.Message}");
+			if (!_dataRootUnavailable) AppLogger.LogInfo($"未能接入父控制台，本次仅在日志中输出：{ex.Message}");
 		}
 	}
 
@@ -219,6 +220,29 @@ public partial class App : Application
 		AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 		try
 		{
+			try
+			{
+				ApplicationDataPaths.Initialize();
+			}
+			catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+			{
+				_dataRootUnavailable = true;
+				I18n.SetLanguage("Auto");
+				string message = I18n.TF("PortableDataUnavailable", ex.Message);
+				if (e.Args.Any(arg => arg.Equals("--plugin-selftest", StringComparison.OrdinalIgnoreCase) ||
+					arg.Equals("--plugin-paths", StringComparison.OrdinalIgnoreCase)))
+				{
+					AttachParentConsoleIfCli();
+					Console.Error.WriteLine(message);
+				}
+				else
+				{
+					MessageBox.Show(message, I18n.T("StartupErrorTitle"), MessageBoxButton.OK, MessageBoxImage.Error);
+				}
+				DisposeInstanceHandles();
+				Shutdown(1);
+				return;
+			}
 			InitializeConfiguration();
 			AppLogger.LogInfo($"=== StarPie {AppVersionInfo.DisplayVersionWithPrefix} Starting (OS: {Environment.OSVersion}, .NET: {Environment.Version}, 64bit: {Environment.Is64BitProcess}, Elevated: {ConfigManager.IsElevated()}) ===");
 			startup.Mark("ConfigurationReady");
@@ -285,7 +309,7 @@ public partial class App : Application
 			_startupCompleted = true;
 			startup.Mark("HostReady");
 			UpdateRestartSession.ReportReady(e.Args);
-			if (!SettingsWindow.IsSilentLaunch() || _pendingSettingsRequest)
+			if (ShouldOpenStartupSettings(SettingsWindow.IsSilentLaunch(), ConfigManager.CurrentConfig.StartInTray, _pendingSettingsRequest))
 			{
 				int requestedTab = _pendingSettingsRequest ? _pendingSettingsTabIndex : -1;
 				_pendingSettingsRequest = false;
@@ -316,6 +340,9 @@ public partial class App : Application
 			Shutdown();
 		}
 	}
+
+	internal static bool ShouldOpenStartupSettings(bool silentArgument, bool startInTray, bool settingsRequested)
+		=> settingsRequested || (!silentArgument && !startInTray);
 
 	internal static void InitializeConfiguration()
 	{
@@ -729,7 +756,7 @@ public partial class App : Application
 
 	protected override void OnExit(ExitEventArgs e)
 	{
-		if (_isDuplicateInstance)
+		if (_isDuplicateInstance || _dataRootUnavailable)
 		{
 			base.OnExit(e);
 			return;
