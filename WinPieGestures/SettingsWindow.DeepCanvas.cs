@@ -23,6 +23,7 @@ public partial class SettingsWindow
 
 	private void OpenLegacyCanvasBranch(int slot, int index)
 	{
+        ShowStudioActionInspector();
 		SelectSubAction(slot, index);
 		var profile = GetSelectedProfile();
 		var layer = profile?.GetActiveLayer();
@@ -189,6 +190,7 @@ public partial class SettingsWindow
 
 	private void SelectDeepCanvasChild(int index)
 	{
+        ShowStudioActionInspector();
 		var profile = GetSelectedProfile();
 		if (!HasDeepCanvasContext(profile) || _deepCanvasParent is not { } path) return;
 		var node = GetCanvasNode(GetCanvasRoot(profile!, path[0]), path);

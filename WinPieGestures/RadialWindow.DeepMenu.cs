@@ -132,9 +132,12 @@ public partial class RadialWindow
                 catch (FormatException) { /* Old configs can contain an invalid optional icon. */ }
             }
         }
+        if (mode == "IconOnly" && image == null && (icon == null || icon.Bounds.IsEmpty || icon.Bounds.Width <= 0 || icon.Bounds.Height <= 0) &&
+            IconHelper.IconOnlyFallback(item) is { } fallback)
+            icon = ParseFrozenGeometry(fallback);
         bool hasVector = icon != null && !icon.Bounds.IsEmpty && icon.Bounds.Width > 0 && icon.Bounds.Height > 0;
         bool hasIcon = image != null || hasVector;
-        bool text = !hasIcon || (mode != "IconOnly" && (cfg.ShowText || mode == "TextOnly"));
+        bool text = mode != "IconOnly";
         double size = Math.Min(width, text ? 13 : 21);
         double iconY = center.Y - (text ? 6 : 0);
         if (image != null && image.Width > 0 && image.Height > 0)

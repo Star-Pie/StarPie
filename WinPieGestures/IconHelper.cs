@@ -433,6 +433,23 @@ public static class IconHelper
 		}
 	}
 
+	// Only consult the resident built-in vectors when an icon-only action has no usable artwork.
+	internal static string? IconOnlyFallback(ActionItem? action)
+	{
+		if (!WheelProfile.IsActionConfigured(action)) return null;
+		if (IconMap.TryGetValue(action!.Type == "System" ? action.Parameter ?? "" : action.Type, out var direct)) return direct;
+		string key = action.Type switch
+		{
+			"Text" or "PasteText" => "ClipboardHistory",
+			"Hotkey" => "RunDialog",
+			"Launch" or "App" or "SwitchWindow" => "Explorer",
+			"WebUrl" or "Url" => "NewTab",
+			"OpenFolder" => "Folder",
+			_ => "Settings"
+		};
+		return IconMap[key];
+	}
+
 	public static string? GetSvgPathByKey(string? key)
 	{
 		if (string.IsNullOrEmpty(key))

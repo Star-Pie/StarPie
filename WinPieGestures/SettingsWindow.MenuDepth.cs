@@ -17,6 +17,7 @@ public partial class SettingsWindow
 		{
 			var layer = profile?.Layers != null && (uint)profile.ActiveLayerIndex < (uint)profile.Layers.Count
 				? profile.Layers[profile.ActiveLayerIndex] : null;
+			RefreshSecondaryGeometryNotice(layer);
 			FixedLayoutToggle.IsEnabled = layer != null;
 			FixedLayoutToggle.Content = I18n.T(layer?.ActiveFixedRings != null ? "FixedReturnLegacy" : "FixedEnableLayout");
 			FixedOpenCanvas.Visibility = _fixedLayer == null && layer?.ActiveFixedRings != null && layer.EffectiveMaxMenuDepth >= 3 ? Visibility.Visible : Visibility.Collapsed;
@@ -34,28 +35,60 @@ public partial class SettingsWindow
 		var layer = profile.GetActiveLayer();
 		int depth = MenuDepthPicker.SelectedIndex + 2;
 		if (depth == layer.EffectiveMaxMenuDepth) return;
-		var address = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, -1, null, GetProfileInstanceId(profile), layer);
-		_transactionHistory.Push(new DepthEdit(address, layer.MaxMenuDepth, depth));
-		SetMenuDepth(layer, depth);
+		ChangeMenuLayout(profile, depth, null);
 	}
 
-	private void SetMenuDepth(WheelLayer layer, int depth)
+	private void RefreshSecondaryGeometryNotice(WheelLayer? layer)
 	{
+		if (LegacySubGeometryPanel == null) return;
+		bool honeycomb = layer?.ActiveFixedRings != null && layer.EffectiveMaxMenuDepth >= 3 &&
+			ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
+		LegacySubGeometryPanel.Visibility = honeycomb ? Visibility.Collapsed : Visibility.Visible;
+		ResetSubDimensionsButton.Visibility = LegacySubGeometryPanel.Visibility;
+		Tab1_SubDimensionsNoticeText.Text = I18n.T(honeycomb ? "FixedHoneycombDimensions" : "Tab1_SubDimensionsNotice");
+	}
+
+	// Only explicit depth and style choices create fixed rings. Refreshing a legacy profile is read-only.
+	private void ChangeMenuLayout(WheelProfile profile, int depth, string? style)
+	{
+		var layer = profile.GetActiveLayer();
+		var address = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, -1, null, GetProfileInstanceId(profile), layer);
+		var before = layer.FixedRings;
+		var after = before;
+		if (Math.Clamp(depth, 2, 5) >= 3 && before == null && !layer.FixedRingsPaused &&
+			(style ?? ConfigManager.CurrentConfig.SubmenuStyle) == "Fan")
+		{
+			after = FixedRingMenu.FromLegacy(profile);
+			after.AlwaysVisible = false;
+		}
+		var beforeStyle = style == null ? null : ConfigManager.CurrentConfig.SubmenuStyle;
+		_transactionHistory.Push(new DepthEdit(address, layer.MaxMenuDepth, depth, before, after, beforeStyle, style));
+		SetMenuDepth(layer, depth, after, style);
+	}
+
+	private void SetMenuDepth(WheelLayer layer, int depth, FixedRingMenu? menu, string? style)
+	{
+		_twoTierEditorLayer = null;
+		layer.FixedRings = menu;
 		layer.MaxMenuDepth = depth;
+		if (menu != null && !layer.FixedRingsPaused && (style ?? ConfigManager.CurrentConfig.SubmenuStyle) == "Fan")
+			CloseDeepCanvas();
+		if (style != null) ApplySubmenuStyle(style);
 		RefreshMenuDepth(GetSelectedProfile());
 		RenderMappingsWheelPreview();
 		UpdateUndoRedoButtonStates();
 		ScheduleAutoSave();
 	}
 
-	private sealed record DepthEdit(ActionAddress Address, int Before, int After) : IActionTransaction
+	private sealed record DepthEdit(ActionAddress Address, int Before, int After, FixedRingMenu? BeforeMenu,
+		FixedRingMenu? AfterMenu, string? BeforeStyle, string? AfterStyle) : IActionTransaction
 	{
-		public string Description => "MenuDepthLabel";
+		public string Description => AfterStyle == null ? "MenuDepthLabel" : "SubmenuStyleTitle";
 		public int ItemsCount => 1;
 		public bool MatchesContext(WheelProfile? profile, int index) => Address.MatchesContext(profile, index);
 		public bool MatchesContext(string? name, int index) => Address.MatchesContext(name, index);
-		public void Undo(SettingsWindow window) => window.SetMenuDepth(Address.LayerInstance!, Before);
-		public void Redo(SettingsWindow window) => window.SetMenuDepth(Address.LayerInstance!, After);
+		public void Undo(SettingsWindow window) => window.SetMenuDepth(Address.LayerInstance!, Before, BeforeMenu, BeforeStyle);
+		public void Redo(SettingsWindow window) => window.SetMenuDepth(Address.LayerInstance!, After, AfterMenu, AfterStyle);
 	}
 
 	private void FocusEditMenuBranch_Click(object sender, RoutedEventArgs e) =>

@@ -74,8 +74,15 @@ internal static partial class Program
         int[] path = [2, 0, 0, 0, 0];
         var changed = global.GetEffectiveMenuAction(path)!;
         Check(changed.Type == "Text" && changed.Parameter == "typed at level 5" && changed.Name == "Canvas leaf", "live name/type/parameter changes reach only fifth-level selection");
-        Check(canvas.Children.OfType<Panel>().SelectMany(p => p.Children.OfType<TextBlock>()).Any(t => t.Text == "Canvas leaf"),
-            "edited name appears on the actual canvas");
+        bool LeafCaptionVisible() => canvas.Children.OfType<Panel>()
+            .SelectMany(p => p.Children.OfType<TextBlock>()).Any(t => t.Text == "Canvas leaf");
+        var labelsButton = (Button)settings.FindName("MappingsShowTextToggleBtn");
+        Check(!ConfigManager.CurrentConfig.MappingsCanvasShowText && !LeafCaptionVisible(),
+            "the default deep canvas displays the text action as an icon");
+        Click(labelsButton);
+        Check(LeafCaptionVisible(), "with canvas labels enabled the edited name appears on the actual canvas");
+        Click(labelsButton);
+        Check(!LeafCaptionVisible(), "switching off labels again hides the edited caption");
         Check(((Button)settings.FindName("DeepEnter")).Visibility == Visibility.Collapsed, "level five cannot open another branch");
         Click(ButtonWithId("DeepCanvasAdd"));
         name.Text = "Sibling";

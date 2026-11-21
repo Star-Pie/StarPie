@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -521,24 +520,8 @@ internal static class CloseoutRegressionTests
 
     private static SettingsWindow Window(WheelProfile profile)
     {
-        // Initialize only managed FrameworkElement state; never run Window/App constructors or show a surface.
-        var window = (SettingsWindow)RuntimeHelpers.GetUninitializedObject(typeof(SettingsWindow));
-        var frameworkState = new FrameworkElement();
-        for (Type? type = typeof(FrameworkElement); type != null; type = type.BaseType)
-            foreach (var field in type.GetFields(Members | BindingFlags.DeclaredOnly))
-                field.SetValue(window, field.GetValue(frameworkState));
-        Set(window, "_selectedProfile", profile);
-        Set(window, "_selectedSlotIndex", 0);
-        Set(window, "_selectedSubActionIndex", (int?)0);
-        Set(window, "_selectedMultiSlots", new List<int>());
-        Set(window, "_transactionHistory", new ActionTransactionHistory());
-        foreach (string key in new[] { "NavTabActiveBgBrush", "CardBackgroundBrush", "AccentPrimaryBrush", "CardBorderBrush", "TextPrimaryBrush", "TextSecondaryBrush", "AccentTextBrush", "SubtleCardBrush", "TextMutedBrush" }) window.Resources[key] = Brushes.Black;
-        window.Resources["ModernButtonStyle"] = new Style(typeof(Button));
-        Set(window, "FocusActionBreadcrumbText", new TextBlock());
-        Set(window, "MappingsCurrentEditIndicator", new TextBlock());
-        Set(window, "FocusUndoSubActionsBtn", new Button());
-        Set(window, "FocusRedoSubActionsBtn", new Button());
-        Set(window, "FocusPasteActionBtn", new Button());
+        var window = EditingWindowFixture.Open(profile);
+        window.SelectSubAction(0, 0);
         return window;
     }
 

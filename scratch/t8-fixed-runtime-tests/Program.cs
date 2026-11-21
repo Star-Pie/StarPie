@@ -95,13 +95,15 @@ internal static partial class Program
     }
     static Point SecondaryPoint(int root = 0, int sub = 0, bool band = true)
     {
-        var pair = ((Geometry Shape, Point Label))Host.GetType("WinPieGestures.LegacyRingGeometry")!
+        var pair = ConfigManager.CurrentConfig.SubmenuStyle == "Fan"
+            ? ((Geometry Shape, Point Label))Call(currentGeometry, "Secondary", ConfigManager.CurrentConfig, root, sub, Layer.Actions[root].SubActions.Count)!
+            : ((Geometry Shape, Point Label))Host.GetType("WinPieGestures.LegacyRingGeometry")!
             .GetMethod("Secondary", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null,
                 [ConfigManager.CurrentConfig, 4, root, sub, Layer.Actions[root].SubActions.Count, ConfigManager.CurrentConfig.WheelRadius, ConfigManager.CurrentConfig.InnerRadius])!;
         var ray = (Vector)pair.Label;
         ray.Normalize();
         double inner = double.PositiveInfinity, outer = 0;
-        for (double radius = 1; radius <= legacyExtent + 2; radius += .1)
+        for (double radius = 1; radius <= ((Vector)pair.Label).Length + pair.Shape.Bounds.Height + 2; radius += .1)
         {
             if (!pair.Shape.FillContains((Point)(radius * ray))) continue;
             inner = Math.Min(inner, radius);
@@ -263,8 +265,9 @@ internal static partial class Program
                 {
                     var first = At(5, 0);
                     var gap = first + (At(5, 1) - first) * .5;
-                    var total = Enumerable.Range(3,3).Sum(d => Layer.FixedRings!.GetCount(d));
-                    Check(PaintedSlots(session, cellGap: gap).Count == total, "all configured and empty honeycomb cells are painted in resident Fan mode");
+                    var occupied = new (int, int)[] { (3,1), (3,4), (3,7), (4,5), (5,6), (5,10), (5,11) };
+                    Check(PaintedSlots(session, cellGap: gap).SetEquals(occupied), "resident Fan paints exactly the occupied outer cells");
+                    InspectSlots("resident outer addresses", occupied);
                     var configured = new[] { (0,0), (0,1), (0,2), (1,0) };
                     ExerciseFanPopupSecondaries(session, configured);
                 }
@@ -322,7 +325,7 @@ internal static partial class Program
             int Level() => (int)Get(session, "ActiveLevel")!;
             bool Selected(string field) => (bool)Controller.GetField(field, Members)!.GetValue(controller)!;
             var original = SecondaryPoint(band: false);
-            var primary = Physical(new Point(52, 0));
+            var primary = Physical(style == "Fan" ? (Point)Call(currentGeometry, "GetCenter", 1, 0, 4)! : new Point(52, 0));
             Move(primary);
             Move(Along(primary, 259));
             Check(!Selected("_lastShowSubTier") && Level() == 2, style + " hidden secondary waits for the original primary distance");

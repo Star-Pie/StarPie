@@ -109,6 +109,7 @@ public partial class SettingsWindow
 	{
 		WheelProfile? profile = GetSelectedProfile();
 		if (profile == null) return;
+        if (CopyStudioBranch(profile)) return;
 
 		string profName = profile.ProcessName;
 		int layer = profile.ActiveLayerIndex;
@@ -161,6 +162,7 @@ public partial class SettingsWindow
 	{
 		WheelProfile? profile = GetSelectedProfile();
 		if (profile == null) return;
+        if (CopyStudioBranch(profile)) return;
 		string profName = profile.ProcessName;
 		int layer = profile.ActiveLayerIndex;
 
@@ -201,6 +203,7 @@ public partial class SettingsWindow
 
 		WheelProfile? profile = GetSelectedProfile();
 		if (profile == null) return;
+        if (PasteStudioBranch(profile)) return;
 
 		string profName = profile.ProcessName;
 		int layer = profile.ActiveLayerIndex;

@@ -31,6 +31,7 @@ internal static partial class Program
         var app = new App();
         using var disabled = Dispatcher.CurrentDispatcher.DisableProcessing();
         app.InitializeComponent();
+        ExerciseFixedLayoutChoices();
         var layer = new WheelLayer { MaxMenuDepth = 5, SectorCount = 4 };
         layer.Actions.Add(new ActionItem { Type = "Hotkey", Name = "Root A", Parameter = "F13" });
         layer.Actions.Add(new ActionItem { Type = "Hotkey", Name = "Root B", Parameter = "F14" });

@@ -22,6 +22,7 @@ public class CanvasHitItem
 	public ActionItem? Action { get; set; }
 	public int? FixedLevel { get; init; }
 	internal FixedRingMenu? FixedMenu { get; init; }
+	internal bool IsDropOnly { get; init; }
 }
 
 public partial class SettingsWindow
@@ -35,6 +36,9 @@ public partial class SettingsWindow
 	public void ClearCanvasHitItems()
 	{
 		_canvasHitItems.Clear();
+		_paletteHits.Clear();
+		_paletteRenderVersion++;
+		if (_paletteOrigin != null) EndPaletteDrag();
 	}
 
 	public void RegisterCanvasHitItem(Geometry geometry, ActionAddress address, bool isCenter, bool isSubAction, int slotIndex, int? subIndex, ActionItem? action)
@@ -59,7 +63,7 @@ public partial class SettingsWindow
 		for (int i = _canvasHitItems.Count - 1; i >= 0; i--)
 		{
 			var item = _canvasHitItems[i];
-			if (item.IsSubAction && item.Geometry.FillContains(pt))
+			if (item.IsSubAction && !item.IsDropOnly && item.Geometry.FillContains(pt))
 			{
 				return item;
 			}
@@ -74,6 +78,8 @@ public partial class SettingsWindow
 			}
 		}
 
+		if (_canvasDragSource?.FixedLevel is >= 1)
+			return _canvasHitItems.LastOrDefault(item => item.IsDropOnly && item.Geometry.FillContains(pt));
 		return null;
 	}
 
@@ -81,7 +87,8 @@ public partial class SettingsWindow
 	{
 		_isCtrlDragCopy = isCtrlDown;
 		CanvasHitItem? target = HitTestCanvasPoint(currentPos);
-		if (target != null && !CanDropOnFixedCanvas(target)) target = null;
+		string? operation = target == null ? null : CanvasDropOperation(target, isCtrlDown);
+		if (operation == null) target = null;
 		_currentHoverDropTarget = target;
 
 		if (target == null)
@@ -99,7 +106,7 @@ public partial class SettingsWindow
 
 		if (MappingsCurrentEditIndicator != null)
 		{
-			string modePrefix = I18n.T(isCtrlDown ? "EditDragCopy" : "EditDragMove");
+			string modePrefix = I18n.T(operation!);
 			string targetDesc = target.FixedLevel is >= 3
 				? I18n.TF("CanvasEditLevel", target.FixedLevel, (target.SlotIndex + 1).ToString("00"))
 				: target.IsCenter
@@ -109,6 +116,34 @@ public partial class SettingsWindow
 			MappingsCurrentEditIndicator.Text = I18n.TF("EditDragTarget", modePrefix, targetDesc);
 			MappingsCurrentEditIndicator.Foreground = new SolidColorBrush(isCtrlDown ? Color.FromRgb(56, 189, 248) : Color.FromRgb(16, 185, 129));
 		}
+	}
+
+	// Hover and commit validate the same operation. The painted source and target
+	// also distinguish inserting a copy between siblings from overwriting a slot.
+	private string? CanvasDropOperation(CanvasHitItem target, bool copy)
+	{
+		if (!CanDropOnFixedCanvas(target)) return null;
+		if (_canvasDragSource is not { } source) return copy ? "EditDragCopy" : "StudioDragMove";
+		if (!_canvasHitItems.Contains(source) || !_canvasHitItems.Contains(target) || ReferenceEquals(source, target)) return null;
+		if (IsCrossLevelSwap(source, target))
+			return copy ? (source.Action == null ? null : "EditDragCopy") :
+				source.Action == null || target.Action == null ? "StudioDragMove" : "StudioDragSwap";
+		if (target.FixedLevel is >= 3)
+			return copy ? "EditDragCopy" : target.Action == null ? "StudioDragMove" : "StudioDragSwap";
+		if (!source.IsSubAction)
+		{
+			if (target.IsSubAction || (target.IsCenter && source.Action?.SubActions?.Count > 0)) return null;
+			return copy ? "EditDragCopy" : WheelProfile.IsActionConfigured(target.Action) ? "StudioDragSwap" : "StudioDragMove";
+		}
+		if (target.IsCenter || (!target.IsSubAction && source.SlotIndex == target.SlotIndex)) return null;
+		var root = target.IsSubAction
+			? _canvasHitItems.FirstOrDefault(hit => !hit.IsSubAction && !hit.IsCenter && hit.FixedLevel is null or 1 &&
+				hit.SlotIndex == target.SlotIndex)?.Action : target.Action;
+		int count = root?.SubActions?.Count ?? 0;
+		int limit = ConfigManager.CurrentConfig.SubmenuStyle == "Fan" ? RadialWindow.FanSubmenuSlotCount : 4;
+		if ((copy || !target.IsSubAction) && count >= limit) return null;
+		if (copy && target.IsSubAction && source.SlotIndex == target.SlotIndex) return "StudioDragInsert";
+		return copy ? "EditDragCopy" : target.IsSubAction ? "StudioDragSwap" : "StudioDragMove";
 	}
 
 	private void ShowCanvasDropHighlight(CanvasHitItem target, bool isCtrlDown)
@@ -171,7 +206,7 @@ public partial class SettingsWindow
 		{
 			MappingsPreviewViewportContainer.Cursor = Cursors.Arrow;
 		}
-		if (EditingOuterFixedSlot) RenderMappingsWheelPreview();
+		if (OnFixedCanvas) RenderMappingsWheelPreview();
 		else
 		{
 			UpdateActionBreadcrumb();
@@ -182,8 +217,13 @@ public partial class SettingsWindow
 	public void ProcessCanvasDrop(WheelProfile profile, CanvasHitItem target, bool isCtrlDown)
 	{
 		if (profile == null || profile.Actions == null || target == null) return;
-		if (!CanDropOnFixedCanvas(target)) return;
+		if (CanvasDropOperation(target, isCtrlDown) == null) return;
 		if (target.FixedLevel != null && !ReferenceEquals(profile, _fixedProfile)) return;
+		if (_canvasDragSource is { } source && IsCrossLevelSwap(source, target))
+		{
+			DropAcrossFixedLevels(profile, source, target, isCtrlDown);
+			return;
+		}
 		if (target.FixedLevel is >= 3)
 		{
 			DropFixedSlot(profile, _canvasDragSource!, target, isCtrlDown);
