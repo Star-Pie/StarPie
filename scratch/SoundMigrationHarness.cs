@@ -42,7 +42,7 @@ internal static class SoundMigrationContracts
         var previous = controller.TestBeginInteractionSession(e => { oldEvents.Add(e); return 1; });
         previous.Presented();
         var end = typeof(GestureController).GetMethod("EndActiveGesture", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
-        object captured = end.Invoke(controller, Array.Empty<object>())!;
+        object captured = end.Invoke(controller, new object?[] { null })!;
         var old = (PluginInteractionSession)captured.GetType().GetField("Item7")!.GetValue(captured)!;
         var current = controller.TestBeginInteractionSession(e => { newerEvents.Add(e); return 1; }); current.Presented();
         old.Commit(new(InteractionTargetKind.Sector, 2)); old.End();
