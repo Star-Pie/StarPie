@@ -9,6 +9,13 @@ public class WheelProfile : INotifyPropertyChanged
 	private string _processName = "Global";
 	private string? _displayName;
 	private string? _boundProcesses;
+	private List<string> _tags = new();
+
+	public List<string> Tags
+	{
+		get => _tags;
+		set => _tags = value ?? new();
+	}
 	private bool _useApplicationContext = true;
 
 	/// <summary>Missing on legacy profiles means application-scoped routing.</summary>
@@ -312,6 +319,7 @@ public class WheelProfile : INotifyPropertyChanged
 			UseApplicationContext = this.UseApplicationContext,
 			HasExplicitProcessBindings = this.HasExplicitProcessBindings,
 			ApplicationIconPath = this.ApplicationIconPath,
+			Tags = new List<string>(Tags),
 			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
 			EnableCenterAction = this.EnableCenterAction,

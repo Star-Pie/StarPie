@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text.Json;
 using StarPie.Plugin;
 using WinPieGestures;
@@ -18,7 +19,29 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(AppContext.BaseDirectory, "isolated-data"));
+        if (!args.Contains("--test-instance")) throw new InvalidOperationException("Pass --test-instance to isolate system integration.");
+        var candidate = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyMetadataAttribute>()
+            .SingleOrDefault(a => a.Key == "StarPieCandidateDll")?.Value;
+        string loadedHash = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(typeof(SettingsWindow).Assembly.Location)));
+        if (candidate != null && !string.Equals(loadedHash, Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(candidate))), StringComparison.Ordinal))
+            throw new InvalidOperationException("Loaded StarPie.dll differs from the selected candidate.");
+        Console.WriteLine($"CANDIDATE={candidate ?? typeof(SettingsWindow).Assembly.Location}; SHA256={loadedHash}");
+        var root = Directory.CreateTempSubdirectory("starpie-action-editing-");
+        try
+        {
+            foreach (var key in new[] { "LOCALAPPDATA", "APPDATA", "TEMP", "TMP" })
+                Environment.SetEnvironmentVariable(key, root.FullName);
+            ConfigManager.DisableAutoStartSync = true;
+            var app = new App();
+            using var disabled = System.Windows.Threading.Dispatcher.CurrentDispatcher.DisableProcessing();
+            app.InitializeComponent();
+            return RunSuite();
+        }
+        finally { root.Delete(true); }
+    }
+
+    private static int RunSuite()
+    {
         Console.WriteLine("====================================================");
         Console.WriteLine("StarPie 二级动作编辑 V1 自动化回归与失败证据探针");
         Console.WriteLine($"时间：{DateTime.Now:yyyy-MM-dd HH:mm:ss}");
@@ -93,6 +116,7 @@ public static class Program
             Console.WriteLine($"      错误详情: {ex}");
             s_failed++;
         }
+        finally { EditingWindowFixture.Release(); }
     }
 
     private static void AssertTrue(bool condition, string message)

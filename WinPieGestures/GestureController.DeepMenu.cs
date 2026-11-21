@@ -323,10 +323,10 @@ public partial class GestureController
                 (_selectedSectorIndex, _selectedSubSectorIndex) = fixedSession.Target(fixedHit);
                 _lastEscapedState = !_pinState.Enabled && fixedSession.IsEscaped(point);
             }
-            else if (fixedSession.PersistentFan && !_pinState.Enabled)
+            else if (fixedSession.IsHoneycomb && !_pinState.Enabled)
             {
                 // Mouse-up can arrive before the last hover update, including inside a gap.
-                fixedHit = fixedSession.HitPersistentFanInner(point, _submenuLock);
+                fixedHit = fixedSession.HitHoneycombInner(point, _submenuLock);
                 if (fixedHit.Level == 2 && FixedRingMenu.TryDecodeSecondaryKey(fixedHit.Index, out int parent, out int child))
                     (_selectedSectorIndex, _selectedSubSectorIndex) = (parent, child);
                 else

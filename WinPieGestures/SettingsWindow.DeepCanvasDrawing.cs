@@ -10,9 +10,28 @@ namespace WinPieGestures;
 
 public partial class SettingsWindow
 {
+	private static StackPanel CanvasSlotLabel(ActionItem? action, string caption, double width, double iconSize,
+		double fontSize, Brush ink, FontWeight weight)
+	{
+		var config = ConfigManager.CurrentConfig;
+		string mode = action?.LayoutMode is { Length: > 0 } and not "Inherit" ? action.LayoutMode : config.IconLayoutMode;
+		var panel = new StackPanel { Width = width, IsHitTestVisible = false };
+		var icon = action != null && mode != "TextOnly" ? CreateMappingsSubIconElement(action, ink, iconSize) : null;
+		if (icon != null) panel.Children.Add(icon);
+		if (icon == null || config.MappingsCanvasShowText)
+		{
+			var label = new TextBlock { Text = caption, Foreground = ink, FontSize = fontSize, FontWeight = weight,
+				TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis };
+			ConfigurePreviewTextElement(label);
+			panel.Children.Add(label);
+		}
+		return panel;
+	}
+
 	private void MappingsPreviewViewport_SizeChanged(object sender, SizeChangedEventArgs e)
 	{
-		if (_deepCanvasParent != null || _fixedLayer != null) RenderMappingsWheelPreview();
+		UpdateStudioWheelFit();
+        if (_deepCanvasParent != null || _fixedLayer != null) RenderMappingsWheelPreview();
 	}
 
 	private void DrawDeepCanvasBranch(WheelProfile profile, IReadOnlyList<int> parentPath, ActionItem parent, int? selectedChild)
@@ -71,7 +90,9 @@ public partial class SettingsWindow
 			ancestor = ancestor.SubActions[index];
 		}
 		var frame = count > 0 ? Frame(parentPath, count) : null;
+		var vacantShape = count == 0 ? Frame(parentPath, 1).Slots[0].Shape : null;
 		var bounds = new Rect(-radius, -radius, 2 * radius, 2 * radius);
+		if (vacantShape != null) bounds.Union(vacantShape.Bounds);
 		foreach (var shape in ancestorShapes) bounds.Union(shape.Bounds);
 		if (frame != null) foreach (var slot in frame.Slots) bounds.Union(slot.Shape.Bounds);
 		double availableHeight = Math.Max(1, viewHeight - (count == 0 ? 105 : 78));
@@ -91,6 +112,18 @@ public partial class SettingsWindow
 		Brush activeBorder = CreateBrushFromHexSafe(custom ? cfg.SubWheelCustomHighlightBorder : null, renderer.HighlightBorderBrush);
 		Brush text = CreateBrushFromHexSafe(custom ? cfg.SubWheelCustomText : null, renderer.TextColorBrush);
 		var directions = ResolveDirectionNames(profile.SectorCount);
+		Geometry OnCanvas(Geometry shape)
+		{
+			var transformed = new GeometryGroup { Children = { shape }, Transform = new MatrixTransform(scale, 0, 0, scale, x, y) };
+			transformed.Freeze();
+			return transformed;
+		}
+		if (cfg.ShowCoreCircle)
+		{
+			var core = new EllipseGeometry(new Point(), cfg.CoreRadius, cfg.CoreRadius);
+			PlaceSlot(core, "DeepCanvasCenter", I18n.T("CenterCoreTitle"), false, SelectCenterCore);
+			RegisterPaletteTreeHit(OnCanvas(core), [-1]);
+		}
 		for (int i = 0; i < profile.SectorCount; i++)
 		{
 			int index = i;
@@ -101,15 +134,13 @@ public partial class SettingsWindow
 			bool current = index == parentPath[0];
 			string name = !string.IsNullOrWhiteSpace(action?.Name) ? action.Name : directions[i];
 			var button = PlaceSlot(shape, "DeepCanvasRoot" + index, name, current, () => SelectPrimarySlot(index));
+			RegisterPaletteTreeHit(OnCanvas(shape), [index]);
 			button.Opacity = current ? .80 : .42;
 			double mid = (inner + radius) * .5;
 			var center = new Point(mid * Math.Cos(angle * Math.PI / 180), mid * Math.Sin(angle * Math.PI / 180));
-			var icon = action == null || action.LayoutMode == "TextOnly" ? null :
-				CreateMappingsSubIconElement(action, text, Math.Clamp((radius - inner) * scale / 3, 8, 16));
 			double labelWidth = Math.Max(10, Math.Min((radius - inner) * scale, 2 * mid * Math.Sin(sweep * Math.PI / 360) * scale) * .85);
-			FrameworkElement marker = icon ?? new TextBlock { Text = name, MaxWidth = labelWidth, TextTrimming = TextTrimming.CharacterEllipsis,
-				Foreground = text, FontSize = 10, FontWeight = current ? FontWeights.Bold : FontWeights.Normal };
-			marker.IsHitTestVisible = false;
+			var marker = CanvasSlotLabel(action, name, labelWidth, Math.Clamp((radius - inner) * scale / 3, 8, 16),
+				10, text, current ? FontWeights.Bold : FontWeights.Normal);
 			marker.Opacity = current ? 1 : .64;
 			marker.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
 			Canvas.SetLeft(marker, x + center.X * scale - marker.DesiredSize.Width / 2);
@@ -124,11 +155,11 @@ public partial class SettingsWindow
 			ancestorItem = ancestorItem.SubActions[parentPath[depth - 1]];
 			var shape = ancestorShapes[i];
 			var slot = PlaceSlot(shape, "DeepCanvasAncestor" + depth, ancestorItem.Name, false, () => ShowDeepAncestor(depth));
+			RegisterPaletteTreeHit(OnCanvas(shape), parentPath.Take(depth).ToArray());
 			slot.Opacity = .68;
 			double width = shape.Bounds.Width * scale * .82;
 			if (width < 20) continue;
-			var label = new TextBlock { Text = ancestorItem.Name, MaxWidth = width, Foreground = text, FontSize = 10,
-				TextTrimming = TextTrimming.CharacterEllipsis, IsHitTestVisible = false };
+			var label = CanvasSlotLabel(ancestorItem, ancestorItem.Name, width, 12, 10, text, FontWeights.Normal);
 			label.Measure(new Size(width, double.PositiveInfinity));
 			Canvas.SetLeft(label, x + (shape.Bounds.Left + shape.Bounds.Width * .5) * scale - label.DesiredSize.Width * .5);
 			Canvas.SetTop(label, y + (shape.Bounds.Top + shape.Bounds.Height * .5) * scale - label.DesiredSize.Height * .5);
@@ -145,23 +176,15 @@ public partial class SettingsWindow
 				bool selected = selectedChild == i;
 				bool branch = item?.SubActions?.Count > 0 && parentPath.Count + 1 < _deepCanvasLayer!.EffectiveMaxMenuDepth;
 				var button = PlaceSlot(slot.Shape, "DeepCanvasChild" + i, name, selected, () => SelectDeepCanvasChild(index));
+				RegisterPaletteTreeHit(OnCanvas(slot.Shape), [..parentPath, index]);
 				if (branch) button.ToolTip = name + "  ›";
 				Brush ink = CreateBrushFromHexSafe(item?.CustomTextColor, text);
-				string layout = item?.LayoutMode is { Length: > 0 } and not "Inherit" ? item.LayoutMode : cfg.IconLayoutMode;
 				double totalWidth = Math.Max(1, slot.LabelWidth * scale);
 				double markerWidth = branch ? Math.Min(9, totalWidth * .25) : 0;
 				double width = totalWidth - markerWidth;
-				var label = new StackPanel { Width = width, IsHitTestVisible = false };
-				var icon = item != null && layout != "TextOnly" ? CreateMappingsSubIconElement(item, ink, Math.Min(width, 15)) : null;
-				if (icon != null) label.Children.Add(icon);
-				if (icon == null || cfg.MappingsCanvasShowText || layout == "TextOnly")
-				{
-					var caption = new TextBlock { Text = name, Foreground = ink, TextAlignment = TextAlignment.Center,
-						TextTrimming = TextTrimming.CharacterEllipsis, FontSize = Math.Clamp((item?.CustomFontSize ?? cfg.SubWheelFontSize) * scale, 9, 16),
-						FontWeight = selected ? FontWeights.SemiBold : FontWeights.Normal };
-					ConfigurePreviewTextElement(caption);
-					label.Children.Add(caption);
-				}
+				var label = CanvasSlotLabel(item, name, width, Math.Min(width, 15),
+					Math.Clamp((item?.CustomFontSize ?? cfg.SubWheelFontSize) * scale, 9, 16), ink,
+					selected ? FontWeights.SemiBold : FontWeights.Normal);
 				label.Measure(new Size(width, double.PositiveInfinity));
 				double labelLeft = x + slot.Label.X * scale - totalWidth / 2;
 				double labelCenterY = y + slot.Label.Y * scale;
@@ -179,6 +202,7 @@ public partial class SettingsWindow
 		}
 		else
 		{
+			if (vacantShape != null) RegisterPaletteTreeHit(OnCanvas(vacantShape), [..parentPath, 0], vacant: true);
 			var empty = new TextBlock { Text = I18n.T("MenuEmpty"), Width = viewWidth, TextAlignment = TextAlignment.Center,
 				IsHitTestVisible = false };
 			empty.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
@@ -206,7 +230,13 @@ public partial class SettingsWindow
 			? MakeControl("DeepCanvasAdd", "+  " + I18n.T("MenuAddChild"), AddDeepCanvasChild) : null;
 		double left = 150 - (back.DesiredSize.Width + (add == null ? 0 : 8 + add.DesiredSize.Width)) / 2;
 		Canvas.SetLeft(back, left);
-		if (add != null) Canvas.SetLeft(add, left + back.DesiredSize.Width + 8);
+		if (add != null)
+		{
+			double addLeft = left + back.DesiredSize.Width + 8;
+			Canvas.SetLeft(add, addLeft);
+			RegisterPaletteTreeHit(new RectangleGeometry(new Rect(new Point(addLeft, footerY), add.DesiredSize)),
+				[..parentPath, count], vacant: true);
+		}
 
 		Button MakeControl(string id, string caption, Action click)
 		{

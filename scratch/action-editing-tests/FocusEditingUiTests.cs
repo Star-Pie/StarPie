@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using WinPieGestures;
-using Brushes = System.Windows.Media.Brushes;
 using Button = System.Windows.Controls.Button;
 using TextBox = System.Windows.Controls.TextBox;
 using Panel = System.Windows.Controls.Panel;
@@ -46,12 +44,12 @@ internal static class FocusEditingUiTests
 
         var nextProfile = Profile("Global", "Next", "Next-child");
         config.Profiles = new() { nextProfile };
-        Set(fixture.Window, "_selectedProfile", nextProfile);
+        Invoke(fixture.Window, "RefreshProfilesUi", nextProfile);
         fixture.Window.SelectPrimarySlot(0);
         Require(Texts(fixture.List).Contains("Next-child"), "profile change refreshes rows");
         nextProfile.Layers.Add(new WheelLayer { Name = "Layer 2", SectorCount = 4, Actions = new() { Parent("Layer parent", "Layer child"), new(), new(), new() } });
-        nextProfile.ActiveLayerIndex = 1;
-        nextProfile.SyncRootPropertiesFromActiveLayer();
+        Invoke(fixture.Window, "RefreshLayersUi");
+        ((System.Windows.Controls.ComboBox)fixture.Window.FindName("LayerSelectComboBox")).SelectedIndex = 1;
         fixture.Window.SelectPrimarySlot(0);
         Require(Texts(fixture.List).Contains("Layer child"), "layer change refreshes rows");
 
@@ -60,7 +58,7 @@ internal static class FocusEditingUiTests
         local.Actions[0] = new ActionItem { Type = "Inherit", Name = "" };
         config.Profiles = new() { global, local };
         config.EnableGlobalInheritance = true;
-        Set(fixture.Window, "_selectedProfile", local);
+        Invoke(fixture.Window, "RefreshProfilesUi", local);
         string before = JsonSerializer.Serialize(local.Actions[0]);
         fixture.Window.SelectPrimarySlot(0);
         Equal(2, fixture.List.Children.Count, "inherited primary selection displays effective children");
@@ -197,28 +195,11 @@ internal static class FocusEditingUiTests
 
     private static (SettingsWindow Window, StackPanel List, TextBlock Breadcrumb, TextBlock Count, TextBox Name) Window(WheelProfile profile)
     {
-        // Only FrameworkElement/controls are constructed. Never construct a Window/App or show a native surface.
-        var window = (SettingsWindow)RuntimeHelpers.GetUninitializedObject(typeof(SettingsWindow));
-        var frameworkState = new FrameworkElement();
-        for (Type? type = typeof(FrameworkElement); type != null; type = type.BaseType)
-            foreach (var field in type.GetFields(Fields | BindingFlags.Public | BindingFlags.DeclaredOnly))
-                field.SetValue(window, field.GetValue(frameworkState));
-        Set(window, "_selectedProfile", profile);
-        Set(window, "_selectedSlotIndex", 0);
-        Set(window, "_selectedMultiSlots", new List<int>());
-        Set(window, "_transactionHistory", new ActionTransactionHistory());
-        foreach (string key in new[] { "NavTabActiveBgBrush", "CardBackgroundBrush", "AccentPrimaryBrush", "CardBorderBrush", "TextPrimaryBrush", "TextSecondaryBrush", "AccentTextBrush", "SubtleCardBrush", "TextMutedBrush" }) window.Resources[key] = Brushes.Black;
-        window.Resources["ModernButtonStyle"] = new Style(typeof(Button));
-        var list = new StackPanel();
-        var breadcrumb = new TextBlock();
-        var count = new TextBlock();
-        var name = new TextBox();
-        Set(window, "FocusSubActionsOrderedListPanel", list);
-        Set(window, "FocusSubActionsChipsPanel", new WrapPanel());
-        Set(window, "FocusActionBreadcrumbText", breadcrumb);
-        Set(window, "FocusSubActionsCountLabel", count);
-        Set(window, "FocusActionNameTextBox", name);
-        return (window, list, breadcrumb, count, name);
+        var window = EditingWindowFixture.Open(profile);
+        window.SelectPrimarySlot(0);
+        return (window, (StackPanel)window.FindName("FocusSubActionsOrderedListPanel"),
+            (TextBlock)window.FindName("FocusActionBreadcrumbText"), (TextBlock)window.FindName("FocusSubActionsCountLabel"),
+            (TextBox)window.FindName("FocusActionNameTextBox"));
     }
 
     private static IEnumerable<string> Texts(DependencyObject node)

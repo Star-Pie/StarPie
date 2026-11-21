@@ -800,10 +800,17 @@ public partial class RadialWindow : Window
 		}
 		else
 		{
-			ApplyLayoutFromCurrentConfiguration(centerPoint);
-		}
+            var previousGeometry = FixedGeometry;
+            ApplyLayoutFromCurrentConfiguration(centerPoint);
+            if (HasHoneycomb && !ReferenceEquals(previousGeometry, FixedGeometry))
+            {
+                _subTierCache.Clear();
+                RenderSectors();
+                UpdateCenterIconVisuals();
+            }
+        }
 
-		if (ExpandSecondariesOnPopup)
+        if (ExpandSecondariesOnPopup)
 		{
 			ShowAllSubTiers();
 		}
@@ -968,6 +975,7 @@ public partial class RadialWindow : Window
 			? ConfigManager.CurrentConfig.SubWheelOuterRadius
 			: wheelRadius * ratio;
 		double? fixedRadius = PrepareFixedLayout(requestedCenter);
+        coreRadius = FixedGeometry?.CoreRadius(coreRadius) ?? coreRadius;
         double maxEffectiveR = enableMultiTier ? Math.Max(wheelRadius, subMaxR + 25.0) : wheelRadius;
 		_wheelCanvasSize = maxEffectiveR * 2.0 + 40.0;
 		_canvasCenter = _wheelCanvasSize / 2.0;
@@ -1421,8 +1429,8 @@ public partial class RadialWindow : Window
 	}
 
 	internal void UpdateCenterIconVisuals()
-	{
-		double coreRadius = ConfigManager.CurrentConfig.CoreRadius;
+    {
+        double coreRadius = FixedGeometry?.CoreRadius(ConfigManager.CurrentConfig.CoreRadius) ?? ConfigManager.CurrentConfig.CoreRadius;
 		double num7 = ((ConfigManager.CurrentConfig.CoreIconScale > 0.0) ? ConfigManager.CurrentConfig.CoreIconScale : 1.0);
 		double coreImageOffsetX = ConfigManager.CurrentConfig.CoreImageOffsetX;
 		double coreImageOffsetY = ConfigManager.CurrentConfig.CoreImageOffsetY;
@@ -1935,7 +1943,7 @@ public partial class RadialWindow : Window
 		{
 			num = 0;
 		}
-		if (_styleRenderer != null)
+		if (_styleRenderer != null && !HasHoneycomb)
 		{
 			_styleRenderer.RenderDecorations(WheelCanvas, CoreGrid, cx, cy, wheelRadius, coreRadius, num);
 		}
@@ -1980,7 +1988,9 @@ public partial class RadialWindow : Window
 			double num6 = (_innerRadius + _outerRadius) / 2.0;
 			double num7 = num2 + Math.Cos(num5) * num6;
 			double num8 = num3 + Math.Sin(num5) * num6;
-			Geometry data = CreateFrozenSectorGeometry(num2, num3, startAngle, endAngle, _innerRadius, _outerRadius, shape, gap, cornerRadius);
+			Geometry data = HasHoneycomb
+                ? CanvasCell(FixedGeometry!.Primary(ConfigManager.CurrentConfig, i), out num7, out num8)
+                : CreateFrozenSectorGeometry(num2, num3, startAngle, endAngle, _innerRadius, _outerRadius, shape, gap, cornerRadius);
 			TranslateTransform translateTransform = new TranslateTransform(0.0, 0.0);
 			System.Windows.Shapes.Path path = new System.Windows.Shapes.Path
 			{
@@ -1991,6 +2001,8 @@ public partial class RadialWindow : Window
 				RenderTransform = translateTransform,
 				Tag = i
 			};
+			bool hidden = _residentSlots != null && !_residentSlots.Contains((1, i));
+			if (hidden) path.Visibility = Visibility.Collapsed;
 			Panel.SetZIndex(path, 1);
 			WheelCanvas.Children.Insert(0, path);
 			_styleRenderer?.ApplySectorHighlight(path, isHighlighted: false);
@@ -2012,8 +2024,9 @@ public partial class RadialWindow : Window
 			TranslateTransform translateTransform2 = new TranslateTransform(0.0, 0.0);
 			Grid grid = new Grid
 			{
-				Width = width2,
-				Height = height,
+				Width = HasHoneycomb ? data.Bounds.Width * .92 : width2,
+                Height = HasHoneycomb ? data.Bounds.Height * .86 : height,
+                ClipToBounds = HasHoneycomb,
 				RenderTransform = translateTransform2
 			};
 			StackPanel stackPanel = new StackPanel
@@ -2023,7 +2036,7 @@ public partial class RadialWindow : Window
 				VerticalAlignment = VerticalAlignment.Center
 			};
 			grid.Children.Add(stackPanel);
-			ActionItem? currentAction = _profile.GetEffectiveAction(i);
+			ActionItem? currentAction = DisplayedRoot(i);
 			string sectorLayout = text;
 			if (currentAction != null && !string.IsNullOrWhiteSpace(currentAction.LayoutMode) && currentAction.LayoutMode != "Inherit")
 			{
@@ -2166,7 +2179,8 @@ public partial class RadialWindow : Window
 				}
 				if (frameworkElement2 == null)
 				{
-					string vectorIconPath = GetVectorIconPath(text3, text4);
+					string? vectorIconPath = GetVectorIconPath(text3, text4) ??
+						(sectorLayout == "IconOnly" ? IconHelper.IconOnlyFallback(currentAction) : null);
 					if (!string.IsNullOrEmpty(vectorIconPath))
 					{
 						frameworkElement2 = new System.Windows.Shapes.Path
@@ -2208,7 +2222,7 @@ public partial class RadialWindow : Window
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,
 					TextTrimming = TextTrimming.CharacterEllipsis,
-					MaxWidth = maxWidth,
+					MaxWidth = HasHoneycomb ? Math.Min(grid.Width, maxWidth) : maxWidth,
 					MaxHeight = 36.0,
 					LineHeight = Math.Max(9.0, num13 * 1.15),
 					LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
@@ -2263,6 +2277,7 @@ public partial class RadialWindow : Window
 			{
 				stackPanel.Opacity = 0.88;
 			}
+			if (hidden) grid.Visibility = Visibility.Collapsed;
 			Canvas.SetLeft(grid, num7 - grid.Width / 2.0);
 			Canvas.SetTop(grid, num8 - grid.Height / 2.0);
 			Panel.SetZIndex(grid, 10);
@@ -2491,7 +2506,7 @@ public partial class RadialWindow : Window
 		{
 			return;
 		}
-		ActionItem? actionItem = _profile.GetEffectiveAction(parentIndex);
+		ActionItem? actionItem = DisplayedRoot(parentIndex);
 		if (actionItem == null || actionItem.SubActions == null || actionItem.SubActions.Count == 0)
 		{
 			return;
@@ -2515,6 +2530,7 @@ public partial class RadialWindow : Window
 		double num9 = num / (double)count;
 		for (int i = 0; i < count; i++)
 		{
+			if (_residentSlots != null && !_residentSlots.Contains((2, FixedRingMenu.SecondaryKey(parentIndex, i)))) continue;
 			double num10 = num8 + (double)i * num9;
 			double num11 = num10 + num9;
 			double num12 = (num10 + num11) / 2.0 * (Math.PI / 180.0);
@@ -2694,7 +2710,8 @@ public partial class RadialWindow : Window
 				}
 				if (frameworkElement == null)
 				{
-					string vectorIconPath = GetVectorIconPath(text3, text4);
+					string? vectorIconPath = GetVectorIconPath(text3, text4) ??
+						(subLayout == "IconOnly" ? IconHelper.IconOnlyFallback(actionItem2) : null);
 					if (!string.IsNullOrEmpty(vectorIconPath))
 					{
 						frameworkElement = new System.Windows.Shapes.Path
@@ -2820,7 +2837,7 @@ public partial class RadialWindow : Window
 		{
 			return;
 		}
-		ActionItem? actionItem = _profile.GetEffectiveAction(parentIndex);
+		ActionItem? actionItem = DisplayedRoot(parentIndex);
 		if (actionItem == null || actionItem.SubActions == null || actionItem.SubActions.Count == 0)
 		{
 			return;
@@ -2848,7 +2865,7 @@ public partial class RadialWindow : Window
 		int sectorCount = _profile.SectorCount;
 		for (int p = 0; p < sectorCount; p++)
 		{
-			ActionItem? actionItem = _profile.GetEffectiveAction(p);
+			ActionItem? actionItem = DisplayedRoot(p);
 			if (actionItem != null && actionItem.SubActions != null && actionItem.SubActions.Count > 0)
 			{
 				int snapshotStart = _subSectorPaths.Count;
@@ -2995,8 +3012,8 @@ public partial class RadialWindow : Window
 			path3.Stroke = _highlightBorderBrush;
 			path3.StrokeThickness = _highlightBorderThickness;
 			Panel.SetZIndex(path3, 5);
-			double toValue2 = Math.Cos(num4) * 5.5;
-			double toValue3 = Math.Sin(num4) * 5.5;
+			double toValue2 = HasHoneycomb ? 0 : Math.Cos(num4) * 5.5;
+			double toValue3 = HasHoneycomb ? 0 : Math.Sin(num4) * 5.5;
 			if (translateTransform3 != null)
 			{
 				translateTransform3.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(translateTransform3.X, toValue2, duration)
@@ -3064,7 +3081,7 @@ public partial class RadialWindow : Window
 			TextBlock textBlock3 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBlock>().FirstOrDefault();
 			System.Windows.Shapes.Path path6 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
 			// Keep the hit order and silhouettes stable when adjacent Fan parents overlap.
-			bool stationaryFan = _allSubTiersActive && ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
+			bool stationaryFan = HasHoneycomb || _allSubTiersActive && ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
 			bool isHighlighted = _allSubTiersActive
 				? (i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count &&
 				   _subSectorParentIndices[i] == mainIndex && _subSectorChildIndices[i] == subIndex && subIndex >= 0)
@@ -3519,7 +3536,7 @@ public partial class RadialWindow : Window
 		{
 			return;
 		}
-		ActionItem? actionItem = _profile.GetEffectiveAction(parentIndex);
+		ActionItem? actionItem = DisplayedRoot(parentIndex);
 		if (actionItem == null || actionItem.SubActions == null || actionItem.SubActions.Count == 0)
 		{
 			return;
@@ -3568,13 +3585,16 @@ public partial class RadialWindow : Window
 
 		for (int j = 0; j < activeCount; j++)
 		{
+			if (_residentSlots != null && !_residentSlots.Contains((2, FixedRingMenu.SecondaryKey(parentIndex, j)))) continue;
 			int slot = GetFanSlotIndex(j, activeCount);
 			var (du, dv) = GetFanSubOffsetForShape(shape, slot);
 
 			double px = cx + ux * (du * R) + vx * (dv * R);
 			double py = cy + uy * (du * R) + vy * (dv * R);
 
-			Geometry data = CreateSubMenuGeometry(shape, px, py, itemR, midRad, cx, cy, userCornerRadius);
+			Geometry data = HasHoneycomb
+                ? CanvasCell(FixedGeometry!.Secondary(ConfigManager.CurrentConfig, parentIndex, j, subCount), out px, out py)
+                : CreateSubMenuGeometry(shape, px, py, itemR, midRad, cx, cy, userCornerRadius);
 
 // 经典紧凑扇区以轮盘中心为缩放枢轴（PR#34 适配），其余形态按各项自身位置
 			ScaleTransform scaleTransform = new ScaleTransform(0.75, 0.75, isCompactSector ? cx : px, isCompactSector ? cy : py);
@@ -3604,6 +3624,11 @@ public partial class RadialWindow : Window
 			double reqHoneyH = (layoutMode != "TextOnly" ? num7 : 0.0) + fontSize * 2.6 + 10.0;
 			double containerW = Math.Max(itemR * 2.2, fontSize * 5.5);
 			double containerH = Math.Max(itemR * 2.0, reqHoneyH);
+            if (HasHoneycomb)
+            {
+                containerW = data.Bounds.Width * .92;
+                containerH = data.Bounds.Height * .86;
+            }
 			ScaleTransform scaleTransform2 = new ScaleTransform(0.75, 0.75, containerW / 2.0, containerH / 2.0);
 			TranslateTransform translateTransform2 = new TranslateTransform(0.0, 0.0);
 			TransformGroup transformGroup2 = new TransformGroup();
@@ -3614,6 +3639,7 @@ public partial class RadialWindow : Window
 			{
 				Width = containerW,
 				Height = containerH,
+                ClipToBounds = HasHoneycomb,
 				Opacity = 0.0,
 				RenderTransform = transformGroup2
 			};
@@ -3750,7 +3776,8 @@ public partial class RadialWindow : Window
 				}
 				if (frameworkElement == null)
 				{
-					string vectorIconPath = GetVectorIconPath(text3, text4);
+					string? vectorIconPath = GetVectorIconPath(text3, text4) ??
+						(subLayout == "IconOnly" ? IconHelper.IconOnlyFallback(actionItem2) : null);
 					if (!string.IsNullOrEmpty(vectorIconPath))
 					{
 						frameworkElement = new System.Windows.Shapes.Path
@@ -3796,7 +3823,7 @@ public partial class RadialWindow : Window
 					TextAlignment = TextAlignment.Center,
 					TextWrapping = TextWrapping.Wrap,
 					TextTrimming = TextTrimming.CharacterEllipsis,
-					MaxWidth = Math.Max(50.0, containerW - 4.0),
+					MaxWidth = HasHoneycomb ? Math.Max(1, containerW - 2) : Math.Max(50.0, containerW - 4.0),
 					MaxHeight = Math.Max(honeyFinalFontSize * 2.6 + 4.0, containerH - (subShouldShowIcon ? subIconSize + 4.0 : 6.0)),
 					LineHeight = Math.Max(8.5, honeyFinalFontSize * 1.15),
 					LineStackingStrategy = LineStackingStrategy.BlockLineHeight
@@ -3857,7 +3884,7 @@ public partial class RadialWindow : Window
             _subContentContainers.Add(grid);
 			_subContainerTransforms.Add(translateTransform2);
 
-			if (!animateEntrance)
+			if (!animateEntrance || HasHoneycomb)
 			{
 				path.Opacity = grid.Opacity = 1;
 				scaleTransform.ScaleX = scaleTransform.ScaleY = scaleTransform2.ScaleX = scaleTransform2.ScaleY = 1;

@@ -143,6 +143,7 @@ public sealed class PortableConfigImportTransaction : IDisposable
 public static class PortableConfigBundle
 {
 	public const string Format = "StarPiePortableConfig";
+	private const string ProfileFormat = "StarPieWheelProfile";
 	public const int Version = 1;
 	public const long MaxConfigBytes = 16L * 1024L * 1024L;
 	public const long MaxManifestBytes = 1L * 1024L * 1024L;
@@ -165,7 +166,13 @@ public static class PortableConfigBundle
 		".png", ".jpg", ".jpeg", ".ico", ".bmp", ".webp"
 	};
 
-	public static void Export(string configJson, string targetPath, string customIconsDirectory)
+	public static void Export(string configJson, string targetPath, string customIconsDirectory) =>
+		Export(configJson, targetPath, customIconsDirectory, Format);
+
+	internal static void ExportProfile(string configJson, string targetPath, string customIconsDirectory) =>
+		Export(configJson, targetPath, customIconsDirectory, ProfileFormat);
+
+	private static void Export(string configJson, string targetPath, string customIconsDirectory, string format)
 	{
 		if (configJson == null)
 		{
@@ -219,7 +226,7 @@ public static class PortableConfigBundle
 				targetDirectory,
 				"." + Path.GetFileName(targetFullPath) + "." + Guid.NewGuid().ToString("N") + ".tmp");
 
-			byte[] manifestBytes = BuildManifest(assets);
+			byte[] manifestBytes = BuildManifest(assets, format);
 			if (manifestBytes.LongLength > MaxManifestBytes)
 			{
 				throw Fail(PortableConfigBundleReasonCodes.ManifestTooLarge, "The generated manifest is too large.");
@@ -265,7 +272,13 @@ public static class PortableConfigBundle
 		}
 	}
 
-	public static PortableConfigImportTransaction PrepareImport(string packagePath, string customIconsDirectory)
+	public static PortableConfigImportTransaction PrepareImport(string packagePath, string customIconsDirectory) =>
+		PrepareImport(packagePath, customIconsDirectory, Format);
+
+	internal static PortableConfigImportTransaction PrepareProfileImport(string packagePath, string customIconsDirectory) =>
+		PrepareImport(packagePath, customIconsDirectory, ProfileFormat);
+
+	private static PortableConfigImportTransaction PrepareImport(string packagePath, string customIconsDirectory, string expectedFormat)
 	{
 		if (string.IsNullOrWhiteSpace(packagePath))
 		{
@@ -304,7 +317,7 @@ public static class PortableConfigBundle
 				64 * 1024,
 				FileOptions.SequentialScan);
 			using var archive = new ZipArchive(file, ZipArchiveMode.Read, leaveOpen: false);
-			package = ReadPackage(archive);
+			package = ReadPackage(archive, expectedFormat);
 		}
 		catch (PortableConfigBundleException)
 		{
@@ -1121,7 +1134,7 @@ public static class PortableConfigBundle
 		}
 	}
 
-	private static byte[] BuildManifest(IReadOnlyList<AssetSource> assets)
+	private static byte[] BuildManifest(IReadOnlyList<AssetSource> assets, string format)
 	{
 		var manifestAssets = new JsonArray();
 		foreach (AssetSource asset in assets)
@@ -1142,7 +1155,7 @@ public static class PortableConfigBundle
 
 		var manifest = new JsonObject
 		{
-			["format"] = Format,
+			["format"] = format,
 			["version"] = Version,
 			["config"] = ConfigEntryName,
 			["assets"] = manifestAssets
@@ -1155,7 +1168,7 @@ public static class PortableConfigBundle
 		return bytes;
 	}
 
-	private static PackageContents ReadPackage(ZipArchive archive)
+	private static PackageContents ReadPackage(ZipArchive archive, string expectedFormat)
 	{
 		var entries = archive.Entries.ToList();
 		if (entries.Count == 0)
@@ -1199,7 +1212,7 @@ public static class PortableConfigBundle
 			if (root.ValueKind != JsonValueKind.Object ||
 				!root.TryGetProperty("format", out JsonElement formatElement) ||
 				formatElement.ValueKind != JsonValueKind.String ||
-				!string.Equals(formatElement.GetString(), Format, StringComparison.Ordinal))
+				!string.Equals(formatElement.GetString(), expectedFormat, StringComparison.Ordinal))
 			{
 				throw Fail(PortableConfigBundleReasonCodes.UnsupportedFormat, "The bundle format is not supported.");
 			}

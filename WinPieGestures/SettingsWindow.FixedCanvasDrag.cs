@@ -15,6 +15,15 @@ public partial class SettingsWindow
             Children = { shape }, Transform = new MatrixTransform(scale, 0, 0, scale, 150, 150)
         };
         geometry.Freeze();
+        if (level == 1 && (action?.SubActions?.Count ?? 0) == 0)
+        {
+            var cfg = ConfigManager.CurrentConfig;
+            var vacant = FixedGeometry(profile).Secondary(cfg, key, 0, 1);
+            var guide = new GeometryGroup { Children = { vacant.Shape }, Transform = geometry.Transform };
+            guide.Freeze();
+            RegisterPaletteSecondaryVacancy(profile, key, guide);
+            RegisterFixedSecondaryVacancy(profile, menu, key, guide);
+        }
         int slot = key;
         int? sub = null;
         if (level == 2 && FixedRingMenu.TryDecodeSecondaryKey(key, out int primary, out int child))
@@ -30,6 +39,14 @@ public partial class SettingsWindow
         });
     }
 
+    private void RegisterFixedSecondaryVacancy(WheelProfile profile, FixedRingMenu menu, int primary, Geometry guide) =>
+        _canvasHitItems.Add(new CanvasHitItem
+        {
+            Geometry = guide, Bounds = guide.Bounds, FixedLevel = 2, FixedMenu = menu,
+            IsDropOnly = true, IsSubAction = true, SlotIndex = primary, SubIndex = 0,
+            Address = new(profile.ProcessName, profile.ActiveLayerIndex, primary, 0, GetProfileInstanceId(profile), _fixedLayer)
+        });
+
     private void BeginCanvasSlotDrag(Point position, CanvasHitItem? hit)
     {
         _mappingsDragStartPos = position;
@@ -42,14 +59,43 @@ public partial class SettingsWindow
     {
         var source = _canvasDragSource;
         if (source?.FixedLevel == null && target.FixedLevel == null) return true;
-        if (source?.FixedLevel is not int from || target.FixedLevel is not int to || !EditingOuterFixedSlot ||
+        if (source?.FixedLevel is not int from || target.FixedLevel is not int to || !OnFixedCanvas ||
             !ReferenceEquals(source.FixedMenu, _fixedLayer!.ActiveFixedRings) ||
             !ReferenceEquals(source.FixedMenu, target.FixedMenu) || !_canvasHitItems.Contains(source) ||
             !_canvasHitItems.Contains(target) || ReferenceEquals(source, target)) return false;
+        if (IsCrossLevelSwap(source, target))
+            return IsCurrentCanvasEndpoint(source) && IsCurrentCanvasEndpoint(target) &&
+                (source.Action != null || target.Action != null);
+        if (target.IsDropOnly && !IsCurrentCanvasEndpoint(target)) return false;
         if (from < 3 && to < 3)
             return from == 2 ? to == 2 || (to == 1 && source.SlotIndex != target.SlotIndex) : to <= 1;
         return from == to && source.Action != null && ReferenceEquals(source.FixedMenu!.GetSlot(from, source.SlotIndex)?.Action, source.Action) &&
             ReferenceEquals(target.FixedMenu!.GetSlot(to, target.SlotIndex)?.Action, target.Action);
+    }
+
+    private static bool IsCrossLevelSwap(CanvasHitItem source, CanvasHitItem target) =>
+        source.FixedLevel is >= 1 && target.FixedLevel is >= 1 && source.FixedLevel != target.FixedLevel;
+
+    private bool IsCurrentCanvasEndpoint(CanvasHitItem hit)
+    {
+        int level = hit.FixedLevel!.Value;
+        if (level > _fixedLayer!.EffectiveMaxMenuDepth) return false;
+        if (level >= 3)
+            return (uint)hit.SlotIndex < (uint)hit.FixedMenu!.GetCount(level) &&
+                ReferenceEquals(hit.Action, hit.FixedMenu.GetSlot(level, hit.SlotIndex)?.Action);
+        if ((uint)hit.SlotIndex >= (uint)_fixedProfile!.SectorCount) return false;
+        var root = GetCanvasRoot(_fixedProfile, hit.SlotIndex);
+        var current = root;
+        if (level == 2)
+        {
+            if (root == null || string.Equals(root.Type, "None", StringComparison.OrdinalIgnoreCase)) return false;
+            if (hit.IsDropOnly) return hit.SubIndex == 0 && (root.SubActions?.Count ?? 0) == 0;
+            if (hit.SubIndex is not int index || root.SubActions == null || (uint)index >= (uint)
+                DeepMenuFrame.VisibleSlotCount(root.SubActions.Count, ConfigManager.CurrentConfig.SubmenuStyle == "Fan")) return false;
+            current = root.SubActions[index];
+        }
+        // Effective inherited roots are cloned on each lookup.
+        return ReferenceEquals(current, hit.Action) || root?.IsInherited == true && AreActionItemsEquivalent(current, hit.Action);
     }
 
     private void DropFixedSlot(WheelProfile profile, CanvasHitItem source, CanvasHitItem target, bool copy)
@@ -85,6 +131,7 @@ public partial class SettingsWindow
                 slots.RemoveRange(storedCount, slots.Count - storedCount);
         }
 
+        _fixedInnerLevel = null;
         _fixedLevel = level;
         _fixedIndices[level] = to;
         CommitFixedChange(profile, copy ? "EditCopySector" : "EditSwapSectors",

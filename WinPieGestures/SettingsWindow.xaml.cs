@@ -37,7 +37,7 @@ public partial class SettingsWindow : Window
 {
 	private const double SidebarExpandedWidth = 230.0;
 
-	private const double SidebarCollapsedWidth = 68.0;
+	private const double SidebarCollapsedWidth = 52.0;
 
 	private bool _isSidebarCollapsed = false;
 
@@ -530,7 +530,11 @@ public partial class SettingsWindow : Window
 		_isUpdatingUi = true;
 		_isUpdatingFocusUi = true;
 		InitializeComponent();
+        FocusPluginParamsPanel = FocusPluginPanel.FocusPluginParamsPanel;
+        FocusPluginPanel.ManageButton.Click += FocusOpenPluginPageBtn_Click;
+        FocusPluginPanel.FocusPluginReloadBtn.Click += FocusReloadPluginBtn_Click;
 		InitializeArtStyleStudio();
+		InitializeMappingsStudio();
 		PreviewMouseDown += ProfileActivationInteraction_PreviewMouseDown;
 		if (MappingsProfileComboBox != null) MappingsProfileComboBox.PreviewMouseDown += CancelProfileActivationForNavigation;
 		if (ProfilesListBox != null) ProfilesListBox.PreviewMouseDown += CancelProfileActivationForNavigation;
@@ -834,15 +838,20 @@ public partial class SettingsWindow : Window
 		{
 			case Key.Z: ExecuteUndo(); return true;
 			case Key.Y: ExecuteRedo(); return true;
-			case Key.C when _deepCanvasParent == null && !EditingOuterFixedSlot: CopyCurrentSelection(); return true;
-			case Key.V when _deepCanvasParent == null && !EditingOuterFixedSlot: PasteToCurrentSelection(); return true;
+			case Key.C when CanUseStudioClipboard(): CopyCurrentSelection(); return true;
+			case Key.V when CanUseStudioClipboard(): PasteToCurrentSelection(); return true;
 			default: return false;
 		}
 	}
 
 	private void SidebarToggleButton_Click(object sender, RoutedEventArgs e)
 	{
-		_isSidebarCollapsed = !_isSidebarCollapsed;
+		if (_studioReady && MappingsSettingsGrid.Visibility == Visibility.Visible && StudioWindowWidth <= 1240)
+        {
+            _studioAutoOverride = !(_isSidebarCollapsed || StudioAutoNavigation);
+            _isSidebarCollapsed = false;
+        }
+        else _isSidebarCollapsed = !_isSidebarCollapsed;
 		ApplySidebarLayout();
 	}
 
@@ -852,9 +861,9 @@ public partial class SettingsWindow : Window
 		{
 			return;
 		}
-		bool isCollapsed = _isSidebarCollapsed;
+		bool isCollapsed = _isSidebarCollapsed || StudioAutoNavigation;
 		SidebarColumn.Width = new GridLength(isCollapsed ? SidebarCollapsedWidth : SidebarExpandedWidth);
-		SidebarBorder.Padding = isCollapsed ? new Thickness(10, 20, 10, 15) : new Thickness(16, 20, 16, 15);
+		SidebarBorder.Padding = isCollapsed ? new Thickness(3, 12, 3, 10) : new Thickness(16, 20, 16, 15);
 		SidebarToggleButton.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Right;
 		SidebarBrandGrid.HorizontalAlignment = isCollapsed ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
 		SidebarBrandTextPanel.Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible;
@@ -1633,22 +1642,7 @@ public partial class SettingsWindow : Window
 		UpdateOcrBadgeUi();
 		UpdateRollbackBadgeAndCandidates();
 		UpdateLayerSwitchTriggerUi();
-		if (ConfigManager.CurrentConfig != null && ConfigManager.CurrentConfig.MappingsCanvasColumnWidth >= 300.0)
-		{
-			if (Tab2LeftColumn != null && Tab2RightColumn != null)
-			{
-				Tab2LeftColumn.Width = new GridLength(1.0, GridUnitType.Star);
-				Tab2RightColumn.Width = new GridLength(ConfigManager.CurrentConfig.MappingsCanvasColumnWidth, GridUnitType.Pixel);
-			}
-		}
-		else
-		{
-			if (Tab2LeftColumn != null && Tab2RightColumn != null)
-			{
-				Tab2LeftColumn.Width = new GridLength(1.15, GridUnitType.Star);
-				Tab2RightColumn.Width = new GridLength(1.0, GridUnitType.Star);
-			}
-		}
+		UpdateStudioLayout();
 	}
 
 	private void UpdateSoftwareUpdateStatusUi()
@@ -1865,12 +1859,9 @@ public partial class SettingsWindow : Window
 		}
 		if (Tab2_MappingsViewModeBorder != null)
 		{
-			Tab2_MappingsViewModeBorder.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
+			Tab2_MappingsViewModeBorder.Visibility = Visibility.Visible;
 		}
-		if (isSimple && MappingsViewModeCanvasRadio != null && MappingsViewModeCanvasRadio.IsChecked != true)
-		{
-			MappingsViewModeCanvasRadio.IsChecked = true;
-		}
+		UpdateStudioMode(isSimple);
 
 		// 4. Tab 3 高级系统: 隐藏低频 OCR接口/内存/备份/日志卡片
 		if (Tab3_OcrCardBorder != null)
@@ -1928,6 +1919,7 @@ public partial class SettingsWindow : Window
 
 	public void ApplyLocalization()
 	{
+		LocalizeStudio();
 		RefreshAutoSaveStatus();
 		ReloadUiFontOptions();
 		PopulateWheelFontFamilies();
@@ -2864,11 +2856,11 @@ public partial class SettingsWindow : Window
 		}
 		if (MappingsViewModeCanvasRadio != null)
 		{
-			MappingsViewModeCanvasRadio.Content = I18n.T("MappingsViewModeCanvas");
+			MappingsViewModeCanvasRadio.Content = I18n.T("StudioCanvas");
 		}
 		if (MappingsViewModeListRadio != null)
 		{
-			MappingsViewModeListRadio.Content = I18n.T("MappingsViewModeList");
+			MappingsViewModeListRadio.Content = I18n.T("StudioList");
 		}
 		if (AddProfileBtn2 != null)
 		{
@@ -3284,7 +3276,7 @@ public partial class SettingsWindow : Window
 		if (Tab1_InnerRadiusLabel != null) Tab1_InnerRadiusLabel.Text = I18n.T("Tab1_InnerRadiusLabel");
 		if (Tab1_CoreRadiusLabel != null) Tab1_CoreRadiusLabel.Text = I18n.T("Tab1_CoreRadiusLabel");
 		if (Tier2DimensionsExpander != null) Tier2DimensionsExpander.Header = I18n.T("Tier2DimensionsExpanderHeader");
-		if (Tab1_SubDimensionsNoticeText != null) Tab1_SubDimensionsNoticeText.Text = I18n.T("Tab1_SubDimensionsNotice");
+		RefreshSecondaryGeometryNotice(_selectedProfile?.Layers?.ElementAtOrDefault(_selectedProfile.ActiveLayerIndex));
 		if (Tab1_SubOuterRadiusLabel != null) Tab1_SubOuterRadiusLabel.Text = I18n.T("Tab1_SubOuterRadiusLabel");
 		if (Tab1_SubGapLabel != null) Tab1_SubGapLabel.Text = I18n.T("Tab1_SubGapLabel");
 		if (Tab1_SubCornerRadiusLabel != null) Tab1_SubCornerRadiusLabel.Text = I18n.T("Tab1_SubCornerRadiusLabel");
@@ -3587,7 +3579,7 @@ public partial class SettingsWindow : Window
 		if (MappingsCanvasInstructionsText != null) MappingsCanvasInstructionsText.Text = I18n.T("MappingsCanvasInstructions");
 		if (MappingsTier1SegmentRadio != null) MappingsTier1SegmentRadio.Content = I18n.T("MappingsTier1SegmentText");
 		if (MappingsTier2SegmentRadio != null) MappingsTier2SegmentRadio.Content = I18n.T("MappingsTier2SegmentText");
-		if (MappingsShowTextToggleBtn != null) { MappingsShowTextToggleBtn.Content = I18n.T("MappingsShowTextToggleBtnText"); MappingsShowTextToggleBtn.ToolTip = I18n.T("MappingsShowTextToggleBtnToolTip"); }
+		UpdateMappingsShowTextBtnState();
 		if (MappingsZoomOutBtn != null) MappingsZoomOutBtn.ToolTip = I18n.T("MappingsZoomOutBtnToolTip");
 		if (MappingsZoomLabel != null) MappingsZoomLabel.ToolTip = I18n.T("MappingsZoomLabelToolTip");
 		if (MappingsZoomInBtn != null) MappingsZoomInBtn.ToolTip = I18n.T("MappingsZoomInBtnToolTip");
@@ -3699,7 +3691,11 @@ public partial class SettingsWindow : Window
 		RefreshLayoutOptionsUi();
 		UpdateFocusActionTypeItemsSource(force: true);
 		RefreshFocusLocalizedChoices();
-		if (MappingsProfileComboBox != null)
+		bool restoringSelections = _isUpdatingUi;
+        try
+        {
+            _isUpdatingUi = true;
+            if (MappingsProfileComboBox != null)
 		{
 			var curProf = _selectedProfile;
 			MappingsProfileComboBox.ItemsSource = null;
@@ -3722,7 +3718,9 @@ public partial class SettingsWindow : Window
 			LayerSelectComboBox.SelectedIndex = safeIdx;
 			LayerSelectComboBox.ToolTip = _selectedProfile.Layers.Count > 0 ? _selectedProfile.Layers[safeIdx].DisplayName : null;
 		}
-		RefreshConfigProfilesUi();
+		}
+        finally { _isUpdatingUi = restoringSelections; }
+        RefreshConfigProfilesUi();
 		ReloadThemePresets();
 		UpdateProfileBindingUi();
 		if (ImportConfigButton != null) ImportConfigButton.ToolTip = I18n.T("PortableConfigImportHint");
@@ -3838,6 +3836,8 @@ public partial class SettingsWindow : Window
 		TriggerSettingsGrid.Visibility = ((index != 0) ? Visibility.Collapsed : Visibility.Visible);
 		AppearanceSettingsGrid.Visibility = ((index != 1) ? Visibility.Collapsed : Visibility.Visible);
 		MappingsSettingsGrid.Visibility = ((index != 2) ? Visibility.Collapsed : Visibility.Visible);
+        UpdateStudioWindowSpacing();
+        ApplySidebarLayout();
 		SystemSettingsGrid.Visibility = ((index != 3) ? Visibility.Collapsed : Visibility.Visible);
 		AboutSettingsGrid.Visibility = ((index != 4) ? Visibility.Collapsed : Visibility.Visible);
 		if (index == 4) EnsureEmbeddedChangelogLoaded();
@@ -4225,6 +4225,7 @@ public partial class SettingsWindow : Window
 
 		// 官方插件的安装/启用/停用/卸载可能发生在后台目录同步线程，
 		// 动作类型下拉必须在同一 UI 线程即时重建，避免列表与实际派发路由不一致。
+		if (_studioReady) StudioPalette.RefreshEntries();
 		UpdateOnboardingBannerVisibility();
 		RefreshSlots();
 		RefreshGestureMappings();
@@ -5105,6 +5106,7 @@ public partial class SettingsWindow : Window
 
 	private void UpdateProfileBindingUi()
 	{
+		if (_studioReady) RefreshStudioRail();
 		RefreshProfilePresentation();
 		RefreshProfileActivationUi();
 		if (ProfileBindingCardBorder == null) return;
@@ -5412,6 +5414,7 @@ public partial class SettingsWindow : Window
 		if (MappingsViewModeCanvasRadio != null && MappingsViewModeCanvasRadio.IsChecked == true)
 		{
 			MappingsCanvasModeGrid.Visibility = Visibility.Visible;
+			UpdateStudioHosts(true);
 			MappingsListModeGrid.Visibility = Visibility.Collapsed;
 			if (ProfileActivationPanel != null) ProfileActivationPanel.Visibility = Visibility.Collapsed;
 			bool oldUpdating = _isUpdatingUi;
@@ -5438,6 +5441,7 @@ public partial class SettingsWindow : Window
 			CloseDeepCanvas();
 			CloseFixedCanvas();
 			MappingsCanvasModeGrid.Visibility = Visibility.Collapsed;
+			UpdateStudioHosts(false);
 			MappingsListModeGrid.Visibility = Visibility.Visible;
 			if (ProfileActivationPanel != null)
 			{
@@ -5471,6 +5475,7 @@ public partial class SettingsWindow : Window
 		{
 			if (_selectedProfile != null && _selectedProfile != profile)
 			{
+                _selectedMultiSlots.Clear();
 				_selectedProfile.SyncActiveLayerFromRootProperties();
 			}
 			_selectedProfile = profile;
@@ -5504,6 +5509,7 @@ public partial class SettingsWindow : Window
 
 	private void RefreshLayersUi()
 	{
+		if (_studioReady) RefreshStudioRail();
 		if (_selectedProfile == null) return;
 		_selectedProfile.EnsureLayers();
 
@@ -5542,6 +5548,7 @@ public partial class SettingsWindow : Window
 		if (_isUpdatingUi || _selectedProfile == null) return;
 		int newIdx = LayerSelectComboBox.SelectedIndex;
 		if (newIdx < 0 || newIdx >= _selectedProfile.Layers.Count) return;
+        if (newIdx != _selectedProfile.ActiveLayerIndex) _selectedMultiSlots.Clear();
 
 		// 切换前先将当前层改动写回旧层，彻底避免层与层之间配置相互覆盖与丢失
 		_selectedProfile.SyncActiveLayerFromRootProperties();
@@ -5580,7 +5587,7 @@ public partial class SettingsWindow : Window
 		{
 			LayerCtxDeleteMenuItem.IsEnabled = canDeleteLayer;
 		}
-		ScheduleAutoSave();
+		if (!_studioReady || MappingsViewModeCanvasRadio.IsChecked != true) ScheduleAutoSave();
 	}
 
 	private void LayerSelectComboBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -5813,44 +5820,14 @@ public partial class SettingsWindow : Window
 		}
 	}
 
-	private void Tab2GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
-	{
-		try
-		{
-			if (Tab2RightColumn != null && Tab2RightColumn.ActualWidth >= 300)
-			{
-				if (ConfigManager.CurrentConfig != null)
-				{
-					ConfigManager.CurrentConfig.MappingsCanvasColumnWidth = Math.Round(Tab2RightColumn.ActualWidth, 1);
-					ConfigManager.SaveConfig();
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			AppLogger.LogError("Tab2GridSplitter_DragCompleted error", ex);
-		}
-	}
+	private void Tab2GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e) => StudioSplitCompleted(sender, e);
 
 	private void Tab2GridSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
 	{
-		try
-		{
-			if (Tab2LeftColumn != null && Tab2RightColumn != null)
-			{
-				Tab2LeftColumn.Width = new GridLength(1.15, GridUnitType.Star);
-				Tab2RightColumn.Width = new GridLength(1.0, GridUnitType.Star);
-			}
-			if (ConfigManager.CurrentConfig != null)
-			{
-				ConfigManager.CurrentConfig.MappingsCanvasColumnWidth = 0.0;
-				ConfigManager.SaveConfig();
-			}
-		}
-		catch (Exception ex)
-		{
-			AppLogger.LogError("Tab2GridSplitter_MouseDoubleClick error", ex);
-		}
+		ConfigManager.CurrentConfig.StudioRailFraction = 0;
+		ConfigManager.CurrentConfig.StudioInspectorFraction = 0;
+		UpdateStudioLayout();
+		ScheduleAutoSave();
 	}
 
 	private void DuplicateProfileBtn_Click(object sender, RoutedEventArgs e)
@@ -5914,7 +5891,8 @@ public partial class SettingsWindow : Window
 
 	public void SelectPrimarySlot(int slotIndex)
 	{
-		if (_fixedLayer != null) CloseFixedCanvas();
+		ShowStudioActionInspector();
+		SelectFixedInnerLevel(1);
 		CloseDeepCanvas();
 		int count = _selectedProfile?.SectorCount ?? 8;
 		_selectedSlotIndex = Math.Max(0, Math.Min(slotIndex, count - 1));
@@ -5931,7 +5909,9 @@ public partial class SettingsWindow : Window
 
 	public void SelectCenterCore()
 	{
-		if (_fixedLayer != null) CloseFixedCanvas();
+		_selectedMultiSlots.Clear();
+        ShowStudioActionInspector();
+		SelectFixedInnerLevel(0);
 		CloseDeepCanvas();
 		_selectedSlotIndex = -1;
 		_selectedSubActionIndex = null;
@@ -5947,7 +5927,9 @@ public partial class SettingsWindow : Window
 
 	public void SelectSubAction(int parentSlotIndex, int subIndex)
 	{
-		if (_fixedLayer != null) CloseFixedCanvas();
+		_selectedMultiSlots.Clear();
+        ShowStudioActionInspector();
+		SelectFixedInnerLevel(2);
 		CloseDeepCanvas();
 		_selectedSlotIndex = parentSlotIndex;
 		_selectedSubActionIndex = subIndex;
@@ -6087,32 +6069,16 @@ public partial class SettingsWindow : Window
 			// 随后被 GetEffectiveCenterAction 的 EnsureLayers 立即覆盖回旧值。
 			profile.EnsureLayers();
 			profile.SyncActiveLayerFromRootProperties();
-			if (profile.CenterAction == null)
-			{
-				if (string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase))
-				{
-					profile.CenterAction = new ActionItem
-					{
-						Name = I18n.T("SysPresetName_OpenSettings"),
-						Type = "System",
-						Parameter = "OpenSettings",
-						IconKey = "Settings"
-					};
-				}
-				else
-				{
-					profile.CenterAction = new ActionItem
-					{
-						Name = "",
-						Type = "Inherit",
-						Parameter = "",
-						IconKey = ""
-					};
-				}
-			}
-			// 初始化中心动作后再次同步，避免 EnsureLayers 在下一次读取时以空的层属性覆盖它。
-			profile.SyncActiveLayerFromRootProperties();
-			return profile.CenterAction;
+			if (profile.CenterAction != null) return profile.CenterAction;
+            var initial = string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase)
+                ? new ActionItem { Name = I18n.T("SysPresetName_OpenSettings"), Type = "System", Parameter = "OpenSettings", IconKey = "Settings" }
+                : new ActionItem { Name = "", Type = "Inherit" };
+            if (ensureLocalForEdit)
+            {
+                profile.CenterAction = initial;
+                profile.SyncActiveLayerFromRootProperties();
+            }
+            return initial;
 		}
 		if (profile.Actions == null || _selectedSlotIndex < 0 || _selectedSlotIndex >= profile.Actions.Count)
 		{
@@ -6224,8 +6190,9 @@ public partial class SettingsWindow : Window
 				}
 			}
 
-			bool hasAnySubActions = (primaryAction?.SubActions != null && primaryAction.SubActions.Count > 0) ||
-			                       (isInherited && effectiveInheritedAction?.SubActions != null && effectiveInheritedAction.SubActions.Count > 0);
+			bool hasAnySubActions = primaryAction?.SubActions is { Count: > 0 } ||
+                (isInherited && (_selectedSubActionIndex.HasValue ? effectiveInheritedAction != null :
+                    effectiveInheritedAction?.SubActions is { Count: > 0 }));
 			if (EditMenuBranchButton != null) EditMenuBranchButton.IsEnabled = _selectedSlotIndex >= 0;
 			bool isTier2NoSubActions = (MappingsTier2SegmentRadio?.IsChecked == true && _selectedSlotIndex >= 0 && !hasAnySubActions);
 
@@ -6286,7 +6253,7 @@ public partial class SettingsWindow : Window
 				if (FocusNameAndIconBorder != null) FocusNameAndIconBorder.Visibility = Visibility.Collapsed;
 				if (FocusActionTypeAndParamsBorder != null) FocusActionTypeAndParamsBorder.Visibility = Visibility.Collapsed;
 				if (FocusInheritIconBorder != null) FocusInheritIconBorder.Visibility = Visibility.Collapsed;
-				if (FocusSubActionsBorder != null) FocusSubActionsBorder.Visibility = _fixedLayer == null ? Visibility.Visible : Visibility.Collapsed;
+				if (FocusSubActionsBorder != null) FocusSubActionsBorder.Visibility = !EditingOuterFixedSlot ? Visibility.Visible : Visibility.Collapsed;
 				return;
 			}
 			else if (_selectedSubActionIndex.HasValue)
@@ -6304,7 +6271,7 @@ public partial class SettingsWindow : Window
 				if (FocusTier2EmptyNoticeBorder != null) FocusTier2EmptyNoticeBorder.Visibility = Visibility.Collapsed;
 				if (FocusNameAndIconBorder != null) FocusNameAndIconBorder.Visibility = Visibility.Visible;
 				if (FocusActionTypeAndParamsBorder != null) FocusActionTypeAndParamsBorder.Visibility = Visibility.Visible;
-				if (FocusSubActionsBorder != null) FocusSubActionsBorder.Visibility = _fixedLayer == null ? Visibility.Visible : Visibility.Collapsed;
+				if (FocusSubActionsBorder != null) FocusSubActionsBorder.Visibility = !EditingOuterFixedSlot ? Visibility.Visible : Visibility.Collapsed;
 			}
 			else
 			{
@@ -6327,7 +6294,7 @@ public partial class SettingsWindow : Window
 				if (FocusTier2EmptyNoticeBorder != null) FocusTier2EmptyNoticeBorder.Visibility = Visibility.Collapsed;
 				if (FocusNameAndIconBorder != null) FocusNameAndIconBorder.Visibility = Visibility.Visible;
 				if (FocusActionTypeAndParamsBorder != null) FocusActionTypeAndParamsBorder.Visibility = Visibility.Visible;
-				if (FocusSubActionsBorder != null) FocusSubActionsBorder.Visibility = _fixedLayer == null ? Visibility.Visible : Visibility.Collapsed;
+				if (FocusSubActionsBorder != null) FocusSubActionsBorder.Visibility = !EditingOuterFixedSlot ? Visibility.Visible : Visibility.Collapsed;
 			}
 
 			// Name & Icon
@@ -6910,7 +6877,18 @@ public partial class SettingsWindow : Window
 	private void EnableCenterActionCheckBox_Changed(object sender, RoutedEventArgs e)
 	{
 		if (_isUpdatingFocusUi || _selectedProfile == null) return;
-		_selectedProfile.EnableCenterAction = (EnableCenterActionCheckBox.IsChecked == true);
+		bool enable = EnableCenterActionCheckBox.IsChecked == true;
+        if (enable && _selectedProfile.CenterAction == null)
+        {
+            var inherited = _selectedProfile.GetEffectiveCenterAction();
+            if (inherited != null)
+            {
+                _selectedProfile.CenterAction = inherited.Clone();
+                _selectedProfile.CenterAction.IsInherited = false;
+            }
+            else GetCurrentFocusActionItem(ensureLocalForEdit: true);
+        }
+        _selectedProfile.EnableCenterAction = enable;
 		_selectedProfile.SyncActiveLayerFromRootProperties();
 		if (CenterPatternPriorityTip != null)
 		{
@@ -9556,13 +9534,21 @@ public partial class SettingsWindow : Window
 			return subImgElement;
 		}
 
-		if (!string.IsNullOrEmpty(subSvg))
+		var icon = Vector(subSvg);
+		if (icon != null) return icon;
+		string mode = subItem.LayoutMode is { Length: > 0 } and not "Inherit" ? subItem.LayoutMode : ConfigManager.CurrentConfig.IconLayoutMode;
+		return mode == "IconOnly" ? Vector(IconHelper.IconOnlyFallback(subItem)) : null;
+
+		FrameworkElement? Vector(string? svg)
 		{
+			if (string.IsNullOrWhiteSpace(svg)) return null;
 			try
 			{
+				var data = Geometry.Parse(svg);
+				if (data.Bounds.IsEmpty || data.Bounds.Width <= 0 || data.Bounds.Height <= 0) return null;
 				return new System.Windows.Shapes.Path
 				{
-					Data = Geometry.Parse(subSvg),
+					Data = data,
 					Fill = subIconBrush,
 					Width = subIconSize,
 					Height = subIconSize,
@@ -9572,10 +9558,8 @@ public partial class SettingsWindow : Window
 					IsHitTestVisible = false
 				};
 			}
-			catch { }
+			catch (FormatException) { return null; }
 		}
-
-		return null;
 	}
 
 	private void RenderMappingsWheelPreview()
@@ -9594,7 +9578,10 @@ public partial class SettingsWindow : Window
 				Actions = new List<ActionItem>()
 			};
 
-			if (RenderFixedCanvas(profile) || RenderActiveDeepCanvas(profile)) return;
+			UpdateStudioWheelFit();
+            if (RenderFixedCanvas(profile) || RenderActiveDeepCanvas(profile)) { RefreshStudioBranchTools(profile); RefreshStudioAppearance(); return; }
+            RefreshStudioBranchTools(profile);
+            RefreshStudioAppearance();
 
 			double centerX = 150.0;
 			double centerY = 150.0;
@@ -10016,7 +10003,7 @@ public partial class SettingsWindow : Window
 
 				Geometry sectorGeo = IconHelper.CreateAdvancedSectorGeometry(centerX, centerY, startAngle, endAngle, innerR, outerR, shape, gap, cornerRadius);
 				ActionItem? primarySlotAction = (profile.Actions != null && slotIdx < profile.Actions.Count) ? profile.Actions[slotIdx] : null;
-				RegisterCanvasHitItem(sectorGeo, new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, slotIdx, null), isCenter: false, isSubAction: false, slotIndex: slotIdx, subIndex: null, action: primarySlotAction);
+				RegisterCanvasHitItem(sectorGeo, new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, slotIdx, null), isCenter: false, isSubAction: false, slotIndex: slotIdx, subIndex: null, action: GetCanvasRoot(profile, slotIdx));
 				bool isParentSlot = (_selectedSlotIndex == slotIdx);
 				bool isMultiSelected = (_selectedMultiSlots.Count > 1 && _selectedMultiSlots.Contains(slotIdx));
 				bool isSectorSelected = (isMultiSelected || (isParentSlot && _selectedSubActionIndex == null && _selectedMultiSlots.Count <= 1));
@@ -10275,12 +10262,16 @@ public partial class SettingsWindow : Window
 					catch { }
 				}
 
+				string globalLayoutMode = ConfigManager.CurrentConfig?.IconLayoutMode ?? "IconOnly";
+				string sectorLayout = (action != null && !string.IsNullOrWhiteSpace(action.LayoutMode) && !string.Equals(action.LayoutMode, "Inherit", StringComparison.OrdinalIgnoreCase))
+					? action.LayoutMode!
+					: globalLayoutMode;
 				if (iconElement == null)
 				{
 					try
 					{
 						string fallbackKey = (slotIdx < directions.Length) ? directions[slotIdx] : "Settings";
-						string fallbackSvg = IconHelper.GetSvgPathByKey(fallbackKey);
+						string? fallbackSvg = (sectorLayout == "IconOnly" ? IconHelper.IconOnlyFallback(action) : null) ?? IconHelper.GetSvgPathByKey(fallbackKey);
 						if (string.IsNullOrEmpty(fallbackSvg)) fallbackSvg = IconHelper.GetSvgPathByKey("Settings");
 						iconElement = new System.Windows.Shapes.Path
 						{
@@ -10303,10 +10294,6 @@ public partial class SettingsWindow : Window
 				}
 
 				bool showCanvasText = ConfigManager.CurrentConfig?.MappingsCanvasShowText ?? false;
-				string globalLayoutMode = ConfigManager.CurrentConfig?.IconLayoutMode ?? "IconAndText";
-				string sectorLayout = (action != null && !string.IsNullOrWhiteSpace(action.LayoutMode) && !string.Equals(action.LayoutMode, "Inherit", StringComparison.OrdinalIgnoreCase))
-					? action.LayoutMode!
-					: globalLayoutMode;
 				bool isPrimaryTextOnly = string.Equals(sectorLayout, "TextOnly", StringComparison.OrdinalIgnoreCase);
 				bool showText = showCanvasText || isPrimaryTextOnly;
 
@@ -10393,7 +10380,10 @@ public partial class SettingsWindow : Window
 				bool isFanMode = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
 				bool shouldShowSub = !isFanMode ? true : (isTier2Mode || isParentSlot);
 
-				if (action?.SubActions != null && action.SubActions.Count > 0 && shouldShowSub)
+				if (shouldShowSub && (action?.SubActions?.Count ?? 0) == 0)
+                    RegisterPaletteSecondaryVacancy(profile, slotIdx, IconHelper.CreateAdvancedSectorGeometry(centerX, centerY,
+                        startAngle, endAngle, outerR + 4, outerR + 26, "Original", 1.5, 3));
+                if (action?.SubActions != null && action.SubActions.Count > 0 && shouldShowSub)
 				{
 					// 功能配置画布：外圈同心子环布局，显示全部子动作，不截断已有超额数据（如 8 项预设或历史配置）
 					int subCount = action.SubActions.Count;
@@ -10662,7 +10652,7 @@ public partial class SettingsWindow : Window
 				{
 					bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 					bool insideViewport = new Rect(MappingsPreviewViewportContainer.RenderSize).Contains(e.GetPosition(MappingsPreviewViewportContainer));
-					CanvasHitItem? target = !fixedCanvas || insideViewport ? HitTestCanvasPoint(upPos) : null;
+					CanvasHitItem? target = insideViewport ? HitTestCanvasPoint(upPos) : null;
 					WheelProfile? profile = GetSelectedProfile();
 
 					if (target != null && profile != null && profile.Actions != null)
@@ -10676,7 +10666,7 @@ public partial class SettingsWindow : Window
 					}
 				}
 				else if (fixedCanvas &&
-					(!EditingOuterFixedSlot || !ReferenceEquals(HitTestCanvasPoint(upPos), _canvasDragSource)))
+					(!OnFixedCanvas || !ReferenceEquals(HitTestCanvasPoint(upPos), _canvasDragSource)))
 				{
 					e.Handled = true;
 					return;
@@ -10748,7 +10738,7 @@ public partial class SettingsWindow : Window
 		finally
 		{
 			bool refreshFixedIndicator = _isDraggingSlot && _canvasDragSource?.FixedLevel != null &&
-				_canvasHitItems.Contains(_canvasDragSource) && EditingOuterFixedSlot;
+				_canvasHitItems.Contains(_canvasDragSource) && OnFixedCanvas;
 			_isDraggingSlot = false;
 			_canvasDragSource = null;
 			_dragSourceSlotIndex = -999;
@@ -10855,19 +10845,17 @@ public partial class SettingsWindow : Window
 	{
 		if (MappingsShowTextToggleBtn == null || ConfigManager.CurrentConfig == null) return;
 		bool show = ConfigManager.CurrentConfig.MappingsCanvasShowText;
+		MappingsShowTextToggleBtn.Content = I18n.T(show ? "MappingsShowTextOn" : "MappingsShowTextOff");
+		MappingsShowTextToggleBtn.ToolTip = I18n.T("MappingsShowTextToggleBtnToolTip");
 		if (show)
 		{
 			MappingsShowTextToggleBtn.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 56, 189, 248));
 			MappingsShowTextToggleBtn.Foreground = (Brush)(TryFindResource("AccentPrimaryBrush") ?? Brushes.SkyBlue);
-			MappingsShowTextToggleBtn.Content = "🔤 图文 (开)";
-			MappingsShowTextToggleBtn.ToolTip = "当前状态：【图文复合展示 已开启】\n即使未配置自定义图标，也会在扇区中清晰呈现动作名称，拖拽对调一目了然。\n点击可切换为纯图标极简模式。";
 		}
 		else
 		{
 			MappingsShowTextToggleBtn.Background = Brushes.Transparent;
 			MappingsShowTextToggleBtn.Foreground = (Brush)(TryFindResource("TextSecondaryBrush") ?? Brushes.Gray);
-			MappingsShowTextToggleBtn.Content = "🔤 图文 (关)";
-			MappingsShowTextToggleBtn.ToolTip = "当前状态：【图文复合展示 已关闭】\n画布保持纯图标极简模式。\n点击可开启图文并茂复合呈现。";
 		}
 	}
 
@@ -10882,6 +10870,7 @@ public partial class SettingsWindow : Window
 
 	private void EnterBatchModeUi()
 	{
+        ShowStudioActionInspector();
 		if (FocusSingleSlotPanel != null)
 		{
 			FocusSingleSlotPanel.Visibility = Visibility.Collapsed;
@@ -10893,7 +10882,7 @@ public partial class SettingsWindow : Window
 		int count = _selectedMultiSlots.Count;
 		if (FocusBatchBadgeText != null)
 		{
-			FocusBatchBadgeText.Text = count > 0 ? $"{count}" : "多选";
+			FocusBatchBadgeText.Text = count.ToString();
 		}
 		if (FocusBatchTagText != null)
 		{
@@ -10901,12 +10890,12 @@ public partial class SettingsWindow : Window
 		}
 		if (FocusBatchTitleText != null)
 		{
-			FocusBatchTitleText.Text = $"🎯 批量修改模式 ({count} 个扇区)";
+			FocusBatchTitleText.Text = I18n.T("FocusBatchTitleText");
 		}
 		if (FocusBatchSubtitleText != null)
 		{
 			string slotNames = string.Join(", ", _selectedMultiSlots.Select(s => (s + 1).ToString()));
-			FocusBatchSubtitleText.Text = $"当前选中扇区: [{slotNames}]；在此统一批量调整所有选中扇区的排版与外观";
+			FocusBatchSubtitleText.Text = I18n.TF("StudioSelectedSlots", slotNames);
 		}
 		if (MappingsCurrentEditIndicator != null)
 		{
@@ -11313,6 +11302,7 @@ public partial class SettingsWindow : Window
 
 	private void RefreshProfileActivationUi()
 	{
+        if (_studioReady) RefreshStudioRail();
 		WheelLayer? layer = SelectedActivationLayer;
 		bool anyEntryVisible = ProfileActivationPanel?.Visibility == Visibility.Visible ||
 			((MappingsCanvasModeGrid == null || MappingsCanvasModeGrid.Visibility == Visibility.Visible) &&
@@ -19349,29 +19339,25 @@ public partial class SettingsWindow : Window
 
 	private void SubmenuStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 	{
-		if (!_isUpdatingUi && SubmenuStyleComboBox != null && ConfigManager.CurrentConfig != null)
+		if (!_isUiInitialized || _isUpdatingUi || SubmenuStyleComboBox?.SelectedItem is not ComboBoxItem { Tag: string style } ||
+			ConfigManager.CurrentConfig.SubmenuStyle == style || GetSelectedProfile() is not { } profile) return;
+		ChangeMenuLayout(profile, profile.GetActiveLayer().MaxMenuDepth, style);
+	}
+
+	private void ApplySubmenuStyle(string style)
+	{
+		ConfigManager.CurrentConfig.SubmenuStyle = style;
+		_isUpdatingUi = true;
+		try { SetComboBoxSelectedValue(SubmenuStyleComboBox, style); }
+		finally { _isUpdatingUi = false; }
+		if (LivePreviewTierSegmentBorder != null)
 		{
-			string val = (SubmenuStyleComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "Wheel";
-			ConfigManager.CurrentConfig.SubmenuStyle = val;
-			bool isFan = string.Equals(val, "Fan", StringComparison.OrdinalIgnoreCase);
-			if (LivePreviewTierSegmentBorder != null)
-			{
-				LivePreviewTierSegmentBorder.Visibility = isFan ? Visibility.Visible : Visibility.Collapsed;
-			}
-			if (AutoExpandSubRingsPanel != null)
-			{
-				AutoExpandSubRingsPanel.Visibility = ConfigManager.CurrentConfig.EnableMultiTier ? Visibility.Visible : Visibility.Collapsed;
-			}
-			TierDimensionRadio_Checked(Tier1ConfigSegmentRadio, new RoutedEventArgs());
-			Grid appearanceSettingsGrid = AppearanceSettingsGrid;
-			if (appearanceSettingsGrid != null && appearanceSettingsGrid.Visibility == Visibility.Visible)
-			{
-				RenderLiveWheelPreview();
-			}
-			RefreshFocusSubActionsChips();
-			RenderMappingsWheelPreview();
-			SyncUiToConfigAndSave();
+			LivePreviewTierSegmentBorder.Visibility = style == "Fan" ? Visibility.Visible : Visibility.Collapsed;
 		}
+		if (AutoExpandSubRingsPanel != null)
+			AutoExpandSubRingsPanel.Visibility = ConfigManager.CurrentConfig.EnableMultiTier ? Visibility.Visible : Visibility.Collapsed;
+		TierDimensionRadio_Checked(Tier1ConfigSegmentRadio, new RoutedEventArgs());
+		RefreshFocusSubActionsChips();
 	}
 
 	private void UpdateLongPressTriggerControls()
@@ -20551,7 +20537,7 @@ public partial class SettingsWindow : Window
 	{
 		if (OfficialPluginsOnboardingBanner == null) return;
 
-		if (!PluginHost.IsEnabled || ConfigManager.CurrentConfig?.Plugins?.EnablePluginSystem != true || PluginHost.IsSafeModeActive)
+		if (!PluginHost.IsInitialized || !PluginHost.IsEnabled || ConfigManager.CurrentConfig?.Plugins?.EnablePluginSystem != true || PluginHost.IsSafeModeActive)
 		{
 			OfficialPluginsOnboardingBanner.Visibility = Visibility.Collapsed;
 			return;

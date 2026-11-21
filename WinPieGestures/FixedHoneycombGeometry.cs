@@ -7,38 +7,67 @@ internal sealed partial class FixedRingGeometry
 {
     private sealed class Honeycomb
     {
-        // The demo uses a point-up axial grid with a 19-unit pitch radius and a 1.4-unit inset.
-        private const double Pitch = 19, FaceRadius = 17.6;
+        private readonly string _shape;
+        private readonly Outline _hitFace;
+        private readonly double _corner;
         private static readonly double RootThree = Math.Sqrt(3);
         private static readonly (int Q, int R)[] Steps = [(-1, 1), (-1, 0), (0, -1), (1, -1), (1, 0), (0, 1)];
         private readonly record struct Cell(Point Center, double Angle);
-        private readonly Cell[][] _shells = new Cell[4][];
-        private readonly double _pitch, _face, _shift, _halfWidth;
+        private readonly Cell[] _roots, _children;
+        private readonly Cell[][] _outerShells;
+        private readonly double[] _inner = new double[6], _outer = new double[6];
+        private readonly double _pitch, _face, _halfWidth;
 
-        internal Honeycomb(double thirdInner, double scale)
+        internal Honeycomb(int roots, double pitch, double face, string shape, double corner)
         {
-            // The midpoint of shell four's side is six pitch radii from the origin.
-            // Honor the untouched legacy wheel even when only the new tiers shrink to fit.
-            _pitch = Math.Min(Pitch * scale, thirdInner / (6 - FaceRadius / Pitch));
-            _face = _pitch * FaceRadius / Pitch;
+            _pitch = pitch;
+            _face = face;
+            _shape = shape;
+            _corner = corner;
             _halfWidth = RootThree * _face / 2;
-            _shift = Math.Max(0, thirdInner - (6 * _pitch - _face));
-            for (int shell = 4; shell <= 7; shell++) _shells[shell - 4] = MakeShell(shell);
+            _hitFace = MakeFace(new Point());
+            // Reserve addresses independently of occupancy. Even twelve parents get three distinct
+            // cells each in their own angular interval on the two intermediate shells.
+            int rootShell = Math.Max(2, (roots + 5) / 6);
+            int childShell = ChildShell(roots);
+            var primary = MakeShell(rootShell);
+            var children = MakeShell(childShell).Concat(MakeShell(childShell + 1)).ToArray();
+            _roots = new Cell[roots];
+            _children = new Cell[3 * roots];
+            double sector = Math.Tau / roots;
+            for (int i = 0; i < roots; i++)
+            {
+                double angle = i * sector;
+                _roots[i] = primary.MinBy(cell => Math.Abs(Math.IEEERemainder(cell.Angle - angle, Math.Tau)));
+                var candidates = children.Where(cell =>
+                    (int)Math.Floor(cell.Angle / sector + .5) % roots == i).ToList();
+                // Choose the middle first, then the two wings. A single child keeps the same
+                // address when its siblings are added, even when all parents open together.
+                foreach (int slot in new[] { 1, 0, 2 })
+                {
+                    double target = angle + (slot - 1) * sector / 3;
+                    var best = candidates.OrderBy(cell => Math.Round(Math.Abs(Math.IEEERemainder(cell.Angle - target, Math.Tau)), 12))
+                        .ThenByDescending(cell => ((Vector)cell.Center).LengthSquared).First();
+                    _children[i * 3 + slot] = best;
+                    candidates.Remove(best);
+                }
+            }
+            _outerShells = Enumerable.Range(childShell + 2, 3).Select(MakeShell).ToArray();
+            for (int level = 1; level <= 5; level++)
+            {
+                var cells = LevelCells(level);
+                _inner[level] = cells.Min(cell => ((Vector)cell.Center).Length) - _face;
+                _outer[level] = cells.Max(cell => ((Vector)cell.Center).Length) + _face;
+            }
         }
 
         internal double Width => 2 * _halfWidth;
-        internal double Inner(int level) => _shift + 1.5 * (level + 1) * _pitch - _face;
-        internal double Outer(int level, int count) => _shift + RootThree * ShellNumber(level, count) * _pitch + _face;
+        internal double Inner(int level) => _inner[level];
+        internal double Outer(int level) => _outer[level];
+        private static int ChildShell(int roots) => roots <= 12 ? 3 : roots;
 
-        internal static double OuterExtension(int level, int count)
-        {
-            int shell = ShellNumber(level, count);
-            return (RootThree * shell - 6) * Pitch + 2 * FaceRadius;
-        }
-
-        // The first three shells have 24/30/36 physical positions. A 37-slot fifth tier
-        // evenly samples the next complete shell of 42; its cells still share one outline.
-        private static int ShellNumber(int level, int count) => level == 5 && count > 36 ? 7 : level + 1;
+        internal static double Extent(int roots, int level, double pitch, double face) =>
+            RootThree * (ChildShell(roots) + level - 1) * pitch + face;
 
         private Cell[] MakeShell(int shell)
         {
@@ -50,8 +79,7 @@ internal sealed partial class FixedRingGeometry
                 {
                     double x = RootThree * (q + r / 2.0), y = 1.5 * r;
                     double angle = Math.Atan2(y, x);
-                    double factor = _pitch + _shift / Math.Sqrt(x * x + y * y);
-                    cells[i++] = new Cell(new Point(x * factor, y * factor), angle < 0 ? angle + Math.Tau : angle);
+                    cells[i++] = new(new Point(x * _pitch, y * _pitch), angle < 0 ? angle + Math.Tau : angle);
                     q += step.Q;
                     r += step.R;
                 }
@@ -59,56 +87,36 @@ internal sealed partial class FixedRingGeometry
             return cells;
         }
 
-        private Cell[] Shell(int level, int count)
+        private Cell[] LevelCells(int level) => level switch { 1 => _roots, 2 => _children, _ => _outerShells[level - 3] };
+        private static Cell At(Cell[] cells, int index, int count) => cells[index * cells.Length / count];
+        internal Point Center(int level, int index, int count) => At(LevelCells(level), index, count).Center;
+
+        internal Outline OutlineAt(int level, int index, int count) => MakeFace(Center(level, index, count));
+
+        private Outline MakeFace(Point center)
         {
-            if (count < 1 || count > FixedRingMenu.MaximumCount(level)) throw new ArgumentOutOfRangeException(nameof(count));
-            return _shells[ShellNumber(level, count) - 4];
-        }
-
-        private static Cell At(Cell[] shell, int index, int count) => shell[index * shell.Length / count];
-
-        internal Point Center(int level, int index, int count) => At(Shell(level, count), index, count).Center;
-
-        internal Outline OutlineAt(int level, int index, int count)
-        {
-            var center = Center(level, index, count);
-            double x = center.X, y = center.Y, h = _face / 2;
-            Point[] points = [new(x + _halfWidth, y + h), new(x, y + _face), new(x - _halfWidth, y + h),
-                new(x - _halfWidth, y - h), new(x, y - _face), new(x + _halfWidth, y - h)];
-            var polygon = new StreamGeometry();
-            using (var dc = polygon.Open())
+            Geometry shape = _shape switch
             {
-                dc.BeginFigure(points[0], true, true);
-                for (int i = 1; i < points.Length; i++) dc.LineTo(points[i], true, false);
-            }
-            polygon.Freeze();
-            return new Outline(polygon, points);
+                "Circle" => new EllipseGeometry(center, _halfWidth, _halfWidth),
+                "RoundedCapsule" or "FloatingCapsules" or "RoundedRect" or "Capsule" =>
+                    new RectangleGeometry(new Rect(center.X - _halfWidth, center.Y - _face * .5, Width, _face),
+                        Math.Min(_face * .5, _corner), Math.Min(_face * .5, _corner)),
+                _ => IconHelper.CreateHexagonGeometry(center.X, center.Y, _face, _corner, 90)
+            };
+            return Flatten(shape, _pitch / 2000);
         }
 
         internal int Hit(Point point, int level, int count)
         {
-            var shell = Shell(level, count);
-            double angle = Math.Atan2(point.Y, point.X);
-            if (angle < 0) angle += Math.Tau;
-            int lo = 0, hi = count;
-            while (lo < hi)
+            var cells = LevelCells(level);
+            for (int i = 0; i < count; i++)
             {
-                int mid = (lo + hi) / 2;
-                if (At(shell, mid, count).Angle < angle) lo = mid + 1;
-                else hi = mid;
+                var center = At(cells, i, count).Center;
+                double x = Math.Abs(point.X - center.X), y = Math.Abs(point.Y - center.Y);
+                if (x <= _halfWidth && y + x / RootThree <= _face)
+                    return _hitFace.Contains(new Point(point.X - center.X, point.Y - center.Y)) ? i : -1;
             }
-            // An inset cell never crosses its neighbor's center ray. This holds when cells
-            // are moved radially outwards or omitted, so only the two bracketing cells can hit.
-            int next = lo == count ? 0 : lo;
-            if (Contains(At(shell, next, count).Center, point)) return next;
-            int previous = next == 0 ? count - 1 : next - 1;
-            return Contains(At(shell, previous, count).Center, point) ? previous : -1;
-        }
-
-        private bool Contains(Point center, Point point)
-        {
-            double x = Math.Abs(point.X - center.X), y = Math.Abs(point.Y - center.Y);
-            return x <= _halfWidth && y + x / RootThree <= _face;
+            return -1;
         }
     }
 }

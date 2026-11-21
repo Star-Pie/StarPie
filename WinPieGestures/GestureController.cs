@@ -2525,7 +2525,7 @@ public partial class GestureController : IDisposable
 		}
 		bool flag2 = false;
 		double num7 = ((ConfigManager.CurrentConfig.SubWheelTriggerDistance > 20.0) ? ConfigManager.CurrentConfig.SubWheelTriggerDistance : 95.0);
-		if (num3 < num6)
+		if (num3 < num6 && _fixedSession is not { IsHoneycomb: true })
 		{
 			_submenuLock.Reset();
 		}
@@ -2551,18 +2551,18 @@ public partial class GestureController : IDisposable
 			num4 = (int)Math.Floor((num11 + num13 / 2.0) / num13) % num12;
 			bool isFan = ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
 			bool lockEnabled = ConfigManager.CurrentConfig.LockParentSectorOnSubmenu;
-			if (lockEnabled)
+			if (lockEnabled && _fixedSession is not { IsHoneycomb: true })
 			{
 				// 先保持/解除父锁，外甩和音量门禁也必须使用这个实际父扇区。
 				num4 = _submenuLock.ResolveParentSector(true, enableMultiTier, isFan, num3, num4,
 					wheelRadius, ConfigManager.CurrentConfig);
 			}
-			else
+			else if (!lockEnabled)
 			{
 				_submenuLock.Reset();
 			}
 			bool isVolumeSector = IsVolumeSector(num4) || _volumeAdjustActive;
-			if (ConfigManager.CurrentConfig.EnableOuterEscapeCancel && !isVolumeSector && _fixedSession is not { PersistentFan: true })
+			if (ConfigManager.CurrentConfig.EnableOuterEscapeCancel && !isVolumeSector && _fixedSession is not { IsHoneycomb: true })
 			{
 				double num10 = ((ConfigManager.CurrentConfig.OuterEscapeDistance > 0.0) ? ConfigManager.CurrentConfig.OuterEscapeDistance : (num9 * 1.5));
 				if (num3 > num10)
@@ -2573,16 +2573,25 @@ public partial class GestureController : IDisposable
 					_submenuLock.Reset();
 				}
 			}
-			if (!flag && _fixedSession is { PersistentFan: true } fanSession)
+			if (!flag && _fixedSession is { IsHoneycomb: true } fanSession)
 			{
-				var hit = fanSession.HitPersistentFanInner(currentPoint, _submenuLock);
+				var hit = fanSession.HitHoneycombInner(currentPoint, _submenuLock);
 				if (hit.Level == 2 && FixedRingMenu.TryDecodeSecondaryKey(hit.Index, out int owner, out int child))
 				{
 					num4 = owner;
 					num5 = child;
 					flag2 = true;
 				}
-				else num4 = hit.Level == 1 ? hit.Index : hit.Index == -1 ? -1 : -2;
+				else
+                {
+                    num4 = hit.Level == 1 ? hit.Index : hit.Index == -1 ? -1 : -2;
+                    if (!fanSession.Persistent && fanSession.ExtendedPrimary >= 0 && num4 != -1 &&
+                        (num4 == -2 || num4 == fanSession.ExtendedPrimary))
+                    {
+                        num4 = fanSession.ExtendedPrimary;
+                        flag2 = true;
+                    }
+                }
 			}
 			else if (!flag)
 			{

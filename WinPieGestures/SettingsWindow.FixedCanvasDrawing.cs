@@ -8,19 +8,19 @@ namespace WinPieGestures;
 public partial class SettingsWindow
 {
     private FixedRingGeometry? _fixedGeometry;
-    private (int Count, double Radius, double ThirdInner, bool Honeycomb) _fixedGeometrySize;
+    private (int Count, double Radius, double ThirdInner, bool Honeycomb, string Shape, double Inner, double Core, double Gap, double Corner) _fixedGeometrySize;
 
     private FixedRingGeometry FixedGeometry(WheelProfile profile)
     {
         var cfg = ConfigManager.CurrentConfig;
         double unit = cfg.WheelRadius / 72;
-        double start = LegacyRingGeometry.SecondaryExtent(cfg, cfg.WheelRadius, cfg.InnerRadius) + 5 * unit;
         bool honeycomb = cfg.SubmenuStyle == "Fan";
-        var size = (profile.SectorCount, cfg.WheelRadius, start, honeycomb);
+        double start = (honeycomb ? 0 : LegacyRingGeometry.SecondaryExtent(cfg, cfg.WheelRadius, cfg.InnerRadius)) + 5 * unit;
+        var size = (profile.SectorCount, cfg.WheelRadius, start, honeycomb, cfg.Shape, cfg.InnerRadius, cfg.CoreRadius, cfg.SectorGap, cfg.SectorCornerRadius);
         if (_fixedGeometry == null || _fixedGeometrySize != size)
         {
             _fixedGeometrySize = size;
-            _fixedGeometry = new FixedRingGeometry(profile.SectorCount, cfg.WheelRadius, start, unit, honeycomb);
+            _fixedGeometry = new FixedRingGeometry(profile.SectorCount, cfg.WheelRadius, start, unit, honeycomb, cfg);
         }
         return _fixedGeometry;
     }
@@ -43,7 +43,9 @@ public partial class SettingsWindow
         var assignedFill = (Brush)FindResource("SubtleCardBrush");
 
         var path = new Dictionary<int, int>();
-        int? ancestor = _fixedIndices[_fixedLevel];
+        int? ancestor = _fixedInnerLevel == null ? _fixedIndices[_fixedLevel] : null;
+        if (_fixedInnerLevel is 1 or 2) path[1] = _selectedSlotIndex;
+        if (_fixedInnerLevel == 2 && _selectedSubActionIndex is int subIndex) path[2] = FixedRingMenu.SecondaryKey(_selectedSlotIndex, subIndex);
         for (int d = _fixedLevel; d >= 3 && ancestor is int i; d--)
         {
             path[d] = i;
@@ -54,20 +56,21 @@ public partial class SettingsWindow
             path[2] = key;
             path[1] = parent;
         }
-        MappingsCurrentEditIndicator.Text = string.Join(" › ", path.OrderBy(p => p.Key)
+        UpdateStudioFixedBreadcrumb(profile, menu, path);
+        MappingsCurrentEditIndicator.Text = _fixedInnerLevel == 0 ? I18n.T("FocusSlotCenterCoreTitle") : string.Join(" › ", path.OrderBy(p => p.Key)
             .Select(pair => FixedAction(profile, menu, pair.Key, pair.Value)?.Name is { Length: > 0 } name ? name : $"{pair.Key} · {pair.Value + 1:00}"));
         MappingsCurrentEditIndicator.SetResourceReference(TextBlock.ForegroundProperty, "AccentPrimaryBrush");
 
         for (int i = 0; i < profile.SectorCount; i++)
         {
             int primary = i;
-            var (shape, label) = LegacyRingGeometry.Primary(cfg, profile.SectorCount, i, cfg.WheelRadius, cfg.InnerRadius);
+            var (shape, label) = geometry.Primary(cfg, i);
             Place(1, i, i, shape, label, FixedAction(profile, menu, 1, i), () => SelectPrimarySlot(primary));
         }
         foreach (var (primary, child, root, action) in SecondaryParents(profile, includeVacant: true))
         {
             int count = root.SubActions.Count;
-            var (shape, label) = LegacyRingGeometry.Secondary(cfg, profile.SectorCount, primary, child, count, cfg.WheelRadius, cfg.InnerRadius);
+            var (shape, label) = geometry.Secondary(cfg, primary, child, count);
             int key2 = FixedRingMenu.SecondaryKey(primary, child);
             Place(2, key2, child, shape, label, action, () => SelectSubAction(primary, child));
         }
@@ -84,9 +87,10 @@ public partial class SettingsWindow
         }
         if (cfg.ShowCoreCircle)
         {
-            var circle = new EllipseGeometry(new Point(), cfg.CoreRadius, cfg.CoreRadius);
+            double radius = geometry.CoreRadius(cfg.CoreRadius);
+            var circle = new EllipseGeometry(new Point(), radius, radius);
             circle.Freeze();
-            var center = new DeepCanvasSlotButton(circle, scale, assignedFill, border, 1.5) { ToolTip = I18n.T("FocusSlotCenterCoreTitle") };
+            var center = new DeepCanvasSlotButton(circle, scale, assignedFill, _fixedInnerLevel == 0 ? accent : border, _fixedInnerLevel == 0 ? 3 : 1.5) { ToolTip = I18n.T("FocusSlotCenterCoreTitle") };
             RegisterFixedCanvasHit(profile, menu, circle, scale, 0, -1, profile.CenterAction);
             PlaceButton(center, circle, "FixedRingCenter", SelectCenterCore);
         }
@@ -95,28 +99,21 @@ public partial class SettingsWindow
         {
             if (shape.Bounds.IsEmpty) return;
             RegisterFixedCanvasHit(profile, menu, shape, scale, level, key, action);
-            bool selected = level == _fixedLevel && _fixedIndices[level] == key;
+            bool selected = _fixedInnerLevel is int inner ? level == inner && path.GetValueOrDefault(level, -1) == key : level == _fixedLevel && _fixedIndices[level] == key;
             bool onPath = path.TryGetValue(level, out int member) && member == key;
-            string name = string.IsNullOrWhiteSpace(action?.Name) ? I18n.T("FixedEmpty") : action.Name;
-            var button = new DeepCanvasSlotButton(shape, scale, action == null ? vacantFill : assignedFill,
-                onPath ? accent : action == null ? border : muted, selected ? 3 : onPath ? 2 : 1)
+            bool assigned = WheelProfile.IsActionConfigured(action);
+            string name = assigned && !string.IsNullOrWhiteSpace(action!.Name) ? action.Name : I18n.T("FixedEmpty");
+            var button = new DeepCanvasSlotButton(shape, scale, assigned ? assignedFill : vacantFill,
+                onPath ? accent : assigned ? muted : border, selected ? 3 : onPath ? 2 : 1)
             {
                 ToolTip = I18n.TF("CanvasEditLevel", level, (number + 1).ToString("00")) + " · " + name,
-                Opacity = level == _fixedLevel || onPath ? 1 : .78
+                Opacity = level == (_fixedInnerLevel ?? _fixedLevel) || onPath ? 1 : .78
             };
             PlaceButton(button, shape, $"FixedRing{level}Slot{key}", select);
             double slotWidth = Math.Max(9, Math.Min(shape.Bounds.Width, shape.Bounds.Height) * scale * .8);
-            var icon = action != null && action.LayoutMode != "TextOnly" ? CreateMappingsSubIconElement(action, text, Math.Min(14, slotWidth * .55)) : null;
-            var label = new StackPanel { Width = slotWidth, IsHitTestVisible = false };
-            if (icon != null) label.Children.Add(icon);
-            if (icon == null || cfg.MappingsCanvasShowText)
-                label.Children.Add(new TextBlock
-                {
-                    Text = action == null ? (number + 1).ToString("00") : name,
-                    FontSize = Math.Clamp(slotWidth / 3.2, 8, 13), Foreground = action == null ? muted : text,
-                    FontWeight = selected ? FontWeights.Bold : FontWeights.Normal,
-                    TextAlignment = TextAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis
-                });
+            var label = CanvasSlotLabel(assigned ? action : null, assigned ? name : (number + 1).ToString("00"),
+                slotWidth, Math.Min(14, slotWidth * .55), Math.Clamp(slotWidth / 3.2, 8, 13),
+                assigned ? text : muted, selected ? FontWeights.Bold : FontWeights.Normal);
             label.Measure(new Size(slotWidth, double.PositiveInfinity));
             Canvas.SetLeft(label, 150 + position.X * scale - slotWidth / 2);
             Canvas.SetTop(label, 150 + position.Y * scale - label.DesiredSize.Height / 2);
@@ -130,7 +127,7 @@ public partial class SettingsWindow
             button.Click += (_, e) =>
             {
                 e.Handled = true;
-                if (EditingOuterFixedSlot && ReferenceEquals(layer.ActiveFixedRings, menu)) select();
+                if (OnFixedCanvas && ReferenceEquals(layer.ActiveFixedRings, menu)) select();
             };
             Canvas.SetLeft(button, 150 + scale * shape.Bounds.Left);
             Canvas.SetTop(button, 150 + scale * shape.Bounds.Top);

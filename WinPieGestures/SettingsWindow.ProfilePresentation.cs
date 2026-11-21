@@ -363,7 +363,7 @@ public partial class SettingsWindow
 		}
 	}
 
-	private async Task LoadProfileIconAsync(WheelProfile profile, Image image, int revision)
+	private async Task<BitmapSource?> GetCachedProfileIconAsync(WheelProfile profile)
 	{
 		string cacheKey = profile.ApplicationIconPath + "|" + string.Join(",", ProfileBindingTokens(profile));
 		if (!_profileIcons.TryGetValue(cacheKey, out var icon))
@@ -377,7 +377,7 @@ public partial class SettingsWindow
 					bool global = string.Equals(profile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase);
 					loading = Task.Run(() =>
 					{
-						if (global) return null;
+						if (global && string.IsNullOrWhiteSpace(iconHint)) return null;
 						string? path = iconHint;
 						if (string.IsNullOrWhiteSpace(path))
 						{
@@ -404,10 +404,17 @@ public partial class SettingsWindow
 			}
 			catch { icon = null; }
 			_profileIconLoads.Remove(cacheKey);
-			if (_resourcesReleased) return;
+			if (_resourcesReleased) return null;
 			if (_profileIcons.Count >= 128) _profileIcons.Clear();
 			_profileIcons[cacheKey] = icon;
 		}
+		return icon;
+	}
+
+	private async Task LoadProfileIconAsync(WheelProfile profile, Image image, int revision)
+	{
+		var icon = await GetCachedProfileIconAsync(profile);
+		if (_resourcesReleased) return;
 		if (revision != _profileIconRevision) return;
 		if (ProfilePresentation.NormalizeQuickSwitchDisplayMode(
 			ConfigManager.CurrentConfig?.ProfileQuickSwitchDisplayMode) == ProfileQuickSwitchDisplayModes.TextOnly) return;

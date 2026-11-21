@@ -133,6 +133,9 @@ public class AppConfig
 	public bool MappingsCanvasShowText { get; set; } = false;
 
 	/// <summary>手势动作页（Tab 2）右侧交互画布列宽度（0 表示自适应比例 1*，大于 0 表示用户自定义拖拽宽度）。</summary>
+	public double StudioRailFraction { get; set; }
+	public double StudioInspectorFraction { get; set; }
+
 	public double MappingsCanvasColumnWidth { get; set; } = 0.0;
 
 	/// <summary>是否开启应用专属方案继承/叠加 Global 全局方案（当应用方案槽位留空未配置时自动透传全局动作，默认 false）。</summary>

@@ -88,6 +88,74 @@ public sealed class FixedRingMenu
         slots[index] = slot;
     }
 
+    // Physical addresses remain stable when a slot is hidden. Walk parent links
+    // from the deepest tier so a navigation-only parent can still open its children.
+    internal HashSet<(int Level, int Index)> ConfiguredSlots(WheelProfile profile, int depth, bool fan)
+    {
+        var roots = Enumerable.Range(0, profile.SectorCount).Select(index => DisplayRoot(profile, index)).ToArray();
+        var visible = new HashSet<(int Level, int Index)>();
+        var parents = new HashSet<int>();
+        for (int level = depth; level >= 3; level--)
+        {
+            var next = new HashSet<int>();
+            for (int index = 0; index < GetCount(level); index++)
+            {
+                var slot = GetSlot(level, index);
+                if (slot == null || !(Plugins.PluginInteractionSession.IsExecutableAction(slot.Action) || parents.Contains(index)) ||
+                    !HasEnabledAncestry(level, index, roots.Length, root => roots[root])) continue;
+                visible.Add((level, index));
+                if (slot.ParentIndex is int parent) next.Add(parent);
+            }
+            parents = next;
+        }
+        for (int index = 0; index < profile.SectorCount; index++)
+        {
+            var root = roots[index];
+            bool hasChild = false;
+            int count = root?.SubActions?.Count ?? 0;
+            if (fan) count = Math.Min(count, 3);
+            for (int child = 0; child < count; child++)
+            {
+                int key = SecondaryKey(index, child);
+                var action = root!.SubActions[child];
+                if (!CanNavigate(action) || !(Plugins.PluginInteractionSession.IsExecutableAction(action) || parents.Contains(key))) continue;
+                hasChild = true;
+                visible.Add((2, key));
+            }
+            if (hasChild || Plugins.PluginInteractionSession.IsExecutableAction(root)) visible.Add((1, index));
+        }
+        return visible;
+    }
+
+    internal static ActionItem? DisplayRoot(WheelProfile profile, int index)
+    {
+        var root = profile.GetEffectiveAction(index);
+        return CanNavigate(root) ? root : null;
+    }
+
+    private static bool CanNavigate(ActionItem? action) => action != null &&
+        !string.Equals(action.Type, "None", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(action.Type, "Inherit", StringComparison.OrdinalIgnoreCase);
+
+    // A missing/out-of-range owner is allowed for existing directly selectable fixed slots.
+    // A stored disabled owner still blocks the branch, including owners hidden by Count.
+    internal bool HasEnabledAncestry(int level, int index, int rootCount, Func<int, ActionItem?> effectiveRoot)
+    {
+        for (; level >= 3; level--)
+        {
+            var slot = GetSlot(level, index);
+            if (slot == null) return true;
+            if (!CanNavigate(slot.Action)) return false;
+            if (slot.ParentIndex is not int parent || parent < 0) return true;
+            index = parent;
+        }
+        if (!TryDecodeSecondaryKey(index, out int root, out int child) || root >= rootCount) return true;
+        var owner = effectiveRoot(root);
+        if (!CanNavigate(owner)) return false;
+        var children = owner!.SubActions;
+        return children == null || child >= children.Count || CanNavigate(children[child]);
+    }
+
     internal IEnumerable<ActionItem> StoredActions()
     {
         if (Tiers == null) yield break;

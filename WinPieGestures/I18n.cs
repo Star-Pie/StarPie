@@ -22,7 +22,7 @@ public readonly record struct LocalizedString(string ZhCn, string? ZhTw = null, 
 	};
 }
 
-public static class I18n
+public static partial class I18n
 {
 	private static LanguageCode _currentLanguage = LanguageCode.ZhCn;
 
@@ -509,6 +509,19 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		{
 			dictionary[key] = new LocalizedString(zhCn, zhTw, en, ja);
 		}
+		RegisterStudioRailStrings(Add);
+		RegisterStudioPaletteStrings(Add);
+		Add("StudioProfiles", "方案与层", "方案與層", "Profiles & layers", "プロファイルとレイヤー");
+		Add("StudioInspector", "属性", "屬性", "Inspector", "プロパティ");
+		Add("StudioList", "列表", "清單", "List", "一覧");
+		Add("StudioStructure", "轮盘结构与行为", "輪盤結構與行為", "Layout and behavior", "構成と動作");
+		Add("StudioConditions", "生效条件", "生效條件", "Activation conditions", "適用条件");
+		Add("StudioSlotAppearance", "单槽外观排版", "單槽外觀排版", "Slot appearance", "スロットの表示形式");
+		Add("StudioSelectedSlots", "已选槽位 {0}", "已選槽位 {0}", "Selected slots {0}", "選択中のスロット {0}");
+		Add("StudioListOptions", "方案与轮盘设置", "方案與輪盤設定", "Profile and wheel settings", "プロファイルとホイールの設定");
+		Add("StudioCanvas", "画布", "畫布", "Canvas", "キャンバス");
+		Add("StudioPasteSingle", "此槽位可粘贴单个动作。", "此槽位可貼上單個動作。", "Copy a single action to paste into this slot.", "このスロットには単一のアクションを貼り付けられます。");
+		Add("StudioChildren", "下级子菜单", "下級子選單", "Child actions", "子メニュー");
 		Add("ParallelProfileMode", "平行轮盘", "平行輪盤", "Parallel wheel", "並列ホイール");
 		Add("ConfigTransferExportTitle", "导出配置", "匯出設定", "Export configuration", "設定をエクスポート");
 		Add("PortableConfigExportHint", "导出含自定义 SVG 的便携配置包，或仅导出 JSON。", "匯出含自訂 SVG 的可攜設定包，或僅匯出 JSON。", "Export a portable configuration with custom SVG icons, or JSON only.", "カスタム SVG 付きの設定パック、または JSON のみをエクスポートします。");
@@ -1304,6 +1317,7 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("Tab1_CoreRadiusLabel", "中心核心圆半径:", "中心核心圓半徑:", "Center Core Radius:", "センターコア半径:");
 		Add("Tier2DimensionsExpanderHeader", "🌐 二级轮盘几何形态与尺寸 (展开微调)", "🌐 二級輪盤幾何形態與尺寸 (展開微調)", "🌐 Tier-2 Wheel Geometry & Dimensions (Expand to Fine-Tune)", "🌐 第2階層ホイール幾何形状と寸法 (展開して微調整)");
 		Add("Tab1_SubDimensionsNotice", "🌟 当前正在单独调节二级级联轮盘专属尺寸，与一级轮盘完全独立互不影响。", "🌟 當前正在單獨調節二級級聯輪盤專屬尺寸，與一級輪盤完全獨立互不影響。", "🌟 Currently adjusting Tier-2 cascade wheel dimensions independently from Tier-1.", "🌟 現在、第1階層とは独立して第2階層カスケードホイールの寸法を個別に調整中。");
+		Add("FixedHoneycombDimensions", "多级固定蜂窝的所有层共用一级几何设置。可在这里调整二级图标和字号。", "多級固定蜂窩的所有層共用一級幾何設定。可在這裡調整二級圖示和字級。", "All levels of the fixed honeycomb use the primary geometry settings. Adjust secondary icon and font sizes here.", "固定ハニカムの全階層に第1階層の形状設定が適用されます。ここでは第2階層のアイコンと文字のサイズを調整できます。");
 		Add("Tab1_SubOuterRadiusLabel", "二级轮盘整体外径:", "二級輪盤整體外徑:", "Tier-2 Outer Radius:", "第2階層ホイール外半径:");
 		Add("Tab1_SubGapLabel", "二级与一级轮盘间距:", "二級與一級輪盤間距:", "Tier-2 to Tier-1 Gap:", "第2階層と第1階層のホイール間隔:");
 		Add("Tab1_SubCornerRadiusLabel", "二级扇区边缘平滑倒角:", "二級扇區邊緣平滑倒角:", "Tier-2 Sector Corner Radius:", "第2階層セクター角丸半径:");
@@ -1665,7 +1679,8 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("MappingsCanvasInstructions", "💡 点击内圈选一级扇区，点击外环选二级动作，点击中心选核圆；按住拖动可对调功能位置！", "💡 點擊內圈選一級扇區，點擊外環選二級動作，點擊中心選核圓；按住拖曳可對調功能位置！", "💡 Click inner ring for sector, outer ring for sub-action, center for core; drag to swap positions!", "💡 内側クリックで主セクター、外側でサブアクション、中央でコアを選択；ドラッグで位置を入れ替え！");
 		Add("MappingsTier1SegmentText", "🔘 一级主轮盘", "🔘 一級主輪盤", "🔘 Tier-1 Primary Wheel", "🔘 第1階層メインホイール");
 		Add("MappingsTier2SegmentText", "🌟 二级级联", "🌟 二級級聯", "🌟 Tier-2 Cascaded", "🌟 第2階層カスケード");
-		Add("MappingsShowTextToggleBtnText", "🔤 图文", "🔤 圖文", "🔤 Text", "🔤 文字");
+		Add("MappingsShowTextOn", "🔤 图文 (开)", "🔤 圖文 (開)", "🔤 Labels (on)", "🔤 文字 (オン)");
+		Add("MappingsShowTextOff", "🔤 图文 (关)", "🔤 圖文 (關)", "🔤 Labels (off)", "🔤 文字 (オフ)");
 		Add("MappingsShowTextToggleBtnToolTip", "开启/关闭动作名称复合展示（开启后在扇区中直观渲染动作名称与图标，让拖拽对调一目了然）", "開啟/關閉動作名稱複合展示（開啟後在扇區中直觀轉譯動作名稱與圖示，讓拖曳對調一目了然）", "Toggle compound display of action names (renders text and icons inside sectors for intuitive dragging)", "アクション名の複合表示のオン/オフ（セクター内に名前とアイコンを表示し、ドラッグ交換を直感的に）");
 		Add("MappingsZoomOutBtnToolTip", "缩小视图", "縮小檢視", "Zoom Out", "縮小");
 		Add("MappingsZoomLabelToolTip", "点击复位为 100%", "點擊重設為 100%", "Click to reset zoom to 100%", "クリックで100%にリセット");

@@ -162,6 +162,7 @@ internal static class Program
         // Do not run constructors, hooks, EndActiveGesture, cancellation, or any
         // path that releases modifiers/queues an actual action.
         Set(controller, "_mouseReleaseDebounceLock", new object());
+        Set(controller, "_uiUpdateSync", new object());
         Set(controller, "_longPressLock", new object());
         Set(controller, "_activeActivation", mouseFirst);
         Set(controller, "_activeTrigger", first.Trigger);

@@ -24,8 +24,11 @@ internal static partial class Program
         Field(wheel, "_profile", Profile);
         Field(wheel, "_fixedGestureLayout", true);
         typeof(RadialWindow).GetProperty("FixedGeometry", Members)!.SetValue(wheel, currentGeometry);
+        var resident = session.GetType().GetField("_residentSlots", Members)!.GetValue(session);
+        Field(wheel, "_residentSlots", resident!);
+        Call(wheel, "RenderSectors");
         Call(wheel, "ShowAllSubTiers");
-        var paths = canvas.Children.OfType<System.Windows.Shapes.Path>().ToArray();
+        var paths = canvas.Children.OfType<System.Windows.Shapes.Path>().Where(path => path.Tag is string).ToArray();
         Check(paths.Select(p => p.Tag as string).ToHashSet().SetEquals(expected.Select(p => $"sub_{p.Parent}_{p.Child}")),
             expected.Length == 0 ? "progressive Fan popup keeps original secondary petals hidden" :
             "persistent Fan popup renders all configured original secondary petals across multiple primary sectors");
@@ -34,6 +37,18 @@ internal static partial class Program
         var bitmap = new RenderTargetBitmap(600,600,96,96,PixelFormats.Pbgra32);
         bitmap.Render(canvas);
         var pixel = new byte[4];
+        foreach (var path in canvas.Children.OfType<System.Windows.Shapes.Path>().Where(path => path.Tag is int))
+        {
+            int root = (int)path.Tag;
+            var cell = ((Geometry Shape, Point Label))Call(currentGeometry, "Primary", config, root)!;
+            var display = cell.Label + new Vector(300,300);
+            bitmap.CopyPixels(new Int32Rect((int)Math.Round(display.X), (int)Math.Round(display.Y), 1, 1), pixel, 4, 0);
+            bool visible = resident == null || root < 2;
+            if (!path.Data.FillContains(display) || Math.Abs(path.Data.GetArea()-cell.Shape.GetArea()) > .05 ||
+                (pixel[3] != 0) != visible || (path.Visibility == Visibility.Visible) != visible)
+                throw new InvalidOperationException($"Presented Fan primary {root} disagrees with its geometry or visibility");
+        }
+        Check(true, "primary renderer paints the shared cells at the published locations and respects vacant-root visibility");
         foreach (var (parent, child) in expected)
         {
             Point point = SecondaryPoint(parent, child, band: false);
@@ -57,13 +72,10 @@ internal static partial class Program
     private static void CheckPersistentFanRelease(System.Windows.Shapes.Path[] petals)
     {
         var cfg = ConfigManager.CurrentConfig;
-        var geometry = Host.GetType("WinPieGestures.LegacyRingGeometry")!;
         var rootShapes = Enumerable.Range(0, Layer.SectorCount)
-            .Select(i => ((Geometry Shape, Point Label))geometry.GetMethod("Primary", System.Reflection.BindingFlags.Static |
-                System.Reflection.BindingFlags.NonPublic)!.Invoke(null, [cfg, Layer.SectorCount, i, cfg.WheelRadius, cfg.InnerRadius])!)
-            .ToArray();
+            .Select(i => ((Geometry Shape, Point Label))Call(currentGeometry, "Primary", cfg, i)!).ToArray();
         Point east = Physical(rootShapes[0].Label), south = Physical(rootShapes[1].Label);
-        double r = (cfg.WheelRadius + legacyExtent) / 2;
+        double r = (double)Call(currentGeometry, "Outer", 2)! * .8;
         var clear = Enumerable.Range(0, 90).Select(i => i * Math.PI / 180)
             .Select(a => new Point(r * Math.Cos(a), r * Math.Sin(a)))
             .First(p => !petals.Any(v => v.Data.FillContains(p + new Vector(300,300))) &&
@@ -189,12 +201,17 @@ internal static partial class Program
             var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
             (Geometry Shape, Point Label) Petal(int root, int child) =>
                 ((Geometry,Point))legacy.GetMethod("Secondary",flags)!.Invoke(null,[config,8,root,child,3,72d,36d])!;
-            var entry = Petal(0,1).Label;
-            var release = Petal(1,0).Label;
-            Check(Petal(0,2).Shape.FillContains(release) && Petal(1,0).Shape.FillContains(release),
-                "eight-sector circle fixture puts the release inside both the old right and topmost foreign left petal");
+            var oldRelease = Petal(1,0).Label;
+            Check(Petal(0,2).Shape.FillContains(oldRelease) && Petal(1,0).Shape.FillContains(oldRelease),
+                "legacy two-level Fan fixture retains the overlapping petals");
             double extent = (double)legacy.GetMethod("SecondaryExtent",flags)!.Invoke(null,[config,72d,36d])!;
             var geometry = New(Host.GetType("WinPieGestures.FixedRingGeometry")!,8,72d,extent + 5,1d,true);
+            (Geometry Shape, Point Label) Cell(int root, int child) =>
+                ((Geometry,Point))Call(geometry, "Secondary", config, root, child, 3)!;
+            var entry = Cell(0,1).Label;
+            var release = Cell(1,0).Label;
+            Check(!Cell(0,2).Shape.FillContains(release) && Cell(1,0).Shape.FillContains(release),
+                "the same adjacent parents occupy distinct cells on the deep wheel");
             foreach (bool locked in new[] { false, true })
             {
                 config.LockParentSectorOnSubmenu = locked;
@@ -211,11 +228,193 @@ internal static partial class Program
                 Pump();
                 var names = Recorded.Skip(previous).Select(a => a.Name).ToArray();
                 Check(names.SequenceEqual(locked ? [] : new[] { "petal-1-0" }),
-                    $"overlap honors the painted topmost parent before checking lock={locked}, queued [{string.Join(",",names)}]");
+                    $"adjacent cells honor the owning parent with lock={locked}, queued [{string.Join(",",names)}]");
             }
         }
         finally { current.SetValue(null,saved); }
     }
+    private static void CheckResidentAncestors(AppConfig config)
+    {
+        string savedStyle = config.SubmenuStyle;
+        bool savedExpand = config.AutoExpandSubRingsOnPopup, savedInherit = config.EnableGlobalInheritance;
+        var savedProfiles = config.Profiles;
+        config.SubmenuStyle = "Fan";
+        config.AutoExpandSubRingsOnPopup = true;
+        config.EnableGlobalInheritance = true;
+        var menu = new FixedRingMenu { AlwaysVisible = true };
+        var layer = new WheelLayer { SectorCount = 4, MaxMenuDepth = 5, FixedRings = menu };
+        layer.Actions = [
+            new() { Type = "None", SubActions = [Text("must stay disabled")] },
+            new() { Type = "Inherit", SubActions = [Text("stale local child")] },
+            new() { Type = "Hotkey", SubActions = [new() { Type = "Hotkey", Name = "nav" },
+                new() { Type = "None", SubActions = [Text("disabled child tree")] }] },
+            new() { Type = "Inherit", SubActions = [Text("shadowed local")] }
+        ];
+        var profile = new WheelProfile { ProcessName = "resident.test", Layers = [layer] };
+        var inherited = Text("global owner");
+        inherited.SubActions = [Text("inherited child")];
+        var global = new WheelProfile { ProcessName = "Global", Layers = [
+            new() { SectorCount = 4, Actions = [Text("blocked global"), new() { Type = "None" }, new(), inherited] }] };
+        config.Profiles = [global, profile];
+        try
+        {
+            global.EnsureLayers();
+            profile.EnsureLayers();
+            void Slot(int level, int index, ActionItem action, int? parent = null) =>
+                menu.SetSlot(level, index, new() { Action = action, ParentIndex = parent });
+            Slot(3,0,Text("blocked via root"),FixedRingMenu.SecondaryKey(0,0));
+            Slot(4,0,Text("blocked grandchild"),0);
+            Slot(3,1,new() { Type = "Text", Parameter = "  " });
+            Slot(3,2,new() { Type = "String", Parameter = "" });
+            Slot(3,3,new() { Type = "Plugin", PluginActionRef = new() { PluginId = "only-plugin" } });
+            Slot(3,4,new() { Type = "Hotkey" },FixedRingMenu.SecondaryKey(2,0));
+            Slot(4,4,Text("navigable grandchild"),4);
+            Slot(3,5,new() { Type = "None" });
+            Slot(4,5,Text("blocked fixed child"),5);
+            Slot(3,6,Text("blocked via child"),FixedRingMenu.SecondaryKey(2,1));
+            Slot(3,7,Text("blocked unresolved inheritance"),FixedRingMenu.SecondaryKey(1,0));
+            Slot(3,8,Text("independent"));
+            // Imported Fan menus can retain a fixed child linked to a secondary outside the
+            // three painted addresses. Its effective root must still be revalidated on release.
+            Slot(3,9,Text("hidden address link"),FixedRingMenu.SecondaryKey(3,4));
+            var geometry = New(Host.GetType("WinPieGestures.FixedRingGeometry")!,4,72d,121d,1d,true);
+            var session = New(Nested("FixedRingSession"),profile,layer,18L,geometry,Origin,Dpi,140d);
+            Call(session,"SetShownSecondary",-1,true);
+            Call(session,"Present");
+            PaintFrame(session);
+            var ownerKey = FixedRingMenu.SecondaryKey(2,0);
+            var inheritedKey = FixedRingMenu.SecondaryKey(3,0);
+            var expected = new HashSet<(int,int)> { (1,2), (2,ownerKey), (1,3), (2,inheritedKey), (3,4), (4,4), (3,8), (3,9) };
+            var display = (HashSet<(int,int)>)Call(menu, "ConfiguredSlots", profile, 5, true)!;
+            var runtime = (HashSet<(int,int)>)session.GetType().GetField("_residentSlots", Members)!.GetValue(session)!;
+            if (!display.SetEquals(expected) || !runtime.SetEquals(expected))
+                throw new InvalidOperationException($"Resident preview/runtime occupancy: unexpected [{string.Join(",", display.Except(expected))}], missing [{string.Join(",", expected.Except(display))}]");
+            foreach (var (level, index) in new[] { (2,0), (2,FixedRingMenu.SecondaryKey(1,0)), (2,FixedRingMenu.SecondaryKey(2,1)),
+                    (3,0), (4,0), (3,1), (3,2), (3,3), (4,5), (3,6), (3,7) })
+            {
+                var hit = New(Nested("RingHit"),level,index);
+                if (Resolve(session,hit).Action != null || (bool)Call(session, "WasVisible", hit)!)
+                    throw new InvalidOperationException($"Resident disabled/invalid slot {level}/{index} is visible or confirmable");
+            }
+            var inheritedHit = New(Nested("RingHit"),2,inheritedKey);
+            Check(Resolve(session,inheritedHit).Action?.Name == "inherited child" &&
+                Resolve(session,New(Nested("RingHit"),4,4)).Action?.Name == "navigable grandchild",
+                "resident resolved ancestors retain inherited children and navigation-only cells with active descendants");
+            var hiddenLink = New(Nested("RingHit"),3,9);
+            Check(Resolve(session,hiddenLink).Action?.Name == "hidden address link", "stored links to layout-hidden secondary addresses remain direct targets");
+            var prior = layer.Actions[3];
+            layer.Actions[3] = new() { Type = "None" };
+            Check(Resolve(session,hiddenLink).Action == null && Resolve(session,inheritedHit).Action == null,
+                "disabling a previously inherited root invalidates both displayed and layout-hidden child links before release");
+            layer.Actions[3] = prior;
+            var disabledPoint = ((Geometry Shape, Point Label))Call(geometry,"Secondary",config,0,0,1)!;
+            int previous = Recorded.Count;
+            var controller = Harness(session,profile);
+            Call(controller,"TestProcessMove",Physical(disabledPoint.Label));
+            Call(controller,"TestCompleteMouseTriggerRelease",Physical(disabledPoint.Label),"RightButton");
+            Pump();
+            Check(Recorded.Count == previous, "releasing over the child of an explicitly disabled root queues no action");
+        }
+        finally
+        {
+            config.SubmenuStyle = savedStyle;
+            config.AutoExpandSubRingsOnPopup = savedExpand;
+            config.EnableGlobalInheritance = savedInherit;
+            config.Profiles = savedProfiles;
+        }
+    }
+
+    private static void CheckAppearanceControls(AppConfig original)
+    {
+        var property = typeof(ConfigManager).GetProperty("CurrentConfig")!;
+        var cfg = new AppConfig { Shape = "Original", SubmenuStyle = "Fan", WheelRadius = 100, InnerRadius = 46, CoreRadius = 22,
+            SectorGap = 4, SectorCornerRadius = 0 };
+        property.SetValue(null, cfg);
+        try
+        {
+            object wheel = RuntimeHelpers.GetUninitializedObject(typeof(RadialWindow));
+            long revision = 0;
+            object Layout() => Call(wheel, "FitFixedGeometry", 8, cfg.WheelRadius, 155d, 5, 800d, ++revision)!;
+            object standard = Layout();
+            foreach (string style in new[] { "Fan", "Wheel" })
+            {
+                cfg.SubmenuStyle = style;
+                foreach (string appearance in new[] { "Original", "HexagonHive", "Circle", "RoundedCapsule" })
+                {
+                    cfg.Shape = appearance;
+                    cfg.SectorGap = 4;
+                    cfg.SectorCornerRadius = 0;
+                    var sharp = Layout();
+                    cfg.SectorCornerRadius = 10;
+                    var rounded = Layout();
+                    cfg.SectorGap = 9;
+                    var spaced = Layout();
+                    foreach (int level in Enumerable.Range(style == "Fan" ? 1 : 3, style == "Fan" ? 5 : 3))
+                    {
+                        int count = level == 1 ? 8 : level == 2 ? 24 : FixedRingMenu.RecommendedCount(level);
+                        const int slot = 1;
+                        Geometry Face(object layout) => (Geometry)Call(layout, "GetShape", level, slot, count)!;
+                        var face = Face(rounded);
+                        var area = face.GetArea();
+                        var center = (Point)Call(rounded, "GetCenter", level, slot, count)!;
+                        if (appearance == "Circle" && (Math.Abs(face.Bounds.Width - face.Bounds.Height) > .05 ||
+                            Math.Abs(area / (face.Bounds.Width * face.Bounds.Height) - Math.PI / 4) > .008))
+                            throw new InvalidOperationException($"{style} level {level}: Circle did not paint a circle");
+                        if (appearance != "Circle" && Math.Abs(area - Face(sharp).GetArea()) < .01)
+                            throw new InvalidOperationException($"{style} level {level}: corner setting did not change the face");
+                        if (Face(spaced).GetArea() >= area - .01)
+                            throw new InvalidOperationException($"{style} level {level}: gap setting did not shrink the face");
+                        for (int y = -5; y <= 5; y++)
+                        for (int x = -5; x <= 5; x++)
+                        {
+                            var probe = center + new Vector(face.Bounds.Width * (x + .17) / 10, face.Bounds.Height * (y + .29) / 10);
+                            var hit = (int)Call(rounded, "Hit", probe, level, count)!;
+                            if ((hit == slot) != face.FillContains(probe, .001, ToleranceType.Absolute))
+                                throw new InvalidOperationException($"{style}/{appearance} {level}/{slot} mismatch at {probe}");
+                        }
+                    }
+                    Check(true, $"{style}/{appearance} consumes the shared Tab 1 gap and corner with painted/hit contours");
+                }
+            }
+            cfg.SubmenuStyle = "Wheel";
+            cfg.WheelRadius = 70;
+            cfg.InnerRadius = 65;
+            cfg.SectorGap = 8;
+            foreach (string shapeName in new[] { "Circle", "RoundedCapsule", "HexagonHive" })
+            {
+                cfg.Shape = shapeName;
+                var tight = Call(wheel, "FitFixedGeometry", 12, 70d, 110d, 5, 119d, ++revision)!;
+                for (int level = 3; level <= 5; level++)
+                {
+                    int count = FixedRingMenu.MaximumCount(level);
+                    var face = (Geometry)Call(tight, "GetShape", level, 0, count)!;
+                    var center = (Point)Call(tight, "GetCenter", level, 0, count)!;
+                    var edge = new Point(center.X + face.Bounds.Width * .45, center.Y);
+                    if (!face.FillContains(edge) || (int)Call(tight, "Hit", edge, level, count)! != 0)
+                        throw new InvalidOperationException($"{shapeName} compressed Wheel misses its painted outer side at level {level}");
+                }
+            }
+            Check(true, "narrow rings remain within their rendered hit boundaries after screen fitting");
+            cfg.WheelRadius = 100;
+            cfg.InnerRadius = 46;
+            cfg.SubmenuStyle = "Fan";
+            cfg.Shape = "Original";
+            cfg.SectorGap = 4;
+            cfg.SectorCornerRadius = 0;
+            Point PointAt(object g) => (Point)Call(g, "GetCenter", 3, 0, 12)!;
+            cfg.InnerRadius = 60;
+            Check(PointAt(Layout()) != PointAt(standard), "inner radius changes the deep lattice pitch");
+            cfg.WheelRadius = 124;
+            var larger = Layout();
+            Check(PointAt(larger).X > PointAt(standard).X, "wheel radius scales all menu tiers");
+            cfg.CoreRadius = 65;
+            var coreLayout = Layout();
+            Check(Math.Abs((double)Call(coreLayout, "CoreRadius", 65d)! - 65) < .01 &&
+                (double)Call(coreLayout, "Inner", 1)! > 65, "larger circular core remains clear of primary cells");
+        }
+        finally { property.SetValue(null, original); }
+    }
+
     private static void CheckFanGeometry(AppConfig config)
     {
         object wheel = RuntimeHelpers.GetUninitializedObject(typeof(RadialWindow));
@@ -224,12 +423,48 @@ internal static partial class Program
             config.SubmenuStyle = style;
             return Call(wheel, "FitFixedGeometry", 4, 72d, 116d, 5, 430d, 1L)!;
         }
+        CheckResidentAncestors(config);
+        CheckAppearanceControls(config);
+        double oldCorner = config.SectorCornerRadius;
+        config.SectorCornerRadius = 0;
         var circular = Fitted("Wheel");
         var honeycomb = Fitted("Fan");
         Geometry Shape(object layout, int level, int index, int count) =>
             (Geometry)Call(layout, "GetShape", level, index, count)!;
         // Start with existing production APIs so the old candidate can demonstrate the actual visual defect.
         double Coverage(Geometry s) => s.GetArea() / (s.Bounds.Width * s.Bounds.Height);
+        foreach (int roots in new[] { 4, 8, 12 })
+        {
+            var layout = Call(wheel, "FitFixedGeometry", roots, 72d, 116d, 5, 430d, 1L)!;
+            var cells = new List<(Geometry Shape, Point Center)>();
+            for (int level = 1; level <= 5; level++)
+            {
+                int count = level == 1 ? roots : level == 2 ? roots * 3 : FixedRingMenu.MaximumCount(level);
+                for (int index = 0; index < count; index++)
+                {
+                    var shape = Shape(layout, level, index, count);
+                    var center = (Point)Call(layout, "GetCenter", level, index, count)!;
+                    if (Coverage(shape) is < .745 or > .755)
+                        throw new InvalidOperationException($"Deep Fan {roots} sectors {level}/{index} paints a non-hexagonal face: {shape.Bounds}");
+                    CheckCell(level, index, count, shape, center);
+                    cells.Add((shape,center));
+                }
+            }
+            void CheckCell(int level, int index, int count, Geometry shape, Point center)
+            {
+                if ((int)Call(layout, "Hit", center, level, count)! != index || !shape.FillContains(center) ||
+                    cells.Any(other => (other.Center-center).Length < shape.Bounds.Width))
+                    throw new InvalidOperationException($"Deep Fan {roots} sectors {level}/{index} overlaps or misses");
+                if (level != 2) return;
+                for (int siblings = index % 3 + 1; siblings <= 3; siblings++)
+                {
+                    var child = ((Geometry Shape, Point Label))Call(layout, "Secondary", config, index / 3, index % 3, siblings)!;
+                    if (!ReferenceEquals(child.Shape, shape) || child.Label != center)
+                        throw new InvalidOperationException("Changing a sibling moved a reserved Fan address");
+                }
+            }
+            Check(true, $"Deep Fan {roots} sectors fits all parent and child addresses on a single nonoverlapping lattice");
+        }
         var oldShape = Shape(circular, 3, 0, 4);
         var fanShape = Shape(honeycomb, 3, 0, 4);
         Check(Coverage(fanShape) is > .70 and < .80 && fanShape.Bounds.Width / fanShape.Bounds.Height is > .8 and < 1.2 &&
@@ -240,7 +475,7 @@ internal static partial class Program
         {
             foreach (int count in new[] { 4, 7, FixedRingMenu.RecommendedCount(level), FixedRingMenu.MaximumCount(level) })
             {
-                int shell = level == 5 && count == 37 ? 7 : level + 1;
+                int shell = level + 2;
                 var shellAngles = (from q in Enumerable.Range(-shell, 2 * shell + 1)
                                    from r in Enumerable.Range(-shell, 2 * shell + 1)
                                    where Math.Max(Math.Abs(q), Math.Max(Math.Abs(r), Math.Abs(q + r))) == shell
@@ -294,13 +529,14 @@ internal static partial class Program
         foreach (var slots in new[] { 20, 37, 20 })
         {
             sizingLayer.FixedRings.SetCount(5, slots);
-            var fitted = Call(wheel, "FitFixedGeometry", 4, 72d, 116d, 5, 255d, 2L)!;
+            var fitted = Call(wheel, "FitFixedGeometry", 4, 72d, 116d, 5, 150d, 2L)!;
             double scale = (double)Get(fitted,"Scale")!;
             double extent = (double)Call(fitted,"OuterForCount",5,slots)!;
-            Check(extent <= 255.00001 && (slots == 20 ? Math.Abs(scale - 1) < .00001 : scale < 1 && extent > 254.999),
-                $"255-DIP Fan fit uses actual {slots}-slot fifth shell: scale={scale:F6}, extent={extent:F4}");
+            Check(extent <= 150.00001 && scale < 1 && extent > 149.999,
+                $"150-DIP Fan fit scales every tier together for {slots}-slot fifth shell: scale={scale:F6}, extent={extent:F4}");
         }
         var restored = Fitted("Wheel");
+        config.SectorCornerRadius = oldCorner;
         Check(Shape(restored, 3, 0, 4).Bounds == oldShape.Bounds &&
             Shape(restored, 3, 0, 4).GetArea() == oldShape.GetArea(), "switching Fan back to Wheel restores original fitted annular geometry");
     }

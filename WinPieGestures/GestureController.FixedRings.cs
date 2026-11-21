@@ -16,8 +16,8 @@ public partial class GestureController
     {
         internal sealed record Cell(ActionItem? Display, FixedRingSlot? SourceSlot, int? Parent, Geometry Shape)
         {
-            internal bool IsVisible(bool persistent, int level, int[] path) => persistent ||
-                (level - 3 < path.Length && Display != null && Parent == path[level - 3]);
+            internal bool IsVisible(bool persistent, int level, int[] path) => Display != null &&
+                (persistent || level - 3 < path.Length && Parent == path[level - 3]);
         }
 
         // The radial span of a petal changes with the pointer angle. Read cached line segments
@@ -78,14 +78,14 @@ public partial class GestureController
         internal readonly FixedRingGeometry Geometry;
         internal readonly long Version, Revision;
         internal readonly bool Persistent;
-        internal readonly bool PersistentFan;
-        private readonly List<(int Key, ParentOutline Outline)> _fanPetals = new();
+        internal bool IsHoneycomb => Geometry.IsHoneycomb;
         internal readonly Cell[][] Rows;
         private readonly Dictionary<RingHit, ParentOutline> _parents = new();
         private readonly Dictionary<int, ParentOutline> _secondaryOutlines = new();
         private readonly Dictionary<int, SlotBinding> _secondaryBindings = new();
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FixedRingGeometry,
             Dictionary<(int Level, int Owner, int Index, int Count), ParentOutline>> CachedOutlines = new();
+        private readonly HashSet<(int Level, int Index)>? _residentSlots;
         private readonly SlotBinding[] _rootBindings;
         private readonly SlotBinding _center;
         private readonly SlotBinding[][] _bindings;
@@ -121,18 +121,18 @@ public partial class GestureController
             Layer = layer;
             Menu = layer.ActiveFixedRings!;
             Persistent = Menu.ShowsAllOnPopup(ConfigManager.CurrentConfig);
-            PersistentFan = Persistent && ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
             Version = version;
             Revision = ConfigManager.ConfigurationRevision;
             Geometry = geometry;
             _origin = origin;
             _dpi = dpi;
-            _legacyExtent = legacyExtent;
+            _legacyExtent = IsHoneycomb ? geometry.Outer(2) : legacyExtent;
             var config = ConfigManager.CurrentConfig;
             _center = SlotBinding.Capture(profile.GetEffectiveCenterAction());
             _rootBindings = new SlotBinding[layer.SectorCount];
             Rows = new Cell[layer.EffectiveMaxMenuDepth][];
             _bindings = new SlotBinding[Rows.Length][];
+            _residentSlots = Persistent ? Menu.ConfiguredSlots(profile, Rows.Length, config.SubmenuStyle == "Fan") : null;
             _trigger = config.SubWheelTriggerDistance > 20 ? config.SubWheelTriggerDistance : 95;
             _primaryRadius = Math.Max(1, config.WheelRadius);
             var cache = CachedOutlines.GetOrCreateValue(geometry);
@@ -144,7 +144,8 @@ public partial class GestureController
                 {
                     var slot = Menu.GetSlot(level, i);
                     var bound = bindings[i] = SlotBinding.Capture(slot?.Action);
-                    row[i] = new(bound.Action, slot, slot?.ParentIndex, geometry.GetShape(level, i, row.Length));
+                    var display = _residentSlots == null || _residentSlots.Contains((level, i)) ? bound.Action : null;
+                    row[i] = new(display, slot, slot?.ParentIndex, geometry.GetShape(level, i, row.Length));
                     if (level > 3 && slot?.ParentIndex is int parent && (uint)parent < (uint)Rows[level - 2].Length)
                     {
                         var owner = Rows[level - 2][parent];
@@ -160,35 +161,31 @@ public partial class GestureController
             }
             for (int root = 0; root < layer.SectorCount; root++)
             {
-                var parent = profile.GetEffectiveAction(root);
+                var parent = Persistent ? FixedRingMenu.DisplayRoot(profile, root) : profile.GetEffectiveAction(root);
                 _rootBindings[root] = SlotBinding.Capture(parent);
                 int count = parent?.SubActions?.Count ?? 0;
                 int visible = config.SubmenuStyle == "Fan" ? Math.Min(RadialWindow.FanSubmenuSlotCount, count) : count;
-                if (PersistentFan || (!Persistent && !config.ExpandsSubRingsOnPopup && visible > 0))
+                if (IsHoneycomb || (!Persistent && !config.ExpandsSubRingsOnPopup && visible > 0))
                 {
                     var cacheKey = (1, -1, root, layer.SectorCount);
                     if (!cache.TryGetValue(cacheKey, out var primary))
-                        cache[cacheKey] = primary = new(LegacyRingGeometry.Primary(config, layer.SectorCount,
-                            root, config.WheelRadius, config.InnerRadius).Shape);
+                        cache[cacheKey] = primary = new(geometry.Primary(config, root).Shape);
                     _primaryOutlines[root] = primary;
                 }
                 for (int sub = 0; sub < visible; sub++)
                 {
                     var child = parent!.SubActions[sub];
                     int key = FixedRingMenu.SecondaryKey(root, sub);
-                    bool configured = WheelProfile.IsActionConfigured(child);
-                    if (!configured && !PersistentFan) continue;
-                    if (configured) _secondaryBindings[key] = SlotBinding.Capture(child);
+                    bool configured = _residentSlots?.Contains((2, key)) ?? WheelProfile.IsActionConfigured(child);
+                    if (!configured) continue;
+                    _secondaryBindings[key] = SlotBinding.Capture(child);
 
                     var cacheKey = (2, root, sub, count);
                     if (!cache.TryGetValue(cacheKey, out var outline))
                     {
-                        var (shape, _) = LegacyRingGeometry.Secondary(config, layer.SectorCount, root, sub, count,
-                            config.WheelRadius, config.InnerRadius);
+                        var (shape, _) = geometry.Secondary(config, root, sub, count);
                         cache[cacheKey] = outline = new(shape);
                     }
-                    if (PersistentFan) _fanPetals.Add((key, outline));
-                    if (!configured) continue;
                     _secondaryOutlines[key] = outline;
                     if (!Persistent && Array.Exists(Rows[2], c => c.Display != null && c.Parent == key))
                         _parents[new(2, key)] = outline;
@@ -197,7 +194,7 @@ public partial class GestureController
         }
 
         private Point Relative(Point point) => new((point.X - _origin.X) / _dpi.DpiScaleX, (point.Y - _origin.Y) / _dpi.DpiScaleY);
-        internal bool IsOuterPoint(Point point) => ((Vector)Relative(point)).Length > _legacyExtent;
+        internal bool IsOuterPoint(Point point) => ((Vector)Relative(point)).Length > _legacyExtent || (IsHoneycomb && Hit(point).IsOuter);
         internal bool IsCurrent(WheelProfile? profile) => ReferenceEquals(profile, Profile) &&
             ReferenceEquals(CaptureReleaseLayer(profile), Layer) && ReferenceEquals(Layer.ActiveFixedRings, Menu) &&
             Revision == ConfigManager.ConfigurationRevision && ConfigManager.CurrentConfig.EnableMultiTier &&
@@ -284,46 +281,33 @@ public partial class GestureController
             return CheckDistance(hit, local, ((Vector)local).Length, true);
         }
 
-        private bool TryHitPersistentPetal(Point point, int lockedParent, out int root, out int sub)
+        internal RingHit HitHoneycombInner(Point point, SubmenuLockTracker parentLock)
         {
-            root = sub = -1;
-            if (!PersistentFan || !Presented || !ShowAllSecondary) return false;
-            var local = Relative(point);
-            double radius = ((Vector)local).Length;
-            // Draw order is also the pinned hit order where neighboring parents have overlapping petals.
-            for (int i = _fanPetals.Count - 1; i >= 0; --i)
-            {
-                var petal = _fanPetals[i];
-                if (!petal.Outline.Contains(local, radius)) continue;
-                return FixedRingMenu.TryDecodeSecondaryKey(petal.Key, out root, out sub) &&
-                    (lockedParent < 0 || root == lockedParent);
-            }
-            return false;
-        }
-
-        internal RingHit HitPersistentFanInner(Point point, SubmenuLockTracker parentLock)
-        {
-            if (!PersistentFan || !Presented) return default;
+            if (!IsHoneycomb || !Presented) return default;
             var local = Relative(point);
             double radius = ((Vector)local).Length;
             var config = ConfigManager.CurrentConfig;
             bool lockEnabled = config.LockParentSectorOnSubmenu && !Pinned;
-            parentLock.ResolveParentSector(lockEnabled, true, true, radius, -1, _primaryRadius, config);
-            if (TryHitPersistentPetal(point, parentLock.LockedParentSector, out int parent, out int child))
+            double exit = Math.Min(Geometry.Inner(2), SubmenuLockTracker.GetSubmenuExitDistance(config, true, _primaryRadius));
+            if (!lockEnabled || radius < exit) parentLock.Reset();
+            int address = Geometry.Hit(local, 2, 3 * _rootBindings.Length);
+            if (address >= 0)
             {
+                int parent = address / 3, child = address % 3;
                 int key = FixedRingMenu.SecondaryKey(parent, child);
-                if (lockEnabled && _secondaryBindings.ContainsKey(key)) parentLock.Lock(parent);
-                return new(2, key);
+                if ((ShowAllSecondary || parent == ShownParent) && (!parentLock.IsLocked || parentLock.LockedParentSector == parent) &&
+                    (Path.Length == 0 || Path[0] == key) && _secondaryBindings.ContainsKey(key))
+                {
+                    if (lockEnabled) parentLock.Lock(parent);
+                    return new(2, key);
+                }
+                return default;
             }
-            if (parentLock.IsLocked) return default;
-            double deadzone = ConfigManager.CurrentConfig.GetEffectiveCoreDeadzone();
-            if (radius < (deadzone > 0 ? deadzone : 15)) return new(0, -1);
-            if (radius > _primaryRadius) return default;
-            double turn = Math.Atan2(local.Y, local.X) / (2 * Math.PI);
-            int count = _rootBindings.Length;
-            int index = (int)Math.Floor((turn + 1) * count + .5) % count;
-            return _primaryOutlines.TryGetValue(index, out var outline) && outline.Contains(local, radius)
-                ? new(1, index) : default;
+            if (parentLock.IsLocked || Path.Length > 0) return default;
+            double deadzone = config.GetEffectiveCoreDeadzone();
+            if (radius < Geometry.CoreRadius(deadzone > 0 ? deadzone : 15)) return new(0, -1);
+            int root = Geometry.Hit(local, 1, _rootBindings.Length);
+            return root >= 0 && (_residentSlots == null || _residentSlots.Contains((1, root))) ? new(1, root) : default;
         }
 
         internal bool CanConfirmSecondary(Point point, int root, int sub)
@@ -339,7 +323,30 @@ public partial class GestureController
 
         private void TrackExtendedPrimary(Point local, double radius)
         {
-            if (Persistent || _primaryOutlines.Count == 0 || (!Pinned && _trigger <= _legacyExtent) || ShowAllSecondary || Path.Length != 0) return;
+            if (Persistent || _primaryOutlines.Count == 0 || ShowAllSecondary || Path.Length != 0) return;
+            if (IsHoneycomb)
+            {
+                int rootHit = Geometry.Hit(local, 1, _rootBindings.Length);
+                if (radius < Geometry.Inner(1)) _trackedPrimary = ExtendedPrimary = -1;
+                if (rootHit >= 0)
+                {
+                    if (_trackedPrimary != rootHit) ExtendedPrimary = -1;
+                    _trackedPrimary = rootHit;
+                }
+                if (_trackedPrimary >= 0)
+                {
+                    if (!_primaryOutlines[_trackedPrimary].TrySpan(local, radius, out double lo, out _))
+                    {
+                        if (ExtendedPrimary < 0) _trackedPrimary = -1;
+                    }
+                    else if (radius >= Math.Max(lo, _trigger) && (rootHit >= 0 || radius >= _trackedRadius) &&
+                        _rootBindings[_trackedPrimary].HasChildren)
+                        ExtendedPrimary = _trackedPrimary;
+                }
+                _trackedRadius = radius;
+                return;
+            }
+            if (!Pinned && _trigger <= _legacyExtent) return;
             if (radius < Math.Max(25, _primaryRadius - 6))
                 ExtendedPrimary = -1;
             int count = _rootBindings.Length;
@@ -371,7 +378,7 @@ public partial class GestureController
             TrackExtendedPrimary(local, radius);
             var previous = Path;
             var oldHover = Hover;
-            bool outer = radius > _legacyExtent;
+            bool outer = radius > _legacyExtent || (IsHoneycomb && Hit(point).IsOuter);
             bool changed = outer != ControlsOuter;
             ControlsOuter = outer;
             while (Path.Length > 0 && radius < _returnRadii[Path.Length - 1])
@@ -456,7 +463,7 @@ public partial class GestureController
         {
             if (!_secondaryBindings.TryGetValue(key, out var binding)) return false;
             if (!FixedRingMenu.TryDecodeSecondaryKey(key, out int root, out int sub)) return false;
-            var action = Profile.GetEffectiveAction(root);
+            var action = Persistent ? FixedRingMenu.DisplayRoot(Profile, root) : Profile.GetEffectiveAction(root);
             bool inherited = _rootBindings[root].Action?.IsInherited == true;
             return inherited == (action?.IsInherited == true) && _rootBindings[root].Matches(action, inherited) &&
                 action?.SubActions is { } children && sub < children.Count && binding.Matches(children[sub], inherited);
@@ -469,6 +476,7 @@ public partial class GestureController
             if (hit.Level is 0 or 1 or 2)
             {
                 if (hit.Level == 0 && hit.Index != -1) return true;
+                if (_residentSlots != null && hit.Level != 0 && !_residentSlots.Contains((hit.Level, hit.Index))) return true;
                 SlotBinding? binding;
                 ActionItem? current;
                 bool inherited;
@@ -482,7 +490,8 @@ public partial class GestureController
                 {
                     if (hit.Level == 1 && (uint)hit.Index >= (uint)_rootBindings.Length) return false;
                     binding = hit.Level == 0 ? _center : _rootBindings[hit.Index];
-                    current = hit.Level == 0 ? Profile.GetEffectiveCenterAction() : Profile.GetEffectiveAction(hit.Index);
+                    current = hit.Level == 0 ? Profile.GetEffectiveCenterAction() :
+                        Persistent ? FixedRingMenu.DisplayRoot(Profile, hit.Index) : Profile.GetEffectiveAction(hit.Index);
                     inherited = binding.Action?.IsInherited == true;
                     if (binding.Action == null && current == null) return true;
                     if (inherited != (current?.IsInherited == true) || !binding.Matches(current, inherited)) return false;
@@ -491,6 +500,8 @@ public partial class GestureController
                 return true;
             }
             if (!Eligible(hit)) return true;
+            if (Persistent && !Menu.HasEnabledAncestry(hit.Level, hit.Index, Layer.SectorCount, root => FixedRingMenu.DisplayRoot(Profile, root)))
+                return false;
             // Independent or already-hidden owners remain valid direct targets. If an owner was
             // present when shown, any replacement, reordering or removal invalidates this release.
             int index = hit.Index;

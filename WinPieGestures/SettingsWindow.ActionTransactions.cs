@@ -49,6 +49,7 @@ public sealed class ActionSnapshot
 	public List<ActionItem>? SubActions { get; }
 	internal object?[]? ChildIdentities { get; init; }
 	public bool IsInherited { get; }
+    internal bool? CenterEnabled { get; init; }
 
 	public ActionSnapshot(ActionItem? action, bool isInherited = false)
 	{
@@ -119,6 +120,7 @@ public sealed class SingleSectorTransaction : IActionTransaction
 		if (Address.IsCenter)
 		{
 			profile.CenterAction = snapshot.Action?.Clone();
+            if (snapshot.CenterEnabled is bool enabled) profile.EnableCenterAction = enabled;
 			profile.SyncActiveLayerFromRootProperties();
 		}
 		else if (Address.SlotIndex >= 0 && profile.Actions != null && Address.SlotIndex < profile.Actions.Count)
@@ -208,6 +210,7 @@ public sealed class CrossSectorTransaction : IActionTransaction
 		if (addr.IsCenter)
 		{
 			profile.CenterAction = snapshot.Action?.Clone();
+            if (snapshot.CenterEnabled is bool enabled) profile.EnableCenterAction = enabled;
 			profile.SyncActiveLayerFromRootProperties();
 		}
 		else if (addr.SlotIndex >= 0 && profile.Actions != null && addr.SlotIndex < profile.Actions.Count)
@@ -403,7 +406,7 @@ public partial class SettingsWindow
 	{
 		profile ??= GetSelectedProfile();
 		if (profile == null) return new ActionSnapshot(null);
-		return new ActionSnapshot(profile.CenterAction);
+		return new ActionSnapshot(profile.CenterAction) { CenterEnabled = profile.EnableCenterAction };
 	}
 
 	internal ActionSnapshot CaptureSectorSnapshot(WheelProfile profile, int slotIndex)
@@ -412,7 +415,7 @@ public partial class SettingsWindow
 
 		if (slotIndex == -1)
 		{
-			return new ActionSnapshot(profile.CenterAction);
+			return new ActionSnapshot(profile.CenterAction) { CenterEnabled = profile.EnableCenterAction };
 		}
 
 		if (slotIndex >= 0 && profile.Actions != null && slotIndex < profile.Actions.Count)
@@ -538,7 +541,7 @@ public partial class SettingsWindow
 	{
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
-		if (a.IsInherited != b.IsInherited) return false;
+		if (a.IsInherited != b.IsInherited || a.CenterEnabled != b.CenterEnabled) return false;
 		if (!AreActionItemsEquivalent(a.Action, b.Action)) return false;
 
 		int aSubCount = a.SubActions?.Count ?? 0;

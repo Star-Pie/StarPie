@@ -8,11 +8,14 @@ public partial class SettingsWindow
     private WheelLayer? _fixedLayer;
     private WheelProfile? _fixedProfile;
     private int _fixedLevel = 3;
+    private int? _fixedInnerLevel;
+    private WheelLayer? _twoTierEditorLayer;
     private readonly int[] _fixedIndices = new int[6];
     private readonly Dictionary<(int Level, int Index), FixedRingSlotDraft> _fixedDrafts = new();
     private FixedRingSlotDraft? _boundFixedDraft;
     private bool _fixedFilling, _fixedBindRequired;
-    private bool EditingOuterFixedSlot => _fixedLayer != null && _fixedLevel >= 3 &&
+    private bool EditingOuterFixedSlot => _fixedInnerLevel == null && OnFixedCanvas;
+    private bool OnFixedCanvas => _fixedLayer != null && _fixedLayer.EffectiveMaxMenuDepth >= 3 &&
         ReferenceEquals(GetSelectedProfile(), _fixedProfile) &&
         ReferenceEquals(GestureController.CaptureReleaseLayer(_fixedProfile!), _fixedLayer) &&
         _fixedLayer.ActiveFixedRings != null && MappingsViewModeCanvasRadio?.IsChecked == true;
@@ -65,14 +68,28 @@ public partial class SettingsWindow
 
     private void BeginFixedCanvas(WheelProfile profile)
     {
+        ShowStudioActionInspector();
         CloseDeepCanvas();
+        SetFixedCanvasContext(profile, profile.GetActiveLayer());
+    }
+
+    private void SetFixedCanvasContext(WheelProfile profile, WheelLayer layer)
+    {
+        _twoTierEditorLayer = null;
+        _fixedInnerLevel = null;
         _fixedProfile = profile;
-        _fixedLayer = profile.GetActiveLayer();
+        _fixedLayer = layer;
         _fixedLevel = 3;
         Array.Clear(_fixedIndices);
         _fixedIndices[2] = _selectedSlotIndex >= 0 && _selectedSubActionIndex is int child
             ? FixedRingMenu.SecondaryKey(_selectedSlotIndex, child) : -1;
         _fixedDrafts.Clear();
+    }
+
+    private void SelectFixedInnerLevel(int level)
+    {
+        if (OnFixedCanvas) _fixedInnerLevel = level;
+        else if (_fixedLayer != null) CloseFixedCanvas();
     }
 
     private void OpenFixedCanvas(WheelProfile profile)
@@ -90,6 +107,7 @@ public partial class SettingsWindow
 
     private void FixedBack_Click(object sender, RoutedEventArgs e)
     {
+        _twoTierEditorLayer = _fixedLayer;
         CloseFixedCanvas();
         RenderMappingsWheelPreview();
     }
@@ -99,6 +117,8 @@ public partial class SettingsWindow
         if (_fixedLayer == null) return;
         _fixedLayer = null;
         _fixedProfile = null;
+        _fixedInnerLevel = null;
+        StudioFixedBreadcrumb.Visibility = Visibility.Collapsed;
         _fixedGeometry = null;
         _fixedDrafts.Clear();
         _boundFixedDraft = null;
@@ -115,18 +135,35 @@ public partial class SettingsWindow
     {
         if (FixedControlsCard == null) return false;
         var layer = GestureController.CaptureReleaseLayer(profile);
+        if (!ReferenceEquals(_fixedLayer, layer) || !ReferenceEquals(_fixedProfile, profile)) CloseFixedCanvas();
+        if (!ReferenceEquals(_twoTierEditorLayer, layer)) _twoTierEditorLayer = null;
         if (layer?.ActiveFixedRings is not { } menu || MappingsViewModeCanvasRadio.IsChecked != true ||
-            layer.EffectiveMaxMenuDepth < 3 || !ReferenceEquals(layer, _fixedLayer) || !ReferenceEquals(profile, _fixedProfile))
+            layer.EffectiveMaxMenuDepth < 3)
         {
             CloseFixedCanvas();
             return false;
+        }
+        // A multi-level fan opens on the same grid as the live wheel. Browsing only binds view state.
+        if (_fixedLayer == null)
+        {
+            if (ConfigManager.CurrentConfig.SubmenuStyle != "Fan" || _twoTierEditorLayer != null || _deepCanvasParent != null) return false;
+            SetFixedCanvasContext(profile, layer);
+            _fixedInnerLevel = _selectedSlotIndex < 0 ? 0 : _selectedSubActionIndex.HasValue ? 2 : 1;
         }
         _fixedLevel = Math.Clamp(_fixedLevel, 3, layer.EffectiveMaxMenuDepth);
         int count = menu.GetCount(_fixedLevel);
         int index = _fixedIndices[_fixedLevel] = Math.Clamp(_fixedIndices[_fixedLevel], 0, count - 1);
         ClearCanvasHitItems();
-        FixedControlsCard.Visibility = Visibility.Visible;
-        FixedSlotCard.Visibility = Visibility.Visible;
+        if (_fixedInnerLevel.HasValue)
+        {
+            FixedControlsCard.Visibility = FixedSlotCard.Visibility = Visibility.Collapsed;
+            FocusActionEditorBorder.Visibility = CanvasTierSelector.Visibility = MappingsLinkSubActionsBtn.Visibility = Visibility.Visible;
+            FixedOpenCanvas.Visibility = EditMenuBranchButton.Visibility = Visibility.Visible;
+            MappingsCanvasInstructionsText.Text = I18n.T("MappingsCanvasInstructions");
+            DrawFixedWheel(profile, layer, menu);
+            return true;
+        }
+        FixedControlsCard.Visibility = FixedSlotCard.Visibility = Visibility.Visible;
         FocusActionEditorBorder.Visibility = Visibility.Collapsed;
         CanvasTierSelector.Visibility = MappingsLinkSubActionsBtn.Visibility = FocusSubActionsBorder.Visibility = Visibility.Collapsed;
         FixedOpenCanvas.Visibility = EditMenuBranchButton.Visibility = Visibility.Collapsed;
@@ -215,7 +252,7 @@ public partial class SettingsWindow
         bool fan = ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
         for (int primary = 0; primary < profile.SectorCount; primary++)
         {
-            var root = profile.GetEffectiveAction(primary);
+            var root = FixedRingMenu.DisplayRoot(profile, primary);
             if (root?.SubActions == null) continue;
             int n = DeepMenuFrame.VisibleSlotCount(root.SubActions.Count, fan);
             for (int child = 0; child < n; child++)
@@ -242,7 +279,11 @@ public partial class SettingsWindow
 
     private void SelectFixedSlot(int level, int index)
     {
+        ShowStudioActionInspector();
         if (!CanEditFixedControls) return;
+        _fixedInnerLevel = null;
+        _selectedMultiSlots.Clear();
+        ExitBatchModeUi();
         _fixedLevel = level;
         _fixedIndices[level] = index;
         RenderMappingsWheelPreview();
