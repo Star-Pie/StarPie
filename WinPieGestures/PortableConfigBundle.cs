@@ -432,6 +432,24 @@ public static class PortableConfigBundle
 		}
 	}
 
+	// Includes dormant slots beyond the current count and paused layouts.
+	private static IEnumerable<(string Path, JsonNode Action)> FixedRingActions(JsonObject layer)
+	{
+		if (!TryGetKnownProperty(layer, "FixedRings", out string menuName, out var menuNode) || menuNode is not JsonObject menu ||
+			!TryGetKnownProperty(menu, "Tiers", out string tiersName, out var tiersNode) || tiersNode is not JsonArray tiers)
+			yield break;
+		for (int t = 0; t < tiers.Count; t++)
+		{
+			if (tiers[t] is not JsonObject tier || !TryGetKnownProperty(tier, "Slots", out string slotsName, out var slotsNode) ||
+				slotsNode is not JsonArray slots) continue;
+			for (int i = 0; i < slots.Count; i++)
+			{
+				if (slots[i] is JsonObject slot && TryGetKnownProperty(slot, "Action", out string actionName, out var action) && action != null)
+					yield return ($".{menuName}.{tiersName}[{t}].{slotsName}[{i}].{actionName}", action);
+			}
+		}
+	}
+
 	private static List<string> CollectCustomIconKeys(JsonObject root)
 	{
 		var keys = new List<string>();
@@ -541,6 +559,7 @@ public static class PortableConfigBundle
 						{
 							AddAction(layerCenterActionNode);
 						}
+						foreach (var (_, action) in FixedRingActions(layer)) AddAction(action);
 					}
 				}
 			}
@@ -710,6 +729,7 @@ public static class PortableConfigBundle
 						{
 							AddAction(layerPath + "." + layerCenterActionPropertyName, layerCenterActionNode);
 						}
+						foreach (var (suffix, action) in FixedRingActions(layer)) AddAction(layerPath + suffix, action);
 					}
 				}
 			}

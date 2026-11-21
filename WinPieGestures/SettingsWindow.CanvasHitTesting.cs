@@ -20,6 +20,8 @@ public class CanvasHitItem
 	public int SlotIndex { get; set; }
 	public int? SubIndex { get; set; }
 	public ActionItem? Action { get; set; }
+	public int? FixedLevel { get; init; }
+	internal FixedRingMenu? FixedMenu { get; init; }
 }
 
 public partial class SettingsWindow
@@ -79,6 +81,7 @@ public partial class SettingsWindow
 	{
 		_isCtrlDragCopy = isCtrlDown;
 		CanvasHitItem? target = HitTestCanvasPoint(currentPos);
+		if (target != null && !CanDropOnFixedCanvas(target)) target = null;
 		_currentHoverDropTarget = target;
 
 		if (target == null)
@@ -97,7 +100,9 @@ public partial class SettingsWindow
 		if (MappingsCurrentEditIndicator != null)
 		{
 			string modePrefix = I18n.T(isCtrlDown ? "EditDragCopy" : "EditDragMove");
-			string targetDesc = target.IsCenter
+			string targetDesc = target.FixedLevel is >= 3
+				? I18n.TF("CanvasEditLevel", target.FixedLevel, (target.SlotIndex + 1).ToString("00"))
+				: target.IsCenter
 				? I18n.T("CenterCoreTitle")
 				: (target.IsSubAction ? I18n.TF("EditSubActionTarget", target.SlotIndex + 1, target.SubIndex + 1) : I18n.TF("EditSectorNumber", target.SlotIndex + 1));
 
@@ -110,7 +115,7 @@ public partial class SettingsWindow
 	{
 		if (MappingsWheelPreviewCanvas == null) return;
 
-		if (_dropHighlightOverlay == null)
+		if (_dropHighlightOverlay == null || !MappingsWheelPreviewCanvas.Children.Contains(_dropHighlightOverlay))
 		{
 			_dropHighlightOverlay = new System.Windows.Shapes.Path
 			{
@@ -154,7 +159,9 @@ public partial class SettingsWindow
 		if (_isCommittingDrag) return;
 		_isDraggingSlot = false;
 		_dragSourceSlotIndex = -999;
+		_canvasDragSource = null;
 		_mappingsDragStartPos = null;
+		_mappingsPanStartPoint = null;
 		HideCanvasDragOverlays();
 		if (MappingsPreviewViewportContainer != null && MappingsPreviewViewportContainer.IsMouseCaptured)
 		{
@@ -164,13 +171,24 @@ public partial class SettingsWindow
 		{
 			MappingsPreviewViewportContainer.Cursor = Cursors.Arrow;
 		}
-		UpdateActionBreadcrumb();
-		UpdateFocusEditorUi();
+		if (EditingOuterFixedSlot) RenderMappingsWheelPreview();
+		else
+		{
+			UpdateActionBreadcrumb();
+			UpdateFocusEditorUi();
+		}
 	}
 
 	public void ProcessCanvasDrop(WheelProfile profile, CanvasHitItem target, bool isCtrlDown)
 	{
 		if (profile == null || profile.Actions == null || target == null) return;
+		if (!CanDropOnFixedCanvas(target)) return;
+		if (target.FixedLevel != null && !ReferenceEquals(profile, _fixedProfile)) return;
+		if (target.FixedLevel is >= 3)
+		{
+			DropFixedSlot(profile, _canvasDragSource!, target, isCtrlDown);
+			return;
+		}
 
 		int sourceRaw = _dragSourceSlotIndex;
 		bool isSourceSub = sourceRaw <= -100;
@@ -182,8 +200,8 @@ public partial class SettingsWindow
 		if (isSourceSub)
 		{
 			int raw = -sourceRaw - 100;
-			int srcSlot = raw / 100;
-			int srcSubIdx = raw % 100;
+			int srcSlot = _canvasDragSource?.SlotIndex ?? raw / 100;
+			int srcSubIdx = _canvasDragSource?.SubIndex ?? raw % 100;
 
 			if (srcSlot < 0 || srcSlot >= profile.Actions.Count) return;
 			if (target.IsCenter) return; // 二级动作不能拖放至中心核心
@@ -386,7 +404,7 @@ public partial class SettingsWindow
 					{
 						profile.Actions[sectorSlot] = centerAction.Clone();
 						profile.Actions[sectorSlot].IsInherited = false;
-						profile.Actions[sectorSlot].SubActions = sectorAction.SubActions?.Select(action => action.Clone()).ToList() ?? new List<ActionItem>();
+						profile.Actions[sectorSlot].SubActions = sectorAction.SubActions ?? new List<ActionItem>();
 					}
 					else
 					{
@@ -418,11 +436,8 @@ public partial class SettingsWindow
 				var srcAfter = srcSlot == -1 ? CaptureCenterSnapshot(profile) : CaptureSectorSnapshot(profile, srcSlot);
 				var tgtAfter = tgtSlot == -1 ? CaptureCenterSnapshot(profile) : CaptureSectorSnapshot(profile, tgtSlot);
 
-				ActionAddress srcAddr = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, srcSlot, null, GetProfileInstanceId(profile), profile.GetActiveLayer());
-				ActionAddress tgtAddr = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, tgtSlot, null, GetProfileInstanceId(profile), profile.GetActiveLayer());
-				var tx = new CrossSectorTransaction(isCtrlDown ? "EditCopyToCenterOrSector" : "EditSwapCenterAndSector", srcAddr, tgtAddr, srcBefore, srcAfter, tgtBefore, tgtAfter);
-				_transactionHistory.Push(tx);
-				UpdateUndoRedoButtonStates();
+				RecordCrossSectorTransaction(isCtrlDown ? "EditCopyToCenterOrSector" : "EditSwapCenterAndSector",
+					srcSlot, srcBefore, srcAfter, tgtSlot, tgtBefore, tgtAfter);
 			}
 			else
 			{

@@ -670,9 +670,9 @@
           </Border>
 
           <!-- 底部版本与版权信息 (折叠态自动居中展示) -->
-          <StackPanel Name="SidebarFooterPanel" Margin="0,0,0,5" ToolTip="StarPie v2.0.1-beta.4&#x0a;© 2026 StarPie">
+          <StackPanel Name="SidebarFooterPanel" Margin="0,0,0,5" ToolTip="StarPie v2.0.1-beta.5&#x0a;© 2026 StarPie">
             <Border Name="SidebarVersionBadge" Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="4" Padding="6,3" HorizontalAlignment="Left" Margin="0,0,0,4">
-              <TextBlock Name="SidebarVersionText" Text="v2.0.1-beta.4" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" />
+              <TextBlock Name="SidebarVersionText" Text="v2.0.1-beta.5" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" />
             </Border>
             <TextBlock Name="SidebarCopyrightText" Text="© 2026 StarPie" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
           </StackPanel>
@@ -863,11 +863,11 @@
                   </StackPanel>
                   <StackPanel Name="SubWheelTriggerDistancePanel" Margin="0,10,0,0">
                     <Grid Margin="0,0,0,4">
-                      <TextBlock Name="SubWheelTriggerDistLabel" Text="二级轮盘展开触发距离:" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <TextBlock Name="SubWheelTriggerDistLabel" Text="轮盘逐级展开距离" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
                       <TextBlock Name="SubWheelTriggerDistanceValueText" Text="141 px" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" />
                     </Grid>
                     <Slider Name="SubWheelTriggerDistanceSlider" Minimum="30" Maximum="260" SmallChange="1" LargeChange="5" Value="141" ValueChanged="SubWheelTriggerDistanceSlider_ValueChanged" />
-                    <TextBlock Name="SubWheelTriggerDistDesc" Text="调节光标划出距离中心多远时展开二级级联菜单。数值较小时轻划即可展开，数值较大时需向外划出更远距离才展开二级，防止快速触发一级动作时产生视觉干扰。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                    <TextBlock Name="SubWheelTriggerDistDesc" Text="二级菜单和三级至五级固定圈共用此距离。减小后更早展开，增大后需要向外划得更远。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                   </StackPanel>
                   <Border Name="Tab0_VolumeDragCardBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,8,0,0" SnapsToDevicePixels="True" UseLayoutRounding="True">
                     <StackPanel>
@@ -2617,6 +2617,15 @@
                     </ComboBox>
                   </WrapPanel>
                 </Border>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6,2,0,2">
+                  <TextBlock Name="MenuDepthCaption" Margin="0,0,4,0" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <ComboBox Name="MenuDepthPicker" Width="56" Height="26" Style="{StaticResource FlatComboBoxStyle}" SelectionChanged="MenuDepthPicker_Changed">
+                    <ComboBoxItem Content="2" /><ComboBoxItem Content="3" /><ComboBoxItem Content="4" /><ComboBoxItem Content="5" />
+                  </ComboBox>
+                  <Button Name="FixedLayoutToggle" Margin="6,0,0,0" Height="26" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="FixedLayoutToggle_Click" />
+                  <Button Name="FixedOpenCanvas" Visibility="Collapsed" Margin="6,0,0,0" Height="26" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="FixedOpenCanvas_Click" />
+                  <Button Name="EditMenuBranchButton" Margin="6,0,0,0" Height="26" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="FocusEditMenuBranch_Click" />
+                </StackPanel>
               </WrapPanel>
 
               <TextBlock Name="GesturesPageSubheader" Text="支持针对不同前台应用程序设置专属的多向手势轮盘、按键动作、中心核圆与级联子动作。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
@@ -2818,6 +2827,51 @@
                   </Grid>
                 </Border>
 
+                <Border Name="FixedControlsCard" Visibility="Collapsed" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <WrapPanel VerticalAlignment="Center">
+                      <TextBlock Name="FixedLevelLabel" VerticalAlignment="Center" Margin="0,0,6,6" Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <ComboBox Name="FixedLevel" Width="54" Margin="0,0,14,6" Style="{StaticResource FlatComboBoxStyle}" SelectionChanged="FixedLevel_Changed" />
+                      <TextBlock Name="FixedCountLabel" VerticalAlignment="Center" Margin="0,0,6,6" Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <ComboBox Name="FixedCount" MinWidth="65" Margin="0,0,0,6" Style="{StaticResource FlatComboBoxStyle}" SelectionChanged="FixedCount_Changed" />
+                    </WrapPanel>
+                    <TextBlock Name="FixedOccupancy" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" />
+                    <TextBlock Name="FixedDisplayLabel" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,3" />
+                    <ComboBox Name="FixedDisplay" Style="{StaticResource FlatComboBoxStyle}" SelectionChanged="FixedDisplay_Changed" />
+                    <WrapPanel Margin="0,8,0,0">
+                      <Button Name="FixedBack" Style="{StaticResource ModernButtonStyle}" Click="FixedBack_Click" Margin="0,0,5,0" />
+                      <Button Name="FixedUndo" Style="{StaticResource ModernButtonStyle}" Click="FocusUndoSubActionsBtn_Click" Margin="0,0,5,0" />
+                      <Button Name="FixedRedo" Style="{StaticResource ModernButtonStyle}" Click="FocusRedoSubActionsBtn_Click" />
+                    </WrapPanel>
+                  </StackPanel>
+                </Border>
+                <Border Name="FixedSlotCard" Visibility="Collapsed" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Name="FixedTitle" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <TextBlock Name="FixedParentLabel" Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <ComboBox Name="FixedParent" Style="{StaticResource FlatComboBoxStyle}" Margin="0,3,0,8" DisplayMemberPath="Caption" SelectedValuePath="Index" SelectionChanged="FixedParent_Changed" />
+                    <local:CanvasMenuActionEditor x:Name="FixedEditor" />
+                    <WrapPanel Margin="0,8,0,0">
+                      <Button Name="FixedApply" Style="{StaticResource PrimaryButtonStyle}" Click="FixedApply_Click" Margin="0,0,5,4" />
+                      <Button Name="FixedNext" Style="{StaticResource ModernButtonStyle}" Click="FixedNext_Click" Margin="0,0,5,4" />
+                      <Button Name="FixedClear" Style="{StaticResource ModernButtonStyle}" Click="FixedClear_Click" Margin="0,0,5,4" />
+                    </WrapPanel>
+                  </StackPanel>
+                </Border>
+                <Border Name="DeepCanvasEditorCard" Visibility="Collapsed" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Name="DeepCanvasTitle" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
+                    <WrapPanel Margin="0,0,0,8">
+                      <Button Name="DeepEnter" Style="{StaticResource ModernButtonStyle}" Click="EnterSelectedDeepBranch_Click" Margin="0,0,5,3" />
+                      <Button Name="DeepEarlier" Style="{StaticResource ModernButtonStyle}" Click="MoveDeepSelection_Click" Margin="0,0,5,3" />
+                      <Button Name="DeepLater" Style="{StaticResource ModernButtonStyle}" Click="MoveDeepSelection_Click" Margin="0,0,5,3" />
+                      <Button Name="DeepDelete" Style="{StaticResource ModernButtonStyle}" Click="DeleteDeepSelection_Click" Margin="0,0,5,3" />
+                      <Button Name="DeepUndo" Style="{StaticResource ModernButtonStyle}" Click="FocusUndoSubActionsBtn_Click" Margin="0,0,5,3" />
+                      <Button Name="DeepRedo" Style="{StaticResource ModernButtonStyle}" Click="FocusRedoSubActionsBtn_Click" Margin="0,0,5,3" />
+                    </WrapPanel>
+                    <local:CanvasMenuActionEditor x:Name="DeepCanvasEditor" />
+                  </StackPanel>
+                </Border>
                 <!-- 卡片 2：动作聚焦精调卡片 (Focus Editor Card) -->
                 <Border Name="FocusActionEditorBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
@@ -3555,8 +3609,9 @@
                   </Grid>
                   <TextBlock x:Name="MappingsCanvasInstructionsText" Text="💡 点击内圈选一级扇区，点击外环选二级动作，点击中心选核圆；按住拖动可对调功能位置！" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
 
+                  <WrapPanel Name="DeepCanvasBreadcrumb" Visibility="Collapsed" Margin="0,0,0,4" />
                   <!-- 一二级轮盘预览分段切换 -->
-                  <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="3">
+                  <Border Name="CanvasTierSelector" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="3">
                     <Grid>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -3571,7 +3626,7 @@
                 <!-- 画布视口容器 (支持平移、缩放与扇区/中心圆拖拽交互) -->
                 <Border Grid.Row="1" Background="{DynamicResource PreviewCanvasBackgroundBrush}" BorderBrush="{DynamicResource PreviewCanvasBorderBrush}" BorderThickness="1" CornerRadius="10" ClipToBounds="True" Margin="0,2,0,8">
                   <Grid>
-                    <Grid Name="MappingsPreviewViewportContainer" ClipToBounds="True" Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" MouseWheel="MappingsPreviewViewport_MouseWheel" PreviewMouseDown="MappingsPreviewViewport_MouseDown" PreviewMouseMove="MappingsPreviewViewport_MouseMove" PreviewMouseUp="MappingsPreviewViewport_MouseUp">
+                    <Grid Name="MappingsPreviewViewportContainer" SizeChanged="MappingsPreviewViewport_SizeChanged" ClipToBounds="True" Background="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality" MouseWheel="MappingsPreviewViewport_MouseWheel" PreviewMouseDown="MappingsPreviewViewport_MouseDown" PreviewMouseMove="MappingsPreviewViewport_MouseMove" PreviewMouseUp="MappingsPreviewViewport_MouseUp">
                       <Path Stroke="{DynamicResource PreviewGridLineBrush}" StrokeThickness="0.5" Data="M0,150 L300,150 M150,0 L150,300" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
                       <Canvas Name="MappingsWheelPreviewCanvas" Width="300" Height="300" HorizontalAlignment="Center" VerticalAlignment="Center" UseLayoutRounding="False" SnapsToDevicePixels="False" TextOptions.TextFormattingMode="Ideal" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled" RenderOptions.BitmapScalingMode="HighQuality">
                         <Canvas.Resources>
@@ -4562,7 +4617,7 @@
                     <StackPanel Orientation="Horizontal">
                       <TextBlock Text="StarPie" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" />
                       <Border Background="{DynamicResource NavTabActiveBgBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Name="AboutVersionBadgeText" Text="v2.0.1-beta.4" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
+                        <TextBlock Name="AboutVersionBadgeText" Text="v2.0.1-beta.5" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                       </Border>
                     </StackPanel>
                     <TextBlock Name="Tab4_AppSloganText" Text="高质感、极速现代 Windows 鼠标轮盘笔势工具" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
@@ -4592,7 +4647,7 @@
                           <TextBlock Name="UpdateStatusBadgeText" Text="已是最新版本" FontWeight="Bold" Foreground="{DynamicResource AccentPrimaryBrush}" FontSize="11" />
                         </Border>
                       </StackPanel>
-                      <TextBlock Name="UpdateStatusDescText" Text="当前运行版本: StarPie v2.0.1-beta.4 (64位)。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
+                      <TextBlock Name="UpdateStatusDescText" Text="当前运行版本: StarPie v2.0.1-beta.5 (64位)。" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                       <Button Name="CheckUpdateNowBtn" Content="🔄 立即检查更新" Style="{StaticResource ModernButtonStyle}" Height="34" Padding="14,0" Margin="0,0,8,0" VerticalAlignment="Center" Click="CheckUpdateNowBtn_Click" />

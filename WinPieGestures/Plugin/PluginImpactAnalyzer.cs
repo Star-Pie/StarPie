@@ -43,6 +43,8 @@ internal static class PluginImpactAnalyzer
                 if (layer.Actions != null)
                     foreach (ActionItem action in layer.Actions) CountOne(action);
                 CountOne(layer.CenterAction);
+                if (layer.FixedRings != null)
+                    foreach (ActionItem action in layer.FixedRings.StoredActions()) CountOne(action);
             }
         }
 

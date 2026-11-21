@@ -289,8 +289,8 @@ public partial class RadialWindow : Window
 			ScreenContext screenCtx = ScreenHelper.GetScreenContextAtPoint(_centerPoint);
 			double scaleX = screenCtx.DpiScale.DpiScaleX;
 			double scaleY = screenCtx.DpiScale.DpiScaleY;
-			int physicalWidth = (int)Math.Round(_wheelCanvasSize * scaleX);
-			int physicalHeight = (int)Math.Round(_wheelCanvasSize * scaleY);
+			int physicalWidth = (int)Math.Round(NativeCanvasSize * scaleX);
+			int physicalHeight = (int)Math.Round(NativeCanvasSize * scaleY);
 			int physicalLeft = (int)Math.Round(_centerPoint.X - physicalWidth / 2.0);
 			int physicalTop = (int)Math.Round(_centerPoint.Y - physicalHeight / 2.0);
 			SetWindowPos(handle, IntPtr.Zero, physicalLeft, physicalTop, physicalWidth, physicalHeight, SWP_NOACTIVATE | SWP_NOZORDER);
@@ -628,7 +628,7 @@ public partial class RadialWindow : Window
 
 	private bool _isDisposed;
 
-	private static Point ComputeClampedPhysicalCenter(Point centerPoint, double canvasSize)
+	private static Point ComputeClampedPhysicalCenter(Point centerPoint, double? fixedRadius)
 	{
 		if (ConfigManager.CurrentConfig?.EnableEdgeCollisionAvoidance != true)
 		{
@@ -654,7 +654,7 @@ public partial class RadialWindow : Window
 		double subMaxR = (ConfigManager.CurrentConfig?.SubWheelOuterRadius > 0.0)
 			? ConfigManager.CurrentConfig.SubWheelOuterRadius
 			: (wheelRadius * ratio);
-		double visualRadiusDip = enableMultiTier ? Math.Max(wheelRadius, subMaxR) : wheelRadius;
+		double visualRadiusDip = fixedRadius ?? (enableMultiTier ? Math.Max(wheelRadius, subMaxR) : wheelRadius);
 
 		double visualRadiusPxX = visualRadiusDip * scaleX;
 		double visualRadiusPxY = visualRadiusDip * scaleY;
@@ -777,6 +777,9 @@ public partial class RadialWindow : Window
 			throw new InvalidOperationException("Cannot present a disposed RadialWindow.");
 		}
 
+		ClearDeepMenu();
+		ClearFixedRings();
+
 		bool needsRebuild = !_hasRenderedContent ||
 			_renderedConfigurationRevision != configurationRevision ||
 			!ReferenceEquals(_renderedProfile, profile) ||
@@ -800,9 +803,7 @@ public partial class RadialWindow : Window
 			ApplyLayoutFromCurrentConfiguration(centerPoint);
 		}
 
-		if (ConfigManager.CurrentConfig.EnableMultiTier &&
-			ConfigManager.CurrentConfig.SubmenuStyle == "Wheel" &&
-			ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup)
+		if (ExpandSecondariesOnPopup)
 		{
 			ShowAllSubTiers();
 		}
@@ -938,6 +939,8 @@ public partial class RadialWindow : Window
 		{
 			return;
 		}
+		ClearDeepMenu();
+		ClearFixedRings();
 		_isPresented = false;
 		PresentationVersion = -1;
 		StopPresentationAnimations();
@@ -964,23 +967,25 @@ public partial class RadialWindow : Window
 		double subMaxR = ConfigManager.CurrentConfig.SubWheelOuterRadius > 0.0
 			? ConfigManager.CurrentConfig.SubWheelOuterRadius
 			: wheelRadius * ratio;
-		double maxEffectiveR = enableMultiTier ? Math.Max(wheelRadius, subMaxR + 25.0) : wheelRadius;
+		double? fixedRadius = PrepareFixedLayout(requestedCenter);
+        double maxEffectiveR = enableMultiTier ? Math.Max(wheelRadius, subMaxR + 25.0) : wheelRadius;
 		_wheelCanvasSize = maxEffectiveR * 2.0 + 40.0;
 		_canvasCenter = _wheelCanvasSize / 2.0;
+        _deepWindowSize = fixedRadius.HasValue ? Math.Max(_wheelCanvasSize, fixedRadius.Value * 2 + 40) : 0;
 
 		// An enabled edge policy also applies to pinned sessions; rendering and hit testing share this center.
-		_centerPoint = ComputeClampedPhysicalCenter(requestedCenter, _wheelCanvasSize);
+		_centerPoint = ComputeClampedPhysicalCenter(requestedCenter, fixedRadius);
 		ActualPhysicalCenter = _centerPoint;
 		ScreenContext screenCtx = ScreenHelper.GetScreenContextAtPoint(_centerPoint);
 		double scaleX = Math.Max(0.1, screenCtx.DpiScale.DpiScaleX);
 		double scaleY = Math.Max(0.1, screenCtx.DpiScale.DpiScaleY);
 		WindowStartupLocation = WindowStartupLocation.Manual;
-		Left = _centerPoint.X / scaleX - _wheelCanvasSize / 2.0;
-		Top = _centerPoint.Y / scaleY - _wheelCanvasSize / 2.0;
-		Width = _wheelCanvasSize;
-		Height = _wheelCanvasSize;
-		MainGrid.Width = _wheelCanvasSize;
-		MainGrid.Height = _wheelCanvasSize;
+		Left = _centerPoint.X / scaleX - NativeCanvasSize / 2.0;
+		Top = _centerPoint.Y / scaleY - NativeCanvasSize / 2.0;
+		Width = NativeCanvasSize;
+		Height = NativeCanvasSize;
+		MainGrid.Width = NativeCanvasSize;
+		MainGrid.Height = NativeCanvasSize;
 		WheelCanvas.Width = _wheelCanvasSize;
 		WheelCanvas.Height = _wheelCanvasSize;
 
@@ -1386,8 +1391,16 @@ public partial class RadialWindow : Window
 			return;
 		}
 
-		if (onIntroCompleted == null)
-		{
+		if (FixedGeometry != null)
+        {
+            // Fixed-ring hit tests use their displayed, resting coordinates throughout the opacity transition.
+            WindowScale.ScaleX = WindowScale.ScaleY = 1;
+            MainGrid.BeginAnimation(UIElement.OpacityProperty, _introOpacityAnimation);
+            onIntroCompleted?.Invoke();
+            return;
+        }
+        if (onIntroCompleted == null)
+        {
 			WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, _introScaleAnimation);
 		}
 		else
@@ -1723,8 +1736,23 @@ public partial class RadialWindow : Window
 
 		_profile.ActiveLayerIndex = layerIndex;
 		_profile.SyncRootPropertiesFromActiveLayer();
+		RenderSelectedLayer(layerIndex);
+	}
 
-		ClearSubTier();
+	internal void RenderSelectedLayer(int layerIndex)
+	{
+		if (_profile == null || _profile.ActiveLayerIndex != layerIndex || (uint)layerIndex >= (uint)_profile.Layers.Count) return;
+		bool previousFixed = FixedGeometry != null;
+		ClearDeepMenu();
+		ClearFixedRings();
+        if (previousFixed || (_fixedGestureLayout && GestureController.CaptureReleaseLayer(_profile)?.ActiveFixedRings != null))
+        {
+            ApplyLayoutFromCurrentConfiguration(_centerPoint);
+            RenderStyleDecorations();
+            PositionWindowOnTargetMonitor();
+        }
+
+        ClearSubTier();
 		_subTierCache.Clear();
 
 		_currentHighlightedSector = -999;
@@ -1735,9 +1763,7 @@ public partial class RadialWindow : Window
 		UpdateCenterIconVisuals();
 		_renderedLayerIndex = layerIndex;
 
-		if (ConfigManager.CurrentConfig.EnableMultiTier &&
-			ConfigManager.CurrentConfig.SubmenuStyle == "Wheel" &&
-			ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup)
+		if (ExpandSecondariesOnPopup)
 		{
 			ShowAllSubTiers();
 		}
@@ -2813,7 +2839,7 @@ public partial class RadialWindow : Window
 	private void ShowAllSubTiers()
 	{
 		ClearSubTier();
-		if (!ConfigManager.CurrentConfig.EnableMultiTier || ConfigManager.CurrentConfig.SubmenuStyle != "Wheel" || _profile == null)
+		if (!ExpandSecondariesOnPopup || _profile == null)
 		{
 			return;
 		}
@@ -2826,7 +2852,8 @@ public partial class RadialWindow : Window
 			if (actionItem != null && actionItem.SubActions != null && actionItem.SubActions.Count > 0)
 			{
 				int snapshotStart = _subSectorPaths.Count;
-				RenderWheelSubTierForSector(p, animateEntrance: false);
+				if (ConfigManager.CurrentConfig.SubmenuStyle == "Fan") RenderFanCells(p, actionItem, animateEntrance: false);
+				else RenderWheelSubTierForSector(p, animateEntrance: false);
 				_subTierCache[p] = SnapshotSubTierVisuals(snapshotStart);
 			}
 		}
@@ -3036,6 +3063,8 @@ public partial class RadialWindow : Window
 			double num5 = ((i < _subSectorAngles.Count) ? _subSectorAngles[i] : 0.0);
 			TextBlock textBlock3 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBlock>().FirstOrDefault();
 			System.Windows.Shapes.Path path6 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
+			// Keep the hit order and silhouettes stable when adjacent Fan parents overlap.
+			bool stationaryFan = _allSubTiersActive && ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
 			bool isHighlighted = _allSubTiersActive
 				? (i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count &&
 				   _subSectorParentIndices[i] == mainIndex && _subSectorChildIndices[i] == subIndex && subIndex >= 0)
@@ -3045,7 +3074,7 @@ public partial class RadialWindow : Window
 				path5.Fill = _subHighlightSectorBrush;
 				path5.Stroke = _subHighlightBorderBrush;
 				path5.StrokeThickness = _highlightBorderThickness;
-				Panel.SetZIndex(path5, 18);
+				Panel.SetZIndex(path5, stationaryFan ? 15 : 18);
 				ApplySubSectorGlow(path5, isHighlighted: true);
 				if (textBlock3 != null)
 				{
@@ -3058,7 +3087,7 @@ public partial class RadialWindow : Window
 				}
 				double toValue4 = Math.Cos(num5) * 4.0;
 				double toValue5 = Math.Sin(num5) * 4.0;
-				if (translateTransform5 != null)
+				if (!stationaryFan && translateTransform5 != null)
 				{
 					translateTransform5.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(translateTransform5.X, toValue4, duration)
 					{
@@ -3069,7 +3098,7 @@ public partial class RadialWindow : Window
 						EasingFunction = easingFunction
 					});
 				}
-				if (translateTransform6 != null)
+				if (!stationaryFan && translateTransform6 != null)
 				{
 					translateTransform6.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(translateTransform6.X, toValue4, duration)
 					{
@@ -3501,6 +3530,13 @@ public partial class RadialWindow : Window
 			ActivateCachedSubTier(parentIndex, cachedVisuals);
 			return;
 		}
+		_activeSubTierParentSector = parentIndex;
+		RenderFanCells(parentIndex, actionItem, animateEntrance: true);
+		_subTierCache[parentIndex] = SnapshotSubTierVisuals(snapshotStart);
+	}
+
+	private void RenderFanCells(int parentIndex, ActionItem actionItem, bool animateEntrance)
+	{
 		int sectorCount = _profile.SectorCount;
 		double sectorSize = 360.0 / (double)sectorCount;
 		double cx = _canvasCenter;
@@ -3529,7 +3565,6 @@ public partial class RadialWindow : Window
 		int subCount = subActions.Count;
 		int activeCount = Math.Min(FanSubmenuSlotCount, subCount);
 		bool isCompactSector = string.Equals(shape, "Original", StringComparison.OrdinalIgnoreCase);
-		_activeSubTierParentSector = parentIndex;
 
 		for (int j = 0; j < activeCount; j++)
 		{
@@ -3563,6 +3598,8 @@ public partial class RadialWindow : Window
 			_subSectorPaths.Add(path);
 			_subSectorTransforms.Add(translateTransform);
 			_subSectorAngles.Add(midRad);
+			_subSectorParentIndices.Add(parentIndex);
+			_subSectorChildIndices.Add(j);
 
 			double reqHoneyH = (layoutMode != "TextOnly" ? num7 : 0.0) + fontSize * 2.6 + 10.0;
 			double containerW = Math.Max(itemR * 2.2, fontSize * 5.5);
@@ -3820,6 +3857,12 @@ public partial class RadialWindow : Window
             _subContentContainers.Add(grid);
 			_subContainerTransforms.Add(translateTransform2);
 
+			if (!animateEntrance)
+			{
+				path.Opacity = grid.Opacity = 1;
+				scaleTransform.ScaleX = scaleTransform.ScaleY = scaleTransform2.ScaleX = scaleTransform2.ScaleY = 1;
+				continue;
+			}
 			int durationMs = (ConfigManager.CurrentConfig?.AnimationSpeed == "Custom" && ConfigManager.CurrentConfig.CustomAnimationDurationMs > 0) 
 				? (int)ConfigManager.CurrentConfig.CustomAnimationDurationMs 
 				: (ConfigManager.CurrentConfig?.AnimationSpeed switch
@@ -3844,7 +3887,6 @@ public partial class RadialWindow : Window
 			scaleTransform2.BeginAnimation(ScaleTransform.ScaleXProperty, doubleAnimation2);
 			scaleTransform2.BeginAnimation(ScaleTransform.ScaleYProperty, doubleAnimation2);
 		}
-		_subTierCache[parentIndex] = SnapshotSubTierVisuals(snapshotStart);
 	}
 
 	/// <summary>

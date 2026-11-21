@@ -920,6 +920,12 @@ public static class IconHelper
 								CollectPinnedIconPaths(layer.Actions, requiredPaths);
 							}
 							CollectPinnedIconPath(layer.CenterAction, requiredPaths);
+							if (layer.ActiveFixedRings is { } rings)
+							{
+								for (int level = 3; level <= layer.EffectiveMaxMenuDepth; level++)
+									for (int index = 0; index < rings.GetCount(level); index++)
+										CollectPinnedIconPath(rings.GetSlot(level, index)?.Action, requiredPaths);
+							}
 						}
 					}
 				}
@@ -1008,6 +1014,39 @@ public static class IconHelper
 			{
 				PersistIconSnapshot(cleanPath, icon);
 			}
+		}
+	}
+
+	// Menu presentation can use prepared icons but must not enumerate files or ask Shell for an icon.
+	internal static (string? SvgPath, ImageSource? Image) GetCachedActionIcon(ActionItem item)
+	{
+		if (!string.IsNullOrWhiteSpace(item.CustomIconSvg)) return (item.CustomIconSvg, null);
+		if (CachedImage(item.InheritAppIconPath) is { } inherited) return (null, inherited);
+		string key = item.IconKey ?? "";
+		if (key.Length > 0)
+		{
+			if (IconMap.TryGetValue(key, out var svg)) return (svg, null);
+			if (key.StartsWith(StarPie.Plugin.PluginApi.IconKeyPrefix, StringComparison.OrdinalIgnoreCase) &&
+				Plugins.PluginHost.Catalog.ResolveIcon(key) is { Length: > 0 } pluginSvg) return (pluginSvg, null);
+			if (key.TrimStart().StartsWith("M", StringComparison.OrdinalIgnoreCase) && key.Contains(',')) return (key.Trim(), null);
+			var custom = _cachedCustomIcons?.FirstOrDefault(icon => string.Equals(icon.Key, key, StringComparison.OrdinalIgnoreCase) ||
+				string.Equals(icon.DisplayName, key, StringComparison.OrdinalIgnoreCase));
+			if (custom != null)
+			{
+				if (custom.IsSvg) return (custom.SvgData, null);
+				// Wheel and settings previews request the same asset at these two sizes.
+				var image = CachedImage("custom_img:256:" + custom.FilePath) ?? CachedImage("custom_img:64:" + custom.FilePath);
+				if (image != null) return (null, image);
+			}
+		}
+		return (null, item.Type is "Launch" or "App" ? CachedImage(item.Parameter) : null);
+
+		static BitmapSource? CachedImage(string? path)
+		{
+			if (string.IsNullOrWhiteSpace(path)) return null;
+			string key = path.Trim().Trim('"');
+			return (_pinnedIcons.TryGetValue(key, out var icon) || _dynamicIcons.TryGetValue(key, out icon)) &&
+				icon.IsFrozen ? icon : null;
 		}
 	}
 

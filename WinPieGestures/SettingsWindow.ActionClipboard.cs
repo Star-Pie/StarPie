@@ -317,7 +317,7 @@ public partial class SettingsWindow
 			else
 			{
 				// 单动作粘贴：明确保留目标原有的二级子动作列表
-				newSlot.SubActions = targetSubs != null ? targetSubs.Select(s => s.Clone()).ToList() : new List<ActionItem>();
+				newSlot.SubActions = targetSubs ?? new List<ActionItem>();
 			}
 
 			profile.Actions[_selectedSlotIndex] = newSlot;

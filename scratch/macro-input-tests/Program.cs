@@ -128,7 +128,7 @@ internal static class Program
             });
             Run("empty hotkey produces no input", () => { ActionExecutor.ExecuteHotkey(""); Require(Events.Count == 0, "empty input emitted events"); });
             Run("cancelled empty wheel does not clean up unrelated keys", () => CheckWheelCleanup("CancelGestureTracking", new object[] { "TestCancelled" }));
-            Run("ending empty wheel does not clean up unrelated keys", () => CheckWheelCleanup("EndActiveGesture", Array.Empty<object>()));
+            Run("ending empty wheel does not clean up unrelated keys", () => CheckWheelCleanup("EndActiveGesture", new object[] { Type.Missing }));
         }
         finally { ActionExecutor.ResetTestSeams(); app.Shutdown(); }
         Console.WriteLine($"RESULT: {_passed} passed, {_failed} failed; all senders fake; no product windows or hooks.");

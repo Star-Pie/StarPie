@@ -342,13 +342,15 @@ public static class ConfigManager
 			{
 				foreach (var layer in profile.Layers)
 				{
-					if (layer != null) CleanActionsBase64(layer.Actions);
+					if (layer == null) continue;
+					CleanActionsBase64(layer.Actions);
+					if (layer.FixedRings != null) CleanActionsBase64(layer.FixedRings.StoredActions());
 				}
 			}
 		}
 	}
 
-	private static void CleanActionsBase64(List<ActionItem>? actions)
+	private static void CleanActionsBase64(IEnumerable<ActionItem>? actions)
 	{
 		if (actions == null) return;
 		foreach (var a in actions)

@@ -24,7 +24,7 @@ internal static class Program
             _candidate = Path.GetFullPath(args.Single());
             string expected = Hash(Path.Combine(_candidate, "StarPie.dll"));
             Check(Hash(typeof(App).Assembly.Location) == expected, "loaded host matches exact candidate DLL");
-            Check(AppVersionInfo.DisplayVersion == "2.0.1-beta.4", "candidate is beta.4");
+            Check(AppVersionInfo.DisplayVersion == "2.0.1-beta.5", "candidate is beta.5");
             _root = Path.Combine(AppContext.BaseDirectory, "run ' unicode 测试 " + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(Path.Combine(_root, "temp"));
             Environment.SetEnvironmentVariable("TEMP", Path.Combine(_root, "temp"));

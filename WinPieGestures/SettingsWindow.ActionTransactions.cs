@@ -47,6 +47,7 @@ public sealed class ActionSnapshot
 {
 	public ActionItem? Action { get; }
 	public List<ActionItem>? SubActions { get; }
+	internal object?[]? ChildIdentities { get; init; }
 	public bool IsInherited { get; }
 
 	public ActionSnapshot(ActionItem? action, bool isInherited = false)
@@ -418,7 +419,7 @@ public partial class SettingsWindow
 		{
 			ActionItem action = profile.Actions[slotIndex];
 			bool isInherited = action.IsInherited || !WheelProfile.IsActionConfigured(action);
-			return new ActionSnapshot(action, action.SubActions, isInherited);
+			return new ActionSnapshot(action, action.SubActions, isInherited) { ChildIdentities = CaptureChildIdentities(profile, slotIndex) };
 		}
 
 		return new ActionSnapshot(null);
@@ -444,11 +445,12 @@ public partial class SettingsWindow
 	internal void RecordSingleSectorTransaction(WheelProfile profile, int slotIndex, string description, ActionSnapshot before, ActionSnapshot after)
 	{
 		if (profile == null) return;
-		if (AreSnapshotsEquivalent(before, after)) return;
 
 		ActionAddress addr = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, slotIndex, _selectedSubActionIndex, GetProfileInstanceId(profile), profile.GetActiveLayer());
 		var tx = new SingleSectorTransaction(description, addr, before, after);
-		_transactionHistory.Push(tx);
+		var edit = FollowSecondaryParents(tx, (slotIndex, before, after));
+		if (ReferenceEquals(edit, tx) && AreSnapshotsEquivalent(before, after)) return;
+		_transactionHistory.Push(edit);
 		UpdateUndoRedoButtonStates();
 	}
 
@@ -469,16 +471,13 @@ public partial class SettingsWindow
 		WheelProfile? profile = GetSelectedProfile();
 		if (profile == null) return;
 
-		if (AreSnapshotsEquivalent(srcBefore, srcAfter) && AreSnapshotsEquivalent(tgtBefore, tgtAfter))
-		{
-			return;
-		}
-
 		ActionAddress srcAddr = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, srcSlot, null, GetProfileInstanceId(profile), profile.GetActiveLayer());
 		ActionAddress tgtAddr = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, tgtSlot, null, GetProfileInstanceId(profile), profile.GetActiveLayer());
 
 		var tx = new CrossSectorTransaction(description, srcAddr, tgtAddr, srcBefore, srcAfter, tgtBefore, tgtAfter);
-		_transactionHistory.Push(tx);
+		var edit = FollowSecondaryParents(tx, (srcSlot, srcBefore, srcAfter), (tgtSlot, tgtBefore, tgtAfter));
+		if (ReferenceEquals(edit, tx) && AreSnapshotsEquivalent(srcBefore, srcAfter) && AreSnapshotsEquivalent(tgtBefore, tgtAfter)) return;
+		_transactionHistory.Push(edit);
 		UpdateUndoRedoButtonStates();
 	}
 
@@ -496,17 +495,18 @@ public partial class SettingsWindow
 			return;
 		}
 
-		if (AreSnapshotsEquivalent(_focusEditStartSnapshot, current)) return;
 
 		ActionAddress addr = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, slotIndex, subIndex, GetProfileInstanceId(profile), profile.GetActiveLayer());
 		var tx = new SingleSectorTransaction(description, addr, _focusEditStartSnapshot, current);
+		var edit = FollowSecondaryParents(tx, (slotIndex, _focusEditStartSnapshot, current));
+		if (ReferenceEquals(edit, tx) && AreSnapshotsEquivalent(_focusEditStartSnapshot, current)) return;
 		if (coalesce)
 		{
-			_transactionHistory.PushOrCoalesce(tx);
+			_transactionHistory.PushOrCoalesce(edit);
 		}
 		else
 		{
-			_transactionHistory.Push(tx);
+			_transactionHistory.Push(edit);
 		}
 		UpdateUndoRedoButtonStates();
 		_focusEditStartSnapshot = current;
@@ -561,7 +561,7 @@ public partial class SettingsWindow
 		if (a == null && b == null) return true;
 		if (a == null || b == null) return false;
 
-		if (a.Name != b.Name ||
+		if (a.OverrideGlobalMenu != b.OverrideGlobalMenu || a.Name != b.Name ||
 		    a.Type != b.Type ||
 		    a.Parameter != b.Parameter ||
 		    a.Arguments != b.Arguments ||
@@ -572,6 +572,7 @@ public partial class SettingsWindow
 		    a.BrowserPath != b.BrowserPath ||
 		    a.InheritAppIconPath != b.InheritAppIconPath ||
 		    a.RunAsStandardUser != b.RunAsStandardUser ||
+		    a.LaunchOnCursorMonitor != b.LaunchOnCursorMonitor ||
 		    a.LayoutMode != b.LayoutMode ||
 		    a.CustomTextColor != b.CustomTextColor ||
 		    a.CustomFontFamily != b.CustomFontFamily ||
@@ -624,13 +625,14 @@ public partial class SettingsWindow
 			}
 		}
 
-		return true;
+		return MenuChildrenEqual(a.SubActions, b.SubActions);
 	}
 
 	public void ExecuteUndo()
 	{
 		if (_transactionHistory.Undo(this))
 		{
+			UpdateUndoRedoButtonStates();
 			if (MappingsCurrentEditIndicator != null)
 			{
 				MappingsCurrentEditIndicator.Text = I18n.T("EditUndoApplied");
@@ -643,6 +645,7 @@ public partial class SettingsWindow
 	{
 		if (_transactionHistory.Redo(this))
 		{
+			UpdateUndoRedoButtonStates();
 			if (MappingsCurrentEditIndicator != null)
 			{
 				MappingsCurrentEditIndicator.Text = I18n.T("EditRedoApplied");
@@ -659,6 +662,10 @@ public partial class SettingsWindow
 
 		bool canUndo = _transactionHistory.CanUndo(profile, layer);
 		bool canRedo = _transactionHistory.CanRedo(profile, layer);
+		if (FixedUndo != null) FixedUndo.IsEnabled = canUndo;
+		if (FixedRedo != null) FixedRedo.IsEnabled = canRedo;
+		if (DeepUndo != null) DeepUndo.IsEnabled = canUndo;
+		if (DeepRedo != null) DeepRedo.IsEnabled = canRedo;
 
 		if (FocusUndoSubActionsBtn != null)
 		{

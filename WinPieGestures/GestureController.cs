@@ -44,6 +44,7 @@ public partial class GestureController : IDisposable
 	internal Func<Action, TimeSpan, IDisposable>? LongPressTimerFactoryOverride { get; set; }
 	internal Func<Point, WheelProfile, long, WheelFocusSession?, bool>? LongPressPresentationOverride { get; set; }
 	internal Func<Point>? LongPressPointerOverride { get; set; }
+	internal Func<Point?>? KeyboardReleasePointerOverride { get; set; }
 
 	private int _longPressGeneration;
 
@@ -323,6 +324,7 @@ public partial class GestureController : IDisposable
 		_keyboardPanelTargetPid = 0;
 		lock (_uiUpdateSync)
 		{
+			ResetDeepNavigation(clearRoots: true);
 			_gestureVersion++;
 			_highlightUpdateScheduled = false;
 			_pendingSectorIndex = -1;
@@ -404,6 +406,7 @@ public partial class GestureController : IDisposable
 			_interactionSession?.Cancel(reason);
 			_interactionSession?.End(reason);
 			_interactionSession = null;
+			ResetDeepNavigation(clearRoots: true);
 			_gestureVersion++;
 			_highlightUpdateScheduled = false;
 			_pendingGestureVersion = _gestureVersion;
@@ -411,22 +414,24 @@ public partial class GestureController : IDisposable
 		HideRadialUI();
 	}
 
-	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction, bool IsSubmenuLocked, WheelLayer? Layer) EndActiveGesture()
+	private (int Sector, int SubSector, WheelProfile? Profile, RadialWindow? Window, bool IsEscaped, long PresentationVersion, PluginInteractionSession? Interaction, bool IsSubmenuLocked, WheelLayer? Layer, DeepRelease Deep) EndActiveGesture(Point? releasePoint = null)
 	{
-		EndPinnedTracking();
 		lock (_uiUpdateSync)
 		{
+			var deep = CaptureDeepRelease(releasePoint ?? _lastMovePoint);
+			EndPinnedTracking();
 			long presentationVersion = _gestureVersion;
 			bool isSubmenuLocked = _submenuLock.IsLocked || _suppressPrimaryOnRelease;
 			_submenuLock.Reset();
 			_suppressPrimaryOnRelease = false;
 			WheelProfile? endingProfile = _activeActivation?.Profile ?? _activeProfile;
-			var result = (_selectedSectorIndex, _selectedSubSectorIndex, endingProfile, _radialWindow, _lastEscapedState, presentationVersion, _interactionSession, isSubmenuLocked, CaptureReleaseLayer(endingProfile));
+			var result = (_selectedSectorIndex, _selectedSubSectorIndex, endingProfile, _radialWindow, _lastEscapedState, presentationVersion, _interactionSession, isSubmenuLocked, CaptureReleaseLayer(endingProfile), deep);
 			_activeActivation = null;
 			_activeTrigger = null;
 			_interactionSession = null;
 			_isGestureActive = false;
 			_isWaitingForThreshold = false;
+			ResetDeepNavigation(clearRoots: true);
 			_gestureVersion++;
 			_highlightUpdateScheduled = false;
 			_pendingGestureVersion = _gestureVersion;
@@ -723,9 +728,13 @@ public partial class GestureController : IDisposable
 		{
 			return;
 		}
+		if (_switchingFixedLayer || _deepPage != null || _fixedSession is { ControlsOuter: true, ShowingExtendedPrimary: false }) return;
 		radialWindow.SetOuterEscapeState(targetEscape);
 		radialWindow.HighlightSector(targetSector, targetSubSector, targetShowSubTier,
 			preserveSubTier: _pinState.Presented && targetSector < 0);
+		if (_fixedSession != null) PublishSecondaryVisuals(radialWindow);
+        else if (!_pinState.Enabled && targetShowSubTier && !targetEscape && targetSubSector >= 0)
+			TryEnterSecondLevelBranch(radialWindow, targetSector, targetSubSector, _lastMovePoint, targetGestureVersion);
 	}
 
 	// 判断指定扇区是否为系统音量加/减动作（用于外甩豁免：音量扇区在任意拖距都可调音）
@@ -735,7 +744,7 @@ public partial class GestureController : IDisposable
 		{
 			return false;
 		}
-		ActionItem? action = _activeProfile.GetEffectiveAction(sectorIndex);
+		ActionItem? action = InputRoot(sectorIndex);
 		if (action == null)
 		{
 			return false;
@@ -771,7 +780,7 @@ public partial class GestureController : IDisposable
 		return false;
 		}
 		ActionItem? action = (_activeProfile != null && refSector >= 0)
-			? _activeProfile.GetEffectiveAction(refSector)
+			? InputRoot(refSector)
 			: null;
 		// 若该动作配置了二级级联子动作，首要用途为展开二级轮盘，绝不接管为音量拖拽调音
 		if (action != null && action.SubActions != null && action.SubActions.Count > 0)
@@ -1848,7 +1857,7 @@ public partial class GestureController : IDisposable
 		}
 		bool volumeTookOver = _volumeGestureTookOver;
 		float volumeBaseline = _volumeBaseline;
-		var finalState = EndActiveGesture();
+		var finalState = EndActiveGesture(releasePosition);
 			var endedInteractionSession = finalState.Interaction;
 		int finalSector = finalState.Sector;
 		int finalSubSector = finalState.SubSector;
@@ -1904,7 +1913,7 @@ public partial class GestureController : IDisposable
 					endedInteractionSession?.End("VolumeAdjusted");
 					return;
 				}
-				if (!TryResolveReleasedAction(finalProfile, finalState.Layer, finalSector, finalSubSector,
+				if (!ResolveGestureRelease(finalState.Deep, finalProfile, finalState.Layer, finalSector, finalSubSector,
 					isEscaped, isSubmenuLocked, out targetAction))
 				{
 					endedInteractionSession?.Cancel("LayerRemoved");
@@ -2003,8 +2012,14 @@ public partial class GestureController : IDisposable
 			{
 				return;
 			}
-			_mouseReleasePending = true;
-			_pendingMouseReleasePosition = releasePosition;
+			lock (_uiUpdateSync)
+                if (_isGestureActive && (_fixedSession != null || UsesFixedRings(_activeProfile)))
+                {
+                    var selection = CaptureDeepRelease(releasePosition);
+                    _debouncedFixedRelease = new(selection, _fixedSession, _selectedSectorIndex, _selectedSubSectorIndex, _lastEscapedState);
+                }
+            _mouseReleasePending = true;
+            _pendingMouseReleasePosition = releasePosition;
 			_pendingMouseReleaseButton = triggerButton;
 			_pendingMouseReleaseActivation = activation;
 			int generation = ++_mouseReleaseDebounceGeneration;
@@ -2061,7 +2076,13 @@ public partial class GestureController : IDisposable
 			_mouseReleaseDebounceTimer = null;
 		}
 		timerToCancel?.Dispose();
-		return true;
+        lock (_uiUpdateSync)
+        {
+            if (_debouncedFixedRelease != null && _fixedSession != null)
+                QueueFixedRender(_fixedSession);
+            _debouncedFixedRelease = null;
+        }
+        return true;
 	}
 
 	private void CancelMouseReleaseDebounce()
@@ -2099,8 +2120,7 @@ public partial class GestureController : IDisposable
 					{
 						nextIdx = (curIdx + 1) % count;
 					}
-					_activeProfile.ActiveLayerIndex = nextIdx;
-					_activeProfile.SyncRootPropertiesFromActiveLayer();
+					long request = BeginFixedLayerSwitch(_activeProfile, nextIdx);
 					_submenuLock.Reset();
 					_pinExpandedParent = -1;
 					_suppressPrimaryOnRelease = false;
@@ -2113,7 +2133,7 @@ public partial class GestureController : IDisposable
 					if (rw != null)
 					{
 						long version = GetCurrentGestureVersion();
-						DispatchUi(() => SwitchRadialLayerOnUi(rw, nextIdx, version));
+						DispatchUi(() => SwitchRadialLayerOnUi(rw, nextIdx, version, request));
 					}
 					e.Handled = true;
 					return;
@@ -2157,8 +2177,7 @@ public partial class GestureController : IDisposable
 					int count = _activeProfile.Layers.Count;
 					int curIdx = _activeProfile.ActiveLayerIndex;
 					int nextIdx = (curIdx + 1) % count;
-					_activeProfile.ActiveLayerIndex = nextIdx;
-					_activeProfile.SyncRootPropertiesFromActiveLayer();
+					long request = BeginFixedLayerSwitch(_activeProfile, nextIdx);
 					_submenuLock.Reset();
 					_pinExpandedParent = -1;
 					_suppressPrimaryOnRelease = false;
@@ -2171,7 +2190,7 @@ public partial class GestureController : IDisposable
 					if (rw != null)
 					{
 						long version = GetCurrentGestureVersion();
-						DispatchUi(() => SwitchRadialLayerOnUi(rw, nextIdx, version));
+						DispatchUi(() => SwitchRadialLayerOnUi(rw, nextIdx, version, request));
 					}
 					e.Handled = true;
 					return;
@@ -2268,8 +2287,9 @@ public partial class GestureController : IDisposable
 			}
 			bool volumeTookOver = _volumeGestureTookOver;
 			float volumeBaseline = _volumeBaseline;
-			Point? triggerPoint = GetCursorPos(out var cursor) ? new Point(cursor.x, cursor.y) : null;
-			var finalState = EndActiveGesture();
+			Point? triggerPoint = KeyboardReleasePointerOverride is { } readPosition ? readPosition() :
+				GetCursorPos(out var cursor) ? new Point(cursor.x, cursor.y) : null;
+			var finalState = EndActiveGesture(triggerPoint);
 			var endedInteractionSession = finalState.Interaction;
 			int finalSector = finalState.Sector;
 			int finalSubSector = finalState.SubSector;
@@ -2312,7 +2332,7 @@ public partial class GestureController : IDisposable
 					return;
 				}
 				ActionItem? targetAction = null;
-				if (!TryResolveReleasedAction(finalProfile, finalState.Layer, finalSector, finalSubSector,
+				if (!ResolveGestureRelease(finalState.Deep, finalProfile, finalState.Layer, finalSector, finalSubSector,
 					isEscaped, isSubmenuLocked, out targetAction))
 				{
 					endedInteractionSession?.Cancel("LayerRemoved");
@@ -2323,7 +2343,7 @@ public partial class GestureController : IDisposable
 					// 仅"外甩取消"（释放时处于外甩状态且未选中任何动作）时执行自定义取消动作；
 					// 回到中心取消按钮松手仍为默认静默关闭。
 					ActionItem? cancelAction = ConfigManager.CurrentConfig?.CancelAction;
-					if (_lastEscapedState &&
+					if (isEscaped &&
 						ConfigManager.CurrentConfig?.EnableCancelAction == true &&
 						cancelAction != null && !string.IsNullOrEmpty(cancelAction.Type))
 					{
@@ -2479,11 +2499,13 @@ public partial class GestureController : IDisposable
 
 	private void ProcessMove(Point currentPoint)
 	{
+		if (ProcessFixedMove(currentPoint)) return;
 		if (_pinState.Enabled)
 		{
 			QueuePinnedHover(currentPoint);
 			return;
 		}
+		if (ProcessDeepMove(currentPoint)) return;
 		_suppressPrimaryOnRelease = false;
 		_lastMovePoint = currentPoint;
 		double moveScaleX = (_currentDpiScaleX > 0.0) ? _currentDpiScaleX : 1.0;
@@ -2540,7 +2562,7 @@ public partial class GestureController : IDisposable
 				_submenuLock.Reset();
 			}
 			bool isVolumeSector = IsVolumeSector(num4) || _volumeAdjustActive;
-			if (ConfigManager.CurrentConfig.EnableOuterEscapeCancel && !isVolumeSector)
+			if (ConfigManager.CurrentConfig.EnableOuterEscapeCancel && !isVolumeSector && _fixedSession is not { PersistentFan: true })
 			{
 				double num10 = ((ConfigManager.CurrentConfig.OuterEscapeDistance > 0.0) ? ConfigManager.CurrentConfig.OuterEscapeDistance : (num9 * 1.5));
 				if (num3 > num10)
@@ -2551,14 +2573,25 @@ public partial class GestureController : IDisposable
 					_submenuLock.Reset();
 				}
 			}
-			if (!flag)
+			if (!flag && _fixedSession is { PersistentFan: true } fanSession)
+			{
+				var hit = fanSession.HitPersistentFanInner(currentPoint, _submenuLock);
+				if (hit.Level == 2 && FixedRingMenu.TryDecodeSecondaryKey(hit.Index, out int owner, out int child))
+				{
+					num4 = owner;
+					num5 = child;
+					flag2 = true;
+				}
+				else num4 = hit.Level == 1 ? hit.Index : hit.Index == -1 ? -1 : -2;
+			}
+			else if (!flag)
 			{
 				if (lockEnabled)
 				{
 					// 子盘已展开但尚未进入花瓣时，仍允许直接划入该父项的可见侧翼。
 					if (!_submenuLock.IsLocked && isFan && enableMultiTier && _lastShowSubTier && _selectedSectorIndex >= 0)
 					{
-						ActionItem? previousParent = _activeProfile?.GetEffectiveAction(_selectedSectorIndex);
+						ActionItem? previousParent = InputRoot(_selectedSectorIndex);
 						double angleDiff = Math.Abs(NormalizeAngleDeg(num11 - _selectedSectorIndex * num13));
 						int previousHit = _submenuLock.HitTestFan(ConfigManager.CurrentConfig, num, num2,
 							_selectedSectorIndex, num12, previousParent?.SubActions?.Count ?? 0, _selectedSubSectorIndex);
@@ -2589,7 +2622,7 @@ public partial class GestureController : IDisposable
 
 				if (enableMultiTier && _activeProfile != null && num4 >= 0 && num4 < _activeProfile.Actions.Count)
 				{
-					ActionItem? actionItem = _activeProfile.GetEffectiveAction(num4);
+					ActionItem? actionItem = InputRoot(num4);
 					if (actionItem != null && actionItem.SubActions != null && actionItem.SubActions.Count > 0)
 					{
 						if (isFan)
@@ -2602,7 +2635,7 @@ public partial class GestureController : IDisposable
 								fanTriggerDist = SubmenuLockTracker.GetSubmenuExitDistance(ConfigManager.CurrentConfig, true, wheelRadius);
 							}
 
-							if (num3 >= fanTriggerDist)
+							if (num3 >= fanTriggerDist || _fixedSession?.ExtendedPrimary == num4)
 							{
 								flag2 = true;
 								num5 = lockEnabled
@@ -2613,7 +2646,7 @@ public partial class GestureController : IDisposable
 						}
 						else
 						{
-							if (num3 >= num7 || (ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup && ConfigManager.CurrentConfig.SubmenuStyle == "Wheel") || (lockEnabled && _submenuLock.IsLocked))
+							if (num3 >= num7 || _fixedSession?.ExtendedPrimary == num4 || (ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup && ConfigManager.CurrentConfig.SubmenuStyle == "Wheel") || (lockEnabled && _submenuLock.IsLocked))
 							{
 								flag2 = true;
 							}
@@ -2642,11 +2675,23 @@ public partial class GestureController : IDisposable
 							}
 						}
 
+						// Deep branches are navigation targets. An angular projection through a gap
+						// or beyond a petal must never replace the current page.
+						if (!lockEnabled && num5 >= 0 && !UsesFixedRings(_activeProfile) && CaptureReleaseLayer(_activeProfile)?.EffectiveMaxMenuDepth > 2 &&
+							num5 < actionItem.SubActions.Count && actionItem.SubActions[num5]?.SubActions is { Count: > 0 })
+						{
+							if (isFan)
+								num5 = _submenuLock.HitTestFan(ConfigManager.CurrentConfig, num, num2, num4, num12,
+									actionItem.SubActions.Count, _selectedSubSectorIndex);
+							else if (!_submenuLock.ContainsWheelSub(ConfigManager.CurrentConfig, num, num2, num4, num12, actionItem.SubActions.Count, num5))
+								num5 = -1;
+						}
+
 						// 安全守卫：在启用锁定时，若子项命中了未配置或禁用的槽位，清除命中，防止松手误触发
 						if (lockEnabled && num5 >= 0)
 						{
 							ActionItem? effectiveSub = num5 < actionItem.SubActions.Count ? actionItem.SubActions[num5] : null;
-							if (!WheelProfile.IsActionConfigured(effectiveSub) || (!isFan &&
+							if (!IsInputChildConfigured(num4, num5, effectiveSub) || (!isFan &&
 								!_submenuLock.ContainsWheelSub(ConfigManager.CurrentConfig, num, num2, num4, num12, actionItem.SubActions.Count, num5)))
 							{
 								num5 = -1;
@@ -2678,7 +2723,9 @@ public partial class GestureController : IDisposable
 			_suppressPrimaryOnRelease = _submenuLock.IsLocked || num3 >= SubmenuLockTracker.GetSubmenuEntryDistance(
 				ConfigManager.CurrentConfig, isFan, ConfigManager.CurrentConfig.WheelRadius);
 		}
+		TrackReturnHover(currentPoint, num4, num5);
 		QueueHighlightUpdate(num4, num5, flag, flag2, GetCurrentGestureVersion());
+        AimFixedSecondary(currentPoint, num4, flag2 && !flag ? num5 : -1);
 	}
 
 	internal bool SelectActivationLayer(WheelProfile profile)
@@ -2719,7 +2766,8 @@ public partial class GestureController : IDisposable
 		profile.EnsureLayers();
 		if (!SelectActivationLayer(profile)) return false;
 		_activeProfile = profile;
-		if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu)
+		PrepareInputRoots(profile);
+		if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu || CaptureReleaseLayer(profile)?.EffectiveMaxMenuDepth > 2)
 		{
 			_submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, profile);
 		}
@@ -2775,12 +2823,21 @@ public partial class GestureController : IDisposable
 		{
 			bool pinned = _pinState.Enabled;
 			if (pinned) interaction.Update(-2, -1, false, false, preservePrimaryTarget: true);
+			window.EnableFixedGestureLayout();
 			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, () =>
 			{
 				// Hit testing needs the revealed geometry; publish no initial angular hover first.
+                lock (_uiUpdateSync)
+                    if (_fixedSession is { } session && session.Version == gestureVersion)
+                    {
+                        window.UpdateFixedRings(session.Path, session.Hover);
+                        session.Present();
+                    }
 				if (pinned) ApplyPinnedHoverAtPresentation(gestureVersion, ignoreWindowScale: true);
-				interaction.Presented();
+                else if (_fixedSession != null) ProcessMove(_lastMovePoint);
+                interaction.Presented();
 			}, pinned, pinned ? () => RefreshHoverAfterUiChange(_lastMovePoint, gestureVersion) : null);
+			PrepareFixedSession(window, profile, gestureVersion);
 			if (_pinState.Enabled)
 			{
 				BeginPinnedPresentation(gestureVersion);
@@ -2811,7 +2868,7 @@ public partial class GestureController : IDisposable
 					ProcessMove(actualCenter);
 				}
 			}
-			else if (!_pinState.Enabled && ConfigManager.CurrentConfig.LockParentSectorOnSubmenu)
+			else if (!_pinState.Enabled && (UsesFixedRings(profile) || ConfigManager.CurrentConfig.LockParentSectorOnSubmenu || CaptureReleaseLayer(profile)?.EffectiveMaxMenuDepth > 2))
 			{
 				// 首帧可能先于冻结几何准备到达；展示后按最新坐标补算一次。
 				ProcessMove(_lastMovePoint);
@@ -2991,8 +3048,9 @@ public partial class GestureController : IDisposable
 		lock (_uiUpdateSync)
 		{
 			window = _radialWindow;
-			_radialWindow = null;
-			_submenuLock.Reset();
+            _radialWindow = null;
+            ResetDeepNavigation(clearRoots: true);
+            _submenuLock.Reset();
 			_suppressPrimaryOnRelease = false;
 			_isGestureActive = false;
 			_highlightUpdateScheduled = false;

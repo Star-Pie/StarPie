@@ -61,6 +61,10 @@ public class ActionItem
 	[System.Text.Json.Serialization.JsonIgnore]
 	public bool IsInherited { get; set; }
 
+	// An explicitly edited application menu can remain empty after its last configured child is removed.
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+	public bool OverrideGlobalMenu { get; set; }
+
 	/// <summary>
 	/// 插件动作引用。当 <see cref="Type"/> 为 <c>"Plugin"</c> 时使用。
 	/// <para>
@@ -92,9 +96,22 @@ public class ActionItem
 
 	public ActionItem Clone()
 	{
-		ActionItem clone = new ActionItem
+		var clone = CloneWithoutSubActions();
+		if (SubActions != null)
+		{
+			foreach (var sub in SubActions)
+				clone.SubActions.Add(sub.Clone());
+		}
+		return clone;
+	}
+
+	// Execution snapshots only need the selected action, including its independent plugin parameters.
+	internal ActionItem CloneWithoutSubActions()
+	{
+		return new ActionItem
 		{
 			IsInherited = this.IsInherited,
+			OverrideGlobalMenu = OverrideGlobalMenu,
 			Type = this.Type,
 			Name = this.Name,
 			Parameter = this.Parameter,
@@ -125,14 +142,6 @@ public class ActionItem
 				: new Dictionary<string, System.Text.Json.JsonElement>(this.Extras),
 			SubActions = new List<ActionItem>()
 		};
-		if (this.SubActions != null)
-		{
-			foreach (var sub in this.SubActions)
-			{
-				clone.SubActions.Add(sub.Clone());
-			}
-		}
-		return clone;
 	}
 
 	public override string ToString()
