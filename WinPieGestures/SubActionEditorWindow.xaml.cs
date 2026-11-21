@@ -15,33 +15,81 @@ public partial class SubActionEditorWindow : Window
 
 	public List<ActionItem> ResultSubActions { get; private set; } = new List<ActionItem>();
 
-	public SubActionEditorWindow(string directionLabel, string sectorName, List<ActionItem>? existingSubActions)
+	private readonly List<ActionItem> _branch = new();
+	private readonly int _maxDepth;
+	private int SlotLimit => string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase) ? 3 : 4;
+
+	public SubActionEditorWindow(string directionLabel, string sectorName, List<ActionItem>? existingSubActions, int maxDepth = 2, int startChild = -1)
 	{
 		InitializeComponent();
 		AppThemeManager.ApplyTheme(this, ConfigManager.CurrentConfig?.AppTheme ?? "System");
-		SectorInfoTitle.Text = directionLabel + " 方位 - [" + sectorName + "] 级联子菜单";
-
-		bool isFan = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
-		int maxAllowed = isFan ? 3 : 4;
-		string styleName = isFan ? "蜂窝扇 (Honeycomb Fan)" : "外圈子环 (Sub-Ring)";
-		SubCountLimitText.Text = $"当光标向外划向该扇区时展开二级子菜单。当前【{styleName}】模式下支持配置 1~{maxAllowed} 个二级子动作。";
-
-		if (existingSubActions != null && existingSubActions.Count > 0)
+		_maxDepth = Math.Clamp(maxDepth, 2, 5);
+		_branch.Add(new ActionItem
 		{
-			int num = 1;
-			foreach (ActionItem existingSubAction in existingSubActions)
-			{
-				SubSlots.Add(new SubSlotViewModel
-				{
-					IndexNumber = num++,
-					IsExpanded = true,
-					Action = existingSubAction.Clone()
-				});
-			}
-		}
-
+			Name = directionLabel + " · " + sectorName,
+			SubActions = existingSubActions?.Select(a => a.Clone()).ToList() ?? new List<ActionItem>()
+		});
+		Title = I18n.T("MenuEditBranch");
+		AddSubActionButton.Content = I18n.T("MenuAddChild");
+		BranchBackButton.Content = I18n.T("DeepMenuBack");
+		EmptyBranchText.Text = I18n.T("MenuEmpty");
 		SubActionsItemsControl.ItemsSource = SubSlots;
+		LoadBranch();
+		if ((uint)startChild < (uint)SubSlots.Count) EnterBranch(SubSlots[startChild]);
+	}
+
+	private void LoadBranch()
+	{
+		SubSlots.Clear();
+		if (_branch[^1].SubActions is { } children)
+		{
+			foreach (var action in children) SubSlots.Add(CreateSlot(action));
+		}
+		SectorInfoTitle.Text = string.Join("  ›  ", _branch.Select(a => a.Name));
+		SubCountLimitText.Text = I18n.TF("MenuEditLevel", _branch.Count + 1, _maxDepth);
+		BranchBackButton.Visibility = _branch.Count == 1 ? Visibility.Collapsed : Visibility.Visible;
 		ReindexSubSlots();
+	}
+
+	private SubSlotViewModel CreateSlot(ActionItem action) => new()
+	{
+		Action = action, CanEditChildren = _branch.Count + 1 < _maxDepth
+	};
+
+	private void StoreBranch()
+	{
+		// Preserve null on untouched leaves, including after browsing an empty submenu.
+		if (SubSlots.Count != 0 || _branch[^1].SubActions != null)
+			_branch[^1].SubActions = SubSlots.Select(slot => slot.Action).ToList();
+	}
+
+	internal void EnterBranch(SubSlotViewModel slot)
+	{
+		if (!slot.CanEditChildren || !SubSlots.Contains(slot)) return;
+		StoreBranch();
+		_branch.Add(slot.Action);
+		LoadBranch();
+	}
+
+	internal void LeaveBranch()
+	{
+		if (_branch.Count == 1) return;
+		StoreBranch();
+		_branch.RemoveAt(_branch.Count - 1);
+		LoadBranch();
+	}
+
+	private void EnterBranch_Click(object sender, RoutedEventArgs e)
+	{
+		if (sender is FrameworkElement { DataContext: SubSlotViewModel slot }) EnterBranch(slot);
+	}
+
+	private void BranchBack_Click(object sender, RoutedEventArgs e) => LeaveBranch();
+
+	internal List<ActionItem> GetDraft()
+	{
+		StoreBranch();
+		return _branch[0].SubActions ?? new List<ActionItem>();
 	}
 
 	private void ReindexSubSlots()
@@ -58,40 +106,17 @@ public partial class SubActionEditorWindow : Window
 	private void UpdateEmptyState()
 	{
 		EmptyStateBorder.Visibility = (SubSlots.Count == 0) ? Visibility.Visible : Visibility.Collapsed;
-		bool isFan = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
-		int maxAllowed = isFan ? 3 : 4;
-		AddSubActionButton.IsEnabled = SubSlots.Count < maxAllowed;
-		AddSubActionButton.ToolTip = SubSlots.Count >= maxAllowed
-			? (isFan ? "当前蜂窝扇模式下最多支持配置 3 个二级级联子动作" : "当前外圈子环模式下最多支持配置 4 个二级级联子动作")
-			: null;
+		AddSubActionButton.IsEnabled = SubSlots.Count < SlotLimit;
 	}
 
 	private void AddSubActionButton_Click(object sender, RoutedEventArgs e)
 	{
-		bool isFan = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
-		int maxAllowed = isFan ? 3 : 4;
-		if (SubSlots.Count < maxAllowed)
+		if (SubSlots.Count >= SlotLimit) return;
+		SubSlots.Add(CreateSlot(new ActionItem
 		{
-			int num = SubSlots.Count + 1;
-			SubSlots.Add(new SubSlotViewModel
-			{
-				IndexNumber = num,
-				IsExpanded = true,
-				Action = new ActionItem
-				{
-					Name = $"子动作 {num}",
-					Type = "Hotkey",
-					Parameter = "",
-					IconKey = ""
-				}
-			});
-			ReindexSubSlots();
-		}
-		else
-		{
-			string styleName = isFan ? "蜂窝扇 (Honeycomb Fan)" : "外圈子环 (Sub-Ring)";
-			AppMessageBox.Show(this, $"当前二级菜单样式为【{styleName}】，每个主扇区最多支持配置 {maxAllowed} 个二级级联子动作。", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
-		}
+			Name = I18n.TF("EditSubActionNumber", SubSlots.Count + 1), Type = "Hotkey"
+		}));
+		ReindexSubSlots();
 	}
 
 	private void ToggleExpand_Click(object sender, RoutedEventArgs e)
@@ -482,19 +507,26 @@ public partial class SubActionEditorWindow : Window
 
 	private void SaveButton_Click(object sender, RoutedEventArgs e)
 	{
-        foreach (SubSlotViewModel slot in SubSlots)
-        {
-            PluginActionValidation validation = PluginHost.ValidateActionParameters(slot.Action);
-            if (!validation.IsValid)
-            {
-                string reason = validation.Describe() ?? "";
-                AppMessageBox.Show(this, reason, slot.Action.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-        }
-		ResultSubActions = SubSlots.Select((SubSlotViewModel s) => s.Action.Clone()).ToList();
+		var result = GetDraft();
+		if (!ValidateBranch(result, 2)) return;
+		ResultSubActions = result;
 		DialogResult = true;
 		Close();
+	}
+
+	private bool ValidateBranch(IEnumerable<ActionItem> actions, int level)
+	{
+		foreach (var action in actions)
+		{
+			var validation = PluginHost.ValidateActionParameters(action);
+			if (!validation.IsValid)
+			{
+				AppMessageBox.Show(this, validation.Describe() ?? "", action.Name, MessageBoxButton.OK, MessageBoxImage.Warning);
+				return false;
+			}
+			if (level < _maxDepth && action.SubActions != null && !ValidateBranch(action.SubActions, level + 1)) return false;
+		}
+		return true;
 	}
 
 	private void CancelButton_Click(object sender, RoutedEventArgs e)

@@ -190,12 +190,15 @@ public class WheelProfile : INotifyPropertyChanged
 			}
 			Layers.Add(layer0);
 		}
-		else if (Layers.Count == 1 && (Layers[0].Actions == null || Layers[0].Actions.Count == 0 || Layers[0].Actions.All(a => string.IsNullOrEmpty(a.Type) || (a.Type == "Hotkey" && string.IsNullOrEmpty(a.Parameter) && string.IsNullOrEmpty(a.InheritAppIconPath)))))
+		else if (Layers.Count == 1 && !ReferenceEquals(Actions, Layers[0].Actions) &&
+			(Layers[0].Actions == null || Layers[0].Actions.All(a => !(a?.SubActions?.Count > 0) &&
+				(string.IsNullOrEmpty(a?.Type) || (a.Type == "Hotkey" && string.IsNullOrEmpty(a.Parameter) &&
+					string.IsNullOrEmpty(a.InheritAppIconPath))))))
 		{
 			// 自愈保护：若仅有第 1 层且层内动作全空，但根属性 Actions 中存在真实自定义配置，则无损同步给第 1 层
 			if (this.Actions != null && this.Actions.Count > 0 && this.Actions.Any(a => !string.IsNullOrEmpty(a.Parameter) || !string.IsNullOrEmpty(a.InheritAppIconPath) || (a.SubActions != null && a.SubActions.Count > 0)))
 			{
-				Layers[0].Actions.Clear();
+				Layers[0].Actions = new List<ActionItem>();
 				int sCount = Layers[0].SectorCount;
 				int takeCount = Math.Min(this.Actions.Count, sCount);
 				for (int i = 0; i < takeCount; i++)
@@ -338,6 +341,7 @@ public class WheelProfile : INotifyPropertyChanged
 		// 检查是否仅为默认占位未配置热键
 		if (string.Equals(action.Type, "Hotkey", StringComparison.OrdinalIgnoreCase))
 		{
+			if (action.OverrideGlobalMenu) return true;
 			bool hasParam = !string.IsNullOrWhiteSpace(action.Parameter);
 			bool hasAppIcon = !string.IsNullOrWhiteSpace(action.InheritAppIconPath);
 			bool hasSvg = !string.IsNullOrWhiteSpace(action.CustomIconSvg);
@@ -438,13 +442,7 @@ public class WheelProfile : INotifyPropertyChanged
 
 					if (globalActions != null && globalActions.Count > 0)
 					{
-						int targetGlobalIndex = sectorIndex;
-						if (mySectorCount != globalSectorCount && mySectorCount > 0 && globalSectorCount > 0)
-						{
-							// 跨扇区数映射（如 4 键映射到 8 键十字正交方位）
-							double myAngle = sectorIndex * (360.0 / mySectorCount);
-							targetGlobalIndex = (int)Math.Round(myAngle / (360.0 / globalSectorCount)) % globalSectorCount;
-						}
+						int targetGlobalIndex = MapInheritedSector(sectorIndex, mySectorCount, globalSectorCount);
 
 						if (targetGlobalIndex >= 0 && targetGlobalIndex < globalActions.Count)
 						{
@@ -475,6 +473,50 @@ public class WheelProfile : INotifyPropertyChanged
 		}
 
 		return IsActionConfigured(localAction) ? localAction : null;
+	}
+
+	internal static int MapInheritedSector(int index, int localCount, int globalCount)
+	{
+		if (localCount == globalCount || localCount <= 0 || globalCount <= 0) return index;
+		double angle = index * (360.0 / localCount);
+		return (int)Math.Round(angle / (360.0 / globalCount)) % globalCount;
+	}
+
+	/// <summary>Resolve a menu path within one effective root, using the local layer's depth limit.</summary>
+	public ActionItem? GetEffectiveMenuAction(IReadOnlyList<int> path, WheelProfile? globalProfile = null, int layerIndex = -1)
+	{
+		if (path == null || path.Count is < 1 or > 5 || path[0] < 0 || layerIndex < -1) return null;
+		EnsureLayers();
+		int index = layerIndex < 0 ? ActiveLayerIndex : layerIndex;
+		if ((uint)index >= (uint)Layers.Count || path.Count > Layers[index].EffectiveMaxMenuDepth ||
+			path[0] >= Layers[index].SectorCount) return null;
+		ActionItem? node = GetEffectiveAction(path[0], -1, globalProfile, index);
+		if (Layers[index].ActiveFixedRings is { } menu && path.Count > 2)
+		{
+			if (!IsActionConfigured(node)) return null;
+			if (node!.SubActions == null || (uint)path[1] >= (uint)node.SubActions.Count ||
+				!IsActionConfigured(node.SubActions[path[1]])) return null;
+			int parent = FixedRingMenu.SecondaryKey(path[0], path[1]);
+			for (int i = 2; i < path.Count; i++)
+			{
+				if ((uint)path[i] >= (uint)menu.GetCount(i + 1) ||
+					menu.GetSlot(i + 1, path[i]) is not { } slot || slot.ParentIndex != parent) return null;
+				node = slot.Action;
+				parent = path[i];
+			}
+			return node;
+		}
+		bool inherited = node?.IsInherited == true;
+		for (int i = 1; i < path.Count; i++)
+		{
+			if (!IsActionConfigured(node) || node!.SubActions is not { } children ||
+				(uint)path[i] >= (uint)children.Count) return null;
+			node = children[path[i]];
+		}
+		if (!IsActionConfigured(node)) return null;
+		// An inherited root and its descendants are already a detached clone.
+		if (inherited) node!.IsInherited = true;
+		return node;
 	}
 
 	/// <summary>

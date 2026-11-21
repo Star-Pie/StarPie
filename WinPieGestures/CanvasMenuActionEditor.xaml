@@ -1,0 +1,67 @@
+<UserControl x:Class="WinPieGestures.CanvasMenuActionEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:WinPieGestures">
+  <UserControl.Resources>
+    <Style x:Key="FieldCaption" TargetType="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+  </UserControl.Resources>
+  <StackPanel x:Name="Fields" Visibility="Collapsed">
+    <Grid Margin="0,0,0,12">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Button x:Name="IconButton" Style="{DynamicResource ModernButtonStyle}" MinWidth="60" Padding="6,3"
+              Margin="0,0,10,0" Click="PickIcon">
+        <StackPanel>
+          <Grid Height="20">
+            <Image x:Name="IconImage" Stretch="Uniform" />
+            <Path x:Name="IconPath" Stretch="Uniform" Fill="{DynamicResource AccentPrimaryBrush}" />
+          </Grid>
+          <TextBlock x:Name="IconCaption" HorizontalAlignment="Center" FontSize="11" />
+        </StackPanel>
+      </Button>
+      <StackPanel Grid.Column="1">
+        <TextBlock x:Name="NameLabel" Style="{StaticResource FieldCaption}" />
+        <TextBox x:Name="NameBox" MinHeight="30" VerticalContentAlignment="Center"
+                 AutomationProperties.LabeledBy="{Binding ElementName=NameLabel}" TextChanged="NameChanged" />
+      </StackPanel>
+    </Grid>
+    <TextBlock x:Name="TypeLabel" Style="{StaticResource FieldCaption}" />
+    <ComboBox x:Name="TypeBox" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30" Margin="0,0,0,12"
+              AutomationProperties.LabeledBy="{Binding ElementName=TypeLabel}" SelectedValuePath="Tag"
+              DisplayMemberPath="DisplayText" SelectionChanged="TypeChanged" />
+    <StackPanel x:Name="PluginRow" Margin="0,0,0,10" Visibility="Collapsed">
+      <TextBlock x:Name="PluginLabel" Style="{StaticResource FieldCaption}" />
+      <ComboBox x:Name="PluginBox" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30"
+                AutomationProperties.LabeledBy="{Binding ElementName=PluginLabel}" SelectedValuePath="FullId"
+                DisplayMemberPath="DisplayName" SelectionChanged="PluginChanged">
+        <ComboBox.GroupStyle>
+          <GroupStyle>
+            <GroupStyle.HeaderTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" Margin="4,6,0,3" />
+              </DataTemplate>
+            </GroupStyle.HeaderTemplate>
+          </GroupStyle>
+        </ComboBox.GroupStyle>
+      </ComboBox>
+    </StackPanel>
+    <local:HotkeyRecorderBox x:Name="HotkeyBox" MinHeight="32" HotkeyChanged="HotkeyChanged" Visibility="Collapsed" />
+    <StackPanel x:Name="TextRow" Visibility="Collapsed">
+      <TextBlock x:Name="TextLabel" Style="{StaticResource FieldCaption}" />
+      <TextBox x:Name="ParameterBox" MinHeight="64" MaxHeight="180" TextWrapping="Wrap" AcceptsReturn="True"
+               VerticalScrollBarVisibility="Auto" TextChanged="ParameterChanged"
+               AutomationProperties.LabeledBy="{Binding ElementName=TextLabel}" />
+    </StackPanel>
+    <ComboBox x:Name="PanelBox" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30" Visibility="Collapsed"
+              DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="PanelChanged" />
+    <CheckBox x:Name="PlacementBox" Visibility="Collapsed" Click="PlacementChanged" Margin="0,0,0,8" />
+    <StackPanel x:Name="SchemaFields" />
+    <TextBlock x:Name="Unavailable" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Visibility="Collapsed" />
+  </StackPanel>
+</UserControl>

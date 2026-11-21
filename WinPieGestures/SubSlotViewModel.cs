@@ -9,6 +9,9 @@ namespace WinPieGestures;
 
 public class SubSlotViewModel : INotifyPropertyChanged
 {
+	public bool CanEditChildren { get; init; }
+	public string EditBranchLabel => I18n.T("MenuEditBranch");
+
 	public int IndexNumber { get; set; }
 
 	public ActionItem Action { get; set; } = new ActionItem();

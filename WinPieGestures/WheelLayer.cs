@@ -118,6 +118,21 @@ public class WheelLayer : INotifyPropertyChanged
 
 	public int SectorCount { get; set; } = 8;
 
+	// The root is level one. Keep imported values intact until explicitly edited.
+	public int MaxMenuDepth { get; set; } = 2;
+
+	[System.Text.Json.Serialization.JsonIgnore]
+	public int EffectiveMaxMenuDepth => Math.Clamp(MaxMenuDepth, 2, 5);
+
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public FixedRingMenu? FixedRings { get; set; }
+
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+	public bool FixedRingsPaused { get; set; }
+
+	[System.Text.Json.Serialization.JsonIgnore]
+	public FixedRingMenu? ActiveFixedRings => FixedRingsPaused ? null : FixedRings;
+
 	public TriggerConfig? ActivationTrigger { get; set; }
 
 	public List<ActionItem> Actions { get; set; } = new List<ActionItem>();
@@ -142,6 +157,9 @@ public class WheelLayer : INotifyPropertyChanged
 			Name = this.Name,
 			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
+			MaxMenuDepth = this.MaxMenuDepth,
+			FixedRings = FixedRings?.Clone(),
+			FixedRingsPaused = FixedRingsPaused,
 			EnableCenterAction = this.EnableCenterAction,
 			CenterAction = this.CenterAction?.Clone(),
 			Actions = new List<ActionItem>()

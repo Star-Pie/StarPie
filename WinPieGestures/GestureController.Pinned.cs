@@ -10,6 +10,8 @@ public partial class GestureController
     private TriggerConfig? _pinTrigger;
     private TargetWindowInfo? _pinTarget;
     private long _pinClickVersion = -1;
+    private DeepPage? _pinPressedPage;
+    private WheelLayer? _pinPressedLayer;
     private long _pinPresentationVersion;
     private PinnedWheelMonitor? _pinMonitor;
     private int _pinExpandedParent = -1;
@@ -83,17 +85,33 @@ public partial class GestureController
         else ProcessMove(fallback);
     }
 
-    private void SwitchRadialLayerOnUi(RadialWindow rw, int nextIdx, long version)
+    private void SwitchRadialLayerOnUi(RadialWindow rw, int nextIdx, long version, long request)
     {
         Point pt;
         lock (_uiUpdateSync)
         {
-            if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow)) return;
+            if (!_isGestureActive || !IsCurrentGesture(version) || !ReferenceEquals(rw, _radialWindow) ||
+                request != _layerSwitchSequence) return;
+            ResetDeepNavigation();
+            System.Threading.Interlocked.Exchange(ref _pinClickVersion, -1);
             _pinExpandedParent = -1;
             pt = (_lastMovePoint != default) ? _lastMovePoint : _startPoint;
         }
-        rw.SwitchToLayer(nextIdx);
-        if (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu) _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
+        rw.RenderSelectedLayer(nextIdx);
+        if (_activeProfile != null)
+        {
+            PrepareInputRoots(_activeProfile);
+            PrepareFixedSession(rw, _activeProfile, version, visible: rw.MainGrid.IsVisible, layerRequest: request);
+            _startPoint = rw.ActualPhysicalCenter;
+            (_currentDpiScaleX, _currentDpiScaleY) = RadialWindow.GetMonitorDpiScale(_startPoint);
+        }
+        if (_activeProfile != null && (ConfigManager.CurrentConfig.LockParentSectorOnSubmenu || CaptureReleaseLayer(_activeProfile)?.EffectiveMaxMenuDepth > 2))
+            _submenuLock.PrepareGeometry(ConfigManager.CurrentConfig, _activeProfile);
+        lock (_uiUpdateSync)
+        {
+            if (request != _layerSwitchSequence) return;
+            _switchingFixedLayer = false;
+        }
         if (_isGestureActive && IsCurrentGesture(version) && pt != default)
         {
             RefreshHoverAfterUiChange(pt, version);
@@ -105,10 +123,19 @@ public partial class GestureController
         if (Application.Current?.Dispatcher.CheckAccess() != true) return;
         lock (_uiUpdateSync)
             if (!_isGestureActive || !_pinState.Presented || _gestureVersion != version) return;
+        if (ProcessFixedMove(point) || ProcessDeepMove(point)) return;
         bool hit = TryHitPinnedPoint(point, out int sector, out int subSector, ignoreWindowScale);
         lock (_uiUpdateSync)
         {
             if (!_isGestureActive || !_pinState.Presented || _gestureVersion != version) return;
+            if (!hit && _fixedSession is { ExtendedPrimary: >= 0, Path.Length: 0 } extended)
+            {
+                // A hidden secondary cannot receive a pinned hit until the original primary
+                // crosses its distance and requests its real children.
+                _pinExpandedParent = extended.ExtendedPrimary;
+                QueueHighlightUpdate(_pinExpandedParent, -1, false, true, version);
+                return;
+            }
             bool expanded = _lastShowSubTier;
             if (hit && sector >= 0)
             {
@@ -124,7 +151,9 @@ public partial class GestureController
                 if (expanded) _pinExpandedParent = sector;
             }
             // -1 is the core; -2 is no target. Keeping expanded over core/outside suppresses false collapse feedback.
+            TrackReturnHover(point, hit ? sector : -2, hit ? subSector : -1);
             QueueHighlightUpdate(hit ? sector : -2, hit ? subSector : -1, false, expanded, version);
+            AimFixedSecondary(point, hit ? sector : -2, hit && expanded ? subSector : -1);
         }
     }
 
@@ -155,6 +184,8 @@ public partial class GestureController
         string? heldMouse = originalTrigger?.TriggerType == "Mouse" ? originalTrigger.MouseButton : null;
         if (!_pinState.EndWithMouseRelease(heldMouse)) return;
         _pinClickVersion = -1;
+        _pinPressedPage = null;
+        _pinPressedLayer = null;
         _pinExpandedParent = -1;
         _pinTrigger = null;
         _pinTarget = null;
@@ -213,7 +244,18 @@ public partial class GestureController
             long version = e.MouseButton == "LeftButton" ? System.Threading.Interlocked.Exchange(ref _pinClickVersion, -1) : -1;
             Point position = e.Position; // Hook args are reused, never retain them in a callback.
             if (e.MouseButton == "LeftButton" && version >= 0)
-                DispatchUi(() => ConfirmPinnedSelection(position, version));
+            {
+                var pressedPage = System.Threading.Interlocked.Exchange(ref _pinPressedPage, null);
+                var pressedLayer = System.Threading.Interlocked.Exchange(ref _pinPressedLayer, null);
+                var fixedPress = System.Threading.Interlocked.Exchange(ref _fixedPress, null);
+                DispatchUi(() =>
+                {
+                    if (!ReferenceEquals(pressedPage, _deepPage) ||
+                        !ReferenceEquals(pressedLayer, CaptureReleaseLayer(_activeProfile))) return;
+                    if (fixedPress != null) ConfirmPinnedPress(position, version, fixedPress);
+                    else ConfirmPinnedSelection(position, version);
+                });
+            }
             e.Handled = true;
             return true;
         }
@@ -229,10 +271,25 @@ public partial class GestureController
         }
         Point positionAtDown = e.Position;
         long downVersion = GetCurrentGestureVersion();
-        if (e.MouseButton == "LeftButton") _pinClickVersion = downVersion;
+        if (e.MouseButton == "LeftButton")
+        {
+            _pinClickVersion = downVersion;
+            _pinPressedPage = _deepPage;
+            _pinPressedLayer = CaptureReleaseLayer(_activeProfile);
+            lock (_uiUpdateSync)
+            {
+                _fixedPress = null;
+                if (_fixedSession is { } session && session.IsOuterPoint(positionAtDown))
+                {
+                    var hit = session.Hit(positionAtDown);
+                    _fixedPress = new(session, session.Path, session.WasVisible(hit) ? hit : default);
+                }
+            }
+        }
         DispatchUi(() =>
         {
-            if (!_pinState.Presented || !IsCurrentGesture(downVersion) || TryHitPinnedPoint(positionAtDown, out _, out _)) return;
+            if (!_pinState.Presented || !IsCurrentGesture(downVersion) || (_fixedSession is { } session && session.IsOuterPoint(positionAtDown) ? session.Hit(positionAtDown) != default :
+                _deepPage?.Frame.ContainsWheel(positionAtDown) ?? TryHitPinnedPoint(positionAtDown, out _, out _))) return;
             lock (_uiUpdateSync)
                 if (_isGestureActive && _pinState.Presented && _gestureVersion == downVersion)
                     CancelGestureTracking("PinnedOutsideClick");
@@ -248,7 +305,9 @@ public partial class GestureController
 
     private static bool IsExecutablePinnedAction(ActionItem? action) => WinPieGestures.Plugins.PluginInteractionSession.IsExecutableAction(action);
 
-    private void ConfirmPinnedSelection(Point point, long version)
+    private void ConfirmPinnedSelection(Point point, long version) => ConfirmPinnedPress(point, version, null);
+
+    private void ConfirmPinnedPress(Point point, long version, FixedPress? fixedPress)
     {
         if (!_pinState.Presented || !IsCurrentGesture(version)) return;
         if (_mouseHook.IsPaused || _activeActivation?.IsLayerAvailable == false || _pinTarget == null ||
@@ -259,8 +318,21 @@ public partial class GestureController
                     CancelGestureTracking("PinnedTargetInvalid");
             return;
         }
+        if (ConfirmFixedSelection(point, fixedPress) || ConfirmDeepSelection(point, version)) return;
         ApplyPinnedHover(point, version);
         bool hit = TryHitPinnedPoint(point, out int hitSector, out int hitSubSector);
+        if (hit && hitSubSector >= 0 && _fixedSession is { Persistent: false } fixedSession &&
+            !IsExecutablePinnedAction(_activeProfile?.GetEffectiveAction(hitSector, hitSubSector)))
+        {
+            lock (_uiUpdateSync)
+                if (fixedSession.Enter(new(2, FixedRingMenu.SecondaryKey(hitSector, hitSubSector))))
+                {
+                    QueueFixedRender(fixedSession);
+                    return;
+                }
+        }
+        if (hit && hitSubSector >= 0 && _radialWindow is { } window &&
+            TryEnterSecondLevelBranch(window, hitSector, hitSubSector, point, version)) return;
         lock (_uiUpdateSync)
         {
             if (!_isGestureActive || !_pinState.Presented || _gestureVersion != version) return;
@@ -269,6 +341,7 @@ public partial class GestureController
                 CancelGestureTracking("PinnedOutsideGeometry");
                 return;
             }
+            if (_deepReturned) return;
             _selectedSectorIndex = hitSector;
             _selectedSubSectorIndex = hitSubSector;
             bool hasAction = TryResolveReleasedAction(_activeProfile, CaptureReleaseLayer(_activeProfile), _selectedSectorIndex,

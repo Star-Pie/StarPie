@@ -754,6 +754,20 @@ internal static class PluginHost
             .Select(binding => binding.TypeName)
             .ToArray();
 
+    // A menu selection must not load the plugin. Enabled, cold plugins can still
+    // activate on the execution queue and undergo the normal capability checks.
+    internal static bool IsMenuActionAvailable(ActionItem action)
+    {
+        if (!string.Equals(action.Type, "Plugin", StringComparison.OrdinalIgnoreCase))
+            return IsClaimedTypeAvailable(action.Type, out _);
+        if (!_enabled || action.PluginActionRef is not { IsValid: true } reference) return false;
+        var instance = Find(reference.PluginId);
+        if (instance == null || !instance.Entry.Enabled || instance.RequiresRestart ||
+            instance.State is PluginRuntimeState.Stopping or PluginRuntimeState.Quarantined or
+                PluginRuntimeState.Incompatible or PluginRuntimeState.RequiresRestart) return false;
+        return !instance.IsLoaded || Catalog.TryGetAction(reference.FullId, out _);
+    }
+
     public static bool IsClaimedTypeAvailable(string? type, out string reason)
     {
         reason = "";

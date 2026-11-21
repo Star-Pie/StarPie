@@ -523,9 +523,10 @@ internal static class Program
                             Check((int)Field(controller, "_selectedSectorIndex") == 2,
                                 "ApplyPinnedHoverAtPresentation supports resting-scale initial presentation hit test");
 
+                            var switchRequest = (long)Call(controller, "BeginFixedLayerSwitch", profile, 1)!;
                             Set(controller, "_radialWindow", null);
                             Set(controller, "_pinExpandedParent", 0);
-                            Call(controller, "SwitchRadialLayerOnUi", hiddenWindow, 1, 509L);
+                            Call(controller, "SwitchRadialLayerOnUi", hiddenWindow, 1, 509L, switchRequest);
                             Check((int)Field(controller, "_pinExpandedParent") == 0,
                                 "SwitchRadialLayerOnUi ignores stale dispatch when radial window is detached");
 
@@ -533,7 +534,7 @@ internal static class Program
                             Set(controller, "_pinExpandedParent", 0);
                             Set(controller, "_lastMovePoint", pivot);
                             controller.GetType().GetProperty("TestPinnedHitTest", Private)!.SetValue(controller, (Func<Point, (bool, int, int)>)(_ => (true, -1, -1)));
-                            Call(controller, "SwitchRadialLayerOnUi", hiddenWindow, 1, 509L);
+                            Call(controller, "SwitchRadialLayerOnUi", hiddenWindow, 1, 509L, switchRequest);
                             Pump();
                             Check(profile.ActiveLayerIndex == 1 && (int)Field(controller, "_pinExpandedParent") == -1,
                                 "SwitchRadialLayerOnUi resets _pinExpandedParent inside lock on UI dispatch before switching layer");

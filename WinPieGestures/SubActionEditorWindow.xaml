@@ -68,7 +68,10 @@
           <TextBlock Name="SectorInfoTitle" Text="扇区级联子菜单设置" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Name="SubCountLimitText" Text="当光标向外划向该扇区时展开二级子菜单。当前模式下最高支持配置 4 个二级子动作。" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,0" />
         </StackPanel>
-        <Button Name="AddSubActionButton" Grid.Column="1" Content="➕ 添加二级子动作" Style="{StaticResource PrimaryButtonStyle}" Height="34" Padding="16,0" Click="AddSubActionButton_Click" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal">
+          <Button Name="BranchBackButton" Style="{StaticResource ModernButtonStyle}" Padding="12,0" Height="34" Margin="0,0,6,0" Click="BranchBack_Click" />
+          <Button Name="AddSubActionButton" Style="{StaticResource PrimaryButtonStyle}" Height="34" Padding="16,0" Click="AddSubActionButton_Click" />
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -119,6 +122,7 @@
 
                     <!-- 操作按钮群 -->
                     <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center">
+                      <Button Content="{Binding EditBranchLabel}" Visibility="{Binding CanEditChildren, Converter={StaticResource BoolToVis}}" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,6,0" Click="EnterBranch_Click" />
                       <Button Content="▲" Style="{StaticResource ModernButtonStyle}" Width="28" Height="28" Padding="0" Margin="0,0,4,0" ToolTip="上移此动作" IsEnabled="{Binding CanMoveUp}" Click="SubMoveUp_Click" />
                       <Button Content="▼" Style="{StaticResource ModernButtonStyle}" Width="28" Height="28" Padding="0" Margin="0,0,6,0" ToolTip="下移此动作" IsEnabled="{Binding CanMoveDown}" Click="SubMoveDown_Click" />
                       <Button Content="▶ 测试" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,6,0" ToolTip="立即测试触发此子动作" Click="SubTest_Click" />
@@ -476,9 +480,7 @@
         <!-- 空状态占位卡片 -->
         <Border Name="EmptyStateBorder" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="10" Padding="32" HorizontalAlignment="Stretch" Margin="0,10,0,0">
           <StackPanel HorizontalAlignment="Center">
-            <TextBlock Text="🌟 暂无二级级联子动作" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" />
-            <TextBlock Text="点击右上角「➕ 添加二级子动作」为此扇区配置外环展开菜单。" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,16" />
-            <Button Content="➕ 添加第 1 个二级子动作" Style="{StaticResource PrimaryButtonStyle}" Height="34" Padding="16,0" HorizontalAlignment="Center" Click="AddSubActionButton_Click" />
+            <TextBlock Name="EmptyBranchText" FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
       </StackPanel>
@@ -487,7 +489,6 @@
     <!-- 底部确认栏 -->
     <Border Grid.Row="2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
       <Grid>
-        <TextBlock Text="💡 提示：划动至该主扇区后将平滑展开二级菜单，光标划向子动作即可极速触发。" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
           <Button Content="取消" Style="{StaticResource ModernButtonStyle}" Width="85" Height="32" Margin="0,0,10,0" Click="CancelButton_Click" />
           <Button Content="确定并保存" Style="{StaticResource PrimaryButtonStyle}" Width="105" Height="32" Click="SaveButton_Click" />
