@@ -101,10 +101,23 @@ public partial class SettingsWindow
 
     private void SelectStudioIcon(WheelProfile profile)
     {
-        if (!ReferenceEquals(profile, _selectedProfile) || _isUpdatingUi) return;
-        var picker = new OpenFileDialog { Title = I18n.T("StudioRailIcon"), Filter = I18n.T("StudioRailIconFilter") };
-        if (picker.ShowDialog(this) != true || !ReferenceEquals(profile, _selectedProfile)) return;
-        profile.ApplicationIconPath = picker.FileName;
+        if (_resourcesReleased || _isUpdatingUi || !ReferenceEquals(profile, _selectedProfile)) return;
+        var config = ConfigManager.CurrentConfig;
+        var picker = new IconPickerWindow(profile.IconKey, forProfile: true,
+            applicationIconPath: profile.ApplicationIconPath) { Owner = this };
+        if (picker.ShowDialog() != true || _resourcesReleased || _isUpdatingUi ||
+            !ReferenceEquals(profile, _selectedProfile) || !ReferenceEquals(config, ConfigManager.CurrentConfig) ||
+            !config.Profiles.Contains(profile)) return;
+
+        string? iconKey = string.IsNullOrEmpty(picker.SelectedIconKey) ? null : picker.SelectedIconKey;
+        string? applicationPath = picker.RestoreDefaultProfileIcon
+            ? null
+            : picker.SelectedApplicationIconPath ?? profile.ApplicationIconPath;
+        if (string.Equals(profile.IconKey, iconKey, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(profile.ApplicationIconPath, applicationPath, StringComparison.OrdinalIgnoreCase)) return;
+
+        profile.IconKey = iconKey;
+        profile.ApplicationIconPath = applicationPath;
         ScheduleAutoSave();
         RefreshProfilePresentation();
         RefreshStudioRail();

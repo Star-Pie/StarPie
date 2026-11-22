@@ -8,5 +8,11 @@
     <!-- Reuse the existing internal catalog-test visibility; no public SDK changes. -->
     <AssemblyName>test_catalog</AssemblyName>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" /></ItemGroup>
+  <ItemGroup Condition="'$(StarPieCandidateDir)' == ''">
+    <ProjectReference Include="..\..\WinPieGestures\WinPieGestures.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <Reference Include="StarPie" HintPath="$(StarPieCandidateDir)/StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" HintPath="$(StarPieCandidateDir)/StarPie.Plugin.Abstractions.dll" />
+  </ItemGroup>
 </Project>

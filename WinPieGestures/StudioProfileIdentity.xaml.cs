@@ -45,14 +45,18 @@ public partial class StudioProfileIdentity : UserControl
         }
         finally { _updating = false; }
         SyncApply();
-        string? key = profile == null ? null : profile.ApplicationIconPath + "|" + profile.BoundProcesses + "|" + profile.ProcessName;
+        string? key = profile == null ? null : profile.IconKey + "|" + profile.ApplicationIconPath + "|" + profile.BoundProcesses + "|" + profile.ProcessName;
         if (selectionChanged || key != _iconKey)
         {
             _iconKey = key;
             AppImage.Source = null;
             Fallback.Text = profile == null ? "" : MappingsProfileRail.GlyphFor(profile);
             Fallback.Visibility = Visibility.Visible;
-            _ = RefreshIconAsync(profile, ++_iconGeneration);
+            int generation = ++_iconGeneration;
+            if (ProfileIconPresentation.TrySetVector(AppImage, profile?.IconKey))
+                Fallback.Visibility = Visibility.Collapsed;
+            else
+                _ = RefreshIconAsync(profile, generation);
         }
     }
 

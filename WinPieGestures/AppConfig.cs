@@ -162,6 +162,15 @@ public class AppConfig
 
 	public double SubWheelOuterRadius { get; set; } = 196.0;
 
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public string? SubWheelShape { get; set; }
+
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public FixedOuterRingAppearance? FixedOuterRingAppearance { get; set; }
+
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public FixedHoneycombAppearance? FixedHoneycombAppearance { get; set; }
+
 	public double SubWheelInnerGap { get; set; } = 7.0;
 
 	public double SubWheelCornerRadius { get; set; } = 14.0;

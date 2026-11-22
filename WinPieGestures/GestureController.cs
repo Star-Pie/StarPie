@@ -1019,13 +1019,7 @@ public partial class GestureController : IDisposable
 
 	public static TriggerConfig? GetOverrideTriggerForProcess(string cleanProcess)
 	{
-		if (string.IsNullOrEmpty(cleanProcess)) return null;
-		if (ConfigManager.CurrentConfig?.BlacklistTriggerOverrides != null &&
-		    ConfigManager.CurrentConfig.BlacklistTriggerOverrides.TryGetValue(cleanProcess, out var overrideTrigger))
-		{
-			return overrideTrigger;
-		}
-		return null;
+		return TriggerSceneRules.GetOverrideTrigger(ConfigManager.CurrentConfig, cleanProcess);
 	}
 
 	public static TriggerConfig GetEffectiveTriggerForProcess(string cleanProcess)
@@ -1054,71 +1048,14 @@ public partial class GestureController : IDisposable
 			processName = ConfigManager.CurrentConfig.EnableComponentIdentification
 				? WindowIdentification.ResolveForeground(targetHwnd).ProcessName : rootProcessName;
 		}
-		string cleanProcess = (processName ?? "").Trim().ToLowerInvariant();
-
-		bool isWhitelisted = false;
-		if (ConfigManager.CurrentConfig.WhitelistedProcesses != null)
-		{
-			foreach (string whitelistedProcess in ConfigManager.CurrentConfig.WhitelistedProcesses)
-			{
-				if (string.Equals(whitelistedProcess.Trim(), cleanProcess, StringComparison.OrdinalIgnoreCase))
-				{
-					isWhitelisted = true;
-					break;
-				}
-			}
-		}
-
-		bool isBlacklisted = false;
-		var overrideTrigger = GetOverrideTriggerForProcess(cleanProcess);
-		if (ConfigManager.CurrentConfig.BlacklistedProcesses != null)
-		{
-			foreach (string blacklistedProcess in ConfigManager.CurrentConfig.BlacklistedProcesses)
-			{
-				if (string.Equals(blacklistedProcess.Trim(), cleanProcess, StringComparison.OrdinalIgnoreCase))
-				{
-					// 核心双轨路由：若该黑名单进程配置了专属触发键，且当前正是以该专属触发键呼出，则放行唤醒轮盘；
-					// 若未配置专属按键，或按下的是全局默认按键，则完全隔离并零延迟放行给宿主软件（如 SolidWorks CAD 笔势）
-					if (overrideTrigger != null && ProfileTriggerRouter.AreEquivalent(activeTrigger, overrideTrigger))
-					{
-						isBlacklisted = false;
-					}
-					else
-					{
-						isBlacklisted = true;
-					}
-					break;
-				}
-			}
-		}
-
-		bool isProcessIsolated = false;
-		if (string.Equals(ConfigManager.CurrentConfig.IsolationMode, "Whitelist", StringComparison.OrdinalIgnoreCase))
-		{
-			isProcessIsolated = !isWhitelisted;
-		}
-		else
-		{
-			isProcessIsolated = isBlacklisted;
-		}
-
-		TriggerConfig triggerConfig = activeTrigger ?? GetEffectiveTriggerForProcess(cleanProcess);
-		ModifierKeys currentModifiers = KeyboardHook.GetCurrentModifiers();
-		bool disableCtrl = ConfigManager.CurrentConfig.DisableOnCtrl && currentModifiers.HasFlag(ModifierKeys.Control) && !(triggerConfig?.RequireCtrl == true);
-		bool disableShift = ConfigManager.CurrentConfig.DisableOnShift && currentModifiers.HasFlag(ModifierKeys.Shift) && !(triggerConfig?.RequireShift == true);
-		bool disableAlt = ConfigManager.CurrentConfig.DisableOnAlt && currentModifiers.HasFlag(ModifierKeys.Alt) && !(triggerConfig?.RequireAlt == true);
-		bool isModifierSuppressed = disableCtrl | disableShift | disableAlt;
-
-		bool isFullScreenSuppressed = false;
-		if (ConfigManager.CurrentConfig.DisableOnFullScreen)
-		{
-			if (!isWhitelisted && FullScreenHelper.IsActiveWindowFullScreen(targetHwnd, rootProcessName))
-			{
-				isFullScreenSuppressed = true;
-			}
-		}
-
-		return isProcessIsolated || isModifierSuppressed || isFullScreenSuppressed;
+		AppConfig config = ConfigManager.CurrentConfig;
+		string cleanProcess = (processName ?? string.Empty).Trim().ToLowerInvariant();
+		TriggerSceneOutcome? processOutcome = TriggerSceneRules.EvaluateProcess(config, cleanProcess, activeTrigger,
+			out TriggerConfig? modifierTrigger, out bool isWhitelisted);
+		bool isModifierSuppressed = TriggerSceneRules.IsModifierSuppressed(config, modifierTrigger, KeyboardHook.GetCurrentModifiers());
+		bool isFullScreenSuppressed = TriggerSceneRules.ShouldCheckFullScreen(config, isWhitelisted) &&
+			FullScreenHelper.IsActiveWindowFullScreen(targetHwnd, rootProcessName);
+		return processOutcome != null || isModifierSuppressed || isFullScreenSuppressed;
 	}
 
 	private bool IsModifierKey(uint vkCode)
@@ -2982,7 +2919,7 @@ public partial class GestureController : IDisposable
 		for (int j = 0; j < activeCount; j++)
 		{
 			int slot = RadialWindow.GetFanSlotIndex(j, activeCount);
-			var (du, dv) = RadialWindow.GetFanSubOffsetForShape(ConfigManager.CurrentConfig.Shape, slot);
+			var (du, dv) = RadialWindow.GetFanSubOffsetForShape(LegacyRingGeometry.SecondaryShape(ConfigManager.CurrentConfig), slot);
 			
 			double px = ux * (du * R) + vx * (dv * R);
 			double py = uy * (du * R) + vy * (dv * R);

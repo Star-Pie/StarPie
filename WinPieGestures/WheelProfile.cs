@@ -38,6 +38,9 @@ public class WheelProfile : INotifyPropertyChanged
 	/// <summary>Optional local icon hint, loaded only by the settings UI.</summary>
 	public string? ApplicationIconPath { get; set; }
 
+	/// <summary>Optional built-in or imported SVG for the profile’s settings icon.</summary>
+	public string? IconKey { get; set; }
+
 	[System.Text.Json.Serialization.JsonIgnore]
 	public string FriendlyName => !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName.Trim() :
 		string.Equals(ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ? I18n.T("GlobalProfileDefault") : ProcessName;
@@ -319,6 +322,7 @@ public class WheelProfile : INotifyPropertyChanged
 			UseApplicationContext = this.UseApplicationContext,
 			HasExplicitProcessBindings = this.HasExplicitProcessBindings,
 			ApplicationIconPath = this.ApplicationIconPath,
+			IconKey = this.IconKey,
 			Tags = new List<string>(Tags),
 			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,

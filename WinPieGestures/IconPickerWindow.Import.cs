@@ -33,7 +33,7 @@ public partial class IconPickerWindow
     {
         if (_importBusy) return;
         // Keep the existing single raster import; batch selection deliberately accepts SVG only.
-        if (paths.Length == 1 && !string.Equals(Path.GetExtension(paths[0]), ".svg", StringComparison.OrdinalIgnoreCase))
+        if (!_forProfile && paths.Length == 1 && !string.Equals(Path.GetExtension(paths[0]), ".svg", StringComparison.OrdinalIgnoreCase))
         {
             if (IconHelper.ImportCustomIcon(paths[0]) == null) { ShowImportFailure(); return; }
             PopulateIcons(SearchTextBox.Text.Trim());

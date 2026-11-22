@@ -110,7 +110,7 @@ public partial class MappingsProfileRail : UserControl
                 return new LayerRow(profile, l, i == index, badge + " · " + I18n.TF("StudioRailDepth", l.EffectiveMaxMenuDepth));
             }).ToArray();
         return new(profile, selected, showLayers, GlyphFor(profile), summary,
-            string.Join("  ", profile.Tags.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => "#" + t)), profile.ApplicationIconPath + "|" + profile.BoundProcesses, layerRows);
+            string.Join("  ", profile.Tags.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => "#" + t)), profile.IconKey + "|" + profile.ApplicationIconPath + "|" + profile.BoundProcesses, layerRows);
     }
 
     private void SearchChanged(object sender, TextChangedEventArgs e) => RenderCards();
@@ -187,8 +187,22 @@ public partial class MappingsProfileRail : UserControl
     private void ImportClick(object sender, RoutedEventArgs e) => Requested?.Invoke(StudioRailAction.Import, null, null);
     private async void ImageLoaded(object sender, RoutedEventArgs e)
     {
-        if (sender is not Image { Tag: WheelProfile profile } image || LoadIcon == null) return;
+        if (sender is not Image { Tag: WheelProfile profile, Parent: Grid grid } image) return;
+        var fallback = (TextBlock)grid.Children[0];
+        image.Source = null;
+        if (ProfileIconPresentation.TrySetVector(image, profile.IconKey))
+        {
+            fallback.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        fallback.Visibility = Visibility.Visible;
+        if (LoadIcon == null) return;
         var icon = await LoadIcon(profile);
-        if (image.IsLoaded && ReferenceEquals(profile, image.Tag)) image.Source = icon;
+        if (image.IsLoaded && ReferenceEquals(profile, image.Tag))
+        {
+            image.Source = icon;
+            fallback.Visibility = icon == null ? Visibility.Visible : Visibility.Collapsed;
+        }
     }
 }

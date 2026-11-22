@@ -55,7 +55,7 @@ public partial class SettingsWindow
 		var work = new Rect(-extent, -extent, 2 * extent, 2 * extent);
 		DeepMenuFrame Frame(IReadOnlyList<int> path, int children) =>
 			new(new Point(), new DpiScale(1, 1), work, cfg.GetEffectiveCoreDeadzone(), radius, second,
-				RadialWindow.GetDeepDirection(profile, path, fan, cfg.Shape), path.Count + 1, children, fan,
+				RadialWindow.GetDeepDirection(profile, path, fan, LegacyRingGeometry.SecondaryShape(cfg)), path.Count + 1, children, fan,
 				cfg.EnableOuterEscapeCancel ? cfg.OuterEscapeDistance : 0);
 
 		var root = GetCanvasRoot(profile, parentPath[0])!;
@@ -66,11 +66,11 @@ public partial class SettingsWindow
 			double ratio = second / (radius * 1.55);
 			double itemRadius = (radius - inner) * .4 * Math.Clamp(ratio, .5, 2.5);
 			double orbit = (radius + inner) / 2 * ratio + (cfg.SubWheelInnerGap >= 0 ? cfg.SubWheelInnerGap : 4);
-			var (u, v) = RadialWindow.GetFanSubOffsetForShape(cfg.Shape, RadialWindow.GetFanSlotIndex(parentPath[1], outerCount));
+			var (u, v) = RadialWindow.GetFanSubOffsetForShape(LegacyRingGeometry.SecondaryShape(cfg), RadialWindow.GetFanSlotIndex(parentPath[1], outerCount));
 			double rad = rootAngle * Math.PI / 180;
 			double px = (Math.Cos(rad) * u - Math.Sin(rad) * v) * orbit;
 			double py = (Math.Sin(rad) * u + Math.Cos(rad) * v) * orbit;
-			ancestorShapes.Add(RadialWindow.CreateSubMenuGeometry(cfg.Shape, px, py, itemRadius, rad, 0, 0, cfg.SubWheelCornerRadius));
+			ancestorShapes.Add(RadialWindow.CreateSubMenuGeometry(LegacyRingGeometry.SecondaryShape(cfg), px, py, itemRadius, rad, 0, 0, cfg.SubWheelCornerRadius));
 		}
 		else
 		{
@@ -78,7 +78,7 @@ public partial class SettingsWindow
 			double start = rootAngle - sweep / 2 + parentPath[1] * step;
 			double gap = cfg.SubWheelInnerGap >= 0 ? cfg.SubWheelInnerGap : cfg.SectorGap;
 			ancestorShapes.Add(IconHelper.CreateAdvancedSectorGeometry(0, 0, start, start + step, radius + gap + 2,
-				second, cfg.Shape, gap, cfg.SubWheelCornerRadius >= 0 ? cfg.SubWheelCornerRadius : cfg.SectorCornerRadius));
+				second, LegacyRingGeometry.SecondaryShape(cfg), gap, cfg.SubWheelCornerRadius >= 0 ? cfg.SubWheelCornerRadius : cfg.SectorCornerRadius));
 		}
 		var prefix = new List<int> { parentPath[0], parentPath[1] };
 		var ancestor = root.SubActions[parentPath[1]];

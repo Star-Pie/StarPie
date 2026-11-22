@@ -3,6 +3,8 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Interop;
 using System.Windows;
 using WinPieGestures;
 
@@ -37,6 +39,43 @@ internal static class Program
         finally { root.Delete(true); }
     }
 
+    private static void CheckPicker()
+    {
+        ConfigManager.DisableAutoStartSync = true;
+        var app = new App();
+        app.InitializeComponent();
+        foreach (var language in new[] { LanguageCode.ZhCn, LanguageCode.ZhTw, LanguageCode.En, LanguageCode.Ja })
+        {
+            I18n.CurrentLanguage = language;
+            var picker = new IconPickerWindow("Command", forProfile: true, applicationIconPath: @"C:\Fixture\Legacy.ico");
+            try
+            {
+                var actions = (WrapPanel)picker.FindName("ProfileIconSources");
+                var clear = (Button)picker.FindName("ClearIconButton");
+                var content = (FrameworkElement)picker.Content;
+                content.Measure(new Size(580, 420));
+                content.Arrange(new Rect(0, 0, 580, 420));
+                Check(new WindowInteropHelper(picker).Handle == IntPtr.Zero &&
+                    picker.Title.StartsWith(I18n.T("StudioRailIcon"), StringComparison.Ordinal) &&
+                    actions.Visibility == Visibility.Visible && actions.Children.Count == 3 &&
+                    actions.Children.OfType<Button>().All(button => button.ActualWidth > 0 && button.ActualHeight > 0) &&
+                    picker.SelectedIconKey == "Command" && !picker.RestoreDefaultProfileIcon,
+                    $"unshown profile picker retains selection and fits its localized source buttons in {language}");
+                clear.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Check(picker.SelectedIconKey == "" && picker.SelectedApplicationIconPath == null && picker.RestoreDefaultProfileIcon,
+                    $"default selection explicitly clears the vector and the prior file hint in {language}");
+            }
+            finally { picker.Close(); }
+        }
+        var actionPicker = new IconPickerWindow("Command");
+        try
+        {
+            Check(((WrapPanel)actionPicker.FindName("ProfileIconSources")).Visibility == Visibility.Collapsed &&
+                actionPicker.SelectedIconKey == "Command", "action picker keeps its existing selection and sources");
+        }
+        finally { actionPicker.Close(); }
+    }
+
     private static void RunChecks(string[] args, DirectoryInfo root)
     {
         string loaded = typeof(WheelProfile).Assembly.Location;
@@ -56,6 +95,20 @@ internal static class Program
         var duplicate = p.Clone("copy");
         duplicate.Tags.Add("copy");
         Check(duplicate.Tags.Count == 4 && p.Tags.Count == 3, "clone has independent tag storage");
+        Check(legacy.IconKey == null && legacy.ApplicationIconPath == null, "legacy profile uses the existing icon fallback");
+        p.IconKey = "Command";
+        Check(p.Clone("icon copy").IconKey == "Command" &&
+            JsonSerializer.Deserialize<WheelProfile>(JsonSerializer.Serialize(p))!.IconKey == "Command", "built-in profile icon survives copy and JSON");
+        var preview = new Image();
+        preview.Resources["AccentPrimaryBrush"] = Brushes.DarkSlateBlue;
+        Check(ProfileIconPresentation.TrySetVector(preview, p.IconKey) &&
+            preview.Source is DrawingImage { Drawing: GeometryDrawing { Geometry.IsFrozen: true } }, "built-in icon renders as frozen vector geometry");
+        var drawing = (GeometryDrawing)((DrawingImage)preview.Source).Drawing;
+        Check(drawing.Brush == Brushes.DarkSlateBlue, "vector uses the theme accent");
+        preview.Resources["AccentPrimaryBrush"] = Brushes.White;
+        Check(drawing.Brush == Brushes.White, "vector updates when the accent changes");
+        Check(!ProfileIconPresentation.TrySetVector(new Image(), "custom:missing") &&
+            !Directory.Exists(StudioProfileLibrary.IconDirectory), "missing SVG falls back without creating the resource directory");
         Check(JsonSerializer.Deserialize<WheelProfile>(JsonSerializer.Serialize(p))!.Tags.SequenceEqual(p.Tags), "tags survive configuration JSON");
         p.Layers[0].Actions[0].IconKey = "custom:fixture";
         p.Layers[0].FixedRings = new FixedRingMenu();
@@ -87,6 +140,14 @@ internal static class Program
             "no-match state leaves the editing profile intact");
         var identity = new StudioProfileIdentity();
         identity.Refresh(p);
+        var identityIcon = (Image)identity.FindName("AppImage");
+        Check(identityIcon.Source is DrawingImage &&
+            ((TextBlock)identity.FindName("Fallback")).Visibility == Visibility.Collapsed, "inspector shows the chosen profile icon");
+        p.IconKey = null;
+        identity.Refresh(p);
+        Check(identityIcon.Source == null && ((TextBlock)identity.FindName("Fallback")).Visibility == Visibility.Visible,
+            "clearing profile icon immediately restores the fallback");
+        p.IconKey = "custom:profile";
         var name = (TextBox)identity.FindName("NameEntry");
         var tags = (TextBox)identity.FindName("TagsEntry");
         name.Text = "draft";
@@ -124,19 +185,22 @@ internal static class Program
         string output = Path.Combine(root.FullName, "target");
         File.WriteAllText(Path.Combine(input, "fixture.svg"), """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M0 0 L10 0 L10 10 Z"/></svg>""");
         File.Copy(Path.Combine(input, "fixture.svg"), Path.Combine(input, "deep.svg"));
+        File.Copy(Path.Combine(input, "fixture.svg"), Path.Combine(input, "profile.svg"));
         File.Copy(Path.Combine(input, "fixture.svg"), Path.Combine(input, "unreferenced.svg"));
         string single = Path.Combine(root.FullName, "library.starpie-config");
         string whole = Path.Combine(root.FullName, "whole.starpie-config");
         PortableConfigBundle.ExportProfile(snapshot, single, input);
         PortableConfigBundle.Export(snapshot, whole, input);
         using (var archive = ZipFile.OpenRead(single))
-            Check(archive.Entries.Count(e => e.FullName.EndsWith(".svg")) == 2, "only referenced SVGs included, including the fifth ring; repeated root/layer keys deduplicated");
+            Check(archive.Entries.Count(e => e.FullName.EndsWith(".svg")) == 3, "only referenced SVGs included, including the profile and fifth ring; repeated root/layer keys deduplicated");
         WrongScope(() => PortableConfigBundle.PrepareImport(single, output), "whole-config import rejects single-profile package");
         WrongScope(() => PortableConfigBundle.PrepareProfileImport(whole, output), "profile import rejects whole-config package");
         Check(!Directory.Exists(output), "wrong scope created no resources");
         using (var pending = PortableConfigBundle.PrepareProfileImport(single, output))
         {
             var imported = StudioProfileLibrary.ReadProfile(pending.ConfigJson);
+            Check(imported.IconKey?.StartsWith("custom:profile_portable_", StringComparison.Ordinal) == true &&
+                File.Exists(Path.Combine(output, imported.IconKey["custom:".Length..] + ".svg")), "profile package remaps the selected SVG and installs its bytes");
             string? deepKey = imported.Layers[0].FixedRings?.GetSlot(5, 3)?.Action.IconKey;
             Check(deepKey?.StartsWith("custom:deep_portable_", StringComparison.Ordinal) == true &&
                 File.Exists(Path.Combine(output, deepKey["custom:".Length..] + ".svg")), "fifth-ring icon survives package import under a remapped name");
@@ -145,6 +209,15 @@ internal static class Program
                 File.Exists(Path.Combine(output, key["custom:".Length..] + ".svg")), "import retains tags and remaps SVG");
         }
         Check(!Directory.Exists(output), "cancelled profile import rolls resources back");
+        using (var importedWhole = PortableConfigBundle.PrepareImport(whole, StudioProfileLibrary.IconDirectory))
+        {
+            var imported = StudioProfileLibrary.ReadProfile(importedWhole.ConfigJson);
+            var importedImage = new Image();
+            Check(imported.IconKey?.StartsWith("custom:profile_portable_", StringComparison.Ordinal) == true &&
+                ProfileIconPresentation.TrySetVector(importedImage, imported.IconKey) && importedImage.Source is DrawingImage,
+                "full configuration import remaps the profile SVG and renders it from the shared icon library");
+        }
+        CheckPicker();
         Console.WriteLine($"{_checks} checks passed.");
     }
 }

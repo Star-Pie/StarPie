@@ -469,6 +469,7 @@ internal static partial class Program
         Layer.CenterAction = Text("center");
 
         CheckFanGeometry(config);
+        CheckClassicGestureVisibility(config);
         // The original 2101 DLL required dwell at a narrow edge even at the minimum global distance.
         double priorDistance = config.SubWheelTriggerDistance;
         config.SubWheelTriggerDistance = 30;

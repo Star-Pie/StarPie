@@ -46,6 +46,9 @@ internal static class WindowIdentification
         return GetAncestor(hwnd, 2); // GA_ROOT：只沿窗口父链。
     }
 
+    internal static nint GetRootWindowAtPoint(System.Windows.Point physicalPoint) =>
+        GetRootWindow(WindowFromPoint(new Point { X = (int)physicalPoint.X, Y = (int)physicalPoint.Y }));
+
     private static nint GetCursorWindow()
     {
         if (CursorWindowGetterOverride != null) return CursorWindowGetterOverride();

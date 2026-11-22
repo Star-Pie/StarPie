@@ -131,8 +131,25 @@ internal static class ProfileTriggerRouter
 		ProfileTriggerSignature signature,
 		out ProfileTriggerActivation? activation)
 	{
+		return TryResolve(Volatile.Read(ref _snapshot), processName, signature, out activation);
+	}
+
+	internal static ProfileTriggerResolution TryResolveForConfig(
+		AppConfig config,
+		string processName,
+		ProfileTriggerSignature signature,
+		out ProfileTriggerActivation? activation)
+	{
+		return TryResolve(BuildSnapshot(config), processName, signature, out activation);
+	}
+
+	private static ProfileTriggerResolution TryResolve(
+		RoutingSnapshot snapshot,
+		string? processName,
+		ProfileTriggerSignature signature,
+		out ProfileTriggerActivation? activation)
+	{
 		activation = null;
-		RoutingSnapshot snapshot = Volatile.Read(ref _snapshot);
 		// All process aliases are compiled at publication; hook lookups do not split
 		// or allocate lowercase/substrings for the executable name.
 		string processToken = processName ?? string.Empty;
@@ -532,7 +549,7 @@ internal static class ProfileTriggerRouter
 		return string.Equals(triggerType, "Keyboard", StringComparison.OrdinalIgnoreCase) ? "Keyboard" : "Mouse";
 	}
 
-	private static bool IsValidMouseButton(string? mouseButton)
+	internal static bool IsValidMouseButton(string? mouseButton)
 	{
 		return string.Equals(mouseButton, "LeftButton", StringComparison.OrdinalIgnoreCase) ||
 			string.Equals(mouseButton, "RightButton", StringComparison.OrdinalIgnoreCase) ||
@@ -541,7 +558,7 @@ internal static class ProfileTriggerRouter
 			string.Equals(mouseButton, "XButton2", StringComparison.OrdinalIgnoreCase);
 	}
 
-	private static ModifierKeys GetModifiers(TriggerConfig trigger)
+	internal static ModifierKeys GetModifiers(TriggerConfig trigger)
 	{
 		ModifierKeys modifiers = ModifierKeys.None;
 		if (trigger.RequireCtrl) modifiers |= ModifierKeys.Control;

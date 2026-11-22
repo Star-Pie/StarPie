@@ -669,7 +669,7 @@ internal static class StickyWheelSession
         double vx = -Math.Sin(midRad), vy = Math.Cos(midRad);
         double r = (inner + outer) / 2.0;
 
-        string shape = cfg.Shape ?? "";
+        string shape = LegacyRingGeometry.SecondaryShape(cfg);
         for (int j = 0; j < activeCount; j++)
         {
             int slot = RadialWindow.GetFanSlotIndex(j, activeCount);

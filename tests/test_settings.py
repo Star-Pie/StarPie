@@ -261,6 +261,8 @@ def test_blacklist_add_and_delete(app):
     tab0 = win.child_window(auto_id="NavTab0", control_type="RadioButton")
     tab0.select()
     time.sleep(0.3)
+    win.child_window(auto_id="TriggerRulesTab", control_type="RadioButton").select()
+    win.child_window(auto_id="TriggerAddAppExpander").wrapper_object().expand()
     
     txt_box = win.child_window(auto_id="NewBlacklistProcessTextBox", control_type="Edit")
     add_btn = win.child_window(auto_id="AddBlacklistButton", control_type="Button")
@@ -1205,8 +1207,8 @@ def test_left_button_trigger_behavior_and_long_press(app):
     rec_btn = win.child_window(auto_id="RecordTriggerButton", control_type="Button")
     assert rec_btn.exists(timeout=3), "RecordTriggerButton should exist"
     
-    long_press_chk = win.child_window(auto_id="LongPressTriggerCheckBox", control_type="CheckBox")
-    assert long_press_chk.exists(timeout=3), "LongPressTriggerCheckBox should exist"
+    either_mode = win.child_window(auto_id="TriggerEitherMode", control_type="RadioButton")
+    assert either_mode.exists(timeout=3), "TriggerEitherMode should exist"
     
     reset_btn = win.child_window(auto_id="ResetDefaultTriggerButton", control_type="Button")
     assert reset_btn.exists(timeout=3), "ResetDefaultTriggerButton should exist"

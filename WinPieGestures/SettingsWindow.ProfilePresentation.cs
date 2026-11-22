@@ -413,6 +413,8 @@ public partial class SettingsWindow
 
 	private async Task LoadProfileIconAsync(WheelProfile profile, Image image, int revision)
 	{
+		if (ProfileIconPresentation.TrySetVector(image, profile.IconKey)) return;
+
 		var icon = await GetCachedProfileIconAsync(profile);
 		if (_resourcesReleased) return;
 		if (revision != _profileIconRevision) return;

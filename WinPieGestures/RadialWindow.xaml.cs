@@ -437,19 +437,22 @@ public partial class RadialWindow : Window
 		public List<TranslateTransform> ContainerTransforms { get; }
 
 		public List<double> Angles { get; }
+		public List<int> ChildIndices { get; }
 
 		public SubTierVisuals(
 			List<System.Windows.Shapes.Path> paths,
 			List<Grid> containers,
 			List<TranslateTransform> pathTransforms,
 			List<TranslateTransform> containerTransforms,
-			List<double> angles)
+			List<double> angles,
+			List<int> childIndices)
 		{
 			Paths = paths;
 			Containers = containers;
 			PathTransforms = pathTransforms;
 			ContainerTransforms = containerTransforms;
 			Angles = angles;
+			ChildIndices = childIndices;
 		}
 	}
 
@@ -1753,7 +1756,7 @@ public partial class RadialWindow : Window
 		bool previousFixed = FixedGeometry != null;
 		ClearDeepMenu();
 		ClearFixedRings();
-        if (previousFixed || (_fixedGestureLayout && GestureController.CaptureReleaseLayer(_profile)?.ActiveFixedRings != null))
+        if (previousFixed || _fixedGestureLayout)
         {
             ApplyLayoutFromCurrentConfiguration(_centerPoint);
             RenderStyleDecorations();
@@ -2001,7 +2004,7 @@ public partial class RadialWindow : Window
 				RenderTransform = translateTransform,
 				Tag = i
 			};
-			bool hidden = _residentSlots != null && !_residentSlots.Contains((1, i));
+			bool hidden = _configuredGestureSlots != null && !_configuredGestureSlots.Contains((1, i));
 			if (hidden) path.Visibility = Visibility.Collapsed;
 			Panel.SetZIndex(path, 1);
 			WheelCanvas.Children.Insert(0, path);
@@ -2452,10 +2455,10 @@ public partial class RadialWindow : Window
 		_subSectorTransforms.AddRange(visuals.PathTransforms);
 		_subContainerTransforms.AddRange(visuals.ContainerTransforms);
 		_subSectorAngles.AddRange(visuals.Angles);
-		for (int i = 0; i < visuals.Paths.Count; i++)
+		foreach (int childIndex in visuals.ChildIndices)
 		{
 			_subSectorParentIndices.Add(parentIndex);
-			_subSectorChildIndices.Add(i);
+			_subSectorChildIndices.Add(childIndex);
 		}
 
 		for (int i = pathStart; i < _subSectorPaths.Count; i++)
@@ -2497,7 +2500,8 @@ public partial class RadialWindow : Window
 			_subContentContainers.GetRange(startIndex, count),
 			_subSectorTransforms.GetRange(startIndex, count),
 			_subContainerTransforms.GetRange(startIndex, count),
-			_subSectorAngles.GetRange(startIndex, count));
+			_subSectorAngles.GetRange(startIndex, count),
+			_subSectorChildIndices.GetRange(startIndex, count));
 	}
 
 	private void RenderWheelSubTierForSector(int parentIndex, bool animateEntrance)
@@ -2515,7 +2519,7 @@ public partial class RadialWindow : Window
 		double num = 360.0 / (double)sectorCount;
 		double num2 = _canvasCenter;
 		double num3 = _canvasCenter;
-		string shape = ConfigManager.CurrentConfig.Shape ?? "Original";
+		string shape = LegacyRingGeometry.SecondaryShape(ConfigManager.CurrentConfig);
 		string text = ConfigManager.CurrentConfig.IconLayoutMode ?? "IconAndText";
 		bool flag = ConfigManager.CurrentConfig.ShowText && text != "IconOnly";
 		double num4 = ((ConfigManager.CurrentConfig.SubWheelOuterRadius > 0.0) ? ConfigManager.CurrentConfig.SubWheelOuterRadius : (_outerRadius * 1.55));
@@ -2530,7 +2534,7 @@ public partial class RadialWindow : Window
 		double num9 = num / (double)count;
 		for (int i = 0; i < count; i++)
 		{
-			if (_residentSlots != null && !_residentSlots.Contains((2, FixedRingMenu.SecondaryKey(parentIndex, i)))) continue;
+			if (_configuredGestureSlots != null && !_configuredGestureSlots.Contains((2, FixedRingMenu.SecondaryKey(parentIndex, i)))) continue;
 			double num10 = num8 + (double)i * num9;
 			double num11 = num10 + num9;
 			double num12 = (num10 + num11) / 2.0 * (Math.PI / 180.0);
@@ -2893,6 +2897,18 @@ public partial class RadialWindow : Window
 
 	internal void HighlightSector(int mainIndex, int subIndex, bool showSubTier, bool preserveSubTier)
 	{
+		if (mainIndex >= 0 && _configuredGestureSlots is { } configured)
+		{
+			if (!configured.Contains((1, mainIndex)))
+			{
+				mainIndex = -2;
+				subIndex = -1;
+			}
+			else if (subIndex >= 0 && !configured.Contains((2, FixedRingMenu.SecondaryKey(mainIndex, subIndex))))
+			{
+				subIndex = -1;
+			}
+		}
 		_ = _currentHighlightedSector;
 		int currentHighlightedSector = _currentHighlightedSubSector >= 0 ? -1 : _currentHighlightedSector;
 		_currentHighlightedSector = mainIndex;
@@ -3082,10 +3098,8 @@ public partial class RadialWindow : Window
 			System.Windows.Shapes.Path path6 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
 			// Keep the hit order and silhouettes stable when adjacent Fan parents overlap.
 			bool stationaryFan = HasHoneycomb || _allSubTiersActive && ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
-			bool isHighlighted = _allSubTiersActive
-				? (i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count &&
-				   _subSectorParentIndices[i] == mainIndex && _subSectorChildIndices[i] == subIndex && subIndex >= 0)
-				: (i == subIndex);
+			bool isHighlighted = subIndex >= 0 && i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count &&
+				_subSectorParentIndices[i] == mainIndex && _subSectorChildIndices[i] == subIndex;
 			if (isHighlighted)
 			{
 				path5.Fill = _subHighlightSectorBrush;
@@ -3558,7 +3572,7 @@ public partial class RadialWindow : Window
 		double sectorSize = 360.0 / (double)sectorCount;
 		double cx = _canvasCenter;
 		double cy = _canvasCenter;
-		string shape = ConfigManager.CurrentConfig.Shape ?? "Original";
+		string shape = LegacyRingGeometry.SecondaryShape(ConfigManager.CurrentConfig);
 		string layoutMode = ConfigManager.CurrentConfig.IconLayoutMode ?? "IconAndText";
 		bool showText = ConfigManager.CurrentConfig.ShowText && layoutMode != "IconOnly";
 
@@ -3585,7 +3599,7 @@ public partial class RadialWindow : Window
 
 		for (int j = 0; j < activeCount; j++)
 		{
-			if (_residentSlots != null && !_residentSlots.Contains((2, FixedRingMenu.SecondaryKey(parentIndex, j)))) continue;
+			if (_configuredGestureSlots != null && !_configuredGestureSlots.Contains((2, FixedRingMenu.SecondaryKey(parentIndex, j)))) continue;
 			int slot = GetFanSlotIndex(j, activeCount);
 			var (du, dv) = GetFanSubOffsetForShape(shape, slot);
 

@@ -24,8 +24,8 @@ internal static partial class Program
         Field(wheel, "_profile", Profile);
         Field(wheel, "_fixedGestureLayout", true);
         typeof(RadialWindow).GetProperty("FixedGeometry", Members)!.SetValue(wheel, currentGeometry);
-        var resident = session.GetType().GetField("_residentSlots", Members)!.GetValue(session);
-        Field(wheel, "_residentSlots", resident!);
+        var configured = session.GetType().GetField("_configuredSlots", Members)!.GetValue(session);
+        Field(wheel, "_configuredGestureSlots", configured!);
         Call(wheel, "RenderSectors");
         Call(wheel, "ShowAllSubTiers");
         var paths = canvas.Children.OfType<System.Windows.Shapes.Path>().Where(path => path.Tag is string).ToArray();
@@ -43,7 +43,7 @@ internal static partial class Program
             var cell = ((Geometry Shape, Point Label))Call(currentGeometry, "Primary", config, root)!;
             var display = cell.Label + new Vector(300,300);
             bitmap.CopyPixels(new Int32Rect((int)Math.Round(display.X), (int)Math.Round(display.Y), 1, 1), pixel, 4, 0);
-            bool visible = resident == null || root < 2;
+            bool visible = root < 2;
             if (!path.Data.FillContains(display) || Math.Abs(path.Data.GetArea()-cell.Shape.GetArea()) > .05 ||
                 (pixel[3] != 0) != visible || (path.Visibility == Visibility.Visible) != visible)
                 throw new InvalidOperationException($"Presented Fan primary {root} disagrees with its geometry or visibility");
@@ -69,6 +69,43 @@ internal static partial class Program
         if (expected.Length > 0) CheckPersistentFanRelease(paths);
         config.ShowText = showText;
     }
+    private static void CheckClassicGestureVisibility(AppConfig config)
+    {
+        var empty = new ActionItem { Name = "empty", Type = "Text" };
+        var branch = new ActionItem { Name = "branch", Type = "Hotkey", SubActions = [empty, empty, Text("third-child")] };
+        var layer = new WheelLayer { SectorCount = 4, MaxMenuDepth = 2, Actions = [branch, empty, Text("any-root")] };
+        var profile = new WheelProfile { ProcessName = "Global", Layers = [layer] };
+        profile.EnsureLayers();
+        profile.SyncRootPropertiesFromActiveLayer();
+
+        var wheel = new RadialWindow(Origin, profile);
+        Check(!wheel.IsVisible && PresentationSource.FromVisual(wheel) == null, "classic renderer uses an off-screen window without HWND");
+        var canvas = new Canvas { Width = 600, Height = 600 };
+        Field(wheel, "WheelCanvas", canvas);
+        Field(wheel, "_canvasCenter", 300d);
+        Field(wheel, "_innerRadius", config.InnerRadius);
+        Field(wheel, "_outerRadius", config.WheelRadius);
+        Call(wheel, "EnableFixedGestureLayout");
+        Call(wheel, "PrepareFixedLayout", Origin);
+        Call(wheel, "RenderSectors");
+        var roots = canvas.Children.OfType<System.Windows.Shapes.Path>().Where(path => path.Tag is int).ToArray();
+        Check(roots.Length == 4 && roots.Where(path => path.Visibility == Visibility.Visible)
+            .Select(path => (int)path.Tag).ToHashSet().SetEquals([0, 2]),
+            "classic primary draws only configured roots or ancestors of a configured child");
+
+        Call(wheel, "ShowSubTier", 0);
+        Check(ActiveChildPaths().Select(path => path.Tag).SequenceEqual(new object[] { "sub_0_2" }),
+            "only the configured third secondary has a path after a cold branch open");
+        Call(wheel, "ClearSubTier");
+        Call(wheel, "ShowSubTier", 0);
+        var addresses = (List<int>)typeof(RadialWindow).GetField("_subSectorChildIndices", Members)!.GetValue(wheel)!;
+        Check(ActiveChildPaths().Select(path => path.Tag).SequenceEqual(new object[] { "sub_0_2" }) &&
+            addresses.SequenceEqual([2]), "warm sparse secondary cache preserves the original child address");
+
+        IEnumerable<System.Windows.Shapes.Path> ActiveChildPaths() =>
+            canvas.Children.OfType<System.Windows.Shapes.Path>().Where(path => path.Tag is string && path.Visibility == Visibility.Visible);
+    }
+
     private static void CheckPersistentFanRelease(System.Windows.Shapes.Path[] petals)
     {
         var cfg = ConfigManager.CurrentConfig;
@@ -285,8 +322,9 @@ internal static partial class Program
             var ownerKey = FixedRingMenu.SecondaryKey(2,0);
             var inheritedKey = FixedRingMenu.SecondaryKey(3,0);
             var expected = new HashSet<(int,int)> { (1,2), (2,ownerKey), (1,3), (2,inheritedKey), (3,4), (4,4), (3,8), (3,9) };
-            var display = (HashSet<(int,int)>)Call(menu, "ConfiguredSlots", profile, 5, true)!;
-            var runtime = (HashSet<(int,int)>)session.GetType().GetField("_residentSlots", Members)!.GetValue(session)!;
+            var configuredSlots = typeof(FixedRingMenu).GetMethod("ConfiguredSlots", Members, [typeof(WheelProfile), typeof(int), typeof(bool)])!;
+            var display = (HashSet<(int,int)>)configuredSlots.Invoke(menu, [profile, 5, true])!;
+            var runtime = (HashSet<(int,int)>)session.GetType().GetField("_configuredSlots", Members)!.GetValue(session)!;
             if (!display.SetEquals(expected) || !runtime.SetEquals(expected))
                 throw new InvalidOperationException($"Resident preview/runtime occupancy: unexpected [{string.Join(",", display.Except(expected))}], missing [{string.Join(",", expected.Except(display))}]");
             foreach (var (level, index) in new[] { (2,0), (2,FixedRingMenu.SecondaryKey(1,0)), (2,FixedRingMenu.SecondaryKey(2,1)),

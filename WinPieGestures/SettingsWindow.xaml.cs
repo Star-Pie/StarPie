@@ -1023,15 +1023,6 @@ public partial class SettingsWindow : Window
 		{
 			PinWheelCheckBox.IsChecked = ConfigManager.CurrentConfig.PinWheelAfterTrigger;
 		}
-		if (LongPressTriggerCheckBox != null)
-		{
-			LongPressTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressTrigger;
-		}
-		if (LongPressOnlyTriggerCheckBox != null)
-		{
-			LongPressOnlyTriggerCheckBox.IsChecked = ConfigManager.CurrentConfig.LongPressOnlyTrigger;
-		}
-		RefreshLongPressDelayControls();
 		UpdateLongPressTriggerControls();
 		if (GestureEnabledCheckBox != null)
 		{
@@ -1798,22 +1789,6 @@ public partial class SettingsWindow : Window
 		{
 			Tab0_ModifierBypassPanel.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
 		}
-		if (Tab0_MouseGesturesCardBorder != null)
-		{
-			Tab0_MouseGesturesCardBorder.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
-		}
-		if (Tab0_CancelActionOuterBorder != null)
-		{
-			Tab0_CancelActionOuterBorder.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
-		}
-		if (Tab0_ScreenEdgeCardBorder != null)
-		{
-			Tab0_ScreenEdgeCardBorder.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
-		}
-		if (Tab0_VolumeDragCardBorder != null)
-		{
-			Tab0_VolumeDragCardBorder.Visibility = isSimple ? Visibility.Collapsed : Visibility.Visible;
-		}
 
 		// 2. Tab 1 外观与形态: 隐藏独立字体选择与文字位置偏移
 		if (Tab1_FontFamilyPanel != null)
@@ -1919,6 +1894,7 @@ public partial class SettingsWindow : Window
 
 	public void ApplyLocalization()
 	{
+		_appearanceSidebarNeedsRefresh = true;
 		LocalizeStudio();
 		RefreshAutoSaveStatus();
 		ReloadUiFontOptions();
@@ -2000,22 +1976,6 @@ public partial class SettingsWindow : Window
 		if (AutoStartStatusText != null)
 		{
 			RefreshAutoStartStatusText();
-		}
-		if (LongPressTriggerTitleText != null)
-		{
-			LongPressTriggerTitleText.Text = I18n.T("LongPressTriggerTitle");
-		}
-		if (LongPressTriggerDescText != null)
-		{
-			LongPressTriggerDescText.Text = I18n.T("LongPressTriggerDesc");
-		}
-		if (LongPressOnlyTriggerTitleText != null)
-		{
-			LongPressOnlyTriggerTitleText.Text = I18n.T("LongPressOnlyTriggerTitle");
-		}
-		if (LongPressOnlyTriggerDescText != null)
-		{
-			LongPressOnlyTriggerDescText.Text = I18n.T("LongPressOnlyTriggerDesc");
 		}
 		if (GestureTitleText != null)
 		{
@@ -2112,15 +2072,15 @@ public partial class SettingsWindow : Window
 		}
 		if (TriggerPageSubheader != null)
 		{
-			TriggerPageSubheader.Text = I18n.T("TriggerSubheader");
+			TriggerPageSubheader.Text = I18n.T("TriggerSceneSubtitle");
 		}
 		if (TriggerRecorderTitleText != null)
 		{
-			TriggerRecorderTitleText.Text = I18n.T("TriggerRecorderTitle");
+			TriggerRecorderTitleText.Text = I18n.T("TriggerSceneRecorder");
 		}
 		if (TriggerRecorderDescText != null)
 		{
-			TriggerRecorderDescText.Text = I18n.T("TriggerRecorderDesc");
+			TriggerRecorderDescText.Text = I18n.T("TriggerSceneRecorderHint");
 		}
 		if (CurrentBindingLabelText != null)
 		{
@@ -2128,20 +2088,20 @@ public partial class SettingsWindow : Window
 		}
 		if (RecordTriggerButton != null && !_isRecordingTrigger)
 		{
-			RecordTriggerButton.Content = I18n.T("BtnRecordTrigger");
+			RecordTriggerButton.Content = I18n.T("TriggerSceneRecord");
 		}
 		if (ResetDefaultTriggerButton != null)
 		{
-			ResetDefaultTriggerButton.Content = I18n.T("BtnResetDefaultTrigger");
+			ResetDefaultTriggerButton.Content = I18n.T("TriggerSceneRestoreRight");
 		}
 		UpdateTriggerBadgeDisplay();
 		if (SensitivityTitleText != null)
 		{
-			SensitivityTitleText.Text = I18n.T("SensitivityTitle");
+			SensitivityTitleText.Text = I18n.T("TriggerSceneInputTolerance");
 		}
 		if (SensitivityDescText != null)
 		{
-			SensitivityDescText.Text = I18n.T("SensitivityDesc");
+			SensitivityDescText.Text = I18n.T("TriggerSceneInputToleranceHint");
 		}
 		if (AnimSpeedTitleText != null)
 		{
@@ -2165,19 +2125,19 @@ public partial class SettingsWindow : Window
 		}
 		if (SceneIsolationTitleText != null)
 		{
-			SceneIsolationTitleText.Text = I18n.T("SceneIsolationTitle");
+			SceneIsolationTitleText.Text = I18n.T("TriggerSceneBypass");
 		}
 		if (SceneIsolationDescText != null)
 		{
-			SceneIsolationDescText.Text = I18n.T("SceneIsolationDesc");
+			SceneIsolationDescText.Text = I18n.T("TriggerSceneBypassHint");
 		}
 		if (FullScreenOptionTitleText != null)
 		{
-			FullScreenOptionTitleText.Text = I18n.T("FullScreenOption");
+			FullScreenOptionTitleText.Text = I18n.T("TriggerSceneFullscreen");
 		}
 		if (FullScreenOptionDescText != null)
 		{
-			FullScreenOptionDescText.Text = I18n.T("FullScreenOptionDesc");
+			FullScreenOptionDescText.Text = I18n.T("TriggerSceneFullscreenHint");
 		}
 		if (ModifierPassTitleText != null)
 		{
@@ -2198,19 +2158,6 @@ public partial class SettingsWindow : Window
 		if (IsolationModeTitleText != null)
 		{
 			IsolationModeTitleText.Text = I18n.T("IsolationModeTitle");
-		}
-		if (IsolationBlacklistRadio != null)
-		{
-			IsolationBlacklistRadio.Content = I18n.T("IsolationBlacklistRadio");
-		}
-		if (IsolationWhitelistRadio != null)
-		{
-			IsolationWhitelistRadio.Content = I18n.T("IsolationWhitelistRadio");
-		}
-		if (ProcessListDescText != null)
-		{
-			bool flag = string.Equals(ConfigManager.CurrentConfig?.IsolationMode, "Whitelist", StringComparison.OrdinalIgnoreCase);
-			ProcessListDescText.Text = (flag ? I18n.T("WhitelistDesc") : I18n.T("BlacklistDesc"));
 		}
 		if (BrowseBlacklistButton != null)
 		{
@@ -3053,9 +3000,9 @@ public partial class SettingsWindow : Window
 		if (ThemeBtnGray != null) ThemeBtnGray.ToolTip = I18n.T("ThemeGray");
 
 		// --- Phase 1: Trigger Sensitivity & Deadzone ---
-		if (LiveSensorStatusText != null && !_isRecordingTrigger) LiveSensorStatusText.Text = I18n.T("LiveSensorReadyTip");
-		if (Tab0_TriggerThresholdTitleText != null) Tab0_TriggerThresholdTitleText.Text = I18n.T("TriggerThresholdTitle");
-		if (Tab0_TriggerThresholdDescText != null) Tab0_TriggerThresholdDescText.Text = I18n.T("TriggerThresholdDesc");
+		if (LiveSensorStatusText != null && !_isRecordingTrigger) LiveSensorStatusText.Text = I18n.T("TriggerSceneSensorReady");
+		if (Tab0_TriggerThresholdTitleText != null) Tab0_TriggerThresholdTitleText.Text = I18n.T("TriggerSceneDistance");
+		if (Tab0_TriggerThresholdDescText != null) Tab0_TriggerThresholdDescText.Text = I18n.T("TriggerSceneDistanceHint");
 		if (Tab0_CoreDeadzoneTitleText != null) Tab0_CoreDeadzoneTitleText.Text = I18n.T("CoreDeadzoneTitle");
 		if (Tab0_CoreDeadzoneDescText != null) Tab0_CoreDeadzoneDescText.Text = I18n.T("CoreDeadzoneDesc");
 
@@ -3122,13 +3069,13 @@ public partial class SettingsWindow : Window
 		if (Tab0_EdgeOverflowMarginYDesc != null) Tab0_EdgeOverflowMarginYDesc.Text = I18n.T("EdgeOverflowMarginYDesc");
 
 		// --- Phase 1: Process Isolation & Custom Trigger ---
-		if (Tab0_BlacklistModeLabel != null) Tab0_BlacklistModeLabel.Text = I18n.T("BlacklistModeLabel");
-		if (Tab0_BlacklistModeSub != null) Tab0_BlacklistModeSub.Text = I18n.T("BlacklistModeSub");
-		if (Tab0_WhitelistModeLabel != null) Tab0_WhitelistModeLabel.Text = I18n.T("WhitelistModeLabel");
-		if (Tab0_WhitelistModeSub != null) Tab0_WhitelistModeSub.Text = I18n.T("WhitelistModeSub");
-		if (Tab0_ProcessCustomTriggerCardTitle != null) Tab0_ProcessCustomTriggerCardTitle.Text = I18n.T("ProcessCustomTriggerCardTitle");
+		if (Tab0_BlacklistModeLabel != null) Tab0_BlacklistModeLabel.Text = I18n.T("TriggerSceneDefaultPolicy");
+		if (Tab0_BlacklistModeSub != null) Tab0_BlacklistModeSub.Text = I18n.T("TriggerSceneDefaultHint");
+		if (Tab0_WhitelistModeLabel != null) Tab0_WhitelistModeLabel.Text = I18n.T("TriggerSceneOnlyAllowed");
+		if (Tab0_WhitelistModeSub != null) Tab0_WhitelistModeSub.Text = I18n.T("TriggerSceneOnlyAllowedHint");
+		if (Tab0_ProcessCustomTriggerCardTitle != null) Tab0_ProcessCustomTriggerCardTitle.Text = I18n.T("TriggerSceneOverrideInput");
 		if (CloseProcessTriggerCardBtn != null) CloseProcessTriggerCardBtn.ToolTip = I18n.T("BtnCloseCardTip");
-		if (Tab0_ProcessCustomTriggerCardDesc != null) Tab0_ProcessCustomTriggerCardDesc.Text = I18n.T("ProcessCustomTriggerCardDesc");
+		if (Tab0_ProcessCustomTriggerCardDesc != null) Tab0_ProcessCustomTriggerCardDesc.Text = I18n.T("TriggerSceneOverrideHint");
 		if (Tab0_ProcessCurrentTriggerLabel != null) Tab0_ProcessCurrentTriggerLabel.Text = I18n.T("ProcessCurrentTriggerLabel");
 		if (RecordProcessTriggerButton != null) RecordProcessTriggerButton.Content = I18n.T("BtnRecordProcessTrigger");
 		if (ResetProcessTriggerButton != null) ResetProcessTriggerButton.Content = I18n.T("BtnResetProcessTrigger");
@@ -3148,6 +3095,7 @@ public partial class SettingsWindow : Window
 		if (ProcessCurrentTriggerBadgeText != null && string.IsNullOrEmpty(_recordingProcessName)) ProcessCurrentTriggerBadgeText.Text = I18n.T("ProcessTriggerUnconfigured");
 
 		RefreshGestureMappings();
+		ApplyTriggerSceneLocalization();
 		RefreshProcessListUI();
 
 		UpdateFocusActionTypeItemsSource();
@@ -3832,8 +3780,11 @@ public partial class SettingsWindow : Window
 			return;
 		}
 		index = Math.Clamp(index, 0, 5);
+		if (index != 0 && TriggerSettingsGrid.Visibility == Visibility.Visible)
+			CancelTriggerSceneRecordings();
 		_lastSelectedTabIndex = index;
 		TriggerSettingsGrid.Visibility = ((index != 0) ? Visibility.Collapsed : Visibility.Visible);
+		if (index == 0) RefreshTriggerSimulation();
 		AppearanceSettingsGrid.Visibility = ((index != 1) ? Visibility.Collapsed : Visibility.Visible);
 		MappingsSettingsGrid.Visibility = ((index != 2) ? Visibility.Collapsed : Visibility.Visible);
         UpdateStudioWindowSpacing();
@@ -3919,6 +3870,7 @@ public partial class SettingsWindow : Window
 			UpdateProfileToolbarButtonStates();
 			break;
 		case 1:
+			RefreshWheelAppearanceSidebar();
 			RenderLiveWheelPreview();
 			break;
 		}
@@ -4243,6 +4195,7 @@ public partial class SettingsWindow : Window
 	private void Window_Closing(object sender, CancelEventArgs e)
 	{
 		StopProfileActivationRecording();
+		CancelTriggerSceneRecordings();
 		if (!_isClosingForRelease && !App.IsExiting)
 		{
 			e.Cancel = true;
@@ -7391,6 +7344,7 @@ public partial class SettingsWindow : Window
 	{
 		if (_officialCatalogCacheLoaded) return;
 		_officialCatalogCacheLoaded = true;
+		_releaseStats = OfficialPluginReleaseStats.LoadCached();
 
 		if (OfficialPluginClient.TryLoadCachedCatalog(
 			out OfficialPluginCatalog catalog,
@@ -7422,28 +7376,40 @@ public partial class SettingsWindow : Window
 
 	private async Task RefreshOfficialPluginsAsync()
 	{
-		if (_officialPluginsLoading) return;
+		if (_officialPluginsLoading || _resourcesReleased) return;
+		CancellationToken lifetime = _lifetimeCts.Token;
 		_officialPluginsLoading = true;
 		if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = false;
 		RenderOfficialPluginsStatus();
 
 		try
 		{
-			_officialPluginCatalog = await OfficialPluginClient.FetchCatalogAsync(CapturePluginDownloadOptions());
-			_officialCatalogCachedAt = OfficialPluginClient.GetCachedCatalogTimestamp();
-			_officialPluginsError = null;
-			RenderOfficialPluginItems();
-		}
-		catch (Exception ex)
-		{
-			AppLogger.LogWarn($"[plugin] 刷新官方插件目录失败：{ex.Message}");
-			_officialPluginsError = ex.Message;
+			try
+			{
+				var fetchedCatalog = await OfficialPluginClient.FetchCatalogAsync(CapturePluginDownloadOptions(), lifetime);
+				if (lifetime.IsCancellationRequested) return;
+				_officialPluginCatalog = fetchedCatalog;
+				_officialCatalogCachedAt = OfficialPluginClient.GetCachedCatalogTimestamp();
+				_officialPluginsError = null;
+			}
+			catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { return; }
+			catch (Exception ex)
+			{
+				AppLogger.LogWarn($"[plugin] 刷新官方插件目录失败：{ex.Message}");
+				_officialPluginsError = ex.Message;
+			}
+			if (!_resourcesReleased && _officialPluginCatalog is { } catalog)
+				await RefreshPluginReleaseStatsAsync(catalog, lifetime);
 		}
 		finally
 		{
 			_officialPluginsLoading = false;
-			if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = true;
-			RenderOfficialPluginsStatus();
+			if (!_resourcesReleased)
+			{
+				if (RefreshOfficialPluginsButton != null) RefreshOfficialPluginsButton.IsEnabled = true;
+				RenderOfficialPluginsStatus();
+				RenderOfficialPluginItems();
+			}
 		}
 	}
 
@@ -7458,6 +7424,7 @@ public partial class SettingsWindow : Window
 	private void RenderOfficialPluginsStatus()
 	{
 		if (OfficialPluginsStatusText == null) return;
+		RenderPluginReleaseStatsStatus();
 
 		if (_officialPluginsLoading)
 		{
@@ -7487,7 +7454,19 @@ public partial class SettingsWindow : Window
 		if (OfficialPluginItemsControl == null) return;
 		var installed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 		foreach (PluginInstance instance in PluginHost.ListInstances()) installed[instance.PluginId] = instance.Entry.Version;
-		_marketCards = (_officialPluginCatalog?.Modules ?? []).Select(module => new OfficialPluginListItem(module, installed.TryGetValue(module.Id, out string? version) ? version : null)).OrderBy(item => item.DisplayName, StringComparer.CurrentCultureIgnoreCase).ToList();
+		var assets = (_releaseStats?.Assets ?? []).GroupBy(asset => asset.Key)
+			.ToDictionary(group => group.Key, group => group.First());
+		_marketCards = (_officialPluginCatalog?.Modules ?? []).Select(entry =>
+			new OfficialPluginListItem(entry, installed.TryGetValue(entry.Id, out string? version) ? version : null)
+			{
+				ReleaseInfo = PluginReleaseCardInfo.Build(entry, assets)
+			}).ToList();
+		var metadata = _marketCards.ToDictionary(item => item.Module.Id, item => item.ReleaseInfo, StringComparer.OrdinalIgnoreCase);
+		foreach (var item in _installedCards)
+		{
+			item.ReleaseInfo = item.IsOfficial && metadata.TryGetValue(item.PluginId, out var info)
+				? info : PluginReleaseCardInfo.Empty;
+		}
 		RenderPluginLibraryFilters();
 	}
 
@@ -11100,11 +11079,13 @@ public partial class SettingsWindow : Window
 		// MouseHook 复用同一事件实例派发，严禁跨线程持有：先取出原始值再入 Dispatcher 队列
 		string mouseButton = e.MouseButton;
 		uint mouseData = e.MouseData;
+		System.Windows.Point position = e.Position;
 		ModifierKeys inputModifiers = KeyboardHook.GetCurrentModifiers();
 		long recordingGeneration = Interlocked.Read(ref _profileRecordingGeneration);
 		((DispatcherObject)this).Dispatcher.BeginInvoke((Delegate)(Action)delegate
 		{
-			if (!_resourcesReleased && recordingGeneration == Interlocked.Read(ref _profileRecordingGeneration))
+			if (!_resourcesReleased && recordingGeneration == Interlocked.Read(ref _profileRecordingGeneration) &&
+				!HandleTriggerRecorderInterfaceClick(mouseButton, position))
 			{
 				ProcessRawMouseButton(mouseButton, mouseData, inputModifiers);
 			}
@@ -11163,38 +11144,9 @@ public partial class SettingsWindow : Window
 
 	private void UpdateTriggerBadgeDisplay()
 	{
-		if (ConfigManager.CurrentConfig != null)
-		{
-			TriggerConfig triggerConfig = ConfigManager.CurrentConfig.Trigger;
-			if (triggerConfig == null)
-			{
-				triggerConfig = new TriggerConfig();
-				ConfigManager.CurrentConfig.Trigger = triggerConfig;
-			}
-
-			// 核心保障：若配置中选择单键鼠标左键（无修饰键），自动保障长按呼出处于开启状态，使得长按呼出轮盘，单机保持原生点击
-			bool isLeftButton = string.Equals(triggerConfig.MouseButton, "LeftButton", StringComparison.OrdinalIgnoreCase) ||
-			                    string.Equals(ConfigManager.CurrentConfig.TriggerButton, "LeftButton", StringComparison.OrdinalIgnoreCase);
-			bool hasModifier = triggerConfig.RequireCtrl || triggerConfig.RequireShift || triggerConfig.RequireAlt || triggerConfig.RequireWin;
-			if (triggerConfig.TriggerType == "Mouse" && isLeftButton && !hasModifier)
-			{
-				if (!ConfigManager.CurrentConfig.LongPressTrigger)
-				{
-					ConfigManager.CurrentConfig.LongPressTrigger = true;
-					if (LongPressTriggerCheckBox != null)
-					{
-						LongPressTriggerCheckBox.IsChecked = true;
-					}
-					ScheduleAutoSave();
-				}
-			}
-
-			if (CurrentTriggerBadgeText != null)
-			{
-				string text = FormatTriggerDisplay(triggerConfig);
-				CurrentTriggerBadgeText.Text = text;
-			}
-		}
+		if (CurrentTriggerBadgeText != null)
+			CurrentTriggerBadgeText.Text = FormatTriggerDisplay(ConfigManager.CurrentConfig?.Trigger);
+		UpdateLongPressTriggerControls();
 	}
 
 	public static string FormatTriggerDisplay(TriggerConfig? trigger)
@@ -11276,23 +11228,12 @@ public partial class SettingsWindow : Window
 	private void ProfileActivationInteraction_PreviewMouseDown(object sender, MouseButtonEventArgs e)
 	{
 		if (_recordingActivationProfile == null || e.ChangedButton != MouseButton.Left) return;
-		DependencyObject? element = e.OriginalSource as DependencyObject;
-		while (element != null && !ReferenceEquals(element, this))
-		{
-			if (element is System.Windows.Controls.Primitives.ButtonBase || element is ItemsControl ||
-				element is System.Windows.Controls.Primitives.TextBoxBase ||
-				element is System.Windows.Controls.Primitives.RangeBase)
-			{
-				bool cancelButton = ReferenceEquals(element, RecordProfileActivationButton) || ReferenceEquals(element, ProfileModeRecordButton);
-				StopProfileActivationRecording();
-				// Suppressing the cancel button's down also suppresses its later Click;
-				// otherwise that Click would start a new recording after cancellation.
-				if (cancelButton) e.Handled = true;
-				return;
-			}
-			element = element is Visual ? VisualTreeHelper.GetParent(element) :
-				(element as FrameworkContentElement)?.Parent;
-		}
+		var control = FindInputControl(e.OriginalSource as DependencyObject);
+		if (control == null) return;
+		bool cancelButton = ReferenceEquals(control, RecordProfileActivationButton) || ReferenceEquals(control, ProfileModeRecordButton);
+		StopProfileActivationRecording();
+		// Suppress the cancel button's click so it does not start another recording.
+		if (cancelButton) e.Handled = true;
 	}
 
 	private void CancelProfileActivationForNavigation(object sender, MouseButtonEventArgs e)
@@ -11505,7 +11446,7 @@ public partial class SettingsWindow : Window
 		_isRecordingTrigger = false;
 		if (RecordTriggerButton != null)
 		{
-			RecordTriggerButton.Content = I18n.T("BtnRecordTrigger");
+			RecordTriggerButton.Content = I18n.T("TriggerSceneRecord");
 			((DependencyObject)RecordTriggerButton).ClearValue(System.Windows.Controls.Control.BackgroundProperty);
 		}
 		if (LiveSensorStatusText != null)
@@ -11523,7 +11464,7 @@ public partial class SettingsWindow : Window
 			}
 			else
 			{
-				LiveSensorStatusText.Text = I18n.T("LiveSensorReadyTip");
+				LiveSensorStatusText.Text = I18n.T("TriggerSceneSensorReady");
 			}
 		}
 		if (LiveSensorDot != null)
@@ -11666,10 +11607,6 @@ public partial class SettingsWindow : Window
 				    !ConfigManager.CurrentConfig.Trigger.RequireWin)
 				{
 					ConfigManager.CurrentConfig.LongPressTrigger = true;
-					if (LongPressTriggerCheckBox != null)
-					{
-						LongPressTriggerCheckBox.IsChecked = true;
-					}
 				}
 				ConfigManager.CurrentConfig.Trigger.DisplayText = FormatTriggerDisplay(ConfigManager.CurrentConfig.Trigger);
 				ConfigManager.CurrentConfig.TriggerButton = mouseButton;
@@ -13215,6 +13152,8 @@ public partial class SettingsWindow : Window
 		}
 		if (LayoutTargetSlotRadio != null && LayoutTargetSlotRadio.IsChecked == true)
 		{
+			if (CanEditWheelAppearance && _appearancePreview != AppearancePreviewKind.Effects)
+				ChangeAppearancePreview(AppearancePreviewKind.Effects);
 			if (_selectedLayoutSlotIndex < 0)
 			{
 				_selectedLayoutSlotIndex = 0;
@@ -15668,6 +15607,7 @@ public partial class SettingsWindow : Window
 		{
 			ConfigManager.CurrentConfig.DisableOnFullScreen = DisableOnFullScreenCheckBox.IsChecked == true;
 			SyncUiToConfigAndSave();
+			RefreshTriggerSimulation();
 		}
 	}
 
@@ -15679,11 +15619,13 @@ public partial class SettingsWindow : Window
 			ConfigManager.CurrentConfig.DisableOnShift = ShiftModifierCheckBox.IsChecked == true;
 			ConfigManager.CurrentConfig.DisableOnAlt = AltModifierCheckBox.IsChecked == true;
 			SyncUiToConfigAndSave();
+			RefreshTriggerSimulation();
 		}
 	}
 
 	private void BrowseBlacklistButton_Click(object sender, RoutedEventArgs e)
 	{
+		if (!CanEditTriggerScene) return;
 		try
 		{
 			ProgramPickerWindow programPickerWindow = new ProgramPickerWindow();
@@ -15701,14 +15643,13 @@ public partial class SettingsWindow : Window
 
 	private void AddBlacklistButton_Click(object sender, RoutedEventArgs e)
 	{
-		string text = NewBlacklistProcessTextBox.Text.Trim().ToLower();
-		if (!string.IsNullOrEmpty(text))
-		{
-			AddBlacklistProcess(text);
-			return;
-		}
+		if (!CanEditTriggerScene) return;
+		AddBlacklistProcess(NewBlacklistProcessTextBox.Text);
+	}
 
-		// 输入框为空时，弹出智能运行窗口与进程捕捉器（与照片 2 效果一致），直观高效
+	private void TriggerCaptureProcess_Click(object sender, RoutedEventArgs e)
+	{
+		if (!CanEditTriggerScene) return;
 		try
 		{
 			WindowPickerWindow picker = new WindowPickerWindow
@@ -15743,77 +15684,58 @@ public partial class SettingsWindow : Window
 
 	private void IsolationModeRadio_Checked(object sender, RoutedEventArgs e)
 	{
-		if (!_isUpdatingUi && ConfigManager.CurrentConfig != null)
-		{
-			System.Windows.Controls.RadioButton isolationWhitelistRadio = IsolationWhitelistRadio;
-			string isolationMode = ((isolationWhitelistRadio != null && isolationWhitelistRadio.IsChecked == true) ? "Whitelist" : "Blacklist");
-			ConfigManager.CurrentConfig.IsolationMode = isolationMode;
-			RefreshProcessListUI();
-			SyncUiToConfigAndSave();
-		}
+		if (sender is System.Windows.Controls.RadioButton { IsChecked: true })
+			SetTriggerIsolationPolicy(ReferenceEquals(sender, IsolationWhitelistRadio));
 	}
 
 	private void RefreshProcessListUI()
 	{
-		if (BlacklistListBox == null || ConfigManager.CurrentConfig == null)
-		{
-			return;
-		}
-		bool flag = string.Equals(ConfigManager.CurrentConfig.IsolationMode, "Whitelist", StringComparison.OrdinalIgnoreCase);
-		if (IsolationWhitelistRadio != null)
-		{
-			IsolationWhitelistRadio.IsChecked = flag;
-		}
-		if (IsolationBlacklistRadio != null)
-		{
-			IsolationBlacklistRadio.IsChecked = !flag;
-		}
-		if (ProcessListDescText != null)
-		{
-			ProcessListDescText.Text = (flag ? I18n.T("WhitelistDesc") : I18n.T("BlacklistDesc"));
-		}
+		if (_refreshingTriggerScene || BlacklistListBox == null ||
+			ConfigManager.CurrentConfig is not { } config) return;
 
-		string? previouslySelectedProcess = (BlacklistListBox.SelectedItem as BlacklistProcessItemViewModel)?.ProcessName ?? _recordingProcessName;
-
-		List<string>? list = flag ? ConfigManager.CurrentConfig.WhitelistedProcesses : ConfigManager.CurrentConfig.BlacklistedProcesses;
-		var viewModels = new List<BlacklistProcessItemViewModel>();
-		if (list != null)
+		bool newConfig = !ReferenceEquals(config, _triggerSceneConfig);
+		if (newConfig)
 		{
-			foreach (string item in list)
-			{
-				TriggerConfig? overrideTrigger = null;
-				if (!flag && ConfigManager.CurrentConfig.BlacklistTriggerOverrides != null)
-				{
-					ConfigManager.CurrentConfig.BlacklistTriggerOverrides.TryGetValue(item, out overrideTrigger);
-				}
-				viewModels.Add(BlacklistProcessItemViewModel.Create(item, overrideTrigger));
-			}
+			_triggerSceneConfig = config;
+			_viewedAllowList = null;
+			_removedTriggerRule = null;
 		}
+		bool allow = ViewsTriggerAllowList(config);
+		string? selected = newConfig ? null :
+			(BlacklistListBox.SelectedItem as BlacklistProcessItemViewModel)?.ProcessName ?? _recordingProcessName;
+		string query = TriggerFilterProcessesBox.Text.Trim();
+		var list = TriggerList(config, allow);
+		var rows = (list ?? []).Where(name => !string.IsNullOrWhiteSpace(name) &&
+			name.Contains(query, StringComparison.OrdinalIgnoreCase)).Select(name =>
+			BlacklistProcessItemViewModel.Create(name,
+				allow ? null : TriggerSceneRules.GetOverrideTrigger(config, name.Trim().ToLowerInvariant()), allow)).ToList();
 
-		BlacklistListBox.ItemsSource = viewModels;
-
-		if (!string.IsNullOrEmpty(previouslySelectedProcess))
+		_refreshingTriggerScene = true;
+		try
 		{
-			var matched = viewModels.FirstOrDefault(vm => string.Equals(vm.ProcessName, previouslySelectedProcess, StringComparison.OrdinalIgnoreCase));
-			if (matched != null)
-			{
-				BlacklistListBox.SelectedItem = matched;
-				BlacklistListBox.ScrollIntoView(matched);
-				UpdateProcessTriggerCardVisual();
-			}
-			else if (_recordingProcessName != null)
-			{
-				HideProcessTriggerCard();
-			}
+			RefreshTriggerRuleStatus(config);
+			BlacklistListBox.ItemsSource = rows;
+			BlacklistListBox.SelectedItem = rows.FirstOrDefault(row => string.Equals(row.ProcessName, selected, StringComparison.OrdinalIgnoreCase));
+			DeleteBlacklistButton.IsEnabled = BlacklistListBox.SelectedItem != null;
+			TriggerProcessListStatus.Text = rows.Count == 0
+				? I18n.T(string.IsNullOrEmpty(query) ? "TriggerSceneNoRules" : "TriggerSceneNoMatches") : "";
+			RefreshTriggerSimulatorProcesses(config);
 		}
+		finally { _refreshingTriggerScene = false; }
+		if ((allow || newConfig || BlacklistListBox.SelectedItem == null) && _recordingProcessName != null)
+			HideProcessTriggerCard();
+		else
+			UpdateProcessTriggerCardVisual();
+		RefreshTriggerSimulation();
 	}
 
 	private void BlacklistListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 	{
-		if (BlacklistListBox.SelectedItem is BlacklistProcessItemViewModel vm)
-		{
-			ShowProcessTriggerCard(vm.ProcessName);
-		}
+		if (_refreshingTriggerScene || BlacklistListBox == null) return;
+		if (DeleteBlacklistButton != null) DeleteBlacklistButton.IsEnabled = BlacklistListBox.SelectedItem != null;
+		if (_recordingProcessName != null && (BlacklistListBox.SelectedItem is not BlacklistProcessItemViewModel row ||
+			!string.Equals(row.ProcessName, _recordingProcessName, StringComparison.OrdinalIgnoreCase)))
+			HideProcessTriggerCard();
 	}
 
 	private void BlacklistListBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -15827,11 +15749,10 @@ public partial class SettingsWindow : Window
 
 	private void ShowProcessTriggerCard(string proc)
 	{
-		if (string.IsNullOrWhiteSpace(proc))
-		{
-			return;
-		}
-		_recordingProcessName = proc.Trim().ToLower();
+		if (ConfigManager.CurrentConfig is not { } config || ViewsTriggerAllowList(config) || string.IsNullOrWhiteSpace(proc)) return;
+		if (_isRecordingProcessTrigger && !string.Equals(proc, _recordingProcessName, StringComparison.OrdinalIgnoreCase))
+			HideProcessTriggerCard();
+		_recordingProcessName = proc.Trim().ToLowerInvariant();
 		if (SelectedProcessNameLabel != null)
 		{
 			SelectedProcessNameLabel.Text = _recordingProcessName;
@@ -15845,15 +15766,9 @@ public partial class SettingsWindow : Window
 
 	private void HideProcessTriggerCard()
 	{
-		if (_isRecordingProcessTrigger)
-		{
-			StopProcessTriggerRecording(saved: false);
-		}
 		_recordingProcessName = null;
-		if (BlacklistProcessTriggerCard != null)
-		{
-			BlacklistProcessTriggerCard.Visibility = Visibility.Collapsed;
-		}
+		if (BlacklistProcessTriggerCard != null) BlacklistProcessTriggerCard.Visibility = Visibility.Collapsed;
+		if (_isRecordingProcessTrigger) StopProcessTriggerRecording(saved: false);
 	}
 
 	private void UpdateProcessTriggerCardVisual()
@@ -15988,8 +15903,10 @@ public partial class SettingsWindow : Window
 
 	private void ConfigProcessTriggerBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if ((sender as FrameworkElement)?.Tag is BlacklistProcessItemViewModel vm)
+		if (CanEditTriggerScene && sender is FrameworkElement { Tag: BlacklistProcessItemViewModel vm } &&
+			ConfigManager.CurrentConfig is { } config && !ViewsTriggerAllowList(config))
 		{
+			BlacklistListBox.SelectedItem = vm;
 			ShowProcessTriggerCard(vm.ProcessName);
 			StartProcessTriggerRecording();
 		}
@@ -15997,11 +15914,13 @@ public partial class SettingsWindow : Window
 
 	private void ResetProcessTriggerBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if ((sender as FrameworkElement)?.Tag is BlacklistProcessItemViewModel vm)
+		if (CanEditTriggerScene && sender is FrameworkElement { Tag: BlacklistProcessItemViewModel vm } &&
+			ConfigManager.CurrentConfig is { } config && !ViewsTriggerAllowList(config) &&
+			FindTriggerOverrideKey(config, vm.ProcessName) is { } key &&
+			config.BlacklistTriggerOverrides?.Remove(key) == true)
 		{
-			ConfigManager.CurrentConfig?.BlacklistTriggerOverrides?.Remove(vm.ProcessName);
 			ScheduleAutoSave();
-			if (string.Equals(_recordingProcessName, vm.ProcessName, StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(_recordingProcessName, key, StringComparison.OrdinalIgnoreCase))
 			{
 				UpdateProcessTriggerCardVisual();
 			}
@@ -16011,84 +15930,37 @@ public partial class SettingsWindow : Window
 
 	private void DeleteSingleProcessBtn_Click(object sender, RoutedEventArgs e)
 	{
-		if ((sender as FrameworkElement)?.Tag is BlacklistProcessItemViewModel vm)
-		{
-			string proc = vm.ProcessName;
-			if (string.Equals(ConfigManager.CurrentConfig?.IsolationMode, "Whitelist", StringComparison.OrdinalIgnoreCase))
-			{
-				ConfigManager.CurrentConfig?.WhitelistedProcesses?.Remove(proc);
-			}
-			else
-			{
-				ConfigManager.CurrentConfig?.BlacklistedProcesses?.Remove(proc);
-				ConfigManager.CurrentConfig?.BlacklistTriggerOverrides?.Remove(proc);
-			}
-			if (string.Equals(_recordingProcessName, proc, StringComparison.OrdinalIgnoreCase))
-			{
-				HideProcessTriggerCard();
-			}
-			ScheduleAutoSave();
-			RefreshProcessListUI();
-		}
+		if (sender is FrameworkElement { Tag: BlacklistProcessItemViewModel vm }) RemoveTriggerRule(vm.ProcessName);
 	}
 
-	private void AddBlacklistProcess(string proc)
+	private void AddBlacklistProcess(string process)
 	{
-		if (string.IsNullOrWhiteSpace(proc))
+		if (!CanEditTriggerScene || ConfigManager.CurrentConfig is not { } config) return;
+		string name = NormalizeTriggerProcess(process);
+		if (name.Length == 0)
 		{
+			TriggerProcessListStatus.Text = I18n.T("TriggerSceneInvalidProcess");
 			return;
 		}
-		proc = proc.Trim().ToLower();
-		if (!proc.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+		bool allow = ViewsTriggerAllowList(config);
+		List<string> list = allow ? config.WhitelistedProcesses ??= new() : config.BlacklistedProcesses ??= new();
+		if (list.Any(item => string.Equals(item?.Trim(), name, StringComparison.OrdinalIgnoreCase)))
 		{
-			proc += ".exe";
+			TriggerProcessListStatus.Text = I18n.T("TriggerSceneDuplicateProcess");
+			return;
 		}
-		bool isWhitelist = string.Equals(ConfigManager.CurrentConfig?.IsolationMode, "Whitelist", StringComparison.OrdinalIgnoreCase);
-		List<string> list = isWhitelist
-			? (ConfigManager.CurrentConfig.WhitelistedProcesses ??= new List<string>())
-			: (ConfigManager.CurrentConfig.BlacklistedProcesses ??= new List<string>());
-
-		if (!list.Contains(proc))
-		{
-			list.Add(proc);
-			NewBlacklistProcessTextBox?.Clear();
-			SyncUiToConfigAndSave();
-			RefreshProcessListUI();
-			ShowProcessTriggerCard(proc);
-		}
-		else
-		{
-			ShowProcessTriggerCard(proc);
-		}
+		list.Add(name);
+		NewBlacklistProcessTextBox.Clear();
+		TriggerFilterProcessesBox.Clear();
+		SyncUiToConfigAndSave();
+		RefreshProcessListUI();
+		BlacklistListBox.SelectedItem = BlacklistListBox.Items.OfType<BlacklistProcessItemViewModel>()
+			.FirstOrDefault(item => string.Equals(item.ProcessName, name, StringComparison.OrdinalIgnoreCase));
 	}
 
 	private void DeleteBlacklistButton_Click(object sender, RoutedEventArgs e)
 	{
-		var selectedVm = BlacklistListBox?.SelectedItem as BlacklistProcessItemViewModel;
-		string? text = selectedVm?.ProcessName;
-		if (string.IsNullOrEmpty(text) && BlacklistListBox?.Items.Count > 0)
-		{
-			var lastVm = BlacklistListBox.Items[BlacklistListBox.Items.Count - 1] as BlacklistProcessItemViewModel;
-			text = lastVm?.ProcessName;
-		}
-		if (!string.IsNullOrEmpty(text))
-		{
-			if (string.Equals(ConfigManager.CurrentConfig?.IsolationMode, "Whitelist", StringComparison.OrdinalIgnoreCase))
-			{
-				ConfigManager.CurrentConfig?.WhitelistedProcesses?.Remove(text);
-			}
-			else
-			{
-				ConfigManager.CurrentConfig?.BlacklistedProcesses?.Remove(text);
-				ConfigManager.CurrentConfig?.BlacklistTriggerOverrides?.Remove(text);
-			}
-			if (string.Equals(_recordingProcessName, text, StringComparison.OrdinalIgnoreCase))
-			{
-				HideProcessTriggerCard();
-			}
-			SyncUiToConfigAndSave();
-			RefreshProcessListUI();
-		}
+		if (BlacklistListBox?.SelectedItem is BlacklistProcessItemViewModel row) RemoveTriggerRule(row.ProcessName);
 	}
 
 	private async void CheckUpdateNowBtn_Click(object sender, RoutedEventArgs e)
@@ -17341,6 +17213,7 @@ public partial class SettingsWindow : Window
 
 	private void RenderLiveWheelPreview()
 	{
+		RefreshWheelAppearancePreview();
 		if (_isRenderingPreview || LiveWheelPreviewCanvas == null || ConfigManager.CurrentConfig == null)
 		{
 			return;
@@ -18482,7 +18355,7 @@ public partial class SettingsWindow : Window
 					if (isFan)
 					{
 						int slot = RadialWindow.GetFanSlotIndex(num36, activeCount);
-						var (du, dv) = RadialWindow.GetFanSubOffsetForShape(ConfigManager.CurrentConfig.Shape, slot);
+						var (du, dv) = RadialWindow.GetFanSubOffsetForShape(LegacyRingGeometry.SecondaryShape(ConfigManager.CurrentConfig), slot);
 						double ratio = (ConfigManager.CurrentConfig.SubWheelOuterRadius > 0.0 && ConfigManager.CurrentConfig.WheelRadius > 0.0)
 							? (ConfigManager.CurrentConfig.SubWheelOuterRadius / (ConfigManager.CurrentConfig.WheelRadius * 1.55))
 							: 1.0;
@@ -18492,11 +18365,11 @@ public partial class SettingsWindow : Window
 						double vx = -Math.Sin(num24), vy = Math.Cos(num24);
 						num41 = num + ux * (du * R_sub) + vx * (dv * R_sub);
 						num42 = num2 + uy * (du * R_sub) + vy * (dv * R_sub);
-						data2 = RadialWindow.CreateSubMenuGeometry(shape, num41, num42, itemR_sub, num24, num, num2, cornerRadius2);
+						data2 = RadialWindow.CreateSubMenuGeometry(LegacyRingGeometry.SecondaryShape(ConfigManager.CurrentConfig), num41, num42, itemR_sub, num24, num, num2, cornerRadius2);
 					}
 					else
 					{
-						data2 = IconHelper.CreateAdvancedSectorGeometry(num, num2, num37, num38, num12, num13, shape, num11, cornerRadius2);
+						data2 = IconHelper.CreateAdvancedSectorGeometry(num, num2, num37, num38, num12, num13, LegacyRingGeometry.SecondaryShape(ConfigManager.CurrentConfig), num11, cornerRadius2);
 					}
 
 					TranslateTransform translateTransform2 = new TranslateTransform(0.0, 0.0);
@@ -19347,6 +19220,7 @@ public partial class SettingsWindow : Window
 	private void ApplySubmenuStyle(string style)
 	{
 		ConfigManager.CurrentConfig.SubmenuStyle = style;
+		_appearanceSidebarNeedsRefresh = true;
 		_isUpdatingUi = true;
 		try { SetComboBoxSelectedValue(SubmenuStyleComboBox, style); }
 		finally { _isUpdatingUi = false; }
@@ -19362,21 +19236,29 @@ public partial class SettingsWindow : Window
 
 	private void UpdateLongPressTriggerControls()
 	{
-		bool longPressEnabled = ConfigManager.CurrentConfig.LongPressTrigger;
-		bool longPressOnly = longPressEnabled && ConfigManager.CurrentConfig.LongPressOnlyTrigger;
-		if (LongPressDelayPanel != null)
+		if (ConfigManager.CurrentConfig is not { } config || TriggerDragMode == null) return;
+		bool longPressEnabled = config.LongPressTrigger;
+		bool longPressOnly = longPressEnabled && config.LongPressOnlyTrigger;
+		TriggerDragMode.IsEnabled = !IsUnmodifiedLeftTrigger(config.Trigger);
+		bool refreshing = _refreshingTriggerScene;
+		_refreshingTriggerScene = true;
+		try
 		{
-			LongPressDelayPanel.Visibility = longPressEnabled ? Visibility.Visible : Visibility.Collapsed;
+			TriggerDragMode.IsChecked = !longPressEnabled;
+			TriggerEitherMode.IsChecked = longPressEnabled && !longPressOnly;
+			TriggerHoldMode.IsChecked = longPressOnly;
 		}
-		// 仅暂时禁用控件，不清除用户原有的手势启用状态、按键和映射。
-		if (GestureEnabledCheckBox != null)
-		{
-			GestureEnabledCheckBox.IsEnabled = !longPressOnly;
-		}
-		if (GestureSettingsDetailsPanel != null)
-		{
-			GestureSettingsDetailsPanel.IsEnabled = !longPressOnly;
-		}
+		finally { _refreshingTriggerScene = refreshing; }
+		LongPressDelayPanel.Visibility = longPressEnabled ? Visibility.Visible : Visibility.Collapsed;
+		bool leftHold = longPressEnabled && IsLeftTrigger(config.Trigger);
+		TriggerDistancePanel.Visibility = longPressOnly || leftHold ? Visibility.Collapsed : Visibility.Visible;
+		TriggerInvocationHint.Text = I18n.T(longPressOnly ? "TriggerSceneHoldHint" :
+			leftHold ? "TriggerSceneLeftHoldHint" : longPressEnabled ? "TriggerSceneEitherHint" : "TriggerSceneDragHint");
+
+		// Keep independent gesture preferences and mappings intact while only-long-press pauses that feature.
+		if (GestureEnabledCheckBox != null) GestureEnabledCheckBox.IsEnabled = !longPressOnly;
+		if (GestureSettingsDetailsPanel != null) GestureSettingsDetailsPanel.IsEnabled = !longPressOnly;
+		RefreshTriggerSimulation();
 	}
 
 	private void RefreshLongPressDelayControls()
@@ -19391,28 +19273,6 @@ public partial class SettingsWindow : Window
 				LongPressDelayLabel.Text = $"{LongPressDelaySlider.Value:0} ms";
 		}
 		finally { _isUpdatingUi = wasUpdating; }
-	}
-
-	private void LongPressTriggerCheckBox_Changed(object sender, RoutedEventArgs e)
-	{
-		if (_isUpdatingUi || ConfigManager.CurrentConfig == null)
-		{
-			return;
-		}
-		ConfigManager.CurrentConfig.LongPressTrigger = LongPressTriggerCheckBox.IsChecked == true;
-		UpdateLongPressTriggerControls();
-		SyncUiToConfigAndSave();
-	}
-
-	private void LongPressOnlyTriggerCheckBox_Changed(object sender, RoutedEventArgs e)
-	{
-		if (_isUpdatingUi || _isUiInitializing || ConfigManager.CurrentConfig == null)
-		{
-			return;
-		}
-		ConfigManager.CurrentConfig.LongPressOnlyTrigger = LongPressOnlyTriggerCheckBox.IsChecked == true;
-		UpdateLongPressTriggerControls();
-		SyncUiToConfigAndSave();
 	}
 
 	private void LongPressDelaySlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -20388,6 +20248,7 @@ public partial class SettingsWindow : Window
 
 	private void PreviewViewport_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
 	{
+		if (AppearanceGeometryStage?.Visibility == Visibility.Visible) return;
 		if (e.ClickCount == 2)
 		{
 			ResetPreviewViewport();
@@ -20465,6 +20326,7 @@ public partial class SettingsWindow : Window
 
 	public void ResetPreviewViewport()
 	{
+		AppearanceGeometryCanvas?.ResetFit();
 		if (PreviewScaleTransform != null)
 		{
 			PreviewScaleTransform.ScaleX = 1.0;
@@ -20480,6 +20342,7 @@ public partial class SettingsWindow : Window
 
 	private void UpdateZoomLabel()
 	{
+		RefreshWheelAppearancePreview();
 		if (PreviewZoomLabel != null && PreviewScaleTransform != null)
 		{
 			int pct = (int)Math.Round(PreviewScaleTransform.ScaleX * 100.0);

@@ -21,6 +21,8 @@ internal sealed class OfficialPluginListItem
     public bool CanSavePackage => OfficialPluginVersionSelector.Evaluate(Module).IsCompatible;
     public bool CanInstall { get; }
     public bool IsInstalled { get; }
+    public bool IsOfficial => true;
+    public PluginReleaseCardInfo ReleaseInfo { get; init; } = PluginReleaseCardInfo.Empty;
 
     public OfficialPluginListItem(OfficialPluginCatalogEntry entry, string? installedVersion, OfficialPluginEnvironment? environment = null)
     {
