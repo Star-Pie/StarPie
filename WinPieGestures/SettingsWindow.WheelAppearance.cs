@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
 namespace WinPieGestures;
@@ -36,8 +37,6 @@ public partial class SettingsWindow
     private bool _appearanceInitialized;
     private bool _appearanceComparing;
     private int _appearanceDepth = 2;
-    private int _appearanceLegacyDepth = 2;
-    private int _appearanceFixedDepth = 4;
     private int _appearanceLevel = 1;
     private AppConfig? _appearanceSidebarConfig;
     private Slider? _appearanceHandleSlider;
@@ -67,8 +66,6 @@ public partial class SettingsWindow
             var profile = AppearanceProfile(config);
             int activeDepth = profile?.Layers.ElementAtOrDefault(profile.ActiveLayerIndex)?.EffectiveMaxMenuDepth ?? 2;
             _appearanceDepth = config.EnableMultiTier ? Math.Clamp(activeDepth, 2, 5) : 1;
-            if (_appearanceDepth <= 2) _appearanceLegacyDepth = _appearanceDepth;
-            else _appearanceFixedDepth = _appearanceDepth;
             AppearanceGeometryCanvas.LevelSelected += SelectAppearanceLevel;
             AppearanceGeometryCanvas.HandleChanged += value =>
             {
@@ -109,16 +106,14 @@ public partial class SettingsWindow
         _refreshAppearanceBounds.Clear();
         if (effects) return;
         AddAppearanceText(WheelAppearanceFields, "WheelAppearanceTitle", title: true);
-        var modes = AppearanceButtons(WheelAppearanceFields);
-        AddAppearanceButton(modes, "WheelAppearanceLegacy", _appearanceDepth <= 2, () => ChangeAppearanceDepth(_appearanceLegacyDepth));
-        AddAppearanceButton(modes, "WheelAppearanceMulti", _appearanceDepth > 2, () => ChangeAppearanceDepth(_appearanceFixedDepth));
-
-        var depth = AppearanceButtons(WheelAppearanceFields);
-        foreach (int level in _appearanceDepth <= 2 ? new[] { 1, 2 } : new[] { 3, 4, 5 })
+        var depth = new UniformGrid { Columns = 5, Margin = new Thickness(0, 3, 0, 4) };
+        WheelAppearanceFields.Children.Add(depth);
+        for (int level = 1; level <= 5; level++)
         {
             int count = level;
             AddAppearanceButton(depth, I18n.TF("WheelAppearanceLevelCount", count), count == _appearanceDepth,
                 () => ChangeAppearanceDepth(count), localized: true);
+            AutomationProperties.SetAutomationId(depth.Children[depth.Children.Count - 1], $"WheelAppearanceDepth{count}");
         }
         AddAppearanceText(WheelAppearanceFields, "WheelAppearanceDepthHint");
         AddAppearanceText(WheelAppearanceFields, "WheelAppearanceStructure", title: true);
@@ -162,8 +157,6 @@ public partial class SettingsWindow
     private void ChangeAppearanceDepth(int depth)
     {
         _appearanceDepth = depth;
-        if (depth <= 2) _appearanceLegacyDepth = depth;
-        else _appearanceFixedDepth = depth;
         _appearanceLevel = Math.Min(_appearanceLevel, depth);
         if (IsAppearanceHoneycomb(ConfigManager.CurrentConfig)) _appearanceLevel = 0;
         _appearanceComparing = false;

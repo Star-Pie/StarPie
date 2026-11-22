@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -80,7 +81,10 @@ internal static class Program
             Invoke(window, "RefreshWheelAppearance");
             sidebar.Measure(new Size(300, double.PositiveInfinity));
             sidebar.Arrange(new Rect(0, 0, 300, sidebar.DesiredSize.Height));
-            Check(FindById<Button>(sidebar, "WheelAppearanceLegacy").ActualWidth > 0 &&
+            var depthButtons = Enumerable.Range(1, 5).Select(i => FindById<Button>(sidebar, $"WheelAppearanceDepth{i}")).ToArray();
+            Check(depthButtons.All(b => b.ActualWidth > 0 && ReferenceEquals(b.Parent, depthButtons[0].Parent)) &&
+                depthButtons.Select(b => LayoutInformation.GetLayoutSlot(b).Y).Distinct().Count() == 1 &&
+                depthButtons.Select(b => LayoutInformation.GetLayoutSlot(b).X).Distinct().Count() == 5 &&
                 Walk(sidebar).OfType<TextBlock>().Any(x => x.Text == I18n.T("WheelAppearanceTitle")),
                 "localized sidebar laid out " + lang);
         }
@@ -88,8 +92,16 @@ internal static class Program
         Click(FindById<Button>(choices, "WheelAppearanceConfigure"));
         Click(FindById<Button>(sidebar, "WheelAppearanceCompare"));
         Click(FindById<Button>(sidebar, "WheelAppearanceReturn"));
-        Click(FindById<Button>(sidebar, "WheelAppearanceMulti"));
-        Click(FindById<Button>(sidebar, "WheelAppearanceLegacy"));
+        for (int depth = 1; depth <= 5; depth++)
+        {
+            var buttons = Enumerable.Range(1, 5).Select(i => FindById<Button>(sidebar, $"WheelAppearanceDepth{i}")).ToArray();
+            Check(buttons.All(b => ReferenceEquals(b.Parent, buttons[0].Parent)) && buttons[0].Parent is UniformGrid { Columns: 5 },
+                $"depth {depth}: all five choices share one row");
+            Click(buttons[depth - 1]);
+            Check((int)window.GetType().GetField("_appearanceDepth", Private)!.GetValue(window)! == depth,
+                $"depth {depth}: direct selection updates preview");
+        }
+        Click(FindById<Button>(sidebar, "WheelAppearanceDepth2"));
         Check(ConfigManager.ConfigurationRevision == revision && JsonSerializer.Serialize(cfg) == before,
             "preview modes, depth, compare and localization preserve configuration and revision");
 
@@ -124,7 +136,7 @@ internal static class Program
         Check(cfg.SubWheelInnerGap <= cfg.SubWheelOuterRadius - cfg.WheelRadius - 3,
             "reducing secondary radius updates the gap limit on the same sidebar");
 
-        Click(FindById<Button>(sidebar, "WheelAppearanceMulti"));
+        Click(FindById<Button>(sidebar, "WheelAppearanceDepth4"));
         Invoke(window, "SelectAppearanceLevel", 3);
         var toggle = FindById<CheckBox>(sidebar, "WheelAppearanceTierOverride");
         toggle.IsChecked = true;
