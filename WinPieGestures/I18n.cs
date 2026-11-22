@@ -511,6 +511,9 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		}
 		RegisterStudioRailStrings(Add);
 		RegisterStudioPaletteStrings(Add);
+		RegisterWheelAppearanceStrings(Add);
+		RegisterPluginLibraryStatsStrings(Add);
+		RegisterTriggerSceneStrings(Add);
 		Add("StudioProfiles", "方案与层", "方案與層", "Profiles & layers", "プロファイルとレイヤー");
 		Add("StudioInspector", "属性", "屬性", "Inspector", "プロパティ");
 		Add("StudioList", "列表", "清單", "List", "一覧");

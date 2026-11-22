@@ -32,6 +32,7 @@ internal sealed class PluginListItem
     public string DetailText { get; init; } = "";
     public string CardDescription { get; init; } = "";
     public bool IsOfficial { get; init; }
+    public PluginReleaseCardInfo ReleaseInfo { get; set; } = PluginReleaseCardInfo.Empty;
     public string SourceText => I18n.T(IsOfficial ? "PluginsDetailSourceOfficial" : "PluginsDetailSourceLocal");
     public string IconGlyph => PluginCardPresentation.Glyph(PluginId);
     public string MoreActionsText => I18n.T("PluginsOfficialMoreActions");

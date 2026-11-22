@@ -85,7 +85,7 @@ public partial class GestureController
         private readonly Dictionary<int, SlotBinding> _secondaryBindings = new();
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FixedRingGeometry,
             Dictionary<(int Level, int Owner, int Index, int Count), ParentOutline>> CachedOutlines = new();
-        private readonly HashSet<(int Level, int Index)>? _residentSlots;
+        private readonly HashSet<(int Level, int Index)> _configuredSlots;
         private readonly SlotBinding[] _rootBindings;
         private readonly SlotBinding _center;
         private readonly SlotBinding[][] _bindings;
@@ -132,7 +132,7 @@ public partial class GestureController
             _rootBindings = new SlotBinding[layer.SectorCount];
             Rows = new Cell[layer.EffectiveMaxMenuDepth][];
             _bindings = new SlotBinding[Rows.Length][];
-            _residentSlots = Persistent ? Menu.ConfiguredSlots(profile, Rows.Length, config.SubmenuStyle == "Fan") : null;
+            _configuredSlots = Menu.ConfiguredSlots(profile, Rows.Length, config.SubmenuStyle == "Fan");
             _trigger = config.SubWheelTriggerDistance > 20 ? config.SubWheelTriggerDistance : 95;
             _primaryRadius = Math.Max(1, config.WheelRadius);
             var cache = CachedOutlines.GetOrCreateValue(geometry);
@@ -144,7 +144,7 @@ public partial class GestureController
                 {
                     var slot = Menu.GetSlot(level, i);
                     var bound = bindings[i] = SlotBinding.Capture(slot?.Action);
-                    var display = _residentSlots == null || _residentSlots.Contains((level, i)) ? bound.Action : null;
+                    var display = _configuredSlots.Contains((level, i)) ? bound.Action : null;
                     row[i] = new(display, slot, slot?.ParentIndex, geometry.GetShape(level, i, row.Length));
                     if (level > 3 && slot?.ParentIndex is int parent && (uint)parent < (uint)Rows[level - 2].Length)
                     {
@@ -176,8 +176,7 @@ public partial class GestureController
                 {
                     var child = parent!.SubActions[sub];
                     int key = FixedRingMenu.SecondaryKey(root, sub);
-                    bool configured = _residentSlots?.Contains((2, key)) ?? WheelProfile.IsActionConfigured(child);
-                    if (!configured) continue;
+                    if (!_configuredSlots.Contains((2, key))) continue;
                     _secondaryBindings[key] = SlotBinding.Capture(child);
 
                     var cacheKey = (2, root, sub, count);
@@ -305,9 +304,9 @@ public partial class GestureController
             }
             if (parentLock.IsLocked || Path.Length > 0) return default;
             double deadzone = config.GetEffectiveCoreDeadzone();
-            if (radius < Geometry.CoreRadius(deadzone > 0 ? deadzone : 15)) return new(0, -1);
+            if (radius < Geometry.CoreDeadzoneRadius(deadzone > 0 ? deadzone : 15)) return new(0, -1);
             int root = Geometry.Hit(local, 1, _rootBindings.Length);
-            return root >= 0 && (_residentSlots == null || _residentSlots.Contains((1, root))) ? new(1, root) : default;
+            return root >= 0 && _configuredSlots.Contains((1, root)) ? new(1, root) : default;
         }
 
         internal bool CanConfirmSecondary(Point point, int root, int sub)
@@ -476,7 +475,7 @@ public partial class GestureController
             if (hit.Level is 0 or 1 or 2)
             {
                 if (hit.Level == 0 && hit.Index != -1) return true;
-                if (_residentSlots != null && hit.Level != 0 && !_residentSlots.Contains((hit.Level, hit.Index))) return true;
+                if (hit.Level != 0 && !_configuredSlots.Contains((hit.Level, hit.Index))) return true;
                 SlotBinding? binding;
                 ActionItem? current;
                 bool inherited;

@@ -92,6 +92,9 @@ internal static class Program
         string remap=importedLayer.FixedRings!.GetSlot(5,36)!.Action.IconKey;
         Check(remap.StartsWith("custom:") && remap!="custom:leaf", "portable custom icon collision remaps even in hidden slot of paused layer");
 
+        CheckNewAppearanceGeometry();
+        CheckConfiguredVisibility();
+
         int positions=0;
         foreach (double radius in new[]{54.0,72.0,121.5})
         {
@@ -133,4 +136,102 @@ internal static class Program
         }
         Console.WriteLine($"PASS all {_checks} model/geometry gates");
     }
+
+    private static void CheckNewAppearanceGeometry()
+    {
+        static bool Near(double a, double b) => Math.Abs(a - b) < .0001;
+        var old = JsonSerializer.Deserialize<AppConfig>("""{"WheelRadius":133,"InnerRadius":70,"Shape":"Circle"}""")!;
+        string oldSaved = JsonSerializer.Serialize(old);
+        Check(!oldSaved.Contains("SubWheelShape") && !oldSaved.Contains("FixedOuterRingAppearance") &&
+            !oldSaved.Contains("FixedHoneycombAppearance") && LegacyRingGeometry.SecondaryShape(old) == "Circle",
+            "legacy configuration keeps inherited shape and leaves the optional appearance fields absent");
+
+        var before = LegacyRingGeometry.Primary(old, 8, 0, old.WheelRadius, old.InnerRadius);
+        var child = LegacyRingGeometry.Secondary(old, 8, 0, 0, 2, old.WheelRadius, old.InnerRadius);
+        old.SubWheelShape = "Original";
+        var after = LegacyRingGeometry.Primary(old, 8, 0, old.WheelRadius, old.InnerRadius);
+        var shapedChild = LegacyRingGeometry.Secondary(old, 8, 0, 0, 2, old.WheelRadius, old.InnerRadius);
+        Check(before.Shape.Bounds == after.Shape.Bounds && child.Label == shapedChild.Label && child.Shape.Bounds != shapedChild.Shape.Bounds,
+            "secondary shape changes independently of the primary and leaves outer-ring child directions intact");
+
+        var cfg = new AppConfig { WheelRadius = 72, InnerRadius = 32, SubmenuStyle = "Wheel",
+            FixedOuterRingAppearance = new() { Shape = "Original", RingGap = 9, Thickness = 30, SectorGap = 3,
+                Level4 = new() { Thickness = 48, SectorGap = 10 } },
+            FixedHoneycombAppearance = new() { Shape = "HexagonHive", CellWidth = 26, CellGap = 8, CornerRadius = 0, CoreRadius = 18 }
+        };
+        var roundTrip = JsonSerializer.Deserialize<AppConfig>(JsonSerializer.Serialize(cfg))!;
+        var appearance = roundTrip.FixedOuterRingAppearance!;
+        Check(appearance.Level4 is { Thickness: 48, SectorGap: 10 } && appearance.Level3 == null &&
+            appearance.RingGap == 9 && roundTrip.FixedHoneycombAppearance?.CellGap == 8,
+            "per-tier and unified honeycomb values round-trip in configuration");
+        static FixedRingGeometry Make(AppConfig cfg, double second, int depth = 5, double limit = 2000)
+        {
+            double unit = FixedRingGeometry.FitScale(cfg, 8, cfg.WheelRadius, second, depth, limit);
+            double start = FixedRingGeometry.GetThirdInnerRadius(cfg, second, unit, cfg.WheelRadius);
+            return new(8, cfg.WheelRadius, start, unit, cfg.SubmenuStyle == "Fan", cfg);
+        }
+        var outer = Make(roundTrip, 120);
+        Check(Near(outer.Inner(3), 129) && Near(outer.Outer(3) - outer.Inner(3), 30) &&
+            Near(outer.Outer(4) - outer.Inner(4), 48) && Near(outer.Outer(5) - outer.Inner(5), 30) &&
+            Near(outer.Inner(4) - outer.Outer(3), 9), "outer-ring overrides change only their own thickness and continue downstream placement");
+        var fourth = outer.GetShape(4, 0, 16);
+        appearance.Level4.SectorGap = 0;
+        var noGap = Make(roundTrip, 120);
+        Check(fourth.Bounds.Height < noGap.GetShape(4, 0, 16).Bounds.Height &&
+            outer.GetShape(3, 0, 12).Bounds == noGap.GetShape(3, 0, 12).Bounds &&
+            outer.GetCenter(4, 8, 16) == noGap.GetCenter(4, 8, 16),
+            "per-tier sector spacing changes the chosen outline without shifting sector origins");
+        Check(Near(Make(roundTrip, 120, limit: 190).Outer(5), 190), "fitted work-area extent uses the actual custom thicknesses and gaps");
+
+        roundTrip.SubmenuStyle = "Fan";
+        appearance.RingGap = 0;
+        var honey = roundTrip.FixedHoneycombAppearance!;
+        var hex = Make(roundTrip, 0);
+        var h = hex.GetCenter(4, 3, 16);
+        Check(Near(hex.GetShape(4, 3, 16).Bounds.Width, 26) && hex.Hit(h, 4, 16) == 3 &&
+            Near(hex.CoreRadius(36), 18) && Near(hex.CoreDeadzoneRadius(9), 9),
+            "honeycomb uses explicit shared DIP width, stable centre hit and a separate visible core radius");
+
+        honey.Shape = "Circle";
+        var circle = Make(roundTrip, 0);
+        Check(circle.GetCenter(4, 3, 16) == h &&
+            Near(circle.GetShape(4, 3, 16).Bounds.Width, 26) &&
+            circle.GetShape(4, 3, 16).Bounds.Height < hex.GetShape(4, 3, 16).Bounds.Height &&
+            circle.Hit(h, 4, 16) == 3, "honeycomb outline changes without moving or remapping addresses");
+
+        honey.CellGap = 16;
+        var widerGap = Make(roundTrip, 0);
+        Check(widerGap.Outer(5) > circle.Outer(5) && widerGap.GetCenter(4, 3, 16) != h &&
+            Near(widerGap.CellWidth(4, 16), 26), "honeycomb spacing translates the same-width outlines on a single lattice");
+
+        honey.Shape = "HexagonHive";
+        var sharp = Make(roundTrip, 0);
+        double area = sharp.GetShape(3, 0, 12).GetArea();
+        honey.CornerRadius = 4;
+        var rounded = Make(roundTrip, 0);
+        Check(rounded.GetShape(3, 0, 12).GetArea() < area &&
+            sharp.GetCenter(3, 0, 12) == rounded.GetCenter(3, 0, 12), "honeycomb corner rounding preserves its lattice");
+    }
+
+    private static void CheckConfiguredVisibility()
+    {
+        var placeholder = new ActionItem { Type = "Text", Name = "Unconfigured" };
+        var configured = new ActionItem { Type = "Text", Name = "Configured", Parameter = "T8" };
+        var branch = new ActionItem { Type = "Hotkey", Name = "Branch", SubActions = [placeholder, configured] };
+        var nested = new ActionItem { Type = "Hotkey", Name = "Nested", SubActions = [branch] };
+        ActionItem?[] roots = [placeholder, branch, nested, null];
+        var one = FixedRingMenu.LowerConfiguredSlots(roots, 1, false);
+        var two = FixedRingMenu.LowerConfiguredSlots(roots, 2, false);
+        var three = FixedRingMenu.LowerConfiguredSlots(roots, 3, true);
+        Check(one.Count == 0 && two.SetEquals([(1, 1), (2, FixedRingMenu.SecondaryKey(1, 1))]),
+            "legacy invocation hides editable placeholders and keeps a valid child at its original physical address");
+        Check(three.Contains((1, 2)) && three.Contains((2, FixedRingMenu.SecondaryKey(2, 0))),
+            "progressive invocation retains navigation-only branches with reachable actions");
+        var deep = new FixedRingMenu();
+        deep.SetSlot(3, 4, new FixedRingSlot { ParentIndex = FixedRingMenu.SecondaryKey(2, 0), Action = configured });
+        var fixedVisible = deep.ConfiguredSlots(roots, 3, true);
+        Check(fixedVisible.Contains((3, 4)) && fixedVisible.Contains((1, 2)) &&
+            !fixedVisible.Contains((2, FixedRingMenu.SecondaryKey(1, 0))), "fixed visibility shows a configured descendant and parent chain without vacant children");
+    }
+
 }

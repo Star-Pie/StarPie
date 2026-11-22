@@ -17,28 +17,38 @@ namespace WinPieGestures;
 public partial class IconPickerWindow : Window
 {
 	private Border? _selectedCard;
+	private readonly bool _forProfile;
+	private readonly string? _initialApplicationIconPath;
 
 	public string? SelectedIconKey { get; private set; }
+	internal string? SelectedApplicationIconPath { get; private set; }
+	internal bool RestoreDefaultProfileIcon { get; private set; }
 
-	public IconPickerWindow(string? initialKey = null)
+	public IconPickerWindow(string? initialKey = null) : this(initialKey, forProfile: false)
 	{
+	}
+
+	internal IconPickerWindow(string? initialKey, bool forProfile, string? applicationIconPath = null)
+	{
+		_forProfile = forProfile;
+		_initialApplicationIconPath = applicationIconPath;
+		SelectedIconKey = initialKey;
 		InitializeComponent();
 		AppThemeManager.ApplyTheme(this, AppThemeManager.CurrentEffectiveTheme);
-		SelectedIconKey = initialKey;
 		PopulateIcons();
 		ApplyLocalization();
 	}
 
 	private void ApplyLocalization()
 	{
-		base.Title = I18n.T("IconPickerTitle") + " - StarPie";
+		base.Title = I18n.T(_forProfile ? "StudioRailIcon" : "IconPickerTitle") + " - StarPie";
 		if (HeaderTitleText != null)
 		{
-			HeaderTitleText.Text = I18n.T("IconPickerHeader");
+			HeaderTitleText.Text = I18n.T(_forProfile ? "StudioRailIcon" : "IconPickerHeader");
 		}
 		if (HeaderSubtitleText != null)
 		{
-			HeaderSubtitleText.Text = I18n.T("IconPickerSubtitle");
+			HeaderSubtitleText.Text = I18n.T(_forProfile ? "StudioProfileIconHelp" : "IconPickerSubtitle");
 		}
 		if (SearchTextBox != null)
 		{
@@ -52,7 +62,7 @@ public partial class IconPickerWindow : Window
 		}
 		if (ClearIconButton != null)
 		{
-			ClearIconButton.Content = I18n.T("IconPickerClear");
+			ClearIconButton.Content = I18n.T(_forProfile ? "StudioProfileIconDefault" : "IconPickerClear");
 		}
 		if (SelectedIconPrefixText != null)
 		{
@@ -66,9 +76,18 @@ public partial class IconPickerWindow : Window
 		{
 			CancelButton.Content = I18n.T("BtnCancel");
 		}
+		if (_forProfile)
+		{
+			ProfileIconSources.Visibility = Visibility.Visible;
+			ProfileAppLibraryButton.Content = I18n.T("FocusInheritIconPickProgramBtnText");
+			ProfileCaptureButton.Content = I18n.T("FocusInheritIconCaptureWindowBtnText");
+			ProfileBrowseButton.Content = I18n.T("StudioProfileIconBrowse");
+		}
 		if (string.IsNullOrEmpty(SelectedIconKey) && SelectedIconNameLabel != null)
 		{
-			SelectedIconNameLabel.Text = I18n.T("IconPickerNone");
+			SelectedIconNameLabel.Text = _forProfile
+				? ProfileApplicationIconLabel(_initialApplicationIconPath)
+				: I18n.T("IconPickerNone");
 		}
 	}
 
@@ -81,6 +100,7 @@ public partial class IconPickerWindow : Window
 		Brush fill = (Brush)FindResource("TextPrimaryBrush");
 		Brush foreground = (Brush)FindResource("TextSecondaryBrush");
 		List<IconHelper.CustomIconItem> list = IconHelper.GetCustomIcons();
+		if (_forProfile) list = list.Where(icon => icon.IsSvg).ToList();
 		if (!string.IsNullOrEmpty(filter))
 		{
 			list = list.Where((IconHelper.CustomIconItem i) => i.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) || i.Key.Contains(filter, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -158,7 +178,7 @@ public partial class IconPickerWindow : Window
 					PopulateIcons(SearchTextBox.Text.Trim());
 				}
 			};
-			grid.Children.Add(button);
+			if (!_forProfile) grid.Children.Add(button);
 			card.Child = grid;
 			if (string.Equals(SelectedIconKey, custom.Key, StringComparison.OrdinalIgnoreCase))
 			{
@@ -245,7 +265,9 @@ public partial class IconPickerWindow : Window
 		}
 		_selectedCard = card;
 		SelectedIconKey = custom.Key;
-		SelectedIconNameLabel.Text = custom.DisplayName + " (自定义)";
+		SelectedApplicationIconPath = null;
+		RestoreDefaultProfileIcon = false;
+		SelectedIconNameLabel.Text = custom.DisplayName;
 		card.Background = (Brush)FindResource("NavTabActiveBgBrush");
 		card.BorderBrush = (Brush)FindResource("AccentPrimaryBrush");
 	}
@@ -257,7 +279,7 @@ public partial class IconPickerWindow : Window
 			OpenFileDialog openFileDialog = new OpenFileDialog
 			{
 				Title = I18n.T("IconPickerImport"),
-				Filter = I18n.T("SvgImportFileFilter"),
+				Filter = _forProfile ? I18n.T("StudioProfileSvgFilter") : I18n.T("SvgImportFileFilter"),
 				Multiselect = true
 			};
 			if (openFileDialog.ShowDialog(this) == true && !string.IsNullOrEmpty(openFileDialog.FileName))
@@ -280,6 +302,8 @@ public partial class IconPickerWindow : Window
 		}
 		_selectedCard = card;
 		SelectedIconKey = item.Key;
+		SelectedApplicationIconPath = null;
+		RestoreDefaultProfileIcon = false;
 		SelectedIconNameLabel.Text = item.DisplayName;
 		card.Background = (Brush)FindResource("NavTabActiveBgBrush");
 		card.BorderBrush = (Brush)FindResource("AccentPrimaryBrush");
@@ -292,8 +316,17 @@ public partial class IconPickerWindow : Window
 
 	private void ClearIcon_Click(object sender, RoutedEventArgs e)
 	{
+		SetUnselectedIcon();
+	}
+
+	private void SetUnselectedIcon(string? applicationPath = null)
+	{
 		SelectedIconKey = "";
-		SelectedIconNameLabel.Text = "(无图标)";
+		SelectedApplicationIconPath = applicationPath;
+		RestoreDefaultProfileIcon = _forProfile && applicationPath == null;
+		SelectedIconNameLabel.Text = _forProfile
+			? ProfileApplicationIconLabel(applicationPath)
+			: I18n.T("IconPickerNone");
 		if (_selectedCard != null)
 		{
 			_selectedCard.Background = (Brush)FindResource("SubtleCardBrush");

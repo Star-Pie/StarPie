@@ -90,9 +90,11 @@ public sealed class FixedRingMenu
 
     // Physical addresses remain stable when a slot is hidden. Walk parent links
     // from the deepest tier so a navigation-only parent can still open its children.
-    internal HashSet<(int Level, int Index)> ConfiguredSlots(WheelProfile profile, int depth, bool fan)
+    internal HashSet<(int Level, int Index)> ConfiguredSlots(WheelProfile profile, int depth, bool fan) =>
+        ConfiguredSlots(ReadEffectiveRoots(profile), depth, fan);
+
+    internal HashSet<(int Level, int Index)> ConfiguredSlots(IReadOnlyList<ActionItem?> roots, int depth, bool fan)
     {
-        var roots = Enumerable.Range(0, profile.SectorCount).Select(index => DisplayRoot(profile, index)).ToArray();
         var visible = new HashSet<(int Level, int Index)>();
         var parents = new HashSet<int>();
         for (int level = depth; level >= 3; level--)
@@ -102,29 +104,66 @@ public sealed class FixedRingMenu
             {
                 var slot = GetSlot(level, index);
                 if (slot == null || !(Plugins.PluginInteractionSession.IsExecutableAction(slot.Action) || parents.Contains(index)) ||
-                    !HasEnabledAncestry(level, index, roots.Length, root => roots[root])) continue;
+                    !HasEnabledAncestry(level, index, roots.Count, root => roots[root])) continue;
                 visible.Add((level, index));
                 if (slot.ParentIndex is int parent) next.Add(parent);
             }
             parents = next;
         }
-        for (int index = 0; index < profile.SectorCount; index++)
+        AddLowerSlots(roots, 2, fan, visible, parents);
+        return visible;
+    }
+
+    internal static HashSet<(int Level, int Index)> LowerConfiguredSlots(WheelProfile profile, int depth, bool fan) =>
+        LowerConfiguredSlots(ReadEffectiveRoots(profile), depth, fan);
+
+    internal static HashSet<(int Level, int Index)> LowerConfiguredSlots(IReadOnlyList<ActionItem?> roots, int depth, bool fan)
+    {
+        var visible = new HashSet<(int Level, int Index)>();
+        AddLowerSlots(roots, depth, fan, visible, null);
+        return visible;
+    }
+
+    private static ActionItem?[] ReadEffectiveRoots(WheelProfile profile) =>
+        Enumerable.Range(0, profile.SectorCount).Select(index => DisplayRoot(profile, index)).ToArray();
+
+    private static void AddLowerSlots(IReadOnlyList<ActionItem?> roots, int depth, bool fan,
+        HashSet<(int Level, int Index)> visible, HashSet<int>? fixedParents)
+    {
+        bool allowWhitespaceText = fixedParents == null;
+        for (int index = 0; index < roots.Count; index++)
         {
             var root = roots[index];
+            if (!CanNavigate(root)) continue;
+
             bool hasChild = false;
-            int count = root?.SubActions?.Count ?? 0;
-            if (fan) count = Math.Min(count, 3);
-            for (int child = 0; child < count; child++)
+            if (depth >= 2 && root!.SubActions is { } children)
             {
-                int key = SecondaryKey(index, child);
-                var action = root!.SubActions[child];
-                if (!CanNavigate(action) || !(Plugins.PluginInteractionSession.IsExecutableAction(action) || parents.Contains(key))) continue;
-                hasChild = true;
-                visible.Add((2, key));
+                int count = DeepMenuFrame.VisibleSlotCount(children.Count, fan);
+                for (int child = 0; child < count; child++)
+                {
+                    int key = SecondaryKey(index, child);
+                    var action = children[child];
+                    if (!CanNavigate(action) ||
+                        !(IsLegacySlotVisible(action, depth - 2, fan, allowWhitespaceText) || fixedParents?.Contains(key) == true)) continue;
+                    hasChild = true;
+                    visible.Add((2, key));
+                }
             }
-            if (hasChild || Plugins.PluginInteractionSession.IsExecutableAction(root)) visible.Add((1, index));
+            if (hasChild || Plugins.PluginInteractionSession.IsExecutableAction(root, allowWhitespaceText)) visible.Add((1, index));
         }
-        return visible;
+    }
+
+    internal static bool IsLegacySlotVisible(ActionItem? action, int remainingLevels, bool fan, bool allowWhitespaceText = false)
+    {
+        if (!CanNavigate(action)) return false;
+        if (Plugins.PluginInteractionSession.IsExecutableAction(action, allowWhitespaceText)) return true;
+        if (remainingLevels <= 0 || action!.SubActions is not { } children) return false;
+
+        int visible = DeepMenuFrame.VisibleSlotCount(children.Count, fan);
+        for (int index = 0; index < visible; index++)
+            if (IsLegacySlotVisible(children[index], remainingLevels - 1, fan)) return true;
+        return false;
     }
 
     internal static ActionItem? DisplayRoot(WheelProfile profile, int index)

@@ -26,7 +26,7 @@ public partial class RadialWindow
         var children = parent.SubActions!;
         bool fan = config.SubmenuStyle == "Fan";
         int count = children.Count;
-        double direction = GetDeepDirection(_profile, parentPath, fan, config.Shape);
+        double direction = GetDeepDirection(_profile, parentPath, fan, LegacyRingGeometry.SecondaryShape(config));
         double second = config.SubWheelOuterRadius > 0 ? config.SubWheelOuterRadius : _outerRadius * 1.55;
         var frame = new DeepMenuFrame(ActualPhysicalCenter, screen.DpiScale, screen.PhysicalWorkArea,
             config.GetEffectiveCoreDeadzone(), _outerRadius, second, direction, parentPath.Count + 1, count, fan,
@@ -41,8 +41,8 @@ public partial class RadialWindow
         }
 
         ResizeForDeepMenu(Math.Max(_wheelCanvasSize, 2 * frame.CanvasRadius));
-        bool canNest = parentPath.Count + 1 < GestureController.CaptureReleaseLayer(_profile)?.EffectiveMaxMenuDepth;
-        _deepOverlay = new DeepMenuOverlay(this, frame, children, breadcrumb, canNest);
+        int remaining = Math.Max(0, (GestureController.CaptureReleaseLayer(_profile)?.EffectiveMaxMenuDepth ?? 2) - parentPath.Count - 1);
+        _deepOverlay = new DeepMenuOverlay(this, frame, children, breadcrumb, remaining, fan);
         Panel.SetZIndex(_deepOverlay, 2000);
         MainGrid.Children.Add(_deepOverlay);
         return frame;
@@ -187,28 +187,29 @@ public partial class RadialWindow
     {
         private readonly RadialWindow _wheel;
         private readonly DeepMenuFrame _frame;
-        private readonly DrawingGroup[] _labels;
+        private readonly DrawingGroup?[] _labels;
         private readonly DrawingGroup _backText;
         private readonly Pen _border, _activeBorder;
         private int _highlight = DeepMenuFrame.None;
 
-        internal DeepMenuOverlay(RadialWindow wheel, DeepMenuFrame frame, IReadOnlyList<ActionItem> actions, string breadcrumb, bool canNest)
+        internal DeepMenuOverlay(RadialWindow wheel, DeepMenuFrame frame, IReadOnlyList<ActionItem> actions, string breadcrumb, int remaining, bool fan)
         {
             _wheel = wheel;
             _frame = frame;
             IsHitTestVisible = false;
             _border = new Pen(wheel._subSectorBorderBrush, Math.Max(1, wheel._borderThickness));
             _activeBorder = new Pen(wheel._subHighlightBorderBrush, Math.Max(1.5, wheel._borderThickness));
-            _labels = new DrawingGroup[frame.Slots.Count];
+            _labels = new DrawingGroup?[frame.Slots.Count];
             for (int i = 0; i < _labels.Length; i++)
             {
                 var item = actions[i];
+                if (!FixedRingMenu.IsLegacySlotVisible(item, remaining, fan)) continue;
                 var slot = frame.Slots[i];
                 var drawing = new DrawingGroup();
                 using (var dc = drawing.Open())
                 {
                     if (item != null) wheel.DrawMenuLabel(dc, slot, item,
-                        canNest && item.SubActions is { Count: > 0 } && WheelProfile.IsActionConfigured(item));
+                        remaining > 0 && item.SubActions is { Count: > 0 } && WheelProfile.IsActionConfigured(item));
                 }
                 if (drawing.CanFreeze) drawing.Freeze();
                 _labels[i] = drawing;
@@ -236,10 +237,11 @@ public partial class RadialWindow
             dc.PushTransform(new TranslateTransform(ActualWidth / 2, ActualHeight / 2));
             for (int i = 0; i < _labels.Length; i++)
             {
+                if (_labels[i] is not { } label) continue;
                 bool active = i == _highlight;
                 dc.DrawGeometry(active ? _wheel._subHighlightSectorBrush : _wheel._subDefaultSectorBrush,
                     active ? _activeBorder : _border, _frame.Slots[i].Shape);
-                dc.DrawDrawing(_labels[i]);
+                dc.DrawDrawing(label);
             }
             bool back = _highlight == DeepMenuFrame.Back;
             dc.DrawRoundedRectangle(back ? _wheel._subHighlightSectorBrush : _wheel._subDefaultSectorBrush,

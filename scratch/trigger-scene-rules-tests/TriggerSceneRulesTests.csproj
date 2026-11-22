@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="StarPieCandidateDir" Value="$(StarPieCandidateDir)" />
+    <Reference Include="StarPie" HintPath="$(StarPieCandidateDir)\StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" HintPath="$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll" />
+  </ItemGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(StarPieCandidateDir)' == '' or !Exists('$(StarPieCandidateDir)\StarPie.dll')" Text="Pass an explicit timestamped StarPieCandidateDir." />
+  </Target>
+</Project>

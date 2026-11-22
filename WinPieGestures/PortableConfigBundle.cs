@@ -545,7 +545,11 @@ public static class PortableConfigBundle
 				{
 					continue;
 				}
-				ValidateKnownProperties(profile, "Actions", "CenterAction", "Layers");
+				ValidateKnownProperties(profile, "Actions", "CenterAction", "Layers", "IconKey");
+				if (TryGetKnownProperty(profile, "IconKey", out _, out JsonNode? profileIconNode))
+				{
+					AddValue(profileIconNode);
+				}
 				if (TryGetKnownProperty(profile, "Actions", out _, out JsonNode? actionsNode))
 				{
 					AddActions(actionsNode);
@@ -712,8 +716,12 @@ public static class PortableConfigBundle
 				{
 					continue;
 				}
-				ValidateKnownProperties(profile, "Actions", "CenterAction", "Layers");
+				ValidateKnownProperties(profile, "Actions", "CenterAction", "Layers", "IconKey");
 				string profilePath = profilesPath + "[" + profileIndex.ToString() + "]";
+				if (TryGetKnownProperty(profile, "IconKey", out string iconPropertyName, out _))
+				{
+					paths.Add(profilePath + "." + iconPropertyName);
+				}
 				if (TryGetKnownProperty(profile, "Actions", out string actionsPropertyName, out JsonNode? actionsNode))
 				{
 					AddActions(profilePath + "." + actionsPropertyName, actionsNode);

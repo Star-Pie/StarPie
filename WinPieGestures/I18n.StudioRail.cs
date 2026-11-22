@@ -24,6 +24,10 @@ public static partial class I18n
         add("StudioRailTags", "标签", "標籤", "Tags", "タグ");
         add("StudioRailTagPrompt", "用逗号或 # 分隔标签", "以逗號或 # 分隔標籤", "Separate tags with commas or #", "コンマまたは # でタグを区切ります");
         add("StudioRailIcon", "更换方案图标", "變更方案圖示", "Change profile icon", "プロファイルのアイコンを変更");
+        add("StudioProfileIconHelp", "选择内置图案、导入 SVG，或使用程序图标。", "選擇內建圖案、匯入 SVG，或使用程式圖示。", "Choose a built-in icon, import an SVG, or use an application icon.", "内蔵アイコン、SVG の読み込み、アプリのアイコンから選べます。");
+        add("StudioProfileIconDefault", "使用默认图标", "使用預設圖示", "Use default icon", "既定のアイコンを使う");
+        add("StudioProfileIconBrowse", "浏览图标文件…", "瀏覽圖示檔案…", "Browse for icon…", "アイコンファイルを参照…");
+        add("StudioProfileSvgFilter", "SVG 矢量图 (*.svg)|*.svg", "SVG 向量圖 (*.svg)|*.svg", "SVG icons (*.svg)|*.svg", "SVG アイコン (*.svg)|*.svg");
         add("StudioRailIconFilter", "程序和图标 (*.exe;*.ico)|*.exe;*.ico", "程式與圖示 (*.exe;*.ico)|*.exe;*.ico", "Programs and icons (*.exe;*.ico)|*.exe;*.ico", "プログラムとアイコン (*.exe;*.ico)|*.exe;*.ico");
         add("StudioRailLayerMenu", "层操作", "層操作", "Layer actions", "レイヤー操作");
     }

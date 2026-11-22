@@ -73,6 +73,8 @@ internal static class Program
         // Deliberately bypass Window construction: only named controls are created, never shown.
         // The production refresh method runs with real async/finally and a fake HTTP transport.
         var window = (SettingsWindow)RuntimeHelpers.GetUninitializedObject(typeof(SettingsWindow));
+        using var lifetime = new CancellationTokenSource();
+        Set(window, "_lifetimeCts", lifetime);
         var status = new TextBlock();
         var button = new Button();
         // The fake transport serves the direct GitHub feed and catalog.

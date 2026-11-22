@@ -33,11 +33,17 @@ public partial class GestureController
     private sealed record DeepPage(WheelProfile Profile, WheelLayer Layer, long Revision, long Version,
         int[] Path, ActionItem Parent, string Breadcrumb, DeepMenuFrame Frame, Point Entry, DeepPage? Previous)
     {
-        private readonly SlotBinding[] _slots = CaptureSlots(Parent, Frame.Slots.Count);
-        private static SlotBinding[] CaptureSlots(ActionItem parent, int count)
+        private readonly SlotBinding?[] _slots = CaptureSlots(Parent, Frame.Slots.Count,
+            Layer.EffectiveMaxMenuDepth - Path.Length - 1, ConfigManager.CurrentConfig.SubmenuStyle == "Fan");
+
+        private static SlotBinding?[] CaptureSlots(ActionItem parent, int count, int remaining, bool fan)
         {
-            var slots = new SlotBinding[count];
-            for (int i = 0; i < count; i++) slots[i] = SlotBinding.Capture(parent.SubActions[i]);
+            var slots = new SlotBinding?[count];
+            for (int i = 0; i < count; i++)
+            {
+                var child = parent.SubActions[i];
+                if (FixedRingMenu.IsLegacySlotVisible(child, remaining, fan)) slots[i] = SlotBinding.Capture(child);
+            }
             return slots;
         }
         internal bool IsInheritedBranch => Previous?.IsInheritedBranch ?? Parent.IsInherited;
@@ -48,9 +54,14 @@ public partial class GestureController
             ConfigManager.ConfigurationRevision == Revision && ConfigManager.CurrentConfig.EnableMultiTier &&
             Path.Length < Layer.EffectiveMaxMenuDepth;
 
-        internal int Hit(Point point, double scaleX, double scaleY) =>
-            Math.Abs(point.X - Entry.X) < 3 * Math.Max(1, scaleX) &&
-            Math.Abs(point.Y - Entry.Y) < 3 * Math.Max(1, scaleY) ? -1 : Frame.HitTest(point);
+        internal int Hit(Point point, double scaleX, double scaleY)
+        {
+            if (Math.Abs(point.X - Entry.X) < 3 * Math.Max(1, scaleX) &&
+                Math.Abs(point.Y - Entry.Y) < 3 * Math.Max(1, scaleY)) return DeepMenuFrame.None;
+
+            int hit = Frame.HitTest(point);
+            return hit >= 0 && Binding(hit) == null ? DeepMenuFrame.None : hit;
+        }
 
         internal ActionItem? Child(int slot) =>
             Binding(slot)?.Source;

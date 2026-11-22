@@ -19,7 +19,7 @@ public sealed class SubmenuLockTracker
 	private WheelGeometry? _wheelGeometry;
 
 	private static (string Shape, double Outer, double Inner, double SubOuter, double Gap, double Corner) FanKey(AppConfig config) =>
-		(config.Shape ?? "Original", config.WheelRadius, config.InnerRadius, config.SubWheelOuterRadius, config.SubWheelInnerGap, config.SubWheelCornerRadius);
+		(LegacyRingGeometry.SecondaryShape(config), config.WheelRadius, config.InnerRadius, config.SubWheelOuterRadius, config.SubWheelInnerGap, config.SubWheelCornerRadius);
 
 	// 只在界面准备阶段构造几何；钩子线程读取冻结快照，不逐帧创建 WPF 对象。
 	public void PrepareFanGeometry(AppConfig config)
@@ -116,7 +116,7 @@ public sealed class SubmenuLockTracker
 		{
 			int slot = RadialWindow.GetFanSlotIndex(sub, count);
 			if (!geometry.Slots[slot].FillContains(localPoint)) continue;
-			var (du, dv) = RadialWindow.GetFanSubOffsetForShape(config.Shape, slot);
+			var (du, dv) = RadialWindow.GetFanSubOffsetForShape(geometry.Key.Shape, slot);
 			double diff = Math.Abs(Math.IEEERemainder(mouseAngle - Math.Atan2(dv, du), 2 * Math.PI));
 			if (sub == previousSub) diff -= 0.08;
 			if (diff < bestAngle) { bestAngle = diff; bestSub = sub; }

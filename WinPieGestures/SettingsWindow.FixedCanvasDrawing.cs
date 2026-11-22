@@ -8,15 +8,17 @@ namespace WinPieGestures;
 public partial class SettingsWindow
 {
     private FixedRingGeometry? _fixedGeometry;
-    private (int Count, double Radius, double ThirdInner, bool Honeycomb, string Shape, double Inner, double Core, double Gap, double Corner) _fixedGeometrySize;
+    private (int Count, double Radius, double ThirdInner, bool Honeycomb, string Shape, double Inner, double Core, double Gap, double Corner, long Revision) _fixedGeometrySize;
 
     private FixedRingGeometry FixedGeometry(WheelProfile profile)
     {
         var cfg = ConfigManager.CurrentConfig;
         double unit = cfg.WheelRadius / 72;
         bool honeycomb = cfg.SubmenuStyle == "Fan";
-        double start = (honeycomb ? 0 : LegacyRingGeometry.SecondaryExtent(cfg, cfg.WheelRadius, cfg.InnerRadius)) + 5 * unit;
-        var size = (profile.SectorCount, cfg.WheelRadius, start, honeycomb, cfg.Shape, cfg.InnerRadius, cfg.CoreRadius, cfg.SectorGap, cfg.SectorCornerRadius);
+        double secondaryExtent = honeycomb ? 0 : LegacyRingGeometry.SecondaryExtent(cfg, cfg.WheelRadius, cfg.InnerRadius);
+        double start = FixedRingGeometry.GetThirdInnerRadius(cfg, secondaryExtent, unit, cfg.WheelRadius);
+        var size = (profile.SectorCount, cfg.WheelRadius, start, honeycomb, cfg.Shape, cfg.InnerRadius, cfg.CoreRadius,
+            cfg.SectorGap, cfg.SectorCornerRadius, ConfigManager.ConfigurationRevision);
         if (_fixedGeometry == null || _fixedGeometrySize != size)
         {
             _fixedGeometrySize = size;

@@ -12,9 +12,9 @@ public partial class RadialWindow
 {
     private bool _fixedGestureLayout;
     private FixedRingOverlay? _fixedOverlay;
-    private HashSet<(int Level, int Index)>? _residentSlots;
+    private HashSet<(int Level, int Index)>? _configuredGestureSlots;
 
-    private ActionItem? DisplayedRoot(int index) => _residentSlots == null
+    private ActionItem? DisplayedRoot(int index) => _configuredGestureSlots == null
         ? _profile.GetEffectiveAction(index) : FixedRingMenu.DisplayRoot(_profile, index);
     private sealed record CachedLayout(int Count, double RootRadius, double LegacyExtent, double Scale, bool Honeycomb, long Revision, FixedRingGeometry Geometry);
     private bool ExpandSecondariesOnPopup => ConfigManager.CurrentConfig.ExpandsSubRingsOnPopup ||
@@ -47,11 +47,16 @@ public partial class RadialWindow
         var config = ConfigManager.CurrentConfig;
         var layer = GestureController.CaptureReleaseLayer(_profile);
         FixedGeometry = null;
-        _residentSlots = null;
-        if (!_fixedGestureLayout || !config.EnableMultiTier || layer?.ActiveFixedRings == null || layer.EffectiveMaxMenuDepth <= 2) return null;
-        int depth = layer.EffectiveMaxMenuDepth;
-        if (layer.ActiveFixedRings.ShowsAllOnPopup(config))
-            _residentSlots = layer.ActiveFixedRings.ConfiguredSlots(_profile, depth, config.SubmenuStyle == "Fan");
+        _configuredGestureSlots = null;
+        if (!_fixedGestureLayout) return null;
+        int depth = config.EnableMultiTier ? layer?.EffectiveMaxMenuDepth ?? 2 : 1;
+        bool honeycomb = config.SubmenuStyle == "Fan";
+        if (depth <= 2 || layer?.ActiveFixedRings is not { } menu)
+        {
+            _configuredGestureSlots = FixedRingMenu.LowerConfiguredSlots(_profile, depth, honeycomb);
+            return null;
+        }
+        _configuredGestureSlots = menu.ConfiguredSlots(_profile, depth, honeycomb);
         var screen = ScreenHelper.GetScreenContextAtPoint(center);
         double marginX = config.EdgeSafeMarginX >= 0 ? config.EdgeSafeMarginX : Math.Max(0, config.EdgeSafeMargin);
         double marginY = config.EdgeSafeMarginY >= 0 ? config.EdgeSafeMarginY : Math.Max(0, config.EdgeSafeMargin);
@@ -72,7 +77,8 @@ public partial class RadialWindow
         var cached = _fixedCache;
         if (cached != null && cached.Count == count && cached.Revision == revision && cached.RootRadius == rootRadius &&
             cached.LegacyExtent == secondaryExtent && cached.Scale == scale && cached.Honeycomb == honeycomb) return cached.Geometry;
-        var geometry = new FixedRingGeometry(count, rootRadius, secondaryExtent + 5 * scale, scale, honeycomb, config);
+        double start = FixedRingGeometry.GetThirdInnerRadius(config, secondaryExtent, scale, rootRadius);
+        var geometry = new FixedRingGeometry(count, rootRadius, start, scale, honeycomb, config);
         _fixedCache = new(count, rootRadius, secondaryExtent, scale, honeycomb, revision, geometry);
         return geometry;
     }

@@ -79,14 +79,19 @@ internal sealed class PluginInteractionSession : IDisposable
     }
 
     internal static bool IsExecutableAction(ActionItem? action)
+        => IsExecutableAction(action, allowWhitespaceText: false);
+
+    internal static bool IsExecutableAction(ActionItem? action, bool allowWhitespaceText)
     {
-        bool configured = WheelProfile.IsActionConfigured(action);
-        if (action != null && (string.Equals(action.Type, "Hotkey", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(action.Type, "Text", StringComparison.OrdinalIgnoreCase) || string.Equals(action.Type, "String", StringComparison.OrdinalIgnoreCase)))
-            configured &= !string.IsNullOrWhiteSpace(action.Parameter);
-        if (string.Equals(action?.Type, "Plugin", StringComparison.OrdinalIgnoreCase))
-            configured &= action.PluginActionRef?.IsValid == true;
-        return configured;
+        if (action == null || !WheelProfile.IsActionConfigured(action)) return false;
+        if (string.Equals(action.Type, "Hotkey", StringComparison.OrdinalIgnoreCase))
+            return !string.IsNullOrWhiteSpace(action.Parameter);
+        if (string.Equals(action.Type, "Text", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(action.Type, "String", StringComparison.OrdinalIgnoreCase))
+            return allowWhitespaceText ? !string.IsNullOrEmpty(action.Parameter) : !string.IsNullOrWhiteSpace(action.Parameter);
+        if (string.Equals(action.Type, "Plugin", StringComparison.OrdinalIgnoreCase))
+            return action.PluginActionRef?.IsValid == true;
+        return true;
     }
 
     internal void Confirm(ActionItem? action, InteractionTarget target, string cancelReason = "NoAction")

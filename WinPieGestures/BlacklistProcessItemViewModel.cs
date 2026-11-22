@@ -13,6 +13,7 @@ public class BlacklistProcessItemViewModel
 	public Brush BadgeBorderBrush { get; set; } = Brushes.Transparent;
 	public Brush BadgeFgBrush { get; set; } = Brushes.Gray;
 	public Visibility ResetVisibility { get; set; } = Visibility.Collapsed;
+	public Visibility ConfigureVisibility { get; private set; } = Visibility.Visible;
 	public TriggerConfig? OverrideTrigger { get; set; }
 
 	public string ConfigButtonText => I18n.T("BtnConfigProcessTrigger");
@@ -20,6 +21,7 @@ public class BlacklistProcessItemViewModel
 	public string RestoreButtonText => I18n.T("BtnRestoreProcessPass");
 	public string RestoreButtonTip => I18n.T("TipRestoreProcessPass");
 	public string DeleteButtonTip => I18n.T("TipRemoveProcessItem");
+	public string SimulateButtonText => I18n.T("TriggerSceneSimulateRule");
 
 	private static readonly SolidColorBrush s_defaultBg;
 	private static readonly SolidColorBrush s_defaultBorder;
@@ -45,7 +47,7 @@ public class BlacklistProcessItemViewModel
 		s_activeFg.Freeze();
 	}
 
-	public static BlacklistProcessItemViewModel Create(string processName, TriggerConfig? overrideTrigger)
+	public static BlacklistProcessItemViewModel Create(string processName, TriggerConfig? overrideTrigger, bool allowList = false)
 	{
 		var vm = new BlacklistProcessItemViewModel
 		{
@@ -53,7 +55,12 @@ public class BlacklistProcessItemViewModel
 			OverrideTrigger = overrideTrigger
 		};
 
-		if (overrideTrigger != null)
+		if (allowList)
+		{
+			vm.TriggerDisplayText = I18n.T("TriggerSceneAllowedRule");
+			vm.ConfigureVisibility = Visibility.Collapsed;
+		}
+		else if (overrideTrigger != null)
 		{
 			vm.BadgeIcon = "🎯";
 			vm.TriggerDisplayText = SettingsWindow.FormatTriggerDisplay(overrideTrigger);
