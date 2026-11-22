@@ -807,7 +807,7 @@ public partial class RadialWindow : Window
             ApplyLayoutFromCurrentConfiguration(centerPoint);
             if (HasHoneycomb && !ReferenceEquals(previousGeometry, FixedGeometry))
             {
-                _subTierCache.Clear();
+                ReleaseSubTierVisuals();
                 RenderSectors();
                 UpdateCenterIconVisuals();
             }
@@ -960,7 +960,7 @@ public partial class RadialWindow : Window
 		MainGrid.Opacity = 0.0;
 		WindowScale.ScaleX = 0.65;
 		WindowScale.ScaleY = 0.65;
-		ClearSubTier();
+		ReleaseSubTierVisuals();
 		CoreVolumeText.Visibility = Visibility.Collapsed;
 		CoreSelectionTextPanel.Visibility = Visibility.Collapsed;
 		CoreSelectionOverlay.Visibility = Visibility.Collapsed;
@@ -1025,8 +1025,7 @@ public partial class RadialWindow : Window
 		_currentHighlightedSubSector = -1;
 		_activeSubTierParentSector = -1;
 		_isOuterEscaped = false;
-		_subTierCache.Clear();
-		ClearSubTier();
+		ReleaseSubTierVisuals();
 		CoreScale.ScaleX = 1.0;
 		CoreScale.ScaleY = 1.0;
 		CoreGrid.Visibility = ConfigManager.CurrentConfig.ShowCoreCircle ? Visibility.Visible : Visibility.Collapsed;
@@ -1104,7 +1103,7 @@ public partial class RadialWindow : Window
 
 	private void ClearRenderedVisualsForRebuild()
 	{
-		ClearSubTier();
+		ReleaseSubTierVisuals();
 		List<UIElement> removable = new List<UIElement>();
 		foreach (UIElement child in WheelCanvas.Children)
 		{
@@ -1124,7 +1123,6 @@ public partial class RadialWindow : Window
 		_sectorTransforms.Clear();
 		_containerTransforms.Clear();
 		_sectorAngles.Clear();
-		_subTierCache.Clear();
 	}
 
 	private static SolidColorBrush TintBrush(Brush brush, byte alpha)
@@ -1763,8 +1761,7 @@ public partial class RadialWindow : Window
             PositionWindowOnTargetMonitor();
         }
 
-        ClearSubTier();
-		_subTierCache.Clear();
+        ReleaseSubTierVisuals();
 
 		_currentHighlightedSector = -999;
 		_currentHighlightedSubSector = -1;
@@ -2444,6 +2441,25 @@ public partial class RadialWindow : Window
 		_currentHighlightedSubSector = -1;
 	}
 
+	// Hidden tiers remain attached for reuse during a gesture. At the session boundary,
+	// detach every cached tier, including inactive parents, before dropping the cache.
+	private void ReleaseSubTierVisuals()
+	{
+		ClearSubTier();
+		foreach (SubTierVisuals visuals in _subTierCache.Values)
+		{
+			foreach (System.Windows.Shapes.Path path in visuals.Paths)
+			{
+				WheelCanvas.Children.Remove(path);
+			}
+			foreach (Grid container in visuals.Containers)
+			{
+				WheelCanvas.Children.Remove(container);
+			}
+		}
+		_subTierCache.Clear();
+	}
+
 	private void ActivateCachedSubTier(int parentIndex, SubTierVisuals visuals)
 	{
 		// 缓存组可能追加到累计活动列表末尾，只播放本次新增区间的动画。
@@ -2859,7 +2875,7 @@ public partial class RadialWindow : Window
 
 	private void ShowAllSubTiers()
 	{
-		ClearSubTier();
+		ReleaseSubTierVisuals();
 		if (!ExpandSecondariesOnPopup || _profile == null)
 		{
 			return;
