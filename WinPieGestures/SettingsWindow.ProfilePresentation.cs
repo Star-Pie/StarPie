@@ -146,15 +146,6 @@ public partial class SettingsWindow
 
 		bool isGlobal = _selectedProfile == null ||
 			string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase);
-		if (ProfileGlobalHintPanel != null)
-		{
-			ProfileGlobalHintPanel.Visibility = isGlobal ? Visibility.Visible : Visibility.Collapsed;
-		}
-		if (GlobalProfileHintText != null)
-		{
-			GlobalProfileHintText.Text = I18n.T("GlobalProfileShortHint");
-			GlobalProfileHintText.ToolTip = I18n.T("GlobalProfileHint");
-		}
 		if (ProfileContextSwitchRow != null)
 		{
 			ProfileContextSwitchRow.Visibility = isGlobal ? Visibility.Collapsed : Visibility.Visible;

@@ -125,7 +125,7 @@ public partial class SettingsWindow
         FixedEditor.BindAction(null, _ => { });
         FixedControlsCard.Visibility = FixedSlotCard.Visibility = Visibility.Collapsed;
         CanvasTierSelector.Visibility = FocusActionEditorBorder.Visibility = Visibility.Visible;
-        MappingsLinkSubActionsBtn.Visibility = EditMenuBranchButton.Visibility = Visibility.Visible;
+        MappingsLinkSubActionsBtn.Visibility = Visibility.Visible;
         RefreshMenuDepth(GetSelectedProfile());
         MappingsCanvasInstructionsText.Text = I18n.T("MappingsCanvasInstructions");
         UpdateFocusEditorUi();
@@ -158,7 +158,7 @@ public partial class SettingsWindow
         {
             FixedControlsCard.Visibility = FixedSlotCard.Visibility = Visibility.Collapsed;
             FocusActionEditorBorder.Visibility = CanvasTierSelector.Visibility = MappingsLinkSubActionsBtn.Visibility = Visibility.Visible;
-            FixedOpenCanvas.Visibility = EditMenuBranchButton.Visibility = Visibility.Visible;
+            FixedOpenCanvas.Visibility = Visibility.Visible;
             MappingsCanvasInstructionsText.Text = I18n.T("MappingsCanvasInstructions");
             DrawFixedWheel(profile, layer, menu);
             return true;
@@ -166,7 +166,7 @@ public partial class SettingsWindow
         FixedControlsCard.Visibility = FixedSlotCard.Visibility = Visibility.Visible;
         FocusActionEditorBorder.Visibility = Visibility.Collapsed;
         CanvasTierSelector.Visibility = MappingsLinkSubActionsBtn.Visibility = FocusSubActionsBorder.Visibility = Visibility.Collapsed;
-        FixedOpenCanvas.Visibility = EditMenuBranchButton.Visibility = Visibility.Collapsed;
+        FixedOpenCanvas.Visibility = Visibility.Collapsed;
         MappingsCanvasInstructionsText.Text = I18n.T(ConfigManager.CurrentConfig.EnableMultiTier ? "FixedGuide" : "FixedGuideDisabled");
         _fixedFilling = true;
         try

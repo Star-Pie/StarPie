@@ -51,7 +51,7 @@ internal static partial class Program
             Check(hit != null, "existing outer-ring geometry hits intended second-tier slot");
             Call("SelectCanvasSubAction", hit!.SlotIndex, hit.SubIndex!.Value);
             Check(card!.Visibility == Visibility.Collapsed, "one secondary click selects without opening a branch");
-            Click((Button)settings.FindName("EditMenuBranchButton"));
+            Call("OpenLegacyCanvasBranch", hit.SlotIndex, hit.SubIndex.Value);
         }
 
         var picker = (ComboBox)settings.FindName("MenuDepthPicker");

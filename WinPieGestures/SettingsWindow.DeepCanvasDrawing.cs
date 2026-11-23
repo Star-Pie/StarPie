@@ -90,9 +90,7 @@ public partial class SettingsWindow
 			ancestor = ancestor.SubActions[index];
 		}
 		var frame = count > 0 ? Frame(parentPath, count) : null;
-		var vacantShape = count == 0 ? Frame(parentPath, 1).Slots[0].Shape : null;
 		var bounds = new Rect(-radius, -radius, 2 * radius, 2 * radius);
-		if (vacantShape != null) bounds.Union(vacantShape.Bounds);
 		foreach (var shape in ancestorShapes) bounds.Union(shape.Bounds);
 		if (frame != null) foreach (var slot in frame.Slots) bounds.Union(slot.Shape.Bounds);
 		double availableHeight = Math.Max(1, viewHeight - (count == 0 ? 105 : 78));
@@ -112,17 +110,10 @@ public partial class SettingsWindow
 		Brush activeBorder = CreateBrushFromHexSafe(custom ? cfg.SubWheelCustomHighlightBorder : null, renderer.HighlightBorderBrush);
 		Brush text = CreateBrushFromHexSafe(custom ? cfg.SubWheelCustomText : null, renderer.TextColorBrush);
 		var directions = ResolveDirectionNames(profile.SectorCount);
-		Geometry OnCanvas(Geometry shape)
-		{
-			var transformed = new GeometryGroup { Children = { shape }, Transform = new MatrixTransform(scale, 0, 0, scale, x, y) };
-			transformed.Freeze();
-			return transformed;
-		}
 		if (cfg.ShowCoreCircle)
 		{
 			var core = new EllipseGeometry(new Point(), cfg.CoreRadius, cfg.CoreRadius);
 			PlaceSlot(core, "DeepCanvasCenter", I18n.T("CenterCoreTitle"), false, SelectCenterCore);
-			RegisterPaletteTreeHit(OnCanvas(core), [-1]);
 		}
 		for (int i = 0; i < profile.SectorCount; i++)
 		{
@@ -134,7 +125,6 @@ public partial class SettingsWindow
 			bool current = index == parentPath[0];
 			string name = !string.IsNullOrWhiteSpace(action?.Name) ? action.Name : directions[i];
 			var button = PlaceSlot(shape, "DeepCanvasRoot" + index, name, current, () => SelectPrimarySlot(index));
-			RegisterPaletteTreeHit(OnCanvas(shape), [index]);
 			button.Opacity = current ? .80 : .42;
 			double mid = (inner + radius) * .5;
 			var center = new Point(mid * Math.Cos(angle * Math.PI / 180), mid * Math.Sin(angle * Math.PI / 180));
@@ -155,7 +145,6 @@ public partial class SettingsWindow
 			ancestorItem = ancestorItem.SubActions[parentPath[depth - 1]];
 			var shape = ancestorShapes[i];
 			var slot = PlaceSlot(shape, "DeepCanvasAncestor" + depth, ancestorItem.Name, false, () => ShowDeepAncestor(depth));
-			RegisterPaletteTreeHit(OnCanvas(shape), parentPath.Take(depth).ToArray());
 			slot.Opacity = .68;
 			double width = shape.Bounds.Width * scale * .82;
 			if (width < 20) continue;
@@ -176,7 +165,6 @@ public partial class SettingsWindow
 				bool selected = selectedChild == i;
 				bool branch = item?.SubActions?.Count > 0 && parentPath.Count + 1 < _deepCanvasLayer!.EffectiveMaxMenuDepth;
 				var button = PlaceSlot(slot.Shape, "DeepCanvasChild" + i, name, selected, () => SelectDeepCanvasChild(index));
-				RegisterPaletteTreeHit(OnCanvas(slot.Shape), [..parentPath, index]);
 				if (branch) button.ToolTip = name + "  ›";
 				Brush ink = CreateBrushFromHexSafe(item?.CustomTextColor, text);
 				double totalWidth = Math.Max(1, slot.LabelWidth * scale);
@@ -202,7 +190,6 @@ public partial class SettingsWindow
 		}
 		else
 		{
-			if (vacantShape != null) RegisterPaletteTreeHit(OnCanvas(vacantShape), [..parentPath, 0], vacant: true);
 			var empty = new TextBlock { Text = I18n.T("MenuEmpty"), Width = viewWidth, TextAlignment = TextAlignment.Center,
 				IsHitTestVisible = false };
 			empty.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
@@ -234,8 +221,6 @@ public partial class SettingsWindow
 		{
 			double addLeft = left + back.DesiredSize.Width + 8;
 			Canvas.SetLeft(add, addLeft);
-			RegisterPaletteTreeHit(new RectangleGeometry(new Rect(new Point(addLeft, footerY), add.DesiredSize)),
-				[..parentPath, count], vacant: true);
 		}
 
 		Button MakeControl(string id, string caption, Action click)

@@ -72,12 +72,11 @@ internal static class Program
         var stage = Get<Border>("StudioStage");
         var rail = Get<MappingsProfileRail>("StudioProfileRail");
         var inspector = Get<Border>("StudioInspector");
-        var dock = Get<ActionPaletteDock>("StudioPalette");
         rail.Refresh(config, global);
         var title = (TextBlock)rail.FindName("Title");
-        var dockTitle = (TextBlock)dock.FindName("DockTitle");
-        var entries = (Panel)dock.FindName("EntryPanel");
-        var hotkey = entries.Children.OfType<Button>().Single(b => System.Windows.Automation.AutomationProperties.GetAutomationId(b) == "StudioPaletteHotkey");
+        var caption = Get<TextBlock>("LiveCanvasHeaderTitleText");
+        var sector = Get<RadioButton>("MappingsSectorCount8Radio");
+        var record = Get<Button>("ProfileModeRecordButton");
         var area = new Size(1200, 760);
         var update = typeof(SettingsWindow).GetMethod("UpdateStudioLayout", BindingFlags.NonPublic | BindingFlags.Instance)!;
         void Arrange()
@@ -119,10 +118,10 @@ internal static class Program
             var ink = Parse(art?.Colors.Text ?? (effective switch { "Dark" => "#F8FAFC", "TitaniumGray" => "#F4F4F5", _ => "#0F172A" }));
             var accent = Parse(art?.Colors.Accent ?? (effective == "Light" ? "#2563EB" : "#3B82F6"));
             Check(ColorOf(stage.Background) == surface && ColorOf(inspector.Background) == surface, label + " stage/inspector surface actual=" + stage.Background);
-            Check(ColorOf(title.Foreground) == ink && ColorOf(dockTitle.Foreground) == ink, label + " child text brush");
-            Check(ColorOf((Brush)hotkey.FindResource("AccentPrimaryBrush")) == accent, label + " palette accent");
+            Check(ColorOf(title.Foreground) == ink && ColorOf(caption.Foreground) == ink, label + " child text brush");
+            Check(ColorOf((Brush)sector.FindResource("AccentPrimaryBrush")) == accent && Placed(sector, studio), label + " sector control accent");
             if (art != null) Check(stage.CornerRadius.TopLeft == art.CornerRadius, label + " stage corner");
-            foreach (var button in new[] { Get<Button>("StudioRailToggle"), Get<Button>("StudioInspectorToggle"), Get<Button>("StudioListToggle"), (Button)rail.FindName("Add"), hotkey })
+            foreach (var button in new[] { Get<Button>("StudioRailToggle"), Get<Button>("StudioInspectorToggle"), Get<Button>("StudioListToggle"), (Button)rail.FindName("Add"), record })
                 Check(Placed(button, studio) && button.Template != null && button.IsEnabled, label + " mapped button " + button.Name);
             Console.WriteLine($"PASS {label} effective={effective} surface={surface} ink={ink} accent={accent}");
             rows++;

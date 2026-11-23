@@ -88,10 +88,23 @@ internal static class Program
         Passive("initialization");
         window.SwitchToTab(2);
         var studio = Get<Grid>("MappingsCanvasModeGrid");
+        Check(window.FindName("StudioPalette") == null && Get<Grid>("StudioSaveFooter") != null,
+            "the action dock is removed while the auto-save footer remains");
         var list = Get<RadioButton>("MappingsViewModeListRadio");
         var canvas = Get<RadioButton>("MappingsViewModeCanvasRadio");
-        var depth = Get<FrameworkElement>("MenuDepthControls");
+        var depth = Get<WrapPanel>("MenuDepthControls");
+        var depthPicker = Get<ComboBox>("MenuDepthPicker");
+        var depthLabel = Get<TextBlock>("MenuDepthCaption");
+        var depthCommands = new[] { Get<Button>("FixedLayoutToggle"), Get<Button>("FixedOpenCanvas")};
         var recognition = Get<FrameworkElement>("ApplicationIdentificationPanel");
+        var shared = Get<FrameworkElement>("StudioSharedSettings");
+        Check(shared is StackPanel && Get<CheckBox>("StudioCoreToggle").Parent is Grid,
+            "profile and global settings are flat; they don't require unfolding sections");
+        bool DepthInProfile() => ReferenceEquals(depthPicker.Parent, Get<ContentControl>("StudioDepthHost")) &&
+            ReferenceEquals(depthLabel.Parent, Get<ContentControl>("StudioDepthLabelHost")) &&
+            Get<WrapPanel>("StudioDepthActions").Children.Cast<Button>().SequenceEqual(depthCommands);
+        bool DepthInOriginalGroup() => depth.Children.Cast<FrameworkElement>().SequenceEqual(
+            new FrameworkElement[] { depthLabel, depthPicker }.Concat(depthCommands));
         list.IsChecked = true;
         var legacyDepth = depth.Parent;
         var legacyConditions = recognition.Parent;
@@ -103,20 +116,29 @@ internal static class Program
             // An unshown Window never raises IsVisibleChanged. Populate the child views using their production refresh functions.
             Get<MappingsProfileRail>("StudioProfileRail").Refresh(config, global);
             Get<StudioProfileIdentity>("StudioIdentity").Refresh(global);
-            Check((Equals(Get<Button>("StudioListToggle").Content, I18n.T("StudioList")) || Equals(Get<Button>("StudioListToggle").ToolTip, I18n.T("StudioList"))) &&
-                Equals(Get<Expander>("StudioStructure").Header, I18n.T("StudioStructure")) &&
+            Check(Equals(Get<Button>("StudioListToggle").Content, I18n.T("StudioSwitchToList")) &&
+                Equals(Get<Button>("StudioListToggle").ToolTip, I18n.T("StudioSwitchToList")) &&
+                Equals(Get<Button>("StudioContextBack").Content, "← " + I18n.T("StudioBackToProfileSettings")) &&
+                Get<TextBlock>("StudioProfileDisplayLabel").Text == I18n.T("StudioProfileDisplayLabel") &&
+                Equals(Get<RadioButton>("MappingsSectorCount12Radio").Content, I18n.TF("StudioProfileSectorChoice", 12)) &&
                 ((TextBlock)Get<MappingsProfileRail>("StudioProfileRail").FindName("Title")).Text == I18n.T("StudioRailLibrary") &&
                 ((TextBlock)Get<StudioProfileIdentity>("StudioIdentity").FindName("TagsLabel")).Text == I18n.T("StudioRailTags"),
                 "localization " + lang);
-            Check(ReferenceEquals(depth.Parent, Get<ContentControl>("StudioDepthHost")) &&
-                ReferenceEquals(recognition.Parent, Get<StackPanel>("StudioConditionsHost")), "profile host mounting " + lang);
+            if (lang == LanguageCode.ZhCn)
+                Check(Equals(Get<Button>("StudioListToggle").Content, "切换列表模式") &&
+                    Equals(Get<Button>("StudioContextBack").Content, "← 返回方案设置") &&
+                    ((TextBlock)Get<StudioProfileIdentity>("StudioIdentity").FindName("TagsLabel")).Text == "备注",
+                    "list switch, back and notes labels match the requested Chinese wording");
+            Check(DepthInProfile() && shared.Visibility == Visibility.Visible &&
+                ReferenceEquals(recognition.Parent, Get<StackPanel>("StudioConditionsHost")),
+                "profile depth and global options are available without expanding a section " + lang);
             window.SelectPrimarySlot(0);
-            Check(ReferenceEquals(depth.Parent, Get<ContentControl>("StudioActionDepthHost")) &&
+            Check(ReferenceEquals(depth.Parent, Get<ContentControl>("StudioActionDepthHost")) && DepthInOriginalGroup() &&
                 Get<FrameworkElement>("StudioActionSection").Visibility == Visibility.Visible, "selecting slot opens its inspector " + lang);
             Click("StudioContextBack");
-            Check(ReferenceEquals(depth.Parent, Get<ContentControl>("StudioDepthHost")), "return from action inspector " + lang);
+            Check(DepthInProfile(), "return from action inspector " + lang);
             Click("StudioListToggle");
-            Check(list.IsChecked == true && ReferenceEquals(depth.Parent, legacyDepth) &&
+            Check(list.IsChecked == true && ReferenceEquals(depth.Parent, legacyDepth) && DepthInOriginalGroup() &&
                 ReferenceEquals(recognition.Parent, legacyConditions), "list restores original controls " + lang);
             canvas.IsChecked = true;
 
@@ -154,16 +176,60 @@ internal static class Program
                 var inspector = Get<FrameworkElement>("StudioInspector");
                 Check(rail.Visibility == (narrowRail ? Visibility.Collapsed : Visibility.Visible) &&
                     inspector.Visibility == (narrowInspector ? Visibility.Collapsed : Visibility.Visible), $"pane mode {lang} {width:0}");
-                if (narrowRail) { Click("StudioRailToggle"); Layout(); }
+                var toggle = Get<Button>("StudioInspectorToggle");
+                var toolbar = (Grid)toggle.Parent;
+                var toggleBounds = toggle.TransformToAncestor(toolbar).TransformBounds(new Rect(toggle.RenderSize));
+                CheckAll(Math.Abs(toggleBounds.Right - toolbar.ActualWidth) <= 1 &&
+                    Equals(toggle.Content, narrowInspector ? "<" : ">"),
+                    $"{lang} {width:0} DIP the inspector chevron is at the toolbar's right edge and reflects its visibility");
+                if (!narrowInspector)
+                {
+                    Click("StudioInspectorToggle"); Layout();
+                    CheckAll(inspector.Visibility == Visibility.Collapsed && Equals(toggle.Content, "<") &&
+                        Equals(toggle.ToolTip, I18n.T("StudioInspectorExpand")), "docked inspector collapses from the chevron " + lang);
+                    Click("StudioInspectorToggle"); Layout();
+                    CheckAll(inspector.Visibility == Visibility.Visible && Equals(toggle.Content, ">") &&
+                        Equals(toggle.ToolTip, I18n.T("StudioInspectorCollapse")), "docked inspector reopens from the chevron " + lang);
+                }
+                var railToggle = Get<Button>("StudioRailToggle");
+                CheckAll(Equals(railToggle.Content, narrowRail ? ">" : "<") &&
+                    Equals(railToggle.ToolTip, I18n.T(narrowRail ? "StudioRailExpand" : "StudioRailCollapse")),
+                    $"{lang} {width:0} DIP the left chevron matches the rail visibility");
+                if (!narrowRail)
+                {
+                    Click("StudioRailToggle"); Layout();
+                    CheckAll(rail.Visibility == Visibility.Collapsed && Equals(railToggle.Content, ">") &&
+                        Equals(railToggle.ToolTip, I18n.T("StudioRailExpand")), "docked rail closes to the left " + lang);
+                }
+                Click("StudioRailToggle"); Layout();
+                CheckAll(rail.Visibility == Visibility.Visible && Equals(railToggle.Content, "<") &&
+                    Equals(railToggle.ToolTip, I18n.T("StudioRailCollapse")), "left chevron opens the profile rail " + lang);
                 var railControl = Get<MappingsProfileRail>("StudioProfileRail");
                 InView((TextBox)railControl.FindName("Search"), "search profiles");
                 InView((Button)railControl.FindName("Add"), "add profile");
                 InView((Button)railControl.FindName("Import"), "import profile");
-                if (narrowRail) { InView(Get<Button>("StudioRailClose"), "close rail"); Click("StudioRailClose"); Layout(); }
+                if (narrowRail)
+                {
+                    var close = Get<Button>("StudioRailClose");
+                    InView(close, "close rail");
+                    CheckAll(Equals(close.Content, "<") && Equals(close.ToolTip, I18n.T("StudioRailCollapse")),
+                        "left drawer exposes its collapse chevron " + lang);
+                    Click("StudioRailClose"); Layout();
+                    CheckAll(rail.Visibility == Visibility.Collapsed && Equals(railToggle.Content, ">"),
+                        "left drawer closes and can be reopened from the toolbar " + lang);
+                }
                 if (narrowInspector) { Click("StudioInspectorToggle"); Layout(); }
                 InView((Button)Get<StudioProfileIdentity>("StudioIdentity").FindName("IconButton"), "profile identity");
                 InView(Get<Button>("ProfileModeRecordButton"), "record trigger");
-                if (narrowInspector) { InView(Get<Button>("StudioInspectorClose"), "close inspector"); Click("StudioInspectorClose"); Layout(); }
+                if (narrowInspector)
+                {
+                    var close = Get<Button>("StudioInspectorClose");
+                    InView(close, "close inspector");
+                    CheckAll(Equals(toggle.Content, ">") && Equals(close.Content, ">") &&
+                        Equals(close.ToolTip, I18n.T("StudioInspectorCollapse")), "drawer exposes the same collapse chevron " + lang);
+                    Click("StudioInspectorClose"); Layout();
+                    CheckAll(inspector.Visibility == Visibility.Collapsed && Equals(toggle.Content, "<"), "drawer closes and the toolbar offers to reopen it " + lang);
+                }
             }
             FullWindowContent(lang);
             Passive("Studio/list navigation " + lang);
@@ -292,7 +358,7 @@ internal static class Program
                     canvas.BringIntoView(); Layout();
                     Visible(canvas, "return to Studio");
                     canvas.IsChecked = true; Layout();
-                    CheckAll(ReferenceEquals(depth.Parent, Get<ContentControl>("StudioDepthHost")), tag + " returns to Studio");
+                    CheckAll(DepthInProfile(), tag + " returns to Studio");
 
                     bool railDrawer = studio.ActualWidth < 850, inspectorDrawer = studio.ActualWidth < 625;
                     if (railDrawer) { Click("StudioRailToggle"); Layout(); }
@@ -312,6 +378,111 @@ internal static class Program
                     }
                 }
             }
+        }
+        VerifyInspector();
+        void VerifyInspector()
+        {
+            var content = (FrameworkElement)window.Content;
+            var inspector = Get<Border>("StudioInspector");
+            var visualRoot = (Visual)content;
+            while (VisualTreeHelper.GetParent(visualRoot) is Visual parent) visualRoot = parent;
+            VisualTreeHelper.SetRootDpi(visualRoot, new DpiScale(1, 1));
+            Call("ApplySettingsUiScale", 1d);
+            var paper = WinPieGestures.ArtStyles.ArtStyleCatalog.Find(ConfigManager.CurrentConfig, "paper")!;
+            WinPieGestures.ArtStyles.ArtStyleResources.Apply(window, paper, publish: false);
+
+            void Layout(Size size)
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    content.InvalidateMeasure();
+                    content.Measure(size);
+                    content.Arrange(new Rect(size));
+                    content.UpdateLayout();
+                    Call("UpdateStudioLayout");
+                }
+            }
+            Rect Bounds(FrameworkElement element, Visual ancestor) =>
+                element.TransformToAncestor(ancestor).TransformBounds(new Rect(element.RenderSize));
+            void Capture(Size size, string file)
+            {
+                if (evidenceDirectory == null) return;
+                Directory.CreateDirectory(evidenceDirectory);
+                var bitmap = new RenderTargetBitmap((int)size.Width, (int)size.Height, 96, 96, PixelFormats.Pbgra32);
+                bitmap.Render(content);
+                var rect = Bounds(inspector, content);
+                var crop = new Int32Rect((int)Math.Ceiling(rect.Left), (int)Math.Ceiling(rect.Top),
+                    (int)Math.Floor(rect.Width) - 1, (int)Math.Floor(rect.Height) - 1);
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(new CroppedBitmap(bitmap, crop)));
+                using var stream = File.Create(Path.Combine(evidenceDirectory, file));
+                encoder.Save(stream);
+            }
+
+            var revision = ConfigManager.ConfigurationRevision;
+            var files = Files(data);
+            var normal = new Size(1220, 740);
+            I18n.CurrentLanguage = LanguageCode.ZhCn;
+            window.ApplyLocalization();
+            Click("StudioContextBack");
+            var identity = Get<StudioProfileIdentity>("StudioIdentity");
+            identity.Refresh(global);
+            Layout(normal);
+            if (inspector.Visibility != Visibility.Visible) { Click("StudioInspectorToggle"); Layout(normal); }
+            Capture(normal, "profile-inspector.png");
+            var layoutFraction = config.StudioInspectorFraction;
+            try
+            {
+                foreach (var lang in new[] { LanguageCode.ZhCn, LanguageCode.ZhTw, LanguageCode.En, LanguageCode.Ja })
+                {
+                    I18n.CurrentLanguage = lang;
+                    window.ApplyLocalization();
+                    foreach (double fraction in new[] { layoutFraction, .01 })
+                    {
+                        config.StudioInspectorFraction = fraction;
+                        Layout(normal);
+                        var chooser = Get<CheckBox>("ComponentIdentificationCheckBox");
+                        var track = (FrameworkElement)chooser.Template.FindName("Track", chooser);
+                        var rightEdge = Bounds(Get<ComboBox>("MenuDepthPicker"), inspector).Right;
+                        var layerSwitch = Bounds(Get<ComboBox>("LayerSwitchTriggerComboBox"), inspector);
+                        var profileDisplay = Bounds(Get<ComboBox>("ProfileDisplayModeComboBox"), inspector);
+                        string label = $"{lang}, flat inspector {inspector.ActualWidth:F0} DIP";
+                        bool Aligned(double right) => Math.Abs(right - rightEdge) <= 1;
+                        double recordRight = Bounds(Get<Button>("ProfileModeRecordButton"), inspector).Right;
+                        double recognitionRight = Bounds(track, inspector).Right;
+                        double coreRight = Bounds(Get<CheckBox>("StudioCoreToggle"), inspector).Right;
+                        double inheritanceRight = Bounds(Get<CheckBox>("EnableGlobalInheritanceCheckBox"), inspector).Right;
+                        CheckAll(Aligned(recordRight) && Aligned(recognitionRight) && Aligned(coreRight) && Aligned(inheritanceRight),
+                            label + $" uses one right edge for recording, recognition, core visibility and inheritance ({recordRight:F1}/{recognitionRight:F1}/{coreRight:F1}/{inheritanceRight:F1} vs {rightEdge:F1})");
+                        CheckAll(layerSwitch.Width >= 90 && Aligned(layerSwitch.Right) && Aligned(profileDisplay.Right) &&
+                                 Math.Abs(layerSwitch.Left - profileDisplay.Left) <= 1 && Math.Abs(layerSwitch.Height - profileDisplay.Height) <= 1,
+                            label + " gives the two global drop-downs the same size and alignment");
+                        double labelLeft = Bounds(Get<TextBlock>("SectorCountLabel"), inspector).Left;
+                        CheckAll(new[] { "ComponentIdentificationStateText", "StudioInheritLabel", "LayerSwitchTriggerLabel", "StudioProfileDisplayLabel" }
+                            .All(name => Math.Abs(Bounds(Get<TextBlock>(name), inspector).Left - labelLeft) <= 1),
+                            label + " aligns the global labels and identification status to the same left edge");
+                        if (evidenceDirectory != null && lang == LanguageCode.ZhCn && fraction == layoutFraction)
+                        {
+                            var fullHeight = new Size(normal.Width, 880);
+                            Layout(fullHeight);
+                            Capture(fullHeight, "profile-inspector-flat.png");
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                config.StudioInspectorFraction = layoutFraction;
+                I18n.CurrentLanguage = LanguageCode.ZhCn;
+                window.ApplyLocalization();
+                Layout(normal);
+            }
+            var profileIcon = Bounds((Button)identity.FindName("IconButton"), inspector);
+            var profileName = Bounds((TextBox)identity.FindName("NameEntry"), inspector);
+            CheckAll(profileIcon.Right <= profileName.Left && profileName.Top < profileIcon.Bottom && profileName.Bottom > profileIcon.Top,
+                "profile name and icon share a line above the existing tags field");
+            CheckAll(ConfigManager.ConfigurationRevision == revision && Files(data).SequenceEqual(files),
+                "arranging profile settings does not change persisted settings");
         }
         Console.WriteLine($"{_checks} passed, {Failures.Count} failed.");
         if (Failures.Count != 0) throw new InvalidOperationException(string.Join(Environment.NewLine, Failures));

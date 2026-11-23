@@ -11,7 +11,7 @@ public partial class SettingsWindow
 
 	private void RefreshMenuDepth(WheelProfile? profile)
 	{
-		if (MenuDepthPicker == null || FixedLayoutToggle == null || EditMenuBranchButton == null || FixedOpenCanvas == null) return;
+		if (MenuDepthPicker == null || FixedLayoutToggle == null || FixedOpenCanvas == null) return;
 		_refreshingMenuDepth = true;
 		try
 		{
@@ -90,9 +90,6 @@ public partial class SettingsWindow
 		public void Undo(SettingsWindow window) => window.SetMenuDepth(Address.LayerInstance!, Before, BeforeMenu, BeforeStyle);
 		public void Redo(SettingsWindow window) => window.SetMenuDepth(Address.LayerInstance!, After, AfterMenu, AfterStyle);
 	}
-
-	private void FocusEditMenuBranch_Click(object sender, RoutedEventArgs e) =>
-		EditMenuBranch(_selectedSlotIndex, _selectedSubActionIndex ?? -1);
 
 	private void EditMenuBranch(int slot, int child)
 	{
