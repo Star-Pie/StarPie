@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/readme-banner.svg" width="100%" alt="Star-Pie/StarPie 黑色齿轮横幅，内含 GitHub Stars、Forks、开放议题和开放 PR 四项统计" />
+<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto" width="100%" alt="StarPie 齿轮背景横幅：项目 Logo 与 Stars、Forks、Issues、Pull Requests 统计" />
 
 # StarPie (星盘)
 

@@ -1,5 +1,5 @@
 <div align="center">
-<img src="assets/readme-banner.svg" width="100%" alt="Star-Pie/StarPie on a black gear background with GitHub stars, forks, open issues and open pull requests" />
+<img src="https://socialify.git.ci/Star-Pie/StarPie/image?font=Inter&forks=1&issues=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2FStar-Pie%2FStarPie%2Fmain%2Fassets%2Flogo_dark.png&name=1&owner=1&pattern=Floating+Cogs&pulls=1&stargazers=1&theme=Auto" width="100%" alt="StarPie Floating Cogs banner: project logo and Stars, Forks, Issues, and Pull Requests" />
 
 # StarPie
 
