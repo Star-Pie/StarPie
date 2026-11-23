@@ -112,8 +112,9 @@ public partial class GestureController
             if (request != _layerSwitchSequence) return;
             _switchingFixedLayer = false;
         }
-        if (_isGestureActive && IsCurrentGesture(version) && pt != default)
+        if (_isGestureActive && IsCurrentGesture(version))
         {
+            if (_activeProfile != null) PreparePortalRoot(rw, _activeProfile, version);
             RefreshHoverAfterUiChange(pt, version);
         }
     }
@@ -128,7 +129,7 @@ public partial class GestureController
         lock (_uiUpdateSync)
         {
             if (!_isGestureActive || !_pinState.Presented || _gestureVersion != version) return;
-            if (!hit && _fixedSession is { ExtendedPrimary: >= 0, Path.Length: 0 } extended)
+            if (!hit && _fixedSession is { ExtendedPrimary: >= 0, VisibleDepth: 2 } extended)
             {
                 // A hidden secondary cannot receive a pinned hit until the original primary
                 // crosses its distance and requests its real children.
@@ -146,14 +147,13 @@ public partial class GestureController
                 double threshold = ConfigManager.CurrentConfig.SubWheelTriggerDistance > 20
                     ? ConfigManager.CurrentConfig.SubWheelTriggerDistance : 95;
                 expanded = ConfigManager.CurrentConfig.EnableMultiTier &&
-                    (_activeProfile?.GetEffectiveAction(sector)?.SubActions?.Count ?? 0) > 0 &&
+                    (_activeProfile?.GetEffectiveAction(sector)?.InlineSubActions?.Count ?? 0) > 0 &&
                     (subSector >= 0 || _pinExpandedParent == sector || Math.Sqrt(dx * dx + dy * dy) >= threshold);
                 if (expanded) _pinExpandedParent = sector;
             }
             // -1 is the core; -2 is no target. Keeping expanded over core/outside suppresses false collapse feedback.
             TrackReturnHover(point, hit ? sector : -2, hit ? subSector : -1);
             QueueHighlightUpdate(hit ? sector : -2, hit ? subSector : -1, false, expanded, version);
-            AimFixedSecondary(point, hit ? sector : -2, hit && expanded ? subSector : -1);
         }
     }
 
@@ -180,8 +180,11 @@ public partial class GestureController
 
     private void EndPinnedTracking()
     {
+        ClearPinnedArrowSession();
         var originalTrigger = _pinTrigger ?? _activeTrigger;
-        string? heldMouse = originalTrigger?.TriggerType == "Mouse" ? originalTrigger.MouseButton : null;
+        string? heldMouse = originalTrigger?.TriggerType == "Mouse"
+            ? (originalTrigger.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton ?? "RightButton")
+            : null;
         if (!_pinState.EndWithMouseRelease(heldMouse)) return;
         _pinClickVersion = -1;
         _pinPressedPage = null;
@@ -230,7 +233,8 @@ public partial class GestureController
     {
         var original = _pinTrigger ?? _activeTrigger;
         var release = !e.IsButtonDown ? _pinState.TakeMouseUp(e.MouseButton,
-            original?.TriggerType == "Mouse" ? original.MouseButton : null, _isGestureActive) : PinnedMouseRelease.None;
+            original?.TriggerType == "Mouse" ? (original.MouseButton ?? ConfigManager.CurrentConfig.TriggerButton ?? "RightButton") : null,
+            _isGestureActive) : PinnedMouseRelease.None;
         if (release != PinnedMouseRelease.None)
         {
             _mouseHook.ForgetActiveTrigger(e.MouseButton);
@@ -248,12 +252,13 @@ public partial class GestureController
                 var pressedPage = System.Threading.Interlocked.Exchange(ref _pinPressedPage, null);
                 var pressedLayer = System.Threading.Interlocked.Exchange(ref _pinPressedLayer, null);
                 var fixedPress = System.Threading.Interlocked.Exchange(ref _fixedPress, null);
+                long epoch = _portalPressedEpoch;
+                Point pressedPoint = _portalPressedPoint;
                 DispatchUi(() =>
                 {
-                    if (!ReferenceEquals(pressedPage, _deepPage) ||
+                    if (epoch != _portalVisualEpoch || !ReferenceEquals(pressedPage, _deepPage) ||
                         !ReferenceEquals(pressedLayer, CaptureReleaseLayer(_activeProfile))) return;
-                    if (fixedPress != null) ConfirmPinnedPress(position, version, fixedPress);
-                    else ConfirmPinnedSelection(position, version);
+                    ConfirmPinnedPress(position, version, fixedPress, pressedPoint);
                 });
             }
             e.Handled = true;
@@ -274,6 +279,8 @@ public partial class GestureController
         if (e.MouseButton == "LeftButton")
         {
             _pinClickVersion = downVersion;
+            _portalPressedEpoch = _portalVisualEpoch;
+            _portalPressedPoint = positionAtDown;
             _pinPressedPage = _deepPage;
             _pinPressedLayer = CaptureReleaseLayer(_activeProfile);
             lock (_uiUpdateSync)
@@ -282,10 +289,11 @@ public partial class GestureController
                 if (_fixedSession is { } session && session.IsOuterPoint(positionAtDown))
                 {
                     var hit = session.Hit(positionAtDown);
-                    _fixedPress = new(session, session.Path, session.WasVisible(hit) ? hit : default);
+                    _fixedPress = new(session, session.WasVisible(hit) ? hit : default);
                 }
             }
         }
+        if (e.MouseButton == "LeftButton" && _portalDepth > 1) return true;
         DispatchUi(() =>
         {
             if (!_pinState.Presented || !IsCurrentGesture(downVersion) || (_fixedSession is { } session && session.IsOuterPoint(positionAtDown) ? session.Hit(positionAtDown) != default :
@@ -307,7 +315,7 @@ public partial class GestureController
 
     private void ConfirmPinnedSelection(Point point, long version) => ConfirmPinnedPress(point, version, null);
 
-    private void ConfirmPinnedPress(Point point, long version, FixedPress? fixedPress)
+    private void ConfirmPinnedPress(Point point, long version, FixedPress? fixedPress, Point? pressedPoint = null)
     {
         if (!_pinState.Presented || !IsCurrentGesture(version)) return;
         if (_mouseHook.IsPaused || _activeActivation?.IsLayerAvailable == false || _pinTarget == null ||
@@ -318,19 +326,10 @@ public partial class GestureController
                     CancelGestureTracking("PinnedTargetInvalid");
             return;
         }
+        if (ConfirmPortalPoint(point, released: false, pressedPoint, fixedPress)) return;
         if (ConfirmFixedSelection(point, fixedPress) || ConfirmDeepSelection(point, version)) return;
         ApplyPinnedHover(point, version);
         bool hit = TryHitPinnedPoint(point, out int hitSector, out int hitSubSector);
-        if (hit && hitSubSector >= 0 && _fixedSession is { Persistent: false } fixedSession &&
-            !IsExecutablePinnedAction(_activeProfile?.GetEffectiveAction(hitSector, hitSubSector)))
-        {
-            lock (_uiUpdateSync)
-                if (fixedSession.Enter(new(2, FixedRingMenu.SecondaryKey(hitSector, hitSubSector))))
-                {
-                    QueueFixedRender(fixedSession);
-                    return;
-                }
-        }
         if (hit && hitSubSector >= 0 && _radialWindow is { } window &&
             TryEnterSecondLevelBranch(window, hitSector, hitSubSector, point, version)) return;
         lock (_uiUpdateSync)
@@ -351,7 +350,7 @@ public partial class GestureController
                 // A configured primary action remains clickable when it also owns child actions.
                 // Only an actionless parent is navigation-only; hovering still expands either kind.
                 if (_selectedSectorIndex >= 0 && _selectedSubSectorIndex < 0 && ConfigManager.CurrentConfig.EnableMultiTier &&
-                    _activeProfile?.GetEffectiveAction(_selectedSectorIndex)?.SubActions?.Count > 0)
+                    _activeProfile?.GetEffectiveAction(_selectedSectorIndex)?.InlineSubActions?.Count > 0)
                 {
                     _pinExpandedParent = _selectedSectorIndex;
                     QueueHighlightUpdate(_selectedSectorIndex, -1, false, true, version);

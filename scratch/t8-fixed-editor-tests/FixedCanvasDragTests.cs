@@ -207,7 +207,7 @@ internal static partial class Program
             SetStyle(style);
             int vacancyInk = PixelContribution(5, 2), parentInk = PixelContribution(3, 0);
             Check(layer.FixedRings.AlwaysVisible && vacancyInk > 0 && parentInk > 0,
-                $"{style} persistent editor paints empty slots and branch parents (vacancy={vacancyInk}, parent={parentInk} changed color bytes)");
+                $"{style} persistent editor paints unconfigured addresses (vacancy={vacancyInk}, legacy position={parentInk} changed color bytes)");
             VisualSlot(5, 2).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Check(((ComboBox)window.FindName("FixedLevel")).SelectedItem is 5 &&
                 !((Button)window.FindName("FixedClear")).IsEnabled && Slot(5, 2) == null,
@@ -219,8 +219,8 @@ internal static partial class Program
                 ((Border)window.FindName("FocusActionEditorBorder")).Visibility == Visibility.Visible,
                 $"{style} selecting a secondary keeps the deep canvas and binds the inspector to that secondary");
             Drop(2, 0, 5, 2, copy: true);
-            Check(Slot(5, 2)?.Action.Name == layer.Actions[0].SubActions[0].Name && PixelContribution(5, 2) > 0,
-                $"{style} actual geometry accepts a drop from the inner inspector into a visible vacancy and paints its action");
+            Check(Slot(5, 2)?.Action.Name == layer.Actions[0].SubActions[0].Name && Slot(5, 2)?.ParentIndex == null && PixelContribution(5, 2) > 0,
+                $"{style} actual geometry accepts a drop from the inner inspector into a visible vacancy and paints it without a parent link");
             window.ExecuteUndo();
             Check(Snapshot() == before && PixelContribution(5, 2) > 0,
                 $"{style} undo returns the configured slot to a visible and addressable vacancy");
@@ -300,9 +300,10 @@ internal static partial class Program
             }
             string initial = Snapshot();
             Drop(2, 0, 5, 3);
-            Check(Slot(5, 3)?.Action.Name == "child 0" && layer.Actions[0].SubActions[0].Parameter == "" &&
-                WheelProfile.IsActionConfigured(layer.Actions[0].SubActions[0]) && Slot(3, 0)!.ParentIndex == 0,
-                $"{style} move to an empty outer slot leaves a traversable branch for the original secondary's children");
+            Check(Slot(5, 3)?.Action.Name == "child 0" && Slot(5, 3)?.ParentIndex == null &&
+                layer.Actions[0].SubActions[0] is { Parameter: "", OverrideGlobalMenu: false } originalSecondary &&
+                originalSecondary.SubActions.Single().Name == "legacy hidden grandchild" && Slot(3, 0)!.ParentIndex == 0,
+                $"{style} move to an empty outer slot keeps the legacy submenu in place without creating a parent link or forcing an override");
             window.ExecuteUndo();
             Check(Snapshot() == initial, $"{style} undo vacancy move restores contents and storage");
             Drop(1, 0, 4, 1, copy: true);
@@ -356,9 +357,11 @@ internal static partial class Program
             string original = Snapshot();
             int? ownerA = Slot(d, 0)!.ParentIndex, ownerB = Slot(d, 1)!.ParentIndex;
             Drop(d, 0, d, 3);
-            Check(Slot(d, 0) == null && Slot(d, 3)!.Action.Parameter == $"A{d} payload" && Slot(d, 3)!.ParentIndex == ownerA &&
-                (d == 5 || (Slot(d + 1, 0)!.ParentIndex == 3 && Slot(d + 1, 6)!.ParentIndex == 3 && Slot(d + 1, 7)!.ParentIndex == null)),
-                $"level {d} move into vacancy carries the action, parent and visible/hidden children");
+            bool OtherTierUnchanged() => d == 5 ||
+                (Slot(d + 1, 0)!.ParentIndex == 0 && Slot(d + 1, 1)!.ParentIndex == 1 &&
+                 Slot(d + 1, 6)!.ParentIndex == 0 && Slot(d + 1, 7)!.ParentIndex == 3);
+            Check(Slot(d, 0) == null && Slot(d, 3)!.Action.Parameter == $"A{d} payload" && Slot(d, 3)!.ParentIndex == null &&
+                OtherTierUnchanged(), $"level {d} move into vacancy creates no legacy metadata and leaves visible and hidden placements on the next ring unchanged");
             string moved = Snapshot();
             window.ExecuteUndo();
             Check(Snapshot() == original, $"level {d} undo restores complete layout after move");
@@ -367,18 +370,16 @@ internal static partial class Program
             window.ExecuteUndo();
             Drop(d, 0, d, 1);
             Check(Slot(d, 0)!.Action.Name == $"B{d}" && Slot(d, 1)!.Action.Name == $"A{d}" &&
-                Slot(d, 0)!.ParentIndex == ownerB && Slot(d, 1)!.ParentIndex == ownerA &&
-                (d == 5 || (Slot(d + 1, 1)!.ParentIndex == 0 && Slot(d + 1, 0)!.ParentIndex == 1 && Slot(d + 1, 6)!.ParentIndex == 1)),
-                $"level {d} swap preserves both owners and moves both sets of children");
+                Slot(d, 0)!.ParentIndex == ownerA && Slot(d, 1)!.ParentIndex == ownerB && OtherTierUnchanged(),
+                $"level {d} swap exchanges action payloads and leaves legacy metadata at its original positions");
             window.ExecuteUndo();
-            Check(Snapshot() == original, $"level {d} undo restores swapped actions and children together");
+            Check(Snapshot() == original, $"level {d} undo restores swapped actions and metadata together");
             Drop(d, 0, d, 1, copy: true);
             Check(Slot(d, 1)!.Action.Parameter == $"A{d} payload" && Slot(d, 0)!.Action.Parameter == $"A{d} payload" &&
-                !ReferenceEquals(Slot(d, 1)!.Action, Slot(d, 0)!.Action) && Slot(d, 1)!.ParentIndex == ownerA &&
-                (d == 5 || (Slot(d + 1, 1)!.ParentIndex == null && Slot(d + 1, 0)!.ParentIndex == 0 && Slot(d + 1, 6)!.ParentIndex == 0)),
-                $"level {d} Ctrl-copy clones action and parent, preserves source descendants and detaches overwritten descendants");
+                !ReferenceEquals(Slot(d, 1)!.Action, Slot(d, 0)!.Action) && Slot(d, 1)!.ParentIndex == ownerB && OtherTierUnchanged(),
+                $"level {d} Ctrl-copy clones the action without rewriting legacy metadata");
             window.ExecuteUndo();
-            Check(Snapshot() == original, $"level {d} undo restores overwritten branch after copy");
+            Check(Snapshot() == original, $"level {d} undo restores the overwritten action after copy");
         }
         string beforeCancel = Snapshot();
         Start(3, 0);

@@ -29,7 +29,7 @@ if not i18n_path.exists():
     print(f"Error: {i18n_path} not found")
     sys.exit(1)
 
-i18n = i18n_path.read_text(encoding="utf-8")
+i18n = "\n".join(path.read_text(encoding="utf-8") for path in [i18n_path, *sorted(src.glob("I18n.*.cs"))])
 
 # 1) 解析词条定义
 #
@@ -46,7 +46,7 @@ LEGACY_PATTERN = re.compile(
 )
 # 行首刻意写成「任意空白」而不是「恰好两个制表符」：那 1600 多条 `Add(` 的缩进并不齐，
 # 按缩进过滤会把几十条真词条当成没定义，报出一串查不出来源的「引用但未定义」假阳性。
-FLAT_PATTERN = re.compile(r'^[ \t]*Add\(\s*"(?P<key>[^"]+)",(?P<rest>.*?)\);[ \t]*$', re.M)
+FLAT_PATTERN = re.compile(r'^[ \t]*[Aa]dd\(\s*"(?P<key>[^"]+)",(?P<rest>.*?)\);[ \t]*$', re.M)
 # C# 字符串字面量：含转义（\" 与 \\ 都要吃掉，否则引号计数会错位）
 CS_STRING = re.compile(r'"((?:[^"\\]|\\.)*)"')
 LANG_ORDER = ["ZhCn", "ZhTw", "En", "Ja"]
@@ -94,7 +94,7 @@ print(f"简中文案为空的键: {len(empty)}  {empty[:10]}")
 refs = set()
 dynamic = []
 mentions = set()   # 出现在代码里的任意字符串字面量（含三元表达式里拼的键，refs 抓不到）
-refpat = re.compile(r'I18n\.(?:T|TF)\(\s*"([^"]+)"')
+refpat = re.compile(r'I18n\.(?:T|TF)\(\s*"([^"]+)"\s*(?=[,)])')
 dynpat = re.compile(r'I18n\.(?:T|TF)\(\s*[^"\s]')
 for f in src.rglob("*.cs"):
     if "obj" in f.parts or "bin" in f.parts or f.name == "I18n.cs":
@@ -123,12 +123,16 @@ if "--since" in sys.argv:
     since = sys.argv[sys.argv.index("--since") + 1]
 
 def keys_at(ref):
-    """取某个 ref 下 I18n.cs 里的键集合。"""
+    """取某个 ref 下完整词表的键集合。"""
     try:
-        blob = subprocess.run(
-            ["git", "show", f"{ref}:WinPieGestures/I18n.cs"],
-            cwd=root, capture_output=True, text=True, encoding="utf-8",
-        ).stdout
+        files = subprocess.check_output(
+            ["git", "ls-tree", "-r", "--name-only", ref, "WinPieGestures"],
+            cwd=root, text=True, encoding="utf-8",
+        ).splitlines()
+        blob = "\n".join(
+            subprocess.check_output(["git", "show", f"{ref}:{path}"], cwd=root, text=True, encoding="utf-8")
+            for path in files if re.fullmatch(r"WinPieGestures/I18n(?:\.[^/]+)?\.cs", path)
+        )
     except Exception:
         return set()
     return {k for k, _ in parse_defs(blob)}

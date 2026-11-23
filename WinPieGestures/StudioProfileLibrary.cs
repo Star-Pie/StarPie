@@ -45,19 +45,53 @@ internal static class StudioProfileLibrary
     }
 
     internal static string SerializeProfile(WheelProfile profile) =>
-        JsonSerializer.Serialize(new { Profiles = new[] { profile } });
+        SerializeProfiles([profile]);
+
+    internal static string SerializeProfiles(IReadOnlyList<WheelProfile> profiles) =>
+        JsonSerializer.Serialize(new { Profiles = profiles });
+
+    internal static IReadOnlyList<WheelProfile> PortalExportProfiles(WheelProfile root, IReadOnlyList<WheelProfile> profiles)
+    {
+        var result = new List<WheelProfile> { root };
+        var seen = new HashSet<WheelProfile> { root };
+        var references = new PortalReferenceAnalyzer(profiles).References.ToLookup(reference => reference.Source.Profile);
+        for (int i = 0; i < result.Count; i++)
+            foreach (var reference in references[result[i]])
+                if (reference.Destination is { } destination && seen.Add(destination.Profile))
+                    result.Add(destination.Profile);
+        return result;
+    }
 
     internal static WheelProfile ReadProfile(string json)
+    {
+        var profiles = ReadProfiles(json);
+        if (profiles.Count != 1) throw new InvalidDataException();
+        return profiles[0];
+    }
+
+    internal static IReadOnlyList<WheelProfile> ReadProfiles(string json)
     {
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
         if (root.ValueKind != JsonValueKind.Object || root.EnumerateObject().Count() != 1 ||
             !root.TryGetProperty("Profiles", out var profiles) || profiles.ValueKind != JsonValueKind.Array ||
-            profiles.GetArrayLength() != 1 || profiles[0].ValueKind != JsonValueKind.Object ||
-            !profiles[0].TryGetProperty("ProcessName", out var name) || name.ValueKind != JsonValueKind.String ||
-            string.IsNullOrWhiteSpace(name.GetString()))
+            profiles.GetArrayLength() == 0)
             throw new InvalidDataException();
-        var profile = profiles[0].Deserialize<WheelProfile>() ?? throw new InvalidDataException();
+        var result = new List<WheelProfile>();
+        var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in profiles.EnumerateArray())
+        {
+            if (entry.ValueKind != JsonValueKind.Object || !entry.TryGetProperty("ProcessName", out var name) ||
+                name.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(name.GetString()) ||
+                !keys.Add(name.GetString()!)) throw new InvalidDataException();
+            result.Add(ReadEntry(entry));
+        }
+        return result;
+    }
+
+    private static WheelProfile ReadEntry(JsonElement entry)
+    {
+        var profile = entry.Deserialize<WheelProfile>() ?? throw new InvalidDataException();
         if (profile.SectorCount is not (4 or 8 or 12) || profile.Layers?.Any(l => l == null || l.SectorCount is not (4 or 8 or 12)) == true) throw new InvalidDataException();
         ValidateActions(profile.Actions);
         if (profile.CenterAction != null) ValidateAction(profile.CenterAction);
@@ -77,6 +111,46 @@ internal static class StudioProfileLibrary
         }
         profile.EnsureLayers();
         return profile;
+    }
+
+    internal static void NameImportedProfiles(IReadOnlyList<WheelProfile> profiles, IReadOnlyList<WheelProfile> existing, string rootName)
+    {
+        var reserved = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Global" };
+        foreach (var profile in existing)
+        {
+            reserved.Add(profile.ProcessName);
+            reserved.Add(profile.FriendlyName);
+        }
+        var graph = new PortalReferenceAnalyzer(profiles);
+        var renamed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < profiles.Count; i++)
+        {
+            var profile = profiles[i];
+            string original = profile.ProcessName;
+            string name = i == 0 ? rootName : profile.FriendlyName;
+            if (!reserved.Add(name))
+            {
+                string copy = I18n.TF("CopyLayerNameFmt", name);
+                name = copy;
+                int suffix = 2;
+                while (!reserved.Add(name)) name = copy + " " + suffix++;
+            }
+            if (!profile.HasExplicitProcessBindings)
+                profile.BoundProcesses = string.Equals(original, "Global", StringComparison.OrdinalIgnoreCase)
+                    ? "" : string.Join(", ", ProfileProcessBindings.GetNames(profile));
+            profile.HasExplicitProcessBindings = true;
+            profile.ProcessName = profile.DisplayName = name;
+            profile.ApplicationIconPath = null;
+            renamed.Add(original, name);
+        }
+        foreach (var reference in graph.References)
+        {
+            var target = reference.Target;
+            if (reference.Destination is not { } address) continue;
+            if (!target.SameProfile && renamed.TryGetValue(target.TargetProfileKey, out string? key)) target.TargetProfileKey = key;
+            target.TargetProfileNameSnapshot = address.Profile.FriendlyName;
+            if (string.IsNullOrWhiteSpace(target.TargetLayerId)) target.TargetLayerId = address.Layer.EnsureLayerId();
+        }
     }
 
     private static void ValidateActions(List<ActionItem>? actions)

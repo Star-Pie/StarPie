@@ -103,27 +103,15 @@ public partial class SettingsWindow
         int level = source.FixedLevel!.Value, from = source.SlotIndex, to = target.SlotIndex;
         var original = menu.GetSlot(level, from)!.Clone();
         var displaced = menu.GetSlot(level, to)?.Clone();
+        var moved = new FixedRingSlot { Action = original.Action, ParentIndex = displaced?.ParentIndex };
+        var swapped = displaced == null ? null : new FixedRingSlot { Action = displaced.Action, ParentIndex = original.ParentIndex };
         int storedCount = menu.Tiers[level - 3]!.Slots.Count;
-        var bindings = new List<(int Index, int Before, int? After)>();
-        // The child ring can contain hidden slots after a count reduction, or be hidden by the depth cap.
-        if (level < 5 && menu.Tiers.ElementAtOrDefault(level - 2)?.Slots is { } children)
-        {
-            for (int i = 0; i < children.Count; i++)
-            {
-                if (children[i]?.ParentIndex is not int parent) continue;
-                if (parent == from && !copy) bindings.Add((i, parent, to));
-                else if (parent == to) bindings.Add((i, parent, copy || displaced == null ? null : from));
-            }
-        }
 
         void Write(WheelLayer layer, bool undo)
         {
             if (!ReferenceEquals(layer.FixedRings, menu)) return;
-            if (!copy) menu.SetSlot(level, from, (undo ? original : displaced)?.Clone());
-            menu.SetSlot(level, to, (undo ? displaced : original)?.Clone());
-            foreach (var binding in bindings)
-                if (menu.GetSlot(level + 1, binding.Index) is { } child)
-                    child.ParentIndex = undo ? binding.Before : binding.After;
+            if (!copy) menu.SetSlot(level, from, (undo ? original : swapped)?.Clone());
+            menu.SetSlot(level, to, (undo ? displaced : moved)?.Clone());
             // A move to an unallocated position grows a sparse tier. Undo its trailing padding as well.
             var slots = menu.Tiers[level - 3]!.Slots;
             if (undo && to >= storedCount && slots.Count == to + 1 && slots.Skip(storedCount).All(slot => slot == null))
@@ -134,6 +122,6 @@ public partial class SettingsWindow
         _fixedLevel = level;
         _fixedIndices[level] = to;
         CommitFixedChange(profile, copy ? "EditCopySector" : "EditSwapSectors",
-            layer => Write(layer, true), layer => Write(layer, false), 2 + bindings.Count);
+            layer => Write(layer, true), layer => Write(layer, false), 2);
     }
 }

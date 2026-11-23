@@ -84,6 +84,7 @@ internal sealed class PluginInteractionSession : IDisposable
     internal static bool IsExecutableAction(ActionItem? action, bool allowWhitespaceText)
     {
         if (action == null || !WheelProfile.IsActionConfigured(action)) return false;
+        if (action.IsWheelPortal) return true; // Menu visibility includes portals; they never enter the action queue.
         if (string.Equals(action.Type, "Hotkey", StringComparison.OrdinalIgnoreCase))
             return !string.IsNullOrWhiteSpace(action.Parameter);
         if (string.Equals(action.Type, "Text", StringComparison.OrdinalIgnoreCase) ||
@@ -92,6 +93,16 @@ internal sealed class PluginInteractionSession : IDisposable
         if (string.Equals(action.Type, "Plugin", StringComparison.OrdinalIgnoreCase))
             return action.PluginActionRef?.IsValid == true;
         return true;
+    }
+
+    internal void PortalNavigated(bool expanded)
+    {
+        lock (_gate)
+        {
+            if (_ended || _terminal || !_presented) return;
+            Emit(expanded ? InteractionEventKind.SubmenuExpanded : InteractionEventKind.NavigationCancelled,
+                expanded ? "PortalExpanded" : "PortalReturned");
+        }
     }
 
     internal void Confirm(ActionItem? action, InteractionTarget target, string cancelReason = "NoAction")

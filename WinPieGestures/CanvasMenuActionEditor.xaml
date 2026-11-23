@@ -60,6 +60,7 @@
     </StackPanel>
     <ComboBox x:Name="PanelBox" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30" Visibility="Collapsed"
               DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="PanelChanged" />
+    <local:PortalTargetEditor x:Name="PortalEditor" />
     <CheckBox x:Name="PlacementBox" Visibility="Collapsed" Click="PlacementChanged" Margin="0,0,0,8" />
     <StackPanel x:Name="SchemaFields" />
     <TextBlock x:Name="Unavailable" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Visibility="Collapsed" />

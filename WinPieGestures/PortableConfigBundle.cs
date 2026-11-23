@@ -172,6 +172,7 @@ public static class PortableConfigBundle
 	internal static void ExportProfile(string configJson, string targetPath, string customIconsDirectory) =>
 		Export(configJson, targetPath, customIconsDirectory, ProfileFormat);
 
+
 	private static void Export(string configJson, string targetPath, string customIconsDirectory, string format)
 	{
 		if (configJson == null)
@@ -486,7 +487,10 @@ public static class PortableConfigBundle
 			{
 				return;
 			}
-			ValidateKnownProperties(action, "IconKey", "SubActions");
+			ValidateKnownProperties(action, "IconKey", "SubActions", "PortalTarget");
+			if (TryGetKnownProperty(action, "PortalTarget", out _, out JsonNode? portalNode) && portalNode is JsonObject portal)
+				ValidateKnownProperties(portal, "SameProfile", "TargetProfileKey", "TargetLayerId", "TargetLayerIndex",
+					"TargetProfileNameSnapshot", "TargetLayerNameSnapshot", "AnchorMode", "SyncTargetName");
 			if (TryGetKnownProperty(action, "IconKey", out _, out JsonNode? iconNode))
 			{
 				AddValue(iconNode);

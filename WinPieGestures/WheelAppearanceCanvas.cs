@@ -35,7 +35,9 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
 
     private readonly List<Cell> _cells = new();
     private readonly Dictionary<string, Geometry?> _icons = new(StringComparer.Ordinal);
-    private readonly int?[] _branch = new int?[5];
+    private int? _previewPrimary;
+    private FixedRingProximity? _proximity;
+    private FixedRingVisibility _nearby;
     private WheelProfile? _profile;
     private FixedRingGeometry? _fixed;
     private int _depth, _selected;
@@ -82,9 +84,9 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
         if (!ReferenceEquals(_profile, profile) || _depth != depth || _layout != config.SubmenuStyle)
         {
             _referenceRadius = 0;
-            Array.Clear(_branch);
+            _previewPrimary = null;
         }
-        if (_runtime != runtimePreview) Array.Clear(_branch);
+        if (_runtime != runtimePreview) _previewPrimary = null;
         if (_drag != null && (_selected != selectedLevel || _handle?.Dimension != handle?.Dimension || runtimePreview))
             EndDrag();
         _profile = profile;
@@ -109,6 +111,8 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
     private void BuildScene(AppConfig config, WheelProfile? profile)
     {
         _cells.Clear();
+        _proximity = null;
+        _nearby = default;
         var layer = ReadLayer(profile);
         int count = ValidRootCount(layer?.SectorCount ?? profile?.SectorCount ?? 8);
         bool fan = config.SubmenuStyle == "Fan";
@@ -120,7 +124,7 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
             FixedRingMenu.LowerConfiguredSlots(roots, configuredDepth, fan);
         _canExpand = config.EnableMultiTier && _depth > 1;
         _resident = menu?.ShowsAllOnPopup(config) == true;
-        _secondOnPopup = config.ExpandsSubRingsOnPopup;
+        _secondOnPopup = menu == null && config.ExpandsSubRingsOnPopup;
         _rootOuter = Positive(config.WheelRadius, 133);
         _rootInner = Math.Clamp(Positive(config.InnerRadius, 70), 0, Math.Max(0, _rootOuter - 1));
         _secondaryOuter = LegacyRingGeometry.SecondaryExtent(config, _rootOuter, _rootInner);
@@ -193,6 +197,8 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
         }
 
         if (_fixed == null) return;
+        if (menu != null && _runtime && _canExpand && !_resident)
+            _proximity = new(_fixed, menu, configuredDepth, configured);
         for (int level = 3; level <= _depth; level++)
         {
             int tierCount = menu?.GetCount(level) ?? FixedRingMenu.RecommendedCount(level);
@@ -200,7 +206,7 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
             {
                 var slot = menu?.GetSlot(level, index);
                 var shape = (_fixed.GetShape(level, index, tierCount), _fixed.GetCenter(level, index, tierCount));
-                Add(level, index, slot?.ParentIndex, shape, slot?.Action, configured.Contains((level, index)), index + 1);
+                Add(level, index, null, shape, slot?.Action, configured.Contains((level, index)), index + 1);
             }
         }
     }
@@ -273,9 +279,8 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
         if (cell.Level <= 1) return true;
         if (!_canExpand) return false;
         if (_resident) return true;
-        if (cell.Level == 2 && _secondOnPopup) return true;
-        return _branch[cell.Level - 2] is int parent &&
-            (cell.Parent == parent || _branch[cell.Level - 1] == cell.Index);
+        if (cell.Level == 2) return _secondOnPopup || (_previewPrimary is int primary && cell.Parent == primary);
+        return _nearby.Contains(cell.Level, cell.Index);
     }
 
     protected override void OnRender(DrawingContext dc)
@@ -492,14 +497,9 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
         var cell = Hit(point);
         if (cell == null) return;
         if (!_runtime) LevelSelected?.Invoke(cell.Level);
-        else if (!_resident)
+        else if (!_resident && cell.Level < 2)
         {
-            if (cell.Level == 0) Array.Clear(_branch);
-            else if (cell.Level < _branch.Length)
-            {
-                _branch[cell.Level - 1] = cell.Index;
-                Array.Clear(_branch, cell.Level, _branch.Length - cell.Level);
-            }
+            _previewPrimary = cell.Level == 1 ? cell.Index : null;
             InvalidateVisual();
         }
         e.Handled = true;
@@ -523,6 +523,7 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
         var point = e.GetPosition(this);
         if (_drag is not { } drag || _handle is not { } handle)
         {
+            UpdateNearby(Origin + (point - _center) / _scale);
             Cursor = _guide is { } g && (point - g.End).Length <= 12 ? Cursors.SizeWE :
                 Hit(point) != null ? Cursors.Hand : Cursors.Arrow;
             return;
@@ -538,6 +539,23 @@ public sealed class WheelAppearanceCanvas : FrameworkElement
         if (Math.Abs(value - handle.Value) >= .05)
             HandleChanged?.Invoke(value);
         e.Handled = true;
+    }
+
+    private void UpdateNearby(Point local)
+    {
+        if (_proximity is not { } proximity) return;
+        var nearby = proximity.Around(local, _nearby);
+        if (nearby == _nearby) return;
+        _nearby = nearby;
+        InvalidateVisual();
+    }
+
+    protected override void OnMouseLeave(System.Windows.Input.MouseEventArgs e)
+    {
+        base.OnMouseLeave(e);
+        if (_nearby == default) return;
+        _nearby = default;
+        InvalidateVisual();
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)

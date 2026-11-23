@@ -696,6 +696,10 @@
 
       <!-- 全局顶部控制台栏：模式切换胶囊单选组 -->
       <Grid Name="SettingsModeRow" Grid.Row="0" Margin="0,0,0,14">
+        <Button Name="SettingsSearchButton" HorizontalAlignment="Left" VerticalAlignment="Center"
+                Width="34" Height="34" Padding="0" Style="{StaticResource ModernButtonStyle}" Click="SettingsSearchButton_Click">
+          <TextBlock FontFamily="Segoe MDL2 Assets" FontSize="15" Text="&#xE721;" />
+        </Button>
         <Border HorizontalAlignment="Right" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="3" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal">
             <RadioButton Name="ConfigModeSimpleRadio" Content="💡 简单模式" GroupName="ConfigModeGroup" Style="{StaticResource ModernSegmentRadioButtonStyle}" IsChecked="True" Checked="ConfigModeRadio_Checked" />
@@ -704,7 +708,74 @@
         </Border>
       </Grid>
 
-      <Grid Row="1">
+      <Border Name="SettingsSearchPanel" Grid.Row="1" Panel.ZIndex="5" Visibility="Collapsed"
+              HorizontalAlignment="Left" VerticalAlignment="Top" Width="400"
+              MaxHeight="{Binding ActualHeight, ElementName=SettingsPageHost}"
+              MaxWidth="{Binding ActualWidth, ElementName=SettingsContentBody}"
+              Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+              BorderThickness="1" CornerRadius="{DynamicResource CardCornerRadius}" Padding="10"
+              Effect="{StaticResource ChipShadowSoftEffect}" PreviewKeyDown="SettingsSearchPanel_PreviewKeyDown">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Name="SettingsSearchInput" Height="32" Padding="8,2" VerticalContentAlignment="Center"
+                     TextChanged="SettingsSearchInput_TextChanged" />
+            <Button Name="SettingsSearchClose" Grid.Column="1" Width="30" Height="30" Padding="0" Margin="6,0,0,0"
+                    Style="{StaticResource ModernButtonStyle}" Click="SettingsSearchButton_Click">
+              <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE711;" />
+            </Button>
+          </Grid>
+          <TextBlock Name="SettingsSearchStatus" Grid.Row="1" Foreground="{DynamicResource TextSecondaryBrush}"
+                     Margin="3,8,3,2" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite" />
+          <ListBox Name="SettingsSearchResults" Grid.Row="1" Margin="0,6,0,0" Visibility="Collapsed"
+                   MaxHeight="300"
+                   BorderThickness="0" Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewMouseLeftButtonUp="SettingsSearchResults_Click">
+            <ListBox.ItemContainerStyle>
+              <Style TargetType="ListBoxItem">
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="Padding" Value="8,5" />
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                      <Border Name="SearchItemBorder" Background="Transparent" Padding="{TemplateBinding Padding}"
+                              CornerRadius="5" BorderBrush="Transparent" BorderThickness="1">
+                        <ContentPresenter />
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter TargetName="SearchItemBorder" Property="Background" Value="{DynamicResource ItemHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                          <Setter TargetName="SearchItemBorder" Property="Background" Value="{DynamicResource NavTabActiveBgBrush}" />
+                          <Setter TargetName="SearchItemBorder" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+                        </Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel>
+                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Section}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
+
+      <Grid Name="SettingsPageHost" Row="1">
         <Grid Name="TriggerSettingsGrid" Visibility="Visible">
           <Grid.Resources>
             <Style x:Key="TriggerPageCard" TargetType="Border">
@@ -743,6 +814,34 @@
               <Setter Property="FontSize" Value="11.5" />
               <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
               <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+            <Style x:Key="PinnedNavKeycapButtonStyle" TargetType="Button">
+              <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+              <Setter Property="BorderBrush" Value="{DynamicResource ButtonDefaultBorderBrush}" />
+              <Setter Property="BorderThickness" Value="1,1,1,3" />
+              <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+              <Setter Property="Padding" Value="8,4" />
+              <Setter Property="Cursor" Value="Hand" />
+              <Setter Property="InputMethod.IsInputMethodEnabled" Value="False" />
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Name="KeycapBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="KeycapBorder" Property="Background" Value="{DynamicResource ItemHoverBrush}" />
+                        <Setter TargetName="KeycapBorder" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+                      </Trigger>
+                      <Trigger Property="IsPressed" Value="True">
+                        <Setter TargetName="KeycapBorder" Property="Background" Value="{DynamicResource NavTabActiveBgBrush}" />
+                        <Setter TargetName="KeycapBorder" Property="BorderThickness" Value="1,2,1,2" />
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
             </Style>
           </Grid.Resources>
           <Grid.RowDefinitions>
@@ -829,6 +928,79 @@
                                 Checked="PinWheelCheckBox_Changed" Unchecked="PinWheelCheckBox_Changed">
                         <TextBlock Name="PinWheelTitleText" Margin="6,0,0,0" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
                       </CheckBox>
+                      <Border Name="PinnedNavKeysCard" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+                              BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,10,0,0">
+                        <StackPanel>
+                          <Grid Margin="0,0,0,3">
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Name="PinnedNavKeysTitleText" FontSize="12.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                            <Button Name="PinnedNavResetButton" Grid.Column="1" Style="{StaticResource TriggerPageButton}"
+                                    Margin="8,0,0,0" Click="PinnedNavResetButton_Click" />
+                          </Grid>
+                          <TextBlock Name="PinnedNavKeysDescText" Style="{StaticResource TriggerPageCaption}" Margin="0,0,0,10" />
+                          <WrapPanel VerticalAlignment="Bottom">
+                            <Grid Margin="0,0,16,4">
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="6" />
+                                <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
+                              <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="6" />
+                                <RowDefinition Height="Auto" />
+                              </Grid.RowDefinitions>
+                              <Button Name="PinnedNavUpKeyButton" Grid.Row="0" Grid.Column="2" Tag="Up"
+                                      MinWidth="60" Height="48" Style="{StaticResource PinnedNavKeycapButtonStyle}"
+                                      Click="PinnedNavKeyButton_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                  <TextBlock Name="PinnedNavUpKeyGlyph" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
+                                  <TextBlock Name="PinnedNavUpKeyRole" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                              </Button>
+                              <Button Name="PinnedNavLeftKeyButton" Grid.Row="2" Grid.Column="0" Tag="Left"
+                                      MinWidth="60" Height="48" Style="{StaticResource PinnedNavKeycapButtonStyle}"
+                                      Click="PinnedNavKeyButton_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                  <TextBlock Name="PinnedNavLeftKeyGlyph" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
+                                  <TextBlock Name="PinnedNavLeftKeyRole" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                              </Button>
+                              <Button Name="PinnedNavDownKeyButton" Grid.Row="2" Grid.Column="2" Tag="Down"
+                                      MinWidth="60" Height="48" Style="{StaticResource PinnedNavKeycapButtonStyle}"
+                                      Click="PinnedNavKeyButton_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                  <TextBlock Name="PinnedNavDownKeyGlyph" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
+                                  <TextBlock Name="PinnedNavDownKeyRole" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                              </Button>
+                              <Button Name="PinnedNavRightKeyButton" Grid.Row="2" Grid.Column="4" Tag="Right"
+                                      MinWidth="60" Height="48" Style="{StaticResource PinnedNavKeycapButtonStyle}"
+                                      Click="PinnedNavKeyButton_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                  <TextBlock Name="PinnedNavRightKeyGlyph" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
+                                  <TextBlock Name="PinnedNavRightKeyRole" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                                </StackPanel>
+                              </Button>
+                            </Grid>
+                            <Button Name="PinnedNavConfirmKeyButton" Tag="Confirm" MinWidth="104" Height="48"
+                                    Margin="0,0,0,4" VerticalAlignment="Bottom"
+                                    Style="{StaticResource PinnedNavKeycapButtonStyle}" Click="PinnedNavKeyButton_Click">
+                              <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Name="PinnedNavConfirmKeyGlyph" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" />
+                                <TextBlock Name="PinnedNavConfirmKeyRole" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" />
+                              </StackPanel>
+                            </Button>
+                          </WrapPanel>
+                          <TextBlock Name="PinnedNavStatusText" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
+                        </StackPanel>
+                      </Border>
                     </StackPanel>
                   </Border>
                   <Border Style="{StaticResource TriggerPageCard}">
@@ -1008,6 +1180,34 @@
                   </Border>
                 </StackPanel>
                 <StackPanel Name="TriggerAdvancedPanel" Visibility="Collapsed">
+                  <Expander x:Name="PortalTriggerOptions" Style="{StaticResource TriggerPageGroup}">
+                    <Expander.Header><TextBlock x:Name="PortalTriggerHeading" FontSize="14" FontWeight="SemiBold" /></Expander.Header>
+                    <StackPanel Margin="0,8,0,0">
+                      <CheckBox x:Name="PortalCrossToggle" Style="{StaticResource ToggleSwitchStyle}" Click="PortalTriggerOptionChanged" Margin="0,0,0,5" />
+                      <TextBlock x:Name="PortalCrossValue" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <Slider x:Name="PortalCrossSlider" Minimum="60" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                              AutomationProperties.LabeledBy="{Binding ElementName=PortalCrossValue}" ValueChanged="PortalTriggerOptionChanged" Margin="0,2,0,9" />
+                      <CheckBox x:Name="PortalDwellToggle" Style="{StaticResource ToggleSwitchStyle}" Click="PortalTriggerOptionChanged" Margin="0,0,0,5" />
+                      <TextBlock x:Name="PortalDwellValue" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <Slider x:Name="PortalDwellSlider" Minimum="100" Maximum="600" TickFrequency="5" IsSnapToTickEnabled="True"
+                              AutomationProperties.LabeledBy="{Binding ElementName=PortalDwellValue}" ValueChanged="PortalTriggerOptionChanged" Margin="0,2,0,9" />
+                      <TextBlock x:Name="PortalCursorLabel" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <ComboBox x:Name="PortalCursorOptions" Style="{StaticResource FlatComboBoxStyle}" SelectionChanged="PortalTriggerOptionChanged"
+                                DisplayMemberPath="DisplayText" SelectedValuePath="Tag" MinHeight="30" Margin="0,4,0,10"
+                                AutomationProperties.LabeledBy="{Binding ElementName=PortalCursorLabel}" />
+                      <CheckBox x:Name="PortalReentryToggle" Style="{StaticResource ToggleSwitchStyle}" Click="PortalTriggerOptionChanged" Margin="0,0,0,9" />
+                      <TextBlock x:Name="PortalEscLabel" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <ComboBox x:Name="PortalEscOptions" Style="{StaticResource FlatComboBoxStyle}" SelectionChanged="PortalTriggerOptionChanged"
+                                DisplayMemberPath="DisplayText" SelectedValuePath="Tag" MinHeight="30" Margin="0,4,0,10"
+                                AutomationProperties.LabeledBy="{Binding ElementName=PortalEscLabel}" />
+                      <TextBlock x:Name="PortalGapValue" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <Slider x:Name="PortalGapSlider" Minimum="0" Maximum="40" TickFrequency="1" IsSnapToTickEnabled="True"
+                              AutomationProperties.LabeledBy="{Binding ElementName=PortalGapValue}" ValueChanged="PortalTriggerOptionChanged" Margin="0,2,0,9" />
+                      <TextBlock x:Name="PortalDepthValue" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <Slider x:Name="PortalDepthSlider" Minimum="2" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
+                              AutomationProperties.LabeledBy="{Binding ElementName=PortalDepthValue}" ValueChanged="PortalTriggerOptionChanged" Margin="0,2,0,0" />
+                    </StackPanel>
+                  </Expander>
                   <Expander Style="{StaticResource TriggerPageGroup}">
                     <Expander.Header>
                       <TextBlock Name="SensitivityTitleText" Text="手势与中心核圆触发灵敏度" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -1085,11 +1285,11 @@
                       </StackPanel>
                       <StackPanel Name="SubWheelTriggerDistancePanel" Margin="0,10,0,0">
                         <Grid Margin="0,0,0,4">
-                          <TextBlock Name="SubWheelTriggerDistLabel" Text="轮盘逐级展开距离" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <TextBlock Name="SubWheelTriggerDistLabel" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
                           <TextBlock Name="SubWheelTriggerDistanceValueText" Text="141 px" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" HorizontalAlignment="Right" />
                         </Grid>
                         <Slider Name="SubWheelTriggerDistanceSlider" Minimum="30" Maximum="260" SmallChange="1" LargeChange="5" Value="141" ValueChanged="SubWheelTriggerDistanceSlider_ValueChanged" />
-                        <TextBlock Name="SubWheelTriggerDistDesc" Text="二级菜单和三级至五级固定圈共用此距离。减小后更早展开，增大后需要向外划得更远。" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                        <TextBlock Name="SubWheelTriggerDistDesc" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                       </StackPanel>
                     </StackPanel>
                   </Expander>
@@ -2579,6 +2779,100 @@
                     </StackPanel>
                   </StackPanel>
                 </Border>
+
+                <!-- 卡片 6：链式轮盘父节点外观定制 -->
+                <Border Name="Tab1_PortalAppearanceCardBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="18" Margin="0,12,0,0">
+                  <UIElement.Effect>
+                    <DynamicResource ResourceKey="CardShadowEffect" />
+                  </UIElement.Effect>
+                  <StackPanel>
+                    <TextBlock Name="PortalAppearanceTitleText" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,6" />
+                    <TextBlock Name="PortalAppearanceDescText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
+
+                    <TextBlock Name="PortalParentModeLabelText" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                    <ComboBox Name="PortalParentVisualModeCombo" Style="{StaticResource FlatComboBoxStyle}" DisplayMemberPath="DisplayText" SelectedValuePath="Tag" Height="34" Margin="0,0,0,10" SelectionChanged="PortalAppearanceOptionChanged" />
+
+                    <CheckBox Name="PortalTrailShowBeamToggle" Style="{StaticResource ToggleSwitchStyle}" Margin="0,0,0,10" Click="PortalAppearanceOptionChanged" />
+
+                    <StackPanel Name="PortalFadeSettingsPanel" Visibility="Collapsed" Margin="0,0,0,4">
+                      <TextBlock Name="PortalFadeOpacityValueText" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <Slider Name="PortalFadeOpacitySlider" Minimum="8" Maximum="70" Value="28" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,2,0,6" ValueChanged="PortalAppearanceOptionChanged" />
+                      <TextBlock Name="PortalFadeHighlightHintText" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Border Name="PortalCustomSettingsPanel" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                      <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Name="PortalCustomShapeLabelText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                            <ComboBox Name="PortalCustomShapeCombo" Style="{StaticResource FlatComboBoxStyle}" DisplayMemberPath="DisplayText" SelectedValuePath="Tag" Height="32" SelectionChanged="PortalAppearanceOptionChanged" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <Border Width="68" Height="68" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                              <Image Name="PortalCustomPreviewImage" Width="64" Height="64" Stretch="None" SnapsToDevicePixels="True" />
+                            </Border>
+                            <TextBlock Name="PortalCustomPreviewLabelText" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" Margin="0,3,0,0" />
+                          </StackPanel>
+                        </Grid>
+
+                        <TextBlock Name="PortalCustomSizeValueText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <Slider Name="PortalCustomSizeSlider" Minimum="16" Maximum="140" Value="42" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,2,0,8" ValueChanged="PortalAppearanceOptionChanged" />
+
+                        <TextBlock Name="PortalCustomOpacityValueText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <Slider Name="PortalCustomOpacitySlider" Minimum="15" Maximum="100" Value="85" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,2,0,10" ValueChanged="PortalAppearanceOptionChanged" />
+
+                        <Grid Margin="0,0,0,6">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <TextBlock Name="PortalCustomFillLabelText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                          <TextBox Name="PortalCustomFillTextBox" Grid.Column="1" Height="28" Margin="0,0,6,0" TextChanged="PortalCustomColorTextChanged" />
+                          <Button Name="PickPortalCustomFillBtn" Grid.Column="2" Width="28" Height="28" Padding="0" Margin="0,0,4,0" Tag="PortalCustomFill" Style="{StaticResource ModernButtonStyle}" Click="PickCustomColor_Click">
+                            <Border Name="PortalCustomFillPreview" Width="20" Height="20" CornerRadius="3" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" />
+                          </Button>
+                          <Button Name="PortalCustomFillResetBtn" Grid.Column="3" Height="28" Padding="8,0" Tag="Fill" Style="{StaticResource ModernButtonStyle}" Click="ResetPortalCustomColor_Click" />
+                        </Grid>
+
+                        <Grid Margin="0,0,0,8">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="58" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <TextBlock Name="PortalCustomBorderLabelText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                          <TextBox Name="PortalCustomBorderTextBox" Grid.Column="1" Height="28" Margin="0,0,6,0" TextChanged="PortalCustomColorTextChanged" />
+                          <Button Name="PickPortalCustomBorderBtn" Grid.Column="2" Width="28" Height="28" Padding="0" Margin="0,0,4,0" Tag="PortalCustomBorder" Style="{StaticResource ModernButtonStyle}" Click="PickCustomColor_Click">
+                            <Border Name="PortalCustomBorderPreview" Width="20" Height="20" CornerRadius="3" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" />
+                          </Button>
+                          <Button Name="PortalCustomBorderResetBtn" Grid.Column="3" Height="28" Padding="8,0" Tag="Border" Style="{StaticResource ModernButtonStyle}" Click="ResetPortalCustomColor_Click" />
+                        </Grid>
+
+                        <TextBlock Name="PortalCustomIconLabelText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                        <ComboBox Name="PortalCustomIconCombo" Style="{StaticResource FlatComboBoxStyle}" DisplayMemberPath="DisplayText" SelectedValuePath="Tag" Height="32" Margin="0,0,0,8" SelectionChanged="PortalAppearanceOptionChanged" />
+
+                        <TextBlock Name="PortalCustomImageLabelText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,4" />
+                        <Grid>
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <TextBlock Name="PortalCustomImagePathText" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" />
+                          <Button Name="PortalCustomImageBrowseBtn" Grid.Column="1" Height="28" Padding="10,0" Margin="0,0,4,0" Style="{StaticResource ModernButtonStyle}" Click="BrowsePortalCustomImage_Click" />
+                          <Button Name="PortalCustomImageClearBtn" Grid.Column="2" Height="28" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="ClearPortalCustomImage_Click" />
+                        </Grid>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </ScrollViewer>
             <Border Grid.Column="1" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="18">
@@ -3152,8 +3446,6 @@
                 <Border Name="FixedSlotCard" Visibility="Collapsed" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
                     <TextBlock Name="FixedTitle" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
-                    <TextBlock Name="FixedParentLabel" Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <ComboBox Name="FixedParent" Style="{StaticResource FlatComboBoxStyle}" Margin="0,3,0,8" DisplayMemberPath="Caption" SelectedValuePath="Index" SelectionChanged="FixedParent_Changed" />
                     <local:CanvasMenuActionEditor x:Name="FixedEditor" />
                     <WrapPanel Margin="0,8,0,0">
                       <Button Name="FixedApply" Style="{StaticResource PrimaryButtonStyle}" Click="FixedApply_Click" Margin="0,0,5,4" />
@@ -3396,6 +3688,7 @@
                         </Grid>
 
                         <StackPanel Name="FocusActionPanelHost" Visibility="Collapsed" Margin="0,0,0,10" />
+                        <local:PortalTargetEditor x:Name="FocusPortalEditor" />
                         <!-- 动态参数面板容器 -->
                         <!-- 0. 插件动作面板 -->
                         <local:MappingsActionParameters x:Name="FocusPluginPanel" Visibility="Collapsed"/>
@@ -3907,6 +4200,8 @@
                   <TextBlock x:Name="MappingsCanvasInstructionsText" Text="💡 点击内圈选一级扇区，点击外环选二级动作，点击中心选核圆；按住拖动可对调功能位置！" FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,6" />
 
                   <WrapPanel Name="StudioFixedBreadcrumb" Visibility="Collapsed" Margin="0,0,0,4"/>
+                  <Button Name="PortalReturnLink" Visibility="Collapsed" Style="{StaticResource ModernButtonStyle}"
+                          HorizontalAlignment="Left" MaxWidth="285" Padding="8,3" Margin="0,0,0,4" Click="PortalReturnLink_Click" />
                   <WrapPanel Name="DeepCanvasBreadcrumb" Visibility="Collapsed" Margin="0,0,0,4" />
                   <!-- 一二级轮盘预览分段切换 -->
                   <StackPanel Name="StudioTierRow"><Border Name="CanvasTierSelector" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="3">

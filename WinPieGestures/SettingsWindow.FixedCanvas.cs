@@ -20,8 +20,6 @@ public partial class SettingsWindow
         ReferenceEquals(GestureController.CaptureReleaseLayer(_fixedProfile!), _fixedLayer) &&
         _fixedLayer.ActiveFixedRings != null && MappingsViewModeCanvasRadio?.IsChecked == true;
 
-    private sealed record ParentOption(int Index, string Caption);
-
     private sealed record RingEdit(ActionAddress Address, string Description, Action<WheelLayer> Revert,
         Action<WheelLayer> Apply, int ItemsCount = 1) : IActionTransaction
     {
@@ -81,8 +79,6 @@ public partial class SettingsWindow
         _fixedLayer = layer;
         _fixedLevel = 3;
         Array.Clear(_fixedIndices);
-        _fixedIndices[2] = _selectedSlotIndex >= 0 && _selectedSubActionIndex is int child
-            ? FixedRingMenu.SecondaryKey(_selectedSlotIndex, child) : -1;
         _fixedDrafts.Clear();
     }
 
@@ -181,59 +177,32 @@ public partial class SettingsWindow
             FixedOccupancy.Text = I18n.TF("FixedSlotsSummary", used, count - used,
                 FixedRingMenu.RecommendedCount(_fixedLevel), FixedRingMenu.MaximumCount(_fixedLevel));
             FixedDisplayLabel.Text = I18n.T("FixedDisplay");
-            var cfg = ConfigManager.CurrentConfig;
-            FixedDisplay.ItemsSource = new[] { I18n.T(cfg.EnableMultiTier && cfg.AutoExpandSubRingsOnPopup ? "FixedAll" : "FixedAllConditional"), I18n.T("FixedStep") };
+            FixedDisplay.ItemsSource = new[] { I18n.T("FixedAll"), I18n.T("FixedStep") };
             FixedDisplay.SelectedIndex = menu.AlwaysVisible ? 0 : 1;
             FixedBack.Content = I18n.T("FixedBack");
             FixedUndo.Content = I18n.T("FocusUndoSubActionsBtnText");
             FixedRedo.Content = I18n.T("FocusRedoSubActionsBtnText");
             FixedUndo.IsEnabled = _transactionHistory.CanUndo(profile, profile.ActiveLayerIndex);
             FixedRedo.IsEnabled = _transactionHistory.CanRedo(profile, profile.ActiveLayerIndex);
-            BindFixedSlot(profile, menu, index);
+            BindFixedSlot(menu, index);
         }
         finally { _fixedFilling = false; }
         DrawFixedWheel(profile, layer, menu);
         return true;
     }
 
-    private void BindFixedSlot(WheelProfile profile, FixedRingMenu menu, int index)
+    private void BindFixedSlot(FixedRingMenu menu, int index)
     {
         var key = (_fixedLevel, index);
         if (!_fixedDrafts.TryGetValue(key, out var draft) || !draft.Matches(menu, _fixedLevel, index))
-        {
-            int previous = _fixedIndices[_fixedLevel - 1];
-            int? defaultParent = previous >= 0 && FixedAction(profile, menu, _fixedLevel - 1, previous) != null &&
-                (_fixedLevel == 3 || previous < menu.GetCount(_fixedLevel - 1)) ? previous : null;
-            _fixedDrafts[key] = draft = new FixedRingSlotDraft(menu, _fixedLevel, index, defaultParent);
-        }
+            _fixedDrafts[key] = draft = new FixedRingSlotDraft(menu, _fixedLevel, index);
         FixedTitle.Text = I18n.TF("CanvasEditLevel", _fixedLevel, (index + 1).ToString("00"));
-        FixedParentLabel.Text = I18n.T("FixedParent");
         FixedApply.Content = I18n.T("FixedApply");
         FixedNext.Content = I18n.T("FixedNext");
         FixedClear.Content = I18n.T("FixedClear");
         FixedClear.IsEnabled = menu.GetSlot(_fixedLevel, index) != null;
         FixedNext.IsEnabled = FixedRingSlotDraft.NextEmpty(menu, _fixedLevel, index) >= 0;
         FixedApply.IsEnabled = !string.IsNullOrWhiteSpace(draft.Action.Name);
-        var options = new List<ParentOption> { new(-1, I18n.T("FixedIndependent")) };
-        if (_fixedLevel == 3)
-        {
-            foreach (var (primary, child, root, action) in SecondaryParents(profile))
-                options.Add(new(FixedRingMenu.SecondaryKey(primary, child),
-                    $"{primary + 1:00} · {root.Name} › {child + 1:00} · {action.Name}"));
-        }
-        else
-        {
-            for (int i = 0; i < menu.GetCount(_fixedLevel - 1); i++)
-                if (menu.GetSlot(_fixedLevel - 1, i) is { } parent) options.Add(new(i, $"{i + 1:00} · {parent.Action.Name}"));
-        }
-        if (draft.ParentIndex is int saved && !options.Any(o => o.Index == saved))
-            {
-            string address = _fixedLevel == 3 && FixedRingMenu.TryDecodeSecondaryKey(saved, out int root, out int secondary)
-                ? $"{root + 1:00} › {secondary + 1:00}" : (saved + 1).ToString("00");
-            options.Add(new(saved, I18n.TF("FixedMissingParent", address)));
-        }
-        FixedParent.ItemsSource = options;
-        FixedParent.SelectedValue = draft.ParentIndex ?? -1;
         if (!ReferenceEquals(_boundFixedDraft, draft) || _fixedBindRequired)
         {
             _boundFixedDraft = draft;
@@ -243,7 +212,7 @@ public partial class SettingsWindow
                 if (!CurrentFixedDraft(draft)) return;
                 draft.Action = edited;
                 FixedApply.IsEnabled = !string.IsNullOrWhiteSpace(edited.Name);
-            }, allowEmptyAction: true);
+            }, allowEmptyAction: true, portalContext: CreatePortalEditorContext(_fixedProfile), deferPortalIdentity: true);
         }
     }
 
@@ -253,10 +222,10 @@ public partial class SettingsWindow
         for (int primary = 0; primary < profile.SectorCount; primary++)
         {
             var root = FixedRingMenu.DisplayRoot(profile, primary);
-            if (root?.SubActions == null) continue;
-            int n = DeepMenuFrame.VisibleSlotCount(root.SubActions.Count, fan);
+            if (root?.InlineSubActions is not { } children) continue;
+            int n = DeepMenuFrame.VisibleSlotCount(children.Count, fan);
             for (int child = 0; child < n; child++)
-                if (root.SubActions[child] is { } action && (includeVacant || WheelProfile.IsActionConfigured(action)))
+                if (children[child] is { } action && (includeVacant || WheelProfile.IsActionConfigured(action)))
                     yield return (primary, child, root, action);
         }
     }
@@ -295,13 +264,6 @@ public partial class SettingsWindow
             SelectFixedSlot(level, _fixedIndices[level]);
     }
 
-    private void FixedParent_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!CanEditFixedControls || _boundFixedDraft is not { } draft || !CurrentFixedDraft(draft) ||
-            FixedParent.SelectedItem is not ParentOption parent) return;
-        draft.ParentIndex = parent.Index < 0 ? null : parent.Index;
-    }
-
     private void FixedCount_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (!CanEditFixedControls || _fixedLevel < 3 || FixedCount.SelectedItem is not int count) return;
@@ -329,6 +291,9 @@ public partial class SettingsWindow
     private void FixedApply_Click(object sender, RoutedEventArgs e)
     {
         if (_boundFixedDraft is not { } draft || !CurrentFixedDraft(draft) || draft.MakeSlot() is not { } slot) return;
+        if (slot.Action.IsWheelPortal && slot.Action.PortalTarget is { TargetLayerId: null } portal &&
+            PortalReferenceAnalyzer.Resolve(ConfigManager.CurrentConfig.Profiles, _fixedProfile!, portal) is { } destination)
+            portal.TargetLayerId = destination.Layer.EnsureLayerId();
         WriteFixedSlot(slot);
     }
 

@@ -98,6 +98,7 @@ internal static class Program
             if (scenario == "corrupt")
             {
                 Check(fallback, "corrupt config enters recovery mode");
+                Check(!ConfigManager.CurrentConfig.Plugins.PreloadOnStartup, "recovery does not opt into preloading");
                 Check(File.ReadAllText(configPath) == "{invalid", "corrupt file remains recoverable");
                 Check(Directory.GetFiles(Path.GetDirectoryName(configPath)!, "config.json.corrupt.*").Length == 1, "one backup is preserved");
                 Check(!ConfigManager.SaveConfig(), "automatic save cannot overwrite recovery data");
@@ -106,15 +107,41 @@ internal static class Program
             else if (scenario == "missing")
             {
                 Check(!fallback && File.Exists(configPath), "missing config generates normal defaults");
-                Check(JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath))?.Profiles.Count > 0, "default config is complete and readable");
+                var defaults = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath))!;
+                Check(defaults.Profiles.Count > 0, "default config is complete and readable");
+                Check(defaults.Plugins.PreloadOnStartup && ConfigManager.CurrentConfig.Plugins.PreloadOnStartup,
+                    "fresh profile saves and uses startup preload");
+                var profile = defaults.Profiles.Single();
+                var layer = profile.Layers.Single();
+                Check(profile.ProcessName == "Global" && defaults.EnableMultiTier && layer.EffectiveMaxMenuDepth == 2,
+                    "every app starts with the same two-level global wheel");
+                Check(layer.SectorCount == 8 && layer.Actions.Count == 8, "eight primary sectors");
+                for (int sector = 0; sector < layer.SectorCount; sector++)
+                {
+                    Check(layer.Actions[sector].SubActions.Count == 3, $"exactly three children at sector {sector}");
+                    for (int slot = 0; slot < 3; slot++)
+                    {
+                        var child = profile.GetEffectiveAction(sector, slot);
+                        Check(child != null && WheelProfile.IsActionConfigured(child), $"secondary slot {sector}/{slot} is actionable");
+                        if (child?.Type == "Hotkey")
+                            Check(ActionExecutor.ParseHotkey(child.Parameter).MainKey != 0, $"recognized default shortcut {child.Parameter}");
+                    }
+                }
+                Check(layer.Actions[1].SubActions[0].Name == I18n.T("DefaultWheelCopyWindowScreenshot"),
+                    "cold default labels follow the configured language");
+                Check(!JsonSerializer.Deserialize<PluginsPreference>("{}")!.PreloadOnStartup,
+                    "legacy preferences without a preload field retain their old behavior");
                 foreach (bool preference in new[] { true, false })
                 {
                     ConfigManager.CurrentConfig.StartInTray = preference;
+                    ConfigManager.CurrentConfig.Plugins.PreloadOnStartup = preference;
                     Check(ConfigManager.SaveConfig(), "tray preference saves");
                     ConfigManager.LoadConfig();
                     using var saved = JsonDocument.Parse(File.ReadAllText(configPath));
                     Check(saved.RootElement.GetProperty("StartInTray").GetBoolean() == preference &&
                         ConfigManager.CurrentConfig.StartInTray == preference, "explicit tray preference round-trips");
+                    Check(saved.RootElement.GetProperty("Plugins").GetProperty("PreloadOnStartup").GetBoolean() == preference &&
+                        ConfigManager.CurrentConfig.Plugins.PreloadOnStartup == preference, "explicit preload preference round-trips");
                 }
 
             }
@@ -134,9 +161,13 @@ internal static class Program
                 }
                 var edited = JsonSerializer.Deserialize<AppConfig>(File.ReadAllText(configPath))!;
                 edited.LongPressDelayMs = 321;
+                edited.EnableMultiTier = false;
+                edited.Plugins.PreloadOnStartup = false;
                 File.WriteAllText(configPath, JsonSerializer.Serialize(edited));
                 ConfigManager.LoadConfig();
                 Check(ConfigManager.CurrentConfig.LongPressDelayMs == 321, "explicit reload still reads disk");
+                Check(!ConfigManager.CurrentConfig.EnableMultiTier && !ConfigManager.CurrentConfig.Plugins.PreloadOnStartup,
+                    "existing wheel and plugin preferences remain user-controlled");
                 Check(!ReferenceEquals(preserved, ConfigManager.CurrentConfig) && ConfigManager.ConfigurationRevision == revision + 1,
                     "explicit reload replaces config and republishes routes exactly once");
                 Check(ProfileTriggerRouter.TryResolveMouse("app0.exe", "MiddleButton", System.Windows.Input.ModifierKeys.None, out var activation)

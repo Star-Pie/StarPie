@@ -88,8 +88,9 @@ internal static class Program
             "full-screen simulator explains the blocking reason");
         Radio("TriggerAdvancedTab");
         var advanced = Find<StackPanel>("TriggerAdvancedPanel").Children.OfType<Expander>().ToArray();
-        Check(advanced.Length == 7 && advanced.All(item => !item.IsExpanded) && details.Visibility == Visibility.Collapsed,
-            "all seven advanced groups start collapsed");
+        Check(advanced.Length == 8 && advanced.Contains(Find<Expander>("PortalTriggerOptions")) &&
+            advanced.All(item => !item.IsExpanded) && details.Visibility == Visibility.Collapsed,
+            "all advanced groups, including linked wheels, start collapsed");
         advanced[0].IsExpanded = true;
         Radio("TriggerCommonTab");
         Check(JsonSerializer.Serialize(config) == before && ConfigManager.ConfigurationRevision == revision,

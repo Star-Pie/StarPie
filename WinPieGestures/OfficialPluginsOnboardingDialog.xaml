@@ -6,7 +6,13 @@
         Width="520"
         SizeToContent="Height"
         Background="{DynamicResource WindowBackgroundBrush}"
-        FontFamily="Segoe UI, Microsoft YaHei, PingFang SC"
+        FontFamily="Segoe UI, Microsoft YaHei UI, Arial"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        RenderOptions.ClearTypeHint="Enabled"
+        RenderOptions.BitmapScalingMode="HighQuality"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False">
@@ -94,7 +100,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="FrameworkElement.Cursor" Value="Hand" />
-        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontSize" Value="12" />
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="{x:Type ComboBoxItem}">
@@ -123,7 +129,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Padding" Value="8,3" />
-        <Setter Property="FontSize" Value="11.5" />
+        <Setter Property="FontSize" Value="12" />
         <Setter Property="ItemContainerStyle" Value="{StaticResource DialogComboBoxItemStyle}" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
@@ -137,14 +143,18 @@
                   <ColumnDefinition MinWidth="26" Width="0" />
                 </Grid.ColumnDefinitions>
                 <Popup Name="PART_Popup" AllowsTransparency="True" Grid.ColumnSpan="2" Margin="1" PopupAnimation="Fade" Placement="Bottom" IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource Mode=TemplatedParent}}">
-                  <Border Name="dropDownBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" MaxHeight="{TemplateBinding ComboBox.MaxDropDownHeight}" Padding="4" Margin="0,4,0,4" SnapsToDevicePixels="True" MinWidth="{Binding ActualWidth, ElementName=templateRoot}">
-                    <UIElement.Effect>
-                      <DropShadowEffect BlurRadius="12" ShadowDepth="3" Color="#000000" Opacity="0.25" />
-                    </UIElement.Effect>
-                    <ScrollViewer Name="DropDownScrollViewer" CanContentScroll="True">
-                      <ItemsPresenter Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" />
-                    </ScrollViewer>
-                  </Border>
+                  <Grid Margin="0,4,0,4" MinWidth="{Binding ActualWidth, ElementName=templateRoot}" UseLayoutRounding="True" SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" RenderOptions.ClearTypeHint="Enabled">
+                    <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="8" IsHitTestVisible="False">
+                      <UIElement.Effect>
+                        <DropShadowEffect BlurRadius="12" ShadowDepth="3" Color="#000000" Opacity="0.25" />
+                      </UIElement.Effect>
+                    </Border>
+                    <Border Name="dropDownBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" MaxHeight="{TemplateBinding ComboBox.MaxDropDownHeight}" Padding="4" SnapsToDevicePixels="True">
+                      <ScrollViewer Name="DropDownScrollViewer" CanContentScroll="True">
+                        <ItemsPresenter Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" />
+                      </ScrollViewer>
+                    </Border>
+                  </Grid>
                 </Popup>
                 <ToggleButton Name="toggleButton" Background="{TemplateBinding Control.Background}" BorderBrush="{TemplateBinding Control.BorderBrush}" BorderThickness="{TemplateBinding Control.BorderThickness}" Grid.ColumnSpan="2" Template="{StaticResource DialogComboBoxToggleButtonTemplate}" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource Mode=TemplatedParent}}" />
                 <ContentPresenter Name="contentPresenter" ContentStringFormat="{TemplateBinding ComboBox.SelectionBoxItemStringFormat}" ContentTemplate="{TemplateBinding ComboBox.SelectionBoxItemTemplate}" Content="{TemplateBinding ComboBox.SelectionBoxItem}" ContentTemplateSelector="{TemplateBinding ItemsControl.ItemTemplateSelector}" HorizontalAlignment="Left" IsHitTestVisible="False" Margin="{TemplateBinding Control.Padding}" SnapsToDevicePixels="{TemplateBinding UIElement.SnapsToDevicePixels}" VerticalAlignment="Center" />
@@ -160,85 +170,89 @@
       </Style>
     </ResourceDictionary>
   </FrameworkElement.Resources>
-  <Border Padding="20" Background="{DynamicResource CardBackgroundBrush}" Margin="8" CornerRadius="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1">
-    <UIElement.Effect>
-      <DropShadowEffect BlurRadius="16" ShadowDepth="2" Color="#000000" Opacity="0.12" />
-    </UIElement.Effect>
-    <StackPanel>
-      <!-- 头部：标题与引导说明 -->
-      <StackPanel Margin="0,0,0,12">
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-          <TextBlock Text="🔌" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0" />
-          <TextBlock Name="TitleTextBlock" Text="安装官方核心插件" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+  <Grid Margin="8">
+    <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" IsHitTestVisible="False">
+      <UIElement.Effect>
+        <DropShadowEffect BlurRadius="16" ShadowDepth="2" Color="#000000" Opacity="0.12" />
+      </UIElement.Effect>
+    </Border>
+    <Border Name="ContentCardBorder" Padding="20" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="10" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" SnapsToDevicePixels="True" RenderOptions.ClearTypeHint="Enabled">
+      <StackPanel>
+        <!-- 头部：标题与引导说明 -->
+        <StackPanel Margin="0,0,0,12">
+          <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+            <TextBlock Text="🔌" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <TextBlock Name="TitleTextBlock" Text="安装官方核心插件" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Name="IntroTextBlock" Text="StarPie 采用轻量化分发，核心动作已插件化并托管于官方仓库。首次进入设置建议一键安装以下 5 项官方核心插件，即可获得完整功能体验：" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="18" />
         </StackPanel>
-        <TextBlock Name="IntroTextBlock" Text="StarPie 采用轻量化分发，核心动作已插件化并托管于官方仓库。首次进入设置建议一键安装以下 5 项官方核心插件，即可获得完整功能体验：" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="17" />
-      </StackPanel>
 
-      <!-- 5 项官方核心插件清单 -->
-      <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,12">
-        <StackPanel Name="PluginItemsPanel">
-          <!-- 插件项由代码动态生成或数据绑定 -->
-        </StackPanel>
-      </Border>
+        <!-- 5 项官方核心插件清单 -->
+        <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,8" Margin="0,0,0,12">
+          <StackPanel Name="PluginItemsPanel">
+            <!-- 插件项由代码动态生成或数据绑定 -->
+          </StackPanel>
+        </Border>
 
-      <!-- 安全与知情同意卡片 -->
-      <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
-        <StackPanel>
-          <TextBlock Name="SecurityHeaderTextBlock" Text="🛡️ 安全与权限说明" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5" />
-          <TextBlock Name="SecuritySourceTextBlock" Text="• 官方来源：https://github.com/Star-Pie/StarPie-Official-Plugins" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
-          <TextBlock Name="SecurityPermsTextBlock" Text="• 所需权限：进程启动（Process）、按键模拟（InputSimulation）" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
-          <TextBlock Name="SecurityDescTextBlock" Text="• 插件将在进程内以 StarPie 当前权限运行，并在安装前严格校验 SHA-256 文件哈希。在此确认前，不会发起任何网络请求。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="15" />
-        </StackPanel>
-      </Border>
+        <!-- 安全与知情同意卡片 -->
+        <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,14">
+          <StackPanel>
+            <TextBlock Name="SecurityHeaderTextBlock" Text="🛡️ 安全与权限说明" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,5" />
+            <TextBlock Name="SecuritySourceTextBlock" Text="• 官方来源：https://github.com/Star-Pie/StarPie-Official-Plugins" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
+            <TextBlock Name="SecurityPermsTextBlock" Text="• 所需权限：进程启动（Process）、按键模拟（InputSimulation）" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2" />
+            <TextBlock Name="SecurityDescTextBlock" Text="• 插件将在进程内以 StarPie 当前权限运行，并在安装前严格校验 SHA-256 文件哈希。在此确认前，不会发起任何网络请求。" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" LineHeight="16" />
+          </StackPanel>
+        </Border>
 
-      <!-- 下载通道选择卡片 -->
-      <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,9" Margin="0,0,0,14">
-        <Grid>
-          <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-          </Grid.RowDefinitions>
-          <Grid Grid.Row="0">
-            <Grid.ColumnDefinitions>
-              <ColumnDefinition Width="Auto" />
-              <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <TextBlock Name="ChannelLabelTextBlock" Text="下载通道：" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-            <ComboBox Name="ChannelComboBox" Grid.Column="1" Height="28" VerticalAlignment="Center" Style="{StaticResource DialogComboBoxStyle}" SelectionChanged="ChannelComboBox_SelectionChanged">
-              <ComboBoxItem x:Name="ChannelAutoItem" Tag="auto" />
-              <ComboBoxItem x:Name="ChannelAtomGitItem" Tag="atomgit" />
-              <ComboBoxItem x:Name="ChannelGhfastItem" Tag="ghfast" Content="⚡ 镜像源 1 (ghfast.top 推荐)" />
-              <ComboBoxItem x:Name="ChannelGhproxyItem" Tag="gh-proxy" Content="⚡ 镜像源 2 (gh-proxy.com 备用)" />
-              <ComboBoxItem x:Name="ChannelMirrorItem" Tag="mirror" Content="⚡ 镜像源 3 (mirror.ghproxy.com)" />
-              <ComboBoxItem x:Name="ChannelDirectItem" Tag="direct" Content="🌐 官方直连" />
-            </ComboBox>
+        <!-- 下载通道选择卡片 -->
+        <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,9" Margin="0,0,0,14">
+          <Grid>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Name="ChannelLabelTextBlock" Text="下载通道：" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <ComboBox Name="ChannelComboBox" Grid.Column="1" Height="28" VerticalAlignment="Center" Style="{StaticResource DialogComboBoxStyle}" SelectionChanged="ChannelComboBox_SelectionChanged">
+                <ComboBoxItem x:Name="ChannelAutoItem" Tag="auto" />
+                <ComboBoxItem x:Name="ChannelAtomGitItem" Tag="atomgit" />
+                <ComboBoxItem x:Name="ChannelGhfastItem" Tag="ghfast" Content="⚡ 镜像源 1 (ghfast.top 推荐)" />
+                <ComboBoxItem x:Name="ChannelGhproxyItem" Tag="gh-proxy" Content="⚡ 镜像源 2 (gh-proxy.com 备用)" />
+                <ComboBoxItem x:Name="ChannelMirrorItem" Tag="mirror" Content="⚡ 镜像源 3 (mirror.ghproxy.com)" />
+                <ComboBoxItem x:Name="ChannelDirectItem" Tag="direct" Content="🌐 官方直连" />
+              </ComboBox>
+            </Grid>
+            <TextBlock Name="ChannelHintTextBlock" Grid.Row="1" Text="若直连 GitHub 访问受限或失败，可切换上方加速镜像通道" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
           </Grid>
-          <TextBlock Name="ChannelHintTextBlock" Grid.Row="1" Text="若直连 GitHub 访问受限或失败，可切换上方加速镜像通道" FontSize="10.5" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" TextWrapping="Wrap" />
-        </Grid>
-      </Border>
+        </Border>
 
-      <!-- 进度条与状态文字 -->
-      <TextBlock Name="OfflineHintTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
-      <Button Name="OfflineImportButton" HorizontalAlignment="Left" Style="{StaticResource DialogButtonStyle}" Margin="0,0,0,12" Click="OfflineImportButton_Click" />
-      <StackPanel Name="ProgressArea" Margin="0,0,0,14" Visibility="Collapsed">
-        <ProgressBar Name="InstallProgressBar" Height="4" Minimum="0" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource SubtleCardBrush}" BorderThickness="0" Margin="0,0,0,6" />
-        <TextBlock Name="StatusTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
-      </StackPanel>
-
-      <!-- 底部操作按钮 -->
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-        <TextBlock Name="HintTextBlock" Grid.Column="0" Text="稍后也可在设置「插件与扩展」中随时安装" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
-        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-          <Button Name="LaterButton" Content="暂不安装" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Click="LaterButton_Click" />
-          <Button Name="InstallButton" Content="⬇️ 一键安装并启用" Style="{StaticResource DialogPrimaryButtonStyle}" Click="InstallButton_Click" />
-          <Button Name="RetryButton" Content="🔄 重试未完成项" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Visibility="Collapsed" Click="RetryButton_Click" />
-          <Button Name="DoneButton" Content="完成" Style="{StaticResource DialogPrimaryButtonStyle}" Visibility="Collapsed" Click="DoneButton_Click" />
+        <!-- 进度条与状态文字 -->
+        <TextBlock Name="OfflineHintTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
+        <Button Name="OfflineImportButton" HorizontalAlignment="Left" Style="{StaticResource DialogButtonStyle}" Margin="0,0,0,12" Click="OfflineImportButton_Click" />
+        <StackPanel Name="ProgressArea" Margin="0,0,0,14" Visibility="Collapsed">
+          <ProgressBar Name="InstallProgressBar" Height="4" Minimum="0" Maximum="100" Value="0" Foreground="{DynamicResource AccentPrimaryBrush}" Background="{DynamicResource SubtleCardBrush}" BorderThickness="0" Margin="0,0,0,6" />
+          <TextBlock Name="StatusTextBlock" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
         </StackPanel>
-      </Grid>
-    </StackPanel>
-  </Border>
+
+        <!-- 底部操作按钮 -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock Name="HintTextBlock" Grid.Column="0" Text="稍后也可在设置「插件与扩展」中随时安装" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Name="LaterButton" Content="暂不安装" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Click="LaterButton_Click" />
+            <Button Name="InstallButton" Content="⬇️ 一键安装并启用" Style="{StaticResource DialogPrimaryButtonStyle}" Click="InstallButton_Click" />
+            <Button Name="RetryButton" Content="🔄 重试未完成项" Style="{StaticResource DialogButtonStyle}" Margin="0,0,8,0" Visibility="Collapsed" Click="RetryButton_Click" />
+            <Button Name="DoneButton" Content="完成" Style="{StaticResource DialogPrimaryButtonStyle}" Visibility="Collapsed" Click="DoneButton_Click" />
+          </StackPanel>
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Grid>
 </Window>

@@ -7,6 +7,7 @@ namespace WinPieGestures;
 
 public sealed class FixedRingSlot
 {
+    // Legacy metadata retained for profile round-tripping. Fixed slots are addressed by position.
     public int? ParentIndex { get; set; }
     public ActionItem Action { get; set; } = new();
 
@@ -33,7 +34,7 @@ public sealed class FixedRingTier
 public sealed class FixedRingMenu
 {
     public bool AlwaysVisible { get; set; } = true;
-    internal bool ShowsAllOnPopup(AppConfig config) => AlwaysVisible && config.EnableMultiTier && config.AutoExpandSubRingsOnPopup &&
+    internal bool ShowsAllOnPopup(AppConfig config) => AlwaysVisible && config.EnableMultiTier &&
         config.SubmenuStyle is "Wheel" or "Fan";
 
     // Entry zero is level three. The first two levels are the existing primary action and its SubActions.
@@ -88,29 +89,20 @@ public sealed class FixedRingMenu
         slots[index] = slot;
     }
 
-    // Physical addresses remain stable when a slot is hidden. Walk parent links
-    // from the deepest tier so a navigation-only parent can still open its children.
     internal HashSet<(int Level, int Index)> ConfiguredSlots(WheelProfile profile, int depth, bool fan) =>
         ConfiguredSlots(ReadEffectiveRoots(profile), depth, fan);
 
     internal HashSet<(int Level, int Index)> ConfiguredSlots(IReadOnlyList<ActionItem?> roots, int depth, bool fan)
     {
         var visible = new HashSet<(int Level, int Index)>();
-        var parents = new HashSet<int>();
-        for (int level = depth; level >= 3; level--)
+        for (int level = 3; level <= depth; level++)
         {
-            var next = new HashSet<int>();
-            for (int index = 0; index < GetCount(level); index++)
-            {
-                var slot = GetSlot(level, index);
-                if (slot == null || !(Plugins.PluginInteractionSession.IsExecutableAction(slot.Action) || parents.Contains(index)) ||
-                    !HasEnabledAncestry(level, index, roots.Count, root => roots[root])) continue;
-                visible.Add((level, index));
-                if (slot.ParentIndex is int parent) next.Add(parent);
-            }
-            parents = next;
+            int count = GetCount(level);
+            for (int index = 0; index < count; index++)
+                if (GetSlot(level, index) is { } slot && Plugins.PluginInteractionSession.IsExecutableAction(slot.Action))
+                    visible.Add((level, index));
         }
-        AddLowerSlots(roots, 2, fan, visible, parents);
+        AddLowerSlots(roots, 2, fan, visible, allowWhitespaceText: false);
         return visible;
     }
 
@@ -120,7 +112,7 @@ public sealed class FixedRingMenu
     internal static HashSet<(int Level, int Index)> LowerConfiguredSlots(IReadOnlyList<ActionItem?> roots, int depth, bool fan)
     {
         var visible = new HashSet<(int Level, int Index)>();
-        AddLowerSlots(roots, depth, fan, visible, null);
+        AddLowerSlots(roots, depth, fan, visible, allowWhitespaceText: true);
         return visible;
     }
 
@@ -128,9 +120,8 @@ public sealed class FixedRingMenu
         Enumerable.Range(0, profile.SectorCount).Select(index => DisplayRoot(profile, index)).ToArray();
 
     private static void AddLowerSlots(IReadOnlyList<ActionItem?> roots, int depth, bool fan,
-        HashSet<(int Level, int Index)> visible, HashSet<int>? fixedParents)
+        HashSet<(int Level, int Index)> visible, bool allowWhitespaceText)
     {
-        bool allowWhitespaceText = fixedParents == null;
         for (int index = 0; index < roots.Count; index++)
         {
             var root = roots[index];
@@ -144,8 +135,7 @@ public sealed class FixedRingMenu
                 {
                     int key = SecondaryKey(index, child);
                     var action = children[child];
-                    if (!CanNavigate(action) ||
-                        !(IsLegacySlotVisible(action, depth - 2, fan, allowWhitespaceText) || fixedParents?.Contains(key) == true)) continue;
+                    if (!IsLegacySlotVisible(action, depth - 2, fan, allowWhitespaceText)) continue;
                     hasChild = true;
                     visible.Add((2, key));
                 }
@@ -175,25 +165,6 @@ public sealed class FixedRingMenu
     private static bool CanNavigate(ActionItem? action) => action != null &&
         !string.Equals(action.Type, "None", StringComparison.OrdinalIgnoreCase) &&
         !string.Equals(action.Type, "Inherit", StringComparison.OrdinalIgnoreCase);
-
-    // A missing/out-of-range owner is allowed for existing directly selectable fixed slots.
-    // A stored disabled owner still blocks the branch, including owners hidden by Count.
-    internal bool HasEnabledAncestry(int level, int index, int rootCount, Func<int, ActionItem?> effectiveRoot)
-    {
-        for (; level >= 3; level--)
-        {
-            var slot = GetSlot(level, index);
-            if (slot == null) return true;
-            if (!CanNavigate(slot.Action)) return false;
-            if (slot.ParentIndex is not int parent || parent < 0) return true;
-            index = parent;
-        }
-        if (!TryDecodeSecondaryKey(index, out int root, out int child) || root >= rootCount) return true;
-        var owner = effectiveRoot(root);
-        if (!CanNavigate(owner)) return false;
-        var children = owner!.SubActions;
-        return children == null || child >= children.Count || CanNavigate(children[child]);
-    }
 
     internal IEnumerable<ActionItem> StoredActions()
     {

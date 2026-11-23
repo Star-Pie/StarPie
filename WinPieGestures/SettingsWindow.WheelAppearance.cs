@@ -97,10 +97,15 @@ public partial class SettingsWindow
         AppearancePreviewHint.Visibility = effects ? Visibility.Collapsed : Visibility.Visible;
         var profileForPreview = AppearanceProfile(config);
         var activeLayer = profileForPreview?.Layers.ElementAtOrDefault(profileForPreview.ActiveLayerIndex);
-        AppearancePreviewHint.Text = I18n.T(_appearancePreview == AppearancePreviewKind.Popup
-            ? _appearanceDepth > 2 && activeLayer?.ActiveFixedRings == null
-                ? "WheelAppearancePopupFixedHint" : "WheelAppearancePopupHint"
-            : "WheelAppearanceCanvasHint");
+        string previewHint = "WheelAppearanceCanvasHint";
+        if (_appearancePreview == AppearancePreviewKind.Popup)
+        {
+            var fixedMenu = _appearanceDepth > 2 ? activeLayer?.ActiveFixedRings : null;
+            previewHint = _appearanceDepth > 2 && fixedMenu == null ? "WheelAppearancePopupFixedHint" :
+                config.EnableMultiTier && fixedMenu is { AlwaysVisible: false } ? "WheelAppearancePopupNearbyHint" :
+                "WheelAppearancePopupHint";
+        }
+        AppearancePreviewHint.Text = I18n.T(previewHint);
 
         WheelAppearanceFields.Children.Clear();
         _refreshAppearanceBounds.Clear();

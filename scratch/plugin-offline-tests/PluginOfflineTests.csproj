@@ -8,7 +8,15 @@
     <AssemblyName>test_catalog</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../WinPieGestures/WinPieGestures.csproj" />
+    <ProjectReference Include="../../WinPieGestures/WinPieGestures.csproj" Condition="'$(StarPieCandidateDir)' == ''" />
     <ProjectReference Include="../onboarding-download-tests/Fixture/Fixture.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+  <ItemGroup Condition="'$(StarPieCandidateDir)' != ''">
+    <Reference Include="StarPie" HintPath="$(StarPieCandidateDir)/StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" HintPath="$(StarPieCandidateDir)/StarPie.Plugin.Abstractions.dll" />
+    <AssemblyMetadata Include="StarPieCandidateDir" Value="$(StarPieCandidateDir)" />
+  </ItemGroup>
+  <Target Name="CheckCandidate" BeforeTargets="ResolveReferences" Condition="'$(StarPieCandidateDir)' != '' and !Exists('$(StarPieCandidateDir)/StarPie.dll')">
+    <Error Text="The specified StarPie candidate directory does not contain the host DLL." />
+  </Target>
 </Project>

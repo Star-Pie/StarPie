@@ -91,6 +91,7 @@ public partial class SettingsWindow
                 profile.HasExplicitProcessBindings = true;
             }
             profile.DisplayName = name;
+            RefreshPortalTargetNames(profile);
         }
         profile.Tags = StudioProfileLibrary.ParseTags(tags);
         StudioIdentity.Refresh(profile, accepted: true);
@@ -126,13 +127,25 @@ public partial class SettingsWindow
     private async Task ExportStudioProfileAsync(WheelProfile profile)
     {
         if (_configTransferBusy) return;
+        var config = ConfigManager.CurrentConfig;
+        long revision = ConfigManager.ConfigurationRevision;
+        var profiles = StudioProfileLibrary.PortalExportProfiles(profile, config.Profiles);
+        if (profiles.Count > 1)
+        {
+            var include = AppMessageBox.Show(this, I18n.TF("PortalExportDependencies", profiles.Count - 1),
+                I18n.T("StudioRailExport"), MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (include == MessageBoxResult.Cancel) return;
+            if (include != MessageBoxResult.Yes) profiles = [profile];
+        }
         var dialog = new SaveFileDialog { Filter = I18n.T("StudioRailFileType"), DefaultExt = ".starpie-config",
             AddExtension = true, FileName = ConfigManager.CleanFileName(profile.FriendlyName), Title = I18n.T("StudioRailExport") };
         if (dialog.ShowDialog(this) != true) return;
         SetConfigTransferBusy(true);
         try
         {
-            string snapshot = StudioProfileLibrary.SerializeProfile(profile);
+            if (!ReferenceEquals(config, ConfigManager.CurrentConfig) || revision != ConfigManager.ConfigurationRevision)
+                throw new InvalidOperationException(I18n.T("ConfigTransferChanged"));
+            string snapshot = StudioProfileLibrary.SerializeProfiles(profiles);
             string icons = StudioProfileLibrary.IconDirectory;
             await Task.Run(() => PortableConfigBundle.ExportProfile(snapshot, dialog.FileName, icons));
         }
@@ -152,7 +165,8 @@ public partial class SettingsWindow
         {
             string icons = StudioProfileLibrary.IconDirectory;
             using var transaction = await Task.Run(() => PortableConfigBundle.PrepareProfileImport(open.FileName, icons));
-            var incoming = await Task.Run(() => StudioProfileLibrary.ReadProfile(transaction.ConfigJson));
+            var imported = await Task.Run(() => StudioProfileLibrary.ReadProfiles(transaction.ConfigJson));
+            var incoming = imported[0];
             if (_resourcesReleased || !IsVisible) return;
             if (revision != ConfigManager.ConfigurationRevision || !ReferenceEquals(config, ConfigManager.CurrentConfig))
                 throw new InvalidOperationException(I18n.T("ConfigTransferChanged"));
@@ -162,37 +176,29 @@ public partial class SettingsWindow
                 v => (StudioNameAvailable(v.Trim()) && !string.Equals(v.Trim(), "Global", StringComparison.OrdinalIgnoreCase),
                     I18n.T("ProfileNameInvalidOrDuplicate"))) { Owner = this };
             if (naming.ShowDialog() != true) return;
-            if (!incoming.HasExplicitProcessBindings)
-                incoming.BoundProcesses = string.Equals(incoming.ProcessName, "Global", StringComparison.OrdinalIgnoreCase)
-                    ? "" : string.Join(", ", ProfileBindingTokens(incoming));
-            incoming.HasExplicitProcessBindings = true;
-            incoming.ProcessName = incoming.DisplayName = naming.InputText.Trim();
-            // Application shell icon hints belong to the originating machine.
-            incoming.ApplicationIconPath = null;
-            if (StudioProfileLibrary.HasImportConflict(config, incoming))
+            StudioProfileLibrary.NameImportedProfiles(imported, config.Profiles, naming.InputText.Trim());
+            var projected = new AppConfig
             {
-                if (AppMessageBox.Show(this, I18n.T("StudioRailConflict"), I18n.T("StudioRailImport"),
+                Profiles = new(config.Profiles), Trigger = config.Trigger, BlacklistTriggerOverrides = config.BlacklistTriggerOverrides
+            };
+            foreach (var profile in imported)
+            {
+                if (StudioProfileLibrary.HasImportConflict(projected, profile))
+                {
+                    if (AppMessageBox.Show(this, profile.FriendlyName + Environment.NewLine + I18n.T("StudioRailConflict"), I18n.T("StudioRailImport"),
                     MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
-                incoming.UseApplicationContext = true;
-                incoming.BoundProcesses = "";
-                incoming.ActivationTrigger = null;
-                foreach (var l in incoming.Layers) l.ActivationTrigger = null;
+                    profile.UseApplicationContext = true;
+                    profile.BoundProcesses = "";
+                    profile.ActivationTrigger = null;
+                    foreach (var layer in profile.Layers) layer.ActivationTrigger = null;
+                }
+                projected.Profiles.Add(profile);
             }
             if (_resourcesReleased || !IsVisible) return;
             if (revision != ConfigManager.ConfigurationRevision || !ReferenceEquals(config, ConfigManager.CurrentConfig))
                 throw new InvalidOperationException(I18n.T("ConfigTransferChanged"));
-            config.Profiles.Add(incoming);
-            try
-            {
-                if (!ConfigManager.SaveConfig()) throw new IOException();
-                transaction.Commit();
-            }
-            catch
-            {
-                config.Profiles.Remove(incoming);
-                ConfigManager.MarkConfigurationChanged();
-                throw;
-            }
+            if (!ConfigManager.CommitProfileImport(config, imported)) throw new IOException();
+            transaction.Commit();
             IconHelper.InvalidateCustomIconCache();
             RefreshProfilesUi(incoming);
             ShowStudioProfileInspector();

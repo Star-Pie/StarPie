@@ -463,12 +463,11 @@ internal static partial class OfficialPluginClient
             return new OfficialPluginInstallResult { PluginId = module.Id, Error = compatibility.Message };
         cancellationToken.ThrowIfCancellationRequested();
 
-        PluginInstance? previous = PluginHost.Find(module.Id);
-        if (previous != null && SimpleVersion.TryParse(previous.Entry.Version, out SimpleVersion installedVersion) &&
+        PluginRegistryEntry? previous = PluginRegistryStore.FindEntry(module.Id);
+        if (previous != null && SimpleVersion.TryParse(previous.Version, out SimpleVersion installedVersion) &&
             SimpleVersion.TryParse(module.Version, out SimpleVersion requestedVersion) && requestedVersion.CompareTo(installedVersion) < 0)
             return new OfficialPluginInstallResult { PluginId = module.Id, Error = I18n.T("PluginsOfficialStateInstalledNewer") };
-        bool enableAfterInstall = forceEnable ?? (previous?.Entry.Enabled ?? true);
-        bool preloadAfterInstall = previous?.Entry.Preload ?? false;
+        bool enableNewInstallation = forceEnable ?? true;
 
         string tempRoot = Path.Combine(Path.GetTempPath(), "StarPie-OfficialPlugin-" + Guid.NewGuid().ToString("N"));
         string packagePath = Path.Combine(tempRoot, module.AssetName);
@@ -540,12 +539,13 @@ internal static partial class OfficialPluginClient
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+            previous = PluginRegistryStore.FindEntry(module.Id);
             if (!await ConfirmRuntimeInstallAsync(new PluginInstallConfirmation
             {
                 Scan = scan,
                 State = previous == null ? PluginCandidateState.Installable : PluginCandidateState.Update,
-                Note = previous == null ? "" : I18n.TF("PluginsOfflineReplace", previous.Entry.Version, scan.Manifest.Version),
-                EnableAfterInstall = enableAfterInstall,
+                Note = previous == null ? "" : I18n.TF("PluginsOfflineReplace", previous.Version, scan.Manifest.Version),
+                EnableAfterInstall = previous?.Enabled ?? enableNewInstallation,
             }, processConfirmation).ConfigureAwait(false))
                 return new OfficialPluginInstallResult
                 {
@@ -554,21 +554,18 @@ internal static partial class OfficialPluginClient
                 };
             cancellationToken.ThrowIfCancellationRequested();
 
+            // A user may change the installed plugin's preference during download or confirmation.
+            previous = PluginRegistryStore.FindEntry(module.Id);
             PluginInstallResult result = await PluginHost.CommitInstallAsync(scan, new PluginInstallOptions
             {
                 Acknowledged = true,
                 AcknowledgedCapabilities = new List<string>(scan.Manifest.Capabilities),
-                EnableAfterInstall = enableAfterInstall,
+                EnableAfterInstall = previous?.Enabled ?? enableNewInstallation,
+                PreloadOnFirstInstall = true,
                 OverwriteExisting = true,
                 Official = true,
                 SourceKind = "OfficialCatalog",
             }, cancellationToken).ConfigureAwait(false);
-
-            if (result.Success && preloadAfterInstall && PluginHost.Find(module.Id) is PluginInstance installed)
-            {
-                installed.Entry.Preload = true;
-                PluginRegistryStore.UpsertEntry(installed.Entry);
-            }
 
             return OfficialPluginInstallResult.FromInstallResult(result);
         }

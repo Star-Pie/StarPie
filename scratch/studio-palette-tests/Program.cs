@@ -126,14 +126,14 @@ internal static class Program
         menu.SetSlot(4, 1, new() { Action = Item("fixed child"), ParentIndex = 1 });
         Invoke("OpenFixedCanvas", profile);
         Invoke("SelectFixedSlot", 3, 1);
-        ((ComboBox)window.FindName("FixedParent")).SelectedValue = -1;
-        Check(menu.GetSlot(3, 1)!.ParentIndex == 0, "unapplied parent assignment is still a draft");
+        Check(window.FindName("FixedParent") == null && menu.GetSlot(3, 1)!.ParentIndex == 0,
+            "the fixed inspector has no parent editor and browsing leaves legacy metadata intact");
         window.CopyCurrentAction();
         ActionClipboard.CopySingleAction(Item("paste-fixed"));
         old = State(); undo = history.UndoCount;
         window.PasteToCurrentSelection();
         Check(menu.GetSlot(3, 1)?.Action.Name == "paste-fixed" && menu.GetSlot(3, 1)?.ParentIndex == 0 &&
-            menu.GetSlot(4, 1)?.ParentIndex == 1, "paste to a fixed slot preserves both sides of its parent mapping");
+            menu.GetSlot(4, 1)?.ParentIndex == 1, "paste to a fixed slot preserves legacy metadata");
         Roundtrip(old, State(), undo);
         ((ComboBox)window.FindName("MappingsProfileComboBox")).SelectedItem = local;
         window.SelectPrimarySlot(0);

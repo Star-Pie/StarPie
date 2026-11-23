@@ -129,7 +129,8 @@ public partial class SettingsWindow
 			return copy ? "EditDragCopy" : target.Action == null ? "StudioDragMove" : "StudioDragSwap";
 		if (!source.IsSubAction)
 		{
-			if (target.IsSubAction || (target.IsCenter && source.Action?.SubActions?.Count > 0)) return null;
+			if (target.IsSubAction || (target.IsCenter && (source.Action?.IsWheelPortal == true || source.Action?.SubActions?.Count > 0)) ||
+				(source.IsCenter && target.Action?.IsWheelPortal == true)) return null;
 			return copy ? "EditDragCopy" : WheelProfile.IsActionConfigured(target.Action) ? "StudioDragSwap" : "StudioDragMove";
 		}
 		if (target.IsCenter || (!target.IsSubAction && source.SlotIndex == target.SlotIndex)) return null;

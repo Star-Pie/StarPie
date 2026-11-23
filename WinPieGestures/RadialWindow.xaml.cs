@@ -398,12 +398,15 @@ public partial class RadialWindow : Window
 	{
 		try
 		{
+			_portalTrail?.Close();
+			_portalTrail = null;
 			BeginAnimation(UIElement.OpacityProperty, null);
 			if (PresentationSource.FromVisual(this) is HwndSource source)
 			{
 				source.RemoveHook(WndProc);
 			}
 			_isDisposed = true;
+			ResetPinnedArrowSelection();
 			StopPresentationAnimations();
 			WheelCanvas?.Children.Clear();
 			_sectorPaths?.Clear();
@@ -768,11 +771,15 @@ public partial class RadialWindow : Window
 		Present(centerPoint, profile, configurationRevision, presentationVersion, null);
 
 	internal void Present(Point centerPoint, WheelProfile profile, long configurationRevision,
-		long presentationVersion, Action? onPresented, bool preserveTriggerOrigin = false, Action? onIntroCompleted = null)
+		long presentationVersion, Action? onPresented, bool preserveTriggerOrigin = false, Action? onIntroCompleted = null) =>
+		PresentCore(centerPoint, profile, configurationRevision, presentationVersion, onPresented, preserveTriggerOrigin, onIntroCompleted, false);
+
+	private void PresentCore(Point centerPoint, WheelProfile profile, long configurationRevision,
+		long presentationVersion, Action? onPresented, bool preserveTriggerOrigin, Action? onIntroCompleted, bool keepPortalCenter)
 	{
 		if (!Dispatcher.CheckAccess())
 		{
-			Dispatcher.Invoke(() => Present(centerPoint, profile, configurationRevision, presentationVersion, onPresented, preserveTriggerOrigin, onIntroCompleted));
+			Dispatcher.Invoke(() => PresentCore(centerPoint, profile, configurationRevision, presentationVersion, onPresented, preserveTriggerOrigin, onIntroCompleted, keepPortalCenter));
 			return;
 		}
 		if (_isDisposed)
@@ -780,8 +787,12 @@ public partial class RadialWindow : Window
 			throw new InvalidOperationException("Cannot present a disposed RadialWindow.");
 		}
 
+		InvalidatePinnedArrowSlots();
 		ClearDeepMenu();
 		ClearFixedRings();
+		ClearPortalBack();
+		_keepPortalCenter = keepPortalCenter;
+		long presentationEpoch = ++_portalPresentationEpoch;
 
 		bool needsRebuild = !_hasRenderedContent ||
 			_renderedConfigurationRevision != configurationRevision ||
@@ -795,7 +806,7 @@ public partial class RadialWindow : Window
 		PresentationVersion = presentationVersion;
 		ResetPresentationState();
 		// 先将入场动画的初始状态写入视觉树，再显示 HWND，避免先绘制完整圆盘后才切换到动画起始帧造成闪烁。
-		PrepareIntroAnimation();
+		if (!keepPortalCenter) PrepareIntroAnimation();
 
 		if (needsRebuild)
 		{
@@ -825,12 +836,24 @@ public partial class RadialWindow : Window
 		}
 		PositionWindowOnTargetMonitor();
 
+		if (keepPortalCenter)
+		{
+			WindowScale.ScaleX = WindowScale.ScaleY = 1;
+			MainGrid.Opacity = 1;
+			MainGrid.Visibility = Visibility.Visible;
+			CenterOnPhysically(_centerPoint.X, _centerPoint.Y);
+			EnsureTopmostNoActivate();
+			onPresented?.Invoke();
+			return;
+		}
+
 		// 内容层在上一帧隐藏状态下已完成最新配置与视觉树更新，
 		// 紧接在下一 Render 回调即刻校准物理中心、揭示内容并平滑播放入场动效。
 		Dispatcher.BeginInvoke(new Action(() =>
 		{
 			if (WheelPresentationCompletion.TryComplete(
-				() => WheelPresentationCompletion.IsCurrent(_isDisposed, _isPresented, PresentationVersion, presentationVersion),
+				() => presentationEpoch == _portalPresentationEpoch &&
+					WheelPresentationCompletion.IsCurrent(_isDisposed, _isPresented, PresentationVersion, presentationVersion),
 				() =>
 				{
 					CenterOnPhysically(_centerPoint.X, _centerPoint.Y);
@@ -839,6 +862,7 @@ public partial class RadialWindow : Window
 				}, onPresented))
 			{
 				StartIntroAnimation(presentationVersion, onIntroCompleted);
+				QueuePinnedArrowRefresh();
 			}
 		}), DispatcherPriority.Render);
 	}
@@ -897,8 +921,12 @@ public partial class RadialWindow : Window
 		{
 			var path = _subSectorPaths[i];
 			if (!path.IsVisible || path.Opacity <= 0 || path.Data == null || !path.Data.FillContains(path.PointFromScreen(physicalPoint))) continue;
-			var parts = (path.Tag as string)?.Split('_');
-			if (parts?.Length == 3 && int.TryParse(parts[1], out sector) && int.TryParse(parts[2], out subSector)) return true;
+			if (i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count)
+			{
+				sector = _subSectorParentIndices[i];
+				subSector = _subSectorChildIndices[i];
+				return true;
+			}
 		}
 		for (int i = _sectorPaths.Count - 1; i >= 0; i--)
 		{
@@ -949,8 +977,11 @@ public partial class RadialWindow : Window
 		{
 			return;
 		}
+		ResetPinnedArrowSelection();
 		ClearDeepMenu();
 		ClearFixedRings();
+		ClearPortalBack();
+		_portalTrail?.ClearTrail();
 		_isPresented = false;
 		PresentationVersion = -1;
 		StopPresentationAnimations();
@@ -985,7 +1016,7 @@ public partial class RadialWindow : Window
         _deepWindowSize = fixedRadius.HasValue ? Math.Max(_wheelCanvasSize, fixedRadius.Value * 2 + 40) : 0;
 
 		// An enabled edge policy also applies to pinned sessions; rendering and hit testing share this center.
-		_centerPoint = ComputeClampedPhysicalCenter(requestedCenter, fixedRadius);
+		_centerPoint = _keepPortalCenter ? requestedCenter : ComputeClampedPhysicalCenter(requestedCenter, fixedRadius);
 		ActualPhysicalCenter = _centerPoint;
 		ScreenContext screenCtx = ScreenHelper.GetScreenContextAtPoint(_centerPoint);
 		double scaleX = Math.Max(0.1, screenCtx.DpiScale.DpiScaleX);
@@ -1045,6 +1076,7 @@ public partial class RadialWindow : Window
 		CoreScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
 		CoreScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
 		_layerBadgeStoryboard?.Stop();
+		LayerIndicatorBadge.BeginAnimation(UIElement.OpacityProperty, null);
 	}
 
 	private void ResetSectorVisuals()
@@ -1304,6 +1336,7 @@ public partial class RadialWindow : Window
 
 	private void RebuildVisualsFromCurrentConfiguration(long configurationRevision)
 	{
+		InvalidatePinnedArrowSlots();
 		InitializeThemeAndStyle();
 		ApplyLayoutFromCurrentConfiguration(_centerPoint);
 		UpdateProfileLabels();
@@ -1751,6 +1784,7 @@ public partial class RadialWindow : Window
 	internal void RenderSelectedLayer(int layerIndex)
 	{
 		if (_profile == null || _profile.ActiveLayerIndex != layerIndex || (uint)layerIndex >= (uint)_profile.Layers.Count) return;
+		InvalidatePinnedArrowSlots();
 		bool previousFixed = FixedGeometry != null;
 		ClearDeepMenu();
 		ClearFixedRings();
@@ -1825,7 +1859,7 @@ public partial class RadialWindow : Window
 		return false;
 	}
 
-	private void ApplyLayerIndicatorStyle()
+	private void ApplyLayerIndicatorStyle(bool force = false)
 	{
 		if (LayerIndicatorBadge == null || LayerIndicatorText == null || LayerIndicatorIcon == null)
 		{
@@ -1835,7 +1869,7 @@ public partial class RadialWindow : Window
 		AppConfig config = ConfigManager.CurrentConfig;
 		if (config == null) return;
 
-		if (!config.ShowLayerIndicator)
+		if (!force && !config.ShowLayerIndicator)
 		{
 			LayerIndicatorBadge.Visibility = Visibility.Collapsed;
 			return;
@@ -2037,6 +2071,7 @@ public partial class RadialWindow : Window
 			};
 			grid.Children.Add(stackPanel);
 			ActionItem? currentAction = DisplayedRoot(i);
+			AddPortalRuntimeBadge(grid, currentAction, _highlightBorderBrush);
 			string sectorLayout = text;
 			if (currentAction != null && !string.IsNullOrWhiteSpace(currentAction.LayoutMode) && currentAction.LayoutMode != "Inherit")
 			{
@@ -2295,6 +2330,8 @@ public partial class RadialWindow : Window
 	{
 		switch (type)
 		{
+		case "OpenWheel":
+			return PortalIconPath;
 		case "Folder":
 		case "OpenFolder":
 			return IconHelper.GetSvgPathByKey("Folder");
@@ -2391,6 +2428,7 @@ public partial class RadialWindow : Window
 
 	private void ClearSubTier()
 	{
+		if (_subSectorPaths.Count > 0) InvalidatePinnedArrowSlots();
 		for (int i = 0; i < _subSectorPaths.Count; i++)
 		{
 			System.Windows.Shapes.Path subSectorPath = _subSectorPaths[i];
@@ -2505,6 +2543,7 @@ public partial class RadialWindow : Window
 				_subContainerTransforms[i].Y = 0.0;
 			}
 		}
+		QueuePinnedArrowRefresh();
 	}
 
 	private SubTierVisuals SnapshotSubTierVisuals(int startIndex)
@@ -2527,7 +2566,7 @@ public partial class RadialWindow : Window
 			return;
 		}
 		ActionItem? actionItem = DisplayedRoot(parentIndex);
-		if (actionItem == null || actionItem.SubActions == null || actionItem.SubActions.Count == 0)
+		if (actionItem == null || actionItem.InlineSubActions == null || actionItem.InlineSubActions.Count == 0)
 		{
 			return;
 		}
@@ -2545,7 +2584,7 @@ public partial class RadialWindow : Window
 		double num7 = ((ConfigManager.CurrentConfig.SubWheelIconSize > 0.0) ? ConfigManager.CurrentConfig.SubWheelIconSize : ((text == "IconOnly") ? 22.0 : 17.0));
 		double fontSize = ((ConfigManager.CurrentConfig.SubWheelFontSize > 0.0) ? ConfigManager.CurrentConfig.SubWheelFontSize : Math.Max(8.5, ConfigManager.CurrentConfig.SectorFontSize - 1.0));
 		double num8 = (double)parentIndex * num - num / 2.0;
-		List<ActionItem> subActions = actionItem.SubActions;
+		List<ActionItem> subActions = actionItem.InlineSubActions;
 		int count = subActions.Count;
 		double num9 = num / (double)count;
 		for (int i = 0; i < count; i++)
@@ -2605,6 +2644,7 @@ public partial class RadialWindow : Window
 			};
 			grid.Children.Add(stackPanel);
 			ActionItem actionItem2 = subActions[i];
+			AddPortalRuntimeBadge(grid, actionItem2, _subHighlightBorderBrush);
 			string text2 = actionItem2?.Name ?? "子动作";
 			string text3 = actionItem2?.Type ?? "Hotkey";
 			string text4 = actionItem2?.Parameter ?? "";
@@ -2858,7 +2898,7 @@ public partial class RadialWindow : Window
 			return;
 		}
 		ActionItem? actionItem = DisplayedRoot(parentIndex);
-		if (actionItem == null || actionItem.SubActions == null || actionItem.SubActions.Count == 0)
+		if (actionItem == null || actionItem.InlineSubActions == null || actionItem.InlineSubActions.Count == 0)
 		{
 			return;
 		}
@@ -2871,6 +2911,7 @@ public partial class RadialWindow : Window
 		int snapshotStart = _subSectorPaths.Count;
 		RenderWheelSubTierForSector(parentIndex, animateEntrance: true);
 		_subTierCache[parentIndex] = SnapshotSubTierVisuals(snapshotStart);
+		QueuePinnedArrowRefresh();
 	}
 
 	private void ShowAllSubTiers()
@@ -2886,7 +2927,7 @@ public partial class RadialWindow : Window
 		for (int p = 0; p < sectorCount; p++)
 		{
 			ActionItem? actionItem = DisplayedRoot(p);
-			if (actionItem != null && actionItem.SubActions != null && actionItem.SubActions.Count > 0)
+			if (actionItem != null && actionItem.InlineSubActions != null && actionItem.InlineSubActions.Count > 0)
 			{
 				int snapshotStart = _subSectorPaths.Count;
 				if (ConfigManager.CurrentConfig.SubmenuStyle == "Fan") RenderFanCells(p, actionItem, animateEntrance: false);
@@ -2894,6 +2935,7 @@ public partial class RadialWindow : Window
 				_subTierCache[p] = SnapshotSubTierVisuals(snapshotStart);
 			}
 		}
+		QueuePinnedArrowRefresh();
 	}
 
 	public void HighlightSector(int index)
@@ -2991,9 +3033,7 @@ public partial class RadialWindow : Window
 			StackPanel obj = ((currentHighlightedSector < _contentPanels.Count) ? _contentPanels[currentHighlightedSector] : null);
 			TranslateTransform translateTransform = ((currentHighlightedSector < _sectorTransforms.Count) ? _sectorTransforms[currentHighlightedSector] : null);
 			TranslateTransform translateTransform2 = ((currentHighlightedSector < _containerTransforms.Count) ? _containerTransforms[currentHighlightedSector] : null);
-			path.Fill = _defaultSectorBrush;
-			path.Stroke = _sectorBorderBrush;
-			path.StrokeThickness = _borderThickness;
+			PaintWheelSector(path, obj, secondary: false, PaintsPinnedArrowSelection(new(1, currentHighlightedSector), false));
 			Panel.SetZIndex(path, 0);
 			if (translateTransform != null)
 			{
@@ -3017,21 +3057,6 @@ public partial class RadialWindow : Window
 					EasingFunction = easingFunction
 				});
 			}
-			TextBlock textBlock = obj?.Children.OfType<TextBlock>().FirstOrDefault();
-			System.Windows.Shapes.Path path2 = obj?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
-			if (textBlock != null)
-			{
-				textBlock.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, textBlock, false, _textColorBrush);
-				textBlock.FontWeight = FontWeights.Medium;
-			}
-			if (path2 != null)
-			{
-				path2.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, path2, false, _textColorBrush);
-			}
-			if (_styleRenderer != null)
-			{
-				_styleRenderer.ApplySectorHighlight(path, isHighlighted: false);
-			}
 		}
 		if (mainIndex >= 0 && mainIndex < _sectorPaths.Count && subIndex < 0)
 		{
@@ -3040,9 +3065,7 @@ public partial class RadialWindow : Window
 			TranslateTransform translateTransform3 = ((mainIndex < _sectorTransforms.Count) ? _sectorTransforms[mainIndex] : null);
 			TranslateTransform translateTransform4 = ((mainIndex < _containerTransforms.Count) ? _containerTransforms[mainIndex] : null);
 			double num4 = ((mainIndex < _sectorAngles.Count) ? _sectorAngles[mainIndex] : 0.0);
-			path3.Fill = _highlightSectorBrush;
-			path3.Stroke = _highlightBorderBrush;
-			path3.StrokeThickness = _highlightBorderThickness;
+			PaintWheelSector(path3, obj2, secondary: false, PaintsPinnedArrowSelection(new(1, mainIndex), true));
 			Panel.SetZIndex(path3, 5);
 			double toValue2 = HasHoneycomb ? 0 : Math.Cos(num4) * 5.5;
 			double toValue3 = HasHoneycomb ? 0 : Math.Sin(num4) * 5.5;
@@ -3067,21 +3090,6 @@ public partial class RadialWindow : Window
 				{
 					EasingFunction = easingFunction
 				});
-			}
-			TextBlock textBlock2 = obj2?.Children.OfType<TextBlock>().FirstOrDefault();
-			System.Windows.Shapes.Path path4 = obj2?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
-			if (textBlock2 != null)
-			{
-				textBlock2.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, textBlock2, true, Brushes.White);
-				textBlock2.FontWeight = FontWeights.Bold;
-			}
-			if (path4 != null)
-			{
-				path4.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_styleRenderer, path4, true, Brushes.White);
-			}
-			if (_styleRenderer != null)
-			{
-				_styleRenderer.ApplySectorHighlight(path3, isHighlighted: true);
 			}
 		}
 		if (_allSubTiersActive)
@@ -3110,28 +3118,15 @@ public partial class RadialWindow : Window
 			Grid obj3 = ((i < _subContentContainers.Count) ? _subContentContainers[i] : null);
 			TranslateTransform translateTransform6 = ((i < _subContainerTransforms.Count) ? _subContainerTransforms[i] : null);
 			double num5 = ((i < _subSectorAngles.Count) ? _subSectorAngles[i] : 0.0);
-			TextBlock textBlock3 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBlock>().FirstOrDefault();
-			System.Windows.Shapes.Path path6 = obj3?.Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<System.Windows.Shapes.Path>().FirstOrDefault();
 			// Keep the hit order and silhouettes stable when adjacent Fan parents overlap.
 			bool stationaryFan = HasHoneycomb || _allSubTiersActive && ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
-			bool isHighlighted = subIndex >= 0 && i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count &&
-				_subSectorParentIndices[i] == mainIndex && _subSectorChildIndices[i] == subIndex;
+			bool hasAddress = i < _subSectorParentIndices.Count && i < _subSectorChildIndices.Count;
+			var address = hasAddress ? new PinnedArrowAddress(2, _subSectorChildIndices[i], _subSectorParentIndices[i]) : default;
+			bool isHighlighted = hasAddress && subIndex >= 0 && address.Owner == mainIndex && address.Index == subIndex;
+			PaintWheelSector(path5, SecondarySectorLabels(obj3), secondary: true, hasAddress && PaintsPinnedArrowSelection(address, isHighlighted));
 			if (isHighlighted)
 			{
-				path5.Fill = _subHighlightSectorBrush;
-				path5.Stroke = _subHighlightBorderBrush;
-				path5.StrokeThickness = _highlightBorderThickness;
 				Panel.SetZIndex(path5, stationaryFan ? 15 : 18);
-				ApplySubSectorGlow(path5, isHighlighted: true);
-				if (textBlock3 != null)
-				{
-					textBlock3.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, textBlock3, true, Brushes.White);
-					textBlock3.FontWeight = FontWeights.Bold;
-				}
-				if (path6 != null)
-				{
-					path6.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, path6, true, Brushes.White);
-				}
 				double toValue4 = Math.Cos(num5) * 4.0;
 				double toValue5 = Math.Sin(num5) * 4.0;
 				if (!stationaryFan && translateTransform5 != null)
@@ -3159,20 +3154,7 @@ public partial class RadialWindow : Window
 			}
 			else
 			{
-				path5.Fill = _subDefaultSectorBrush;
-				path5.Stroke = _subSectorBorderBrush;
-				path5.StrokeThickness = _borderThickness;
 				Panel.SetZIndex(path5, 15);
-				ApplySubSectorGlow(path5, isHighlighted: false);
-				if (textBlock3 != null)
-				{
-					textBlock3.Foreground = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, textBlock3, false, _subTextColorBrush);
-					textBlock3.FontWeight = FontWeights.Medium;
-				}
-				if (path6 != null)
-				{
-					path6.Fill = ArtStyles.ArtStyleRenderer.ContentBrush(_subStyleRenderer, path6, false, _subTextColorBrush);
-				}
 				if (translateTransform5 != null && (translateTransform5.X != 0.0 || translateTransform5.Y != 0.0))
 				{
 					translateTransform5.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(translateTransform5.X, 0.0, duration)
@@ -3300,9 +3282,9 @@ public partial class RadialWindow : Window
 		if (shouldShow && mainIndex < _profile.SectorCount)
 		{
 			ActionItem? action = _profile.GetEffectiveAction(mainIndex);
-			if (subIndex >= 0 && action?.SubActions != null && subIndex < action.SubActions.Count)
+			if (subIndex >= 0 && action?.InlineSubActions != null && subIndex < action.InlineSubActions.Count)
 			{
-				selectedName = SelectionDisplayName(action.SubActions[subIndex]);
+				selectedName = SelectionDisplayName(action.InlineSubActions[subIndex]);
 			}
 			if (string.IsNullOrWhiteSpace(selectedName) && action != null)
 			{
@@ -3315,6 +3297,7 @@ public partial class RadialWindow : Window
 			CoreSelectionText.Text = selectedName;
 			CoreSelectionTextPanel.Visibility = Visibility.Visible;
 			CoreSelectionOverlay.Visibility = Visibility.Visible;
+			if (_portalBack != null) _portalBack.Visibility = Visibility.Collapsed;
 			CoreExitIcon.Opacity = (CoreExitIcon.Visibility == Visibility.Visible) ? 0.18 : _defaultCoreExitIconOpacity;
 			CoreCustomImageEllipse.Opacity = _defaultCoreCustomImageOpacity;
 			CoreCustomImageEllipse.Effect = (CoreCustomImageEllipse.Visibility == Visibility.Visible)
@@ -3327,8 +3310,18 @@ public partial class RadialWindow : Window
 
 		CoreSelectionTextPanel.Visibility = Visibility.Collapsed;
 		CoreSelectionOverlay.Visibility = Visibility.Collapsed;
-		CoreExitIcon.Visibility = _defaultCoreExitIconVisibility;
-		CoreCustomImageEllipse.Visibility = _defaultCoreCustomImageVisibility;
+		if (_portalBack != null)
+		{
+			CoreTextPanel.Visibility = Visibility.Collapsed;
+			CoreExitIcon.Visibility = Visibility.Collapsed;
+			CoreCustomImageEllipse.Visibility = Visibility.Collapsed;
+			_portalBack.Visibility = Visibility.Visible;
+		}
+		else
+		{
+			CoreExitIcon.Visibility = _defaultCoreExitIconVisibility;
+			CoreCustomImageEllipse.Visibility = _defaultCoreCustomImageVisibility;
+		}
 		CoreExitIcon.Opacity = _defaultCoreExitIconOpacity;
 		CoreCustomImageEllipse.Opacity = _defaultCoreCustomImageOpacity;
 		CoreCustomImageEllipse.Effect = _defaultCoreCustomImageEffect;
@@ -3567,7 +3560,7 @@ public partial class RadialWindow : Window
 			return;
 		}
 		ActionItem? actionItem = DisplayedRoot(parentIndex);
-		if (actionItem == null || actionItem.SubActions == null || actionItem.SubActions.Count == 0)
+		if (actionItem == null || actionItem.InlineSubActions == null || actionItem.InlineSubActions.Count == 0)
 		{
 			return;
 		}
@@ -3580,6 +3573,7 @@ public partial class RadialWindow : Window
 		_activeSubTierParentSector = parentIndex;
 		RenderFanCells(parentIndex, actionItem, animateEntrance: true);
 		_subTierCache[parentIndex] = SnapshotSubTierVisuals(snapshotStart);
+		QueuePinnedArrowRefresh();
 	}
 
 	private void RenderFanCells(int parentIndex, ActionItem actionItem, bool animateEntrance)
@@ -3608,7 +3602,7 @@ public partial class RadialWindow : Window
 		double num7 = ((ConfigManager.CurrentConfig.SubWheelIconSize > 0.0) ? ConfigManager.CurrentConfig.SubWheelIconSize : ((layoutMode == "IconOnly") ? 22.0 : 17.0));
 		double fontSize = ((ConfigManager.CurrentConfig.SubWheelFontSize > 0.0) ? ConfigManager.CurrentConfig.SubWheelFontSize : Math.Max(8.5, ConfigManager.CurrentConfig.SectorFontSize - 1.0));
 
-		List<ActionItem> subActions = actionItem.SubActions;
+		List<ActionItem> subActions = actionItem.InlineSubActions;
 		int subCount = subActions.Count;
 		int activeCount = Math.Min(FanSubmenuSlotCount, subCount);
 		bool isCompactSector = string.Equals(shape, "Original", StringComparison.OrdinalIgnoreCase);
@@ -3682,6 +3676,7 @@ public partial class RadialWindow : Window
 			grid.Children.Add(stackPanel);
 
 			ActionItem actionItem2 = subActions[j];
+			AddPortalRuntimeBadge(grid, actionItem2, _subHighlightBorderBrush);
 			string text2 = actionItem2?.Name ?? "子动作";
 			string text3 = actionItem2?.Type ?? "Hotkey";
 			string text4 = actionItem2?.Parameter ?? "";

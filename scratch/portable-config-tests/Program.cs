@@ -89,6 +89,7 @@ internal static class Program
 			Run("total asset size limit is enforced", TotalAssetLimit);
 			Run("standard monochrome W3C/Lucide SVGs roundtrip", StandardMonochromeSvgRoundTrip);
 			Run("canonical imported SVGs roundtrip", CanonicalImportedSvgRoundTrip);
+			Run("linked wheel profile package preserves references, SVGs and rollback", PortalProfileTransfer);
 		}
 		catch (Exception ex)
 		{
@@ -99,6 +100,33 @@ internal static class Program
 		Console.WriteLine($"RESULT: {(_failed == 0 ? "PASS" : "FAIL")} ({_passed} passed, {_failed} failed)");
 		Console.WriteLine("ARTIFACTS: " + _root);
 		return _failed == 0 ? 0 : 1;
+	}
+
+	private static void PortalProfileTransfer()
+	{
+		string package = Path.Combine(_root, "linked.starpie-config");
+		string destination = Path.Combine(_root, "linked-target-icons");
+		const string json = """
+			{"Profiles":[
+			  {"ProcessName":"one","Actions":[{"Type":"OpenWheel","PortalTarget":{"TargetProfileKey":"two","TargetLayerId":"linked","Future":42},
+				"SubActions":[{"Type":"Hotkey","IconKey":"custom:icon_a"}]}]},
+			  {"ProcessName":"two","Layers":[{"LayerId":"linked","Actions":[{"IconKey":"custom:icon_b"}]}]}
+			]}
+			""";
+		var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static;
+		typeof(PortableConfigBundle).GetMethod("ExportProfile", flags)!.Invoke(null, [json, package, _sourceIcons]);
+		using (var transaction = (PortableConfigImportTransaction)typeof(PortableConfigBundle)
+			.GetMethod("PrepareProfileImport", flags)!.Invoke(null, [package, destination])!)
+		{
+			using var document = JsonDocument.Parse(transaction.ConfigJson);
+			var profiles = document.RootElement.GetProperty("Profiles");
+			var reference = profiles[0].GetProperty("Actions")[0].GetProperty("PortalTarget");
+			if (profiles.GetArrayLength() != 2 || reference.GetProperty("TargetProfileKey").GetString() != "two" ||
+				reference.GetProperty("TargetLayerId").GetString() != profiles[1].GetProperty("Layers")[0].GetProperty("LayerId").GetString() ||
+				reference.GetProperty("Future").GetInt32() != 42 || Directory.GetFiles(destination, "*.svg").Length != 2)
+				throw new InvalidOperationException("The link, associated resources or unknown fields failed to survive.");
+		}
+		if (Directory.Exists(destination)) throw new InvalidOperationException("Cancelled linked import left resources behind.");
 	}
 
 	private static void RoundTrip()

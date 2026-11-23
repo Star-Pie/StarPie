@@ -19,6 +19,58 @@ public class AppConfig
 	/// <summary>呈现后保持轮盘，点击确认；旧配置默认松手执行。</summary>
 	public bool PinWheelAfterTrigger { get; set; }
 
+	/// <summary>定格轮盘后键盘导航与确认的单键虚拟键码（默认 ↑/↓/←/→ 与 Enter）。</summary>
+	public uint PinnedNavUpVkCode { get; set; } = PinnedArrowNavigation.Up;
+	public uint PinnedNavDownVkCode { get; set; } = PinnedArrowNavigation.Down;
+	public uint PinnedNavLeftVkCode { get; set; } = PinnedArrowNavigation.Left;
+	public uint PinnedNavRightVkCode { get; set; } = PinnedArrowNavigation.Right;
+	public uint PinnedNavConfirmVkCode { get; set; } = PinnedArrowNavigation.Confirm;
+
+	public bool PortalEnableCrossExpand { get; set; } = true;
+	public double PortalCrossExpandRatio { get; set; } = 0.84;
+	public bool PortalEnableDwellExpand { get; set; } = true;
+	public int PortalDwellMs { get; set; } = 230;
+	public string PortalOffsetCursorPolicy { get; set; } = "WarpToCenter";
+	public string PortalEscBehavior { get; set; } = "StepBack";
+	public bool PortalEnableReentryGuard { get; set; } = true;
+	public int PortalMaxDepth { get; set; } = 5;
+	public double PortalOuterTangentGapDip { get; set; } = 6.0;
+	public string PortalParentVisualMode { get; set; } = "ParentCore";
+	public bool PortalTrailShowBeam { get; set; } = true;
+	public double PortalFadeOpacity { get; set; } = 0.28;
+	public string PortalCustomShape { get; set; } = "Circle";
+	public double PortalCustomSizeDip { get; set; } = 42.0;
+	public string PortalCustomFillColor { get; set; } = "";
+	public string PortalCustomBorderColor { get; set; } = "";
+	public double PortalCustomOpacity { get; set; } = 0.85;
+	public string PortalCustomIconKey { get; set; } = "";
+	public string PortalCustomImagePath { get; set; } = "";
+
+	internal double EffectivePortalCrossExpandRatio =>
+		double.IsFinite(PortalCrossExpandRatio) ? Math.Clamp(PortalCrossExpandRatio, .60, 1.00) : .84;
+	internal int EffectivePortalDwellMs => Math.Clamp(PortalDwellMs, 100, 600);
+	internal int EffectivePortalMaxDepth => Math.Clamp(PortalMaxDepth, 2, 8);
+	internal double EffectivePortalOuterTangentGapDip =>
+		double.IsFinite(PortalOuterTangentGapDip) ? Math.Clamp(PortalOuterTangentGapDip, 0, 40) : 6.0;
+	internal bool PortalAutoPins => string.Equals(PortalOffsetCursorPolicy, "AutoPin", StringComparison.OrdinalIgnoreCase);
+	internal bool PortalEscapeClosesAll => string.Equals(PortalEscBehavior, "CloseAll", StringComparison.OrdinalIgnoreCase);
+	internal string EffectivePortalParentVisualMode => PortalParentVisualMode switch
+	{
+		"ParentCore" or "FadedWheel" or "CustomMarker" or "OutlineCircle" => PortalParentVisualMode,
+		_ => "ParentCore"
+	};
+	internal double EffectivePortalFadeOpacity =>
+		double.IsFinite(PortalFadeOpacity) ? Math.Clamp(PortalFadeOpacity, .08, .70) : .28;
+	internal string EffectivePortalCustomShape => PortalCustomShape switch
+	{
+		"Circle" or "FourPointStar" or "Diamond" or "Hexagon" or "RoundedSquare" => PortalCustomShape,
+		_ => "Circle"
+	};
+	internal double EffectivePortalCustomSizeDip =>
+		double.IsFinite(PortalCustomSizeDip) ? Math.Clamp(PortalCustomSizeDip, 16.0, 140.0) : 42.0;
+	internal double EffectivePortalCustomOpacity =>
+		double.IsFinite(PortalCustomOpacity) ? Math.Clamp(PortalCustomOpacity, .15, 1.00) : .85;
+
 	/// <summary>是否启用鼠标右键释放防抖。开启后，抬起需稳定保持指定毫秒数才结束轮盘并执行动作。</summary>
 	public bool EnableMouseReleaseDebounce { get; set; } = true;
 

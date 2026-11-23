@@ -18,7 +18,7 @@ internal static partial class Program
     static readonly Point Origin = new(-820, 300);
     static readonly DpiScale Dpi = new(1.5, 1.25);
     static readonly List<ActionItem> Recorded = [];
-    static double legacyExtent, outerScale;
+    static double legacyExtent;
     static object currentGeometry = null!;
     static int checks;
     static readonly WheelLayer Layer = new() { SectorCount = 4, MaxMenuDepth = 5, Actions = [Text("east"), Text("south")] };
@@ -38,7 +38,8 @@ internal static partial class Program
     static void Field(object obj, string key, object? value) => obj.GetType().GetField(key, Members)!.SetValue(obj, value);
     static Type Nested(string key) => Controller.GetNestedType(key, BindingFlags.NonPublic)!;
 
-    static object Session(bool persistent, bool publish = true, bool navigationOnly = false, int shownParent = 0, bool allSecondary = false, double scale = 1)
+    static object Session(bool persistent, bool publish = true, int shownParent = 0, bool allSecondary = false,
+        double scale = 1, Action<FixedRingMenu>? configure = null)
     {
         var menu = Layer.FixedRings = new FixedRingMenu { AlwaysVisible = persistent };
         for (int level = 3, parent = FixedRingMenu.SecondaryKey(0, 0); level <= 5; level++)
@@ -49,17 +50,18 @@ internal static partial class Program
             menu.Tiers[level - 3]!.WakeBandWidth = 24;
             parent = i;
         }
-        if (navigationOnly)
-            menu.SetSlot(3, 4, new() { ParentIndex = FixedRingMenu.SecondaryKey(0, 0),
-                Action = new() { Type = "Hotkey", Parameter = "", Name = "navigation only" } });
         menu.SetSlot(3, 1, new() { Action = Text("other root"), ParentIndex = FixedRingMenu.SecondaryKey(1, 0) });
         menu.SetSlot(3, 7, new() { Action = Text("fifth child"), ParentIndex = FixedRingMenu.SecondaryKey(0, 4) });
         menu.SetSlot(5, 10, new() { Action = Text("independent") });
         menu.SetSlot(5, 11, new() { Action = new() { Type = "Plugin", Name = "missing",
             PluginActionRef = new() { PluginId = "fixture.missing", ContributionId = "missing" } } });
+        if (configure != null)
+        {
+            menu = Layer.FixedRings = new FixedRingMenu { AlwaysVisible = persistent };
+            configure(menu);
+        }
         legacyExtent = (double)Host.GetType("WinPieGestures.LegacyRingGeometry")!
             .GetMethod("SecondaryExtent", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [ConfigManager.CurrentConfig, ConfigManager.CurrentConfig.WheelRadius, ConfigManager.CurrentConfig.InnerRadius])!;
-        outerScale = scale;
         Type geometryType = Host.GetType("WinPieGestures.FixedRingGeometry")!;
         var geometry = currentGeometry = ConfigManager.CurrentConfig.SubmenuStyle == "Fan"
             ? New(geometryType, 4, ConfigManager.CurrentConfig.WheelRadius, legacyExtent + 5 * scale, scale, true)
@@ -74,24 +76,19 @@ internal static partial class Program
         return session;
     }
 
-    static Point At(int level, int index, bool band = false)
+    static Point At(int level, int index) =>
+        Physical((Point)Call(currentGeometry, "GetCenter", level, index, Layer.FixedRings!.GetCount(level))!);
+
+    static Point JustOutside(int level, int index, double clearance)
     {
-        if (level < 3) throw new ArgumentOutOfRangeException(nameof(level));
         int count = Layer.FixedRings!.GetCount(level);
-        if (ConfigManager.CurrentConfig.SubmenuStyle == "Fan")
-        {
-            Point center = (Point)Call(currentGeometry, "GetCenter", level, index, count)!;
-            if (!band) return Physical(center);
-            var shape = (Geometry)Call(currentGeometry, "GetShape", level, index, count)!;
-            var ray = (Vector)center;
-            ray.Normalize();
-            Point edge = center;
-            while (shape.FillContains(edge + ray * .2)) edge += ray * .2;
-            return Physical(center + (edge - center) * .9);
-        }
-        double angle = 2 * Math.PI * index / count;
-        double r = legacyExtent + outerScale * (5 + 44 * (level - 3) + (band ? 36 : 19));
-        return new(Origin.X + r * Math.Cos(angle) * Dpi.DpiScaleX, Origin.Y + r * Math.Sin(angle) * Dpi.DpiScaleY);
+        var center = (Point)Call(currentGeometry, "GetCenter", level, index, count)!;
+        var shape = (Geometry)Call(currentGeometry, "GetShape", level, index, count)!;
+        var ray = (Vector)center;
+        ray.Normalize();
+        Point edge = center;
+        while (shape.FillContains(edge + ray * .1)) edge += ray * .1;
+        return Physical(edge + ray * (.15 + clearance));
     }
     static Point SecondaryPoint(int root = 0, int sub = 0, bool band = true)
     {
@@ -120,7 +117,11 @@ internal static partial class Program
         ray.Normalize();
         return Physical((Point)(ray * radius));
     }
-    static void PaintFrame(object session) => Call(session, "PublishFrame", Get(session, "Path"));
+    static void PaintFrame(object session) => Call(session, "PublishFrame", Get(session, "Visibility"));
+    static int VisibleDepth(object session) => (int)Get(session, "VisibleDepth")!;
+    static bool Visible(object session, int level, int index) =>
+        (bool)Call(Get(session, "Visibility")!, "Contains", level, index)!;
+    static object Address(int level, int index) => New(Nested("RingHit"), level, index);
 
     static object Hit(object session, Point point) => Call(session, "Hit", point)!;
     static (bool Valid, ActionItem? Action) Resolve(object session, object hit)
@@ -174,7 +175,7 @@ internal static partial class Program
             "_subHighlightBorderBrush", "_subTextColorBrush" })
             Field(wheel, brush, Brushes.Black);
         Call(wheel, "ShowFixedRings", session);
-        Call(wheel, "UpdateFixedRings", Get(session, "Path"), Get(session, "Hover"));
+        Call(wheel, "UpdateFixedRings", Get(session, "Visibility"), Get(session, "Hover"));
         const int size = 600;
         grid.Measure(new Size(size, size));
         grid.Arrange(new Rect(0, 0, size, size));
@@ -224,16 +225,31 @@ internal static partial class Program
         }
 
         config.IconLayoutMode = "TextOnly";
-        void Exercise(bool autoExpand, bool alwaysVisible, string style, bool direct)
+        bool OpensSecondaries(WheelProfile profile)
+        {
+            var window = RuntimeHelpers.GetUninitializedObject(typeof(RadialWindow));
+            Field(window, "_profile", profile);
+            Call(window, "EnableFixedGestureLayout");
+            return (bool)Get(window, "ExpandSecondariesOnPopup")!;
+        }
+
+        var legacy = new WheelProfile { ProcessName = "legacy-display.test", Layers = [new WheelLayer { MaxMenuDepth = 2 }] };
+        void Exercise(bool autoExpand, bool alwaysVisible, string style)
         {
             string label = $"{style}, global={autoExpand}, layer={alwaysVisible}";
             config.AutoExpandSubRingsOnPopup = autoExpand;
             config.SubmenuStyle = style;
-            bool secondaryShownAtStart = autoExpand && (style == "Wheel" || alwaysVisible);
-            var session = Session(alwaysVisible, shownParent: -1, allSecondary: secondaryShownAtStart);
+            var session = Session(alwaysVisible, shownParent: -1);
+            bool secondaryShownAtStart = OpensSecondaries(Profile);
+            Call(session, "SetShownSecondary", -1, secondaryShownAtStart);
+            Expect(secondaryShownAtStart == alwaysVisible, label + " layer determines secondary visibility on popup");
+            Expect(OpensSecondaries(legacy) == (style == "Wheel" && autoExpand), label + " two-level layout retains the legacy switch");
+            config.EnableMultiTier = false;
+            Expect(!OpensSecondaries(Profile) && !OpensSecondaries(legacy), label + " master switch disables both layouts");
+            config.EnableMultiTier = true;
 
             // Compare actual published hit addresses with the pixels of the product overlay.
-            // A blank/different-parent slice must be absent from both, even when it resolves to no action.
+            // Empty slots stay absent from both even when they have old parent metadata.
             void InspectSlots(string phase, params (int Level, int Slot)[] expected)
             {
                 var paint = PaintedSlots(session, SecondaryPoint());
@@ -254,7 +270,7 @@ internal static partial class Program
                 Expect(published.SetEquals(expected), $"{label} {phase} published slots", Describe(published));
             }
 
-            if (direct)
+            if (alwaysVisible)
             {
                 var paint = PaintedSlots(session);
                 var independent = Hit(session, At(5, 10));
@@ -271,46 +287,65 @@ internal static partial class Program
                     var configured = new[] { (0,0), (0,1), (0,2), (1,0) };
                     ExerciseFanPopupSecondaries(session, configured);
                 }
+                else
+                {
+                    double savedDistance = config.SubWheelTriggerDistance;
+                    bool savedLock = config.LockParentSectorOnSubmenu;
+                    config.SubWheelTriggerDistance = 260;
+                    config.LockParentSectorOnSubmenu = true;
+                    try
+                    {
+                        var controller = Harness(session);
+                        Call(controller, "TestProcessMove", SecondaryPoint(band: false));
+                        var tracker = (SubmenuLockTracker)Controller.GetField("_submenuLock", Members)!.GetValue(controller)!;
+                        Expect(tracker.LockedParentSector == 0 &&
+                            (int)Controller.GetField("_selectedSubSectorIndex", Members)!.GetValue(controller)! == 0,
+                            label + " a visible secondary remains selectable and locks below the progressive distance");
+                    }
+                    finally
+                    {
+                        config.SubWheelTriggerDistance = savedDistance;
+                        config.LockParentSectorOnSubmenu = savedLock;
+                    }
+                }
                 return;
             }
             InspectSlots("opening");
             if (style == "Fan") ExerciseFanPopupSecondaries(session, []);
             var outside = Harness(session);
+            if (style == "Wheel")
+            {
+                Call(outside, "TestProcessMove", Physical(new Point(52, 0)));
+                Expect(!(bool)Controller.GetField("_lastShowSubTier", Members)!.GetValue(outside)!,
+                    label + " step mode does not reach the secondary before its trigger distance");
+            }
             int previous = Recorded.Count;
             Call(outside, "TestCompleteMouseTriggerRelease", At(5, 10), "RightButton");
             Pump();
             Expect(Recorded.Count == previous, label + " unopened outer release cannot enqueue", $"queued {Recorded.Count - previous}");
 
-            // A second session navigates after the previous release terminated the first.
             session = Session(alwaysVisible, shownParent: -1, allSecondary: secondaryShownAtStart);
-            if (!secondaryShownAtStart)
-            {
-                Call(session, "AimSecondary", SecondaryPoint(), 0, 0);
-                Expect((int)Get(session, "ActiveLevel")! == 2, label + " unpresented secondary cannot expand");
-            }
-            Call(session, "SetShownSecondary", 0, secondaryShownAtStart);
-            Call(session, "AimSecondary", SecondaryPoint(), 0, 0);
+            Call(session, "Move", At(3, 4));
+            Expect(Visible(session, 3, 4) && !Visible(session, 3, 1),
+                label + " physical proximity reveals the local slot without selecting any secondary");
+            Expect(Resolve(session, Hit(session, At(3, 4))).Action == null,
+                label + " nearby slot may not execute before the visible frame");
             PaintFrame(session);
-            InspectSlots("after secondary 0/0", (3, 4));
             Expect(Resolve(session, Hit(session, At(3, 4))).Action?.Name == "tier-3" &&
-                Resolve(session, Hit(session, At(3, 1))).Action == null &&
-                Resolve(session, Hit(session, At(3, 0))).Action == null &&
-                Resolve(session, Hit(session, At(5, 10))).Action == null, label + " only the linked child resolves");
+                Resolve(session, Hit(session, At(3, 1))).Action == null,
+                label + " the painted local slot resolves without admitting the remote one");
         }
 
-        Exercise(false, true, "Wheel", direct: false);
-        Exercise(true, true, "Wheel", direct: true);
-        Exercise(true, false, "Wheel", direct: false);
-        Exercise(false, false, "Fan", direct: false);
-        Exercise(false, true, "Fan", direct: false);
-        Exercise(true, false, "Fan", direct: false);
-        Exercise(true, true, "Fan", direct: true);
+        foreach (string style in new[] { "Wheel", "Fan" })
+            foreach (bool autoExpand in new[] { false, true })
+                foreach (bool alwaysVisible in new[] { false, true })
+                    Exercise(autoExpand, alwaysVisible, style);
         if (failures.Count == 0) return true;
         Console.Error.WriteLine($"{failures.Count} expansion behavior checks failed");
         return false;
     }
 
-    static void DistanceMatrix(AppConfig config)
+    static void ProximityMatrix(AppConfig config)
     {
         config.AutoExpandSubRingsOnPopup = false;
         config.LockParentSectorOnSubmenu = true;
@@ -322,60 +357,94 @@ internal static partial class Program
             var session = Session(false, shownParent: -1, scale: .48);
             var controller = Harness(session);
             void Move(Point pt) => Call(controller, "TestProcessMove", pt);
-            int Level() => (int)Get(session, "ActiveLevel")!;
             bool Selected(string field) => (bool)Controller.GetField(field, Members)!.GetValue(controller)!;
-            var original = SecondaryPoint(band: false);
             var primary = Physical(style == "Fan" ? (Point)Call(currentGeometry, "GetCenter", 1, 0, 4)! : new Point(52, 0));
             Move(primary);
             Move(Along(primary, 259));
-            Check(!Selected("_lastShowSubTier") && Level() == 2, style + " hidden secondary waits for the original primary distance");
+            Check(!Selected("_lastShowSubTier"), style + " hidden secondary waits for the original primary distance");
             Move(Along(primary, 261));
-            Check(Selected("_lastShowSubTier") && !Selected("_lastEscapedState") && Level() == 2,
-                style + " high primary distance requests the actual secondary even beyond the small wheel");
-            // Mirrors RadialWindow publishing the original secondary after its HighlightSector call.
+            Check(Selected("_lastShowSubTier") && !Selected("_lastEscapedState"),
+                style + " the original distance still opens a secondary beyond a compressed wheel");
+            // Mimic the existing layer-two renderer publishing its shown parent.
             Call(session, "SetShownSecondary", 0, false);
-            Move(original);
-            Check(Level() == 2 && Selected("_lastShowSubTier") &&
+            var secondary = SecondaryPoint(band: false);
+            Move(secondary);
+            Check(Selected("_lastShowSubTier") &&
                 (int)Controller.GetField("_selectedSubSectorIndex", Members)!.GetValue(controller)! == 0,
-                style + " moving back to the shown secondary keeps its original owner and hit");
-            for (int parent = 2; parent <= 4; parent++)
-            {
-                var start = parent == 2 ? original : At(parent, parent + 1);
-                var geometry = session.GetType().GetField("Geometry", Members)!.GetValue(session)!;
-                double mid = ((double)Call(geometry, "Inner", parent + 1)! + (double)Call(geometry, "OuterForCount", parent + 1, Layer.FixedRings!.GetCount(parent + 1))!) / 2;
-                Move(start);
-                Move(Along(start, mid - .4));
-                Check(Level() == parent, style + " maximum distance waits past level " + parent + " outer contour");
-                Move(Along(start, mid + .1));
-                Check(Level() == parent + 1 && !Selected("_lastEscapedState"), style + " level " + (parent + 1) +
-                    " is reachable on a compressed outer layout at nonuniform DPI");
-                PaintedSlots(session);
-            }
-            int n = Recorded.Count;
-            Move(At(5, 6));
-            Call(controller, "TestCompleteMouseTriggerRelease", At(5, 6), "RightButton");
-            Pump();
-            Check(Recorded.Count == n + 1 && Recorded[^1].Name == "tier-5",
-                style + " directional changes after crossing each parent reach the real linked level-five action");
+                style + " moving back to the rendered secondary keeps its own hit");
 
-            session = Session(false, shownParent: 0, scale: .48);
-            var secondary = SecondaryPoint();
-            var layout = session.GetType().GetField("Geometry", Members)!.GetValue(session)!;
-            double thirdMiddle = ((double)Call(layout, "Inner", 3)! + (double)Call(layout, "OuterForCount", 3, Layer.FixedRings!.GetCount(3))!) / 2;
-            Call(session, "Move", Along(secondary, thirdMiddle + 1));
-            Check(Level() == 2, style + " an outer angular projection alone cannot arm a secondary");
-            Call(session, "Move", secondary);
-            Call(session, "AimSecondary", secondary, 0, 0);
-            var differentDirection = Physical(new Point(-thirdMiddle, 0));
-            Call(session, "Move", differentDirection);
-            Call(session, "Move", Along(secondary, thirdMiddle + 1));
-            Check(Level() == 2, style + " leaving the owning ray cancels an armed crossing");
-            Call(session, "Move", secondary);
-            Call(session, "AimSecondary", secondary, 0, 0);
-            Call(session, "Move", Along(secondary, thirdMiddle - 1));
-            Call(session, "Move", Along(secondary, thirdMiddle - 2));
-            Call(session, "Move", Along(secondary, thirdMiddle + 1));
-            Check(Level() == 2, style + " inward reversal outside the parent cancels an armed crossing");
+            int thirdCount = FixedRingMenu.RecommendedCount(3), fifthCount = FixedRingMenu.RecommendedCount(5);
+            void ConfigureSparse(FixedRingMenu menu)
+            {
+                // The two valid actions intentionally reference nonexistent or unrelated historical parents.
+                menu.SetSlot(3, 0, new() { ParentIndex = FixedRingMenu.SecondaryKey(3, 4), Action = Text("near east") });
+                menu.SetSlot(3, thirdCount / 2, new() { ParentIndex = -93, Action = Text("near west") });
+                menu.SetSlot(4, 0, new() { ParentIndex = 0, Action = new() { Name = "unconfigured", Type = "Text" } });
+                menu.SetSlot(5, 0, new() { ParentIndex = 918, Action = Text("sparse fifth") });
+            }
+
+            session = Session(false, shownParent: -1, configure: ConfigureSparse);
+            Check(VisibleDepth(session) == 2 && !Visible(session, 3, 0),
+                style + " progressive opens without an outer tier");
+            var east = At(3, 0);
+            var west = At(3, thirdCount / 2);
+            var near = JustOutside(3, 0, 2);
+            var eastAddress = Address(3, 0);
+            Call(session, "Move", near);
+            Check(Visible(session, 3, 0) && !Visible(session, 3, thirdCount / 2) &&
+                !Visible(session, 4, 0) && (int)Get(Hit(session, near), "Level")! < 3,
+                style + " an outside-edge point reveals a nearby configured cell and does not hit it");
+            Check(!(bool)Call(session, "WasVisible", eastAddress)! && Resolve(session, eastAddress).Action == null,
+                style + " proximity and presentation are distinct");
+            Call(session, "Move", east);
+            Check(Visible(session, 3, 0) && !Visible(session, 5, 0) && VisibleDepth(session) == 3,
+                style + " exact third position does not reveal the distant fifth cell");
+            Check(PaintedSlots(session).SetEquals([(3, 0)]), style + " only the local configured cell is painted");
+            Check((bool)Call(session, "WasVisible", eastAddress)! &&
+                Resolve(session, Hit(session, east)).Action?.Name == "near east" && Resolve(session, Hit(session, near)).Action == null,
+                style + " after painting, the cell resolves at the exact contour only");
+            Check(!Visible(session, 5, fifthCount / 2), style + " a vacant fifth position cannot be revealed");
+
+            Call(session, "Move", west);
+            Check(Visible(session, 3, thirdCount / 2) && !Visible(session, 3, 0) &&
+                Resolve(session, eastAddress).Action == null,
+                style + " lateral movement replaces the prior local group and its old actionable frame");
+            PaintFrame(session);
+            Check(Resolve(session, Hit(session, west)).Action?.Name == "near west",
+                style + " local west cell resolves after its own frame");
+            var fifth = At(5, 0);
+            Call(session, "Move", fifth);
+            var fifthAddress = Address(5, 0);
+            Check(VisibleDepth(session) == 5 && Visible(session, 5, 0) && !Visible(session, 4, 0) &&
+                !(bool)Call(session, "WasVisible", fifthAddress)! && Resolve(session, fifthAddress).Action == null,
+                style + " empty fourth tier does not obstruct nearby fifth-tier visibility");
+            PaintFrame(session);
+            Check(Resolve(session, Hit(session, fifth)).Action?.Name == "sparse fifth",
+                style + " sparse fifth resolves regardless of obsolete parent");
+            Call(session, "Move", Origin);
+            Check(VisibleDepth(session) == 2 && !(bool)Get(session, "ControlsOuter")! &&
+                Resolve(session, fifthAddress).Action == null, style + " retreat hides outer actions before the next paint");
+
+            session = Session(false, shownParent: -1, configure: ConfigureSparse);
+            controller = Harness(session);
+            Move(fifth);
+            int n = Recorded.Count;
+            Call(controller, "TestCompleteMouseTriggerRelease", fifth, "RightButton");
+            Pump();
+            Check(Recorded.Count == n, style + " fast release cannot execute a still-unpublished outer cell");
+            session = Session(false, shownParent: -1, configure: ConfigureSparse);
+            controller = Harness(session);
+            Move(fifth);
+            PaintFrame(session);
+            Call(controller, "TestCompleteMouseTriggerRelease", fifth, "RightButton");
+            Pump();
+            Check(Recorded.Count == n + 1 && Recorded[^1].Name == "sparse fifth",
+                style + " exact painted sparse fifth cell dispatches once");
+
+            session = Session(true, configure: ConfigureSparse);
+            Check(PaintedSlots(session).SetEquals([(3, 0), (3, thirdCount / 2), (5, 0)]) &&
+                Resolve(session, Hit(session, At(5, 0))).Action?.Name == "sparse fifth",
+                style + " persistent mode paints all configured leaves even across empty tiers");
         }
         config.SubmenuStyle = "Wheel";
         config.SubWheelOuterRadius = 196;
@@ -398,24 +467,6 @@ internal static partial class Program
             (int)Controller.GetField("_selectedSectorIndex", Members)!.GetValue(pinnedController)! == 0,
             "pinned hover crosses original primary distance in space occupied by an unshown secondary");
         config.SubWheelOuterRadius = 116;
-        // Sample the upper half between the parent outline and the *fitted* next-ring middle.
-        config.SubWheelTriggerDistance = 166; // halfway between the original radius 72 and slider maximum 260
-        var medium = Session(false, scale: .48);
-        var sample = SecondaryPoint();
-        Call(medium, "AimSecondary", sample, 0, 0);
-        double projected = 116 + .5 * (legacyExtent + .48 * (5 + 19.5) - 116);
-        Call(medium, "Move", Along(sample, projected - 1));
-        Check((int)Get(medium, "ActiveLevel")! == 2, "intermediate high distance waits for its interpolated threshold");
-        Call(medium, "Move", Along(sample, projected + 1));
-        Check((int)Get(medium, "ActiveLevel")! == 3, "intermediate high distance opens before the next ring midpoint");
-        config.WheelRadius = 290;
-        config.SubWheelOuterRadius = 375;
-        config.SubWheelTriggerDistance = 260;
-        var imported = Session(false);
-        Call(imported, "AimSecondary", SecondaryPoint(band: false), 0, 0);
-        Check((int)Get(imported, "ActiveLevel")! == 2, "imported primary larger than the slider range waits inside the secondary");
-        Call(imported, "AimSecondary", SecondaryPoint(), 0, 0);
-        Check((int)Get(imported, "ActiveLevel")! == 3, "imported primary larger than maximum uses the finite within-parent threshold");
         config.WheelRadius = 72;
         config.SubWheelOuterRadius = 116;
         config.EnableOuterEscapeCancel = false;
@@ -446,7 +497,8 @@ internal static partial class Program
         PaintedSlots(shown);
         Call(hand, "TestCompleteMouseTriggerRelease", third, "RightButton");
         Pump();
-        Check(Recorded.Count == before + 2 && Recorded[^1].Name == "tier-3", "expanded outer parent keeps its own release action");
+        Check(Recorded.Count == before + 2 && Recorded[^1].Name == "tier-3",
+            "fixed outer cells keep their own release action beside ordinary secondaries");
     }
 
     [STAThread]
@@ -470,15 +522,6 @@ internal static partial class Program
 
         CheckFanGeometry(config);
         CheckClassicGestureVisibility(config);
-        // The original 2101 DLL required dwell at a narrow edge even at the minimum global distance.
-        double priorDistance = config.SubWheelTriggerDistance;
-        config.SubWheelTriggerDistance = 30;
-        var immediate = Session(false);
-        var immediateController = Harness(immediate);
-        Call(immediateController, "TestProcessMove", SecondaryPoint(band: false));
-        Check((int)Get(immediate, "ActiveLevel")! == 3, "global minimum opens a real secondary immediately, before a dispatcher tick");
-        config.SubWheelTriggerDistance = priorDistance;
-
         // Exercise only the layout cache fields; the Window constructor and native handles are never invoked.
         var windowFields = RuntimeHelpers.GetUninitializedObject(typeof(RadialWindow));
         var fit = Call(windowFields, "FitFixedGeometry", 4, 133d, 145d, 5, 230d, 9L)!;
@@ -496,19 +539,19 @@ internal static partial class Program
         var linked = Hit(session, At(5, 6));
         Check(Resolve(session, independent).Action?.Name == "independent" && Resolve(session, linked).Action?.Name == "tier-5",
             "persistent rings directly select independent and linked outer slots");
-        Check(((ValueTuple<int, int>)Call(session, "Target", linked)!) == (0, 0) &&
-            ((ValueTuple<int, int>)Call(session, "Target", independent)!) == (-2, -1), "SDK projection follows ancestry and omits orphan addresses");
         Check(Resolve(session, New(Nested("RingHit"), 0, -1)).Action?.Name == "center", "center binding stays independent");
         Check(Resolve(session, Hit(session, At(5, 9))).Action == null &&
             Resolve(session, Hit(session, At(5, 11))).Action == null, "empty and missing plugin slots cannot execute");
         var originalChild = Layer.Actions[0].SubActions[0];
         Layer.Actions[0].SubActions.RemoveAt(0);
-        Check(!Resolve(session, linked).Valid && Resolve(session, independent).Action?.Name == "independent",
-            "deleting a legacy secondary owner invalidates its visible linked target and preserves independent access");
+        Check(Resolve(session, linked).Action?.Name == "tier-5" && Resolve(session, independent).Action?.Name == "independent",
+            "deleting a previously linked secondary does not change a fixed action");
         Layer.Actions[0].SubActions.Insert(0, originalChild);
         (Layer.Actions[0].SubActions[0], Layer.Actions[0].SubActions[1]) =
             (Layer.Actions[0].SubActions[1], Layer.Actions[0].SubActions[0]);
-        Check(!Resolve(session, linked).Valid, "reordering two legacy secondary owners invalidates the visible linked target");
+        Check(Resolve(session, linked).Action?.Name == "tier-5" &&
+            !Resolve(session, Address(2, FixedRingMenu.SecondaryKey(0, 0))).Valid,
+            "reordering legacy secondaries invalidates their own snapshot while fixed actions stay independent");
         (Layer.Actions[0].SubActions[0], Layer.Actions[0].SubActions[1]) =
             (Layer.Actions[0].SubActions[1], Layer.Actions[0].SubActions[0]);
         var saved = Layer.FixedRings!.GetSlot(5, 10)!;
@@ -516,7 +559,7 @@ internal static partial class Program
         Check(!Resolve(session, independent).Valid, "in-place action mutation invalidates recorded selection");
         saved.Action.Parameter = "independent";
         saved.ParentIndex = 1;
-        Check(!Resolve(session, independent).Valid, "parent reassignment invalidates recorded selection");
+        Check(Resolve(session, independent).Action?.Name == "independent", "historic parent metadata cannot invalidate a fixed action");
         saved.ParentIndex = null;
         Layer.FixedRings.SetCount(5, 8);
         Check(!Resolve(session, independent).Valid, "shrinking count blocks previously visible slot");
@@ -533,38 +576,12 @@ internal static partial class Program
         Profile.ActiveLayerIndex = 0;
 
         session = Session(false);
-        Check(Resolve(session, Hit(session, At(5, 10))).Action == null, "unopened outer ring cannot execute");
-        Point band = SecondaryPoint();
-        Call(session, "AimSecondary", SecondaryPoint(band: false), 0, 0);
-        Pump(175);
-        Check((int)Get(session, "ActiveLevel")! == 2, "stationary pointer below the global distance does not expand");
-        Call(session, "Move", Origin);
-        Call(session, "AimSecondary", band, 0, 0);
-        Check((int)Get(session, "ActiveLevel")! == 3, "secondary reaches level three on the same move, ignoring saved dwell and band");
-        Check(Resolve(session, Hit(session, At(3, 1))).Action == null &&
-            Resolve(session, Hit(session, At(3, 4))).Action?.Name == "tier-3", "fixed third ring belongs to the actual legacy root and child");
-        for (int level = 3; level < 5; level++)
-        {
-            var parent = At(level, level + 1, true);
-            Call(session, "Move", parent);
-            Check((int)Get(session, "ActiveLevel")! == level, "unpainted parent cannot open level " + (level + 1));
-            PaintedSlots(session);
-            Call(session, "Move", parent);
-            Check((int)Get(session, "ActiveLevel")! == level + 1, "painted parent opens level " + (level + 1) + " without delay");
-        }
-        Check(Resolve(session, Hit(session, At(5, 6))).Action?.Name == "tier-5" &&
-            Resolve(session, Hit(session, At(5, 10))).Action == null, "full progressive path reaches level five, excludes independent slots");
-        Call(session, "Move", Origin);
-        Check((int)Get(session, "ActiveLevel")! == 2, "inward retreat clears fixed descendants, restores the original wheel");
-        Call(session, "AimSecondary", SecondaryPoint(0, 4), 0, 4);
-        Check(Resolve(session, Hit(session, At(3, 7))).Action?.Name == "fifth child", "old Wheel menus with five children keep distinct secondary ownership");
-
-        session = Session(false);
         var controller = Harness(session);
-        Call(controller, "TestProcessMove", SecondaryPoint());
-        Check((int)Get(session, "ActiveLevel")! == 3, "controller opens the legacy Wheel child immediately");
+        var third = At(3, 4);
+        Call(controller, "TestProcessMove", third);
+        Check(Visible(session, 3, 4), "controller reveals the fixed cell after direct pointer movement");
         PaintedSlots(session);
-        Call(controller, "TestCompleteMouseTriggerRelease", At(3, 4), "RightButton");
+        Call(controller, "TestCompleteMouseTriggerRelease", third, "RightButton");
         Pump();
         Check(Recorded.Count == 1 && Recorded[0].Name == "tier-3", "mouse release reaches the substituted enqueue entry once");
         session = Session(true);
@@ -577,7 +594,7 @@ internal static partial class Program
 
         session = Session(true);
         controller = Harness(session);
-        object start = New(Nested("FixedPress"), session, Get(session, "Path"), Hit(session, At(5, 10)));
+        object start = New(Nested("FixedPress"), session, Hit(session, At(5, 10)));
         Call(controller, "ConfirmFixedSelection", At(5, 6), start);
         Pump();
         Check(Recorded.Count == 2, "pinned down and up on different slots cannot confirm");
@@ -595,7 +612,8 @@ internal static partial class Program
         Pump(8);
         Call(controller, "ResetDeepNavigation", true);
         Pump(70);
-        Check((int)Get(session, "ActiveLevel")! == 2, "clearing a gesture discards an armed parent below threshold");
+        Check(Controller.GetField("_fixedSession", Members)!.GetValue(controller) == null,
+            "clearing a gesture discards its fixed visibility session");
         session = Session(false);
         controller = Harness(session);
         Call(controller, "TestProcessMove", SecondaryPoint());
@@ -608,6 +626,7 @@ internal static partial class Program
         session = Session(false);
         controller = Harness(session);
         Call(controller, "TestProcessMove", SecondaryPoint());
+        Call(controller, "TestProcessMove", At(3, 4));
         // Keep the Render callback queued while releasing in the new ring.
         Call(controller, "TestCompleteMouseTriggerRelease", At(3, 4), "RightButton");
         Pump();
@@ -619,11 +638,11 @@ internal static partial class Program
         Call(controller, "TestProcessMove", SecondaryPoint());
         Pump(95);
         var tracker = (SubmenuLockTracker)Controller.GetField("_submenuLock", Members)!.GetValue(controller)!;
-        Check(tracker.LockedParentSector == 0 && (int)Get(session, "ActiveLevel")! == 3,
-            "Fan uses its original petal hit and parent lock to open the linked third ring");
+        Check(tracker.LockedParentSector == 0,
+            "Fan keeps its original petal hit and parent lock in the secondary ring");
         Call(controller, "TestProcessMove", Origin);
         Pump();
-        Check(!tracker.IsLocked && (int)Get(session, "ActiveLevel")! == 2, "return through Fan releases the original parent lock");
+        Check(!tracker.IsLocked && VisibleDepth(session) == 2, "return through Fan releases the original parent lock");
         Call(controller, "TestCompleteMouseTriggerRelease", Origin, "RightButton");
         Pump();
         Check(Recorded.Count == 5 && Recorded[^1].Name == "center", "legacy center action remains available after retreat");
@@ -643,7 +662,7 @@ internal static partial class Program
         Check(Recorded.Count == 7 && Recorded[^1].Name == "south", "legacy first ring retains its own action");
         session = Session(false);
         controller = Harness(session);
-        Call(controller, "TestProcessMove", SecondaryPoint());
+        Call(controller, "TestProcessMove", At(3, 4));
         long first = (long)Call(controller, "BeginFixedLayerSwitch", Profile, 1)!;
         long second = (long)Call(controller, "BeginFixedLayerSwitch", Profile, 0)!;
         long latest = (long)Call(controller, "BeginFixedLayerSwitch", Profile, 1)!;
@@ -657,38 +676,36 @@ internal static partial class Program
         Field(controller, "_radialWindow", null!);
         Pump(80);
         Check((bool)Controller.GetField("_isGestureActive", Members)!.GetValue(controller)! &&
-            (int)Get(session, "ActiveLevel")! == 3, "an obsolete render cannot cancel a pending layer switch");
+            Visible(session, 3, 4), "an obsolete render cannot cancel a pending layer switch");
         Call(controller, "TestCompleteMouseTriggerRelease", At(3, 4), "RightButton");
         Pump();
         Check(Recorded.Count == 7, "release between layer selection and redisplay cannot execute an old target");
         Profile.ActiveLayerIndex = 0;
-        session = Session(false, navigationOnly: true);
+        session = Session(false, configure: menu =>
+        {
+            menu.SetSlot(3, 4, new() { Action = new() { Name = "navigation only", Type = "Hotkey" } });
+            menu.SetSlot(4, 5, new() { ParentIndex = 4, Action = Text("former child") });
+        });
         controller = Harness(session);
-        Call(session, "SetShownSecondary", 1, false);
-        Call(session, "AimSecondary", SecondaryPoint(), 0, 0);
-        Check((int)Get(session, "ActiveLevel")! == 2, "an undisplayed legacy secondary cannot wake its third ring");
-        Call(session, "SetShownSecondary", 0, false);
-        Call(session, "AimSecondary", SecondaryPoint(), 0, 0);
+        var blank = At(3, 4);
+        Call(session, "Move", blank);
         PaintFrame(session);
-        var nav = Hit(session, At(3, 4));
-        var down = New(Nested("FixedPress"), session, Get(session, "Path"), nav);
-        Call(controller, "ConfirmFixedSelection", At(3, 4), down);
+        Check(!Visible(session, 3, 4) && Resolve(session, Hit(session, blank)).Action == null,
+            "formerly navigation-only slot remains absent when it has no configured action");
+        var next = At(4, 5);
+        Call(session, "Move", next);
+        PaintFrame(session);
+        var down = New(Nested("FixedPress"), session, Hit(session, next));
+        Call(controller, "ConfirmFixedSelection", next, down);
         Pump();
-        Check((int)Get(session, "ActiveLevel")! == 4 && Recorded.Count == 7,
-            "pinned click on navigation-only outer parent opens its children without dispatch");
-        PaintedSlots(session);
-        var leaf = Hit(session, At(4, 5));
-        down = New(Nested("FixedPress"), session, Get(session, "Path"), leaf);
-        Call(controller, "ConfirmFixedSelection", At(4, 5), down);
-        Pump();
-        Check(Recorded.Count == 8 && Recorded[^1].Name == "tier-4",
-            "pinned leaf confirmation follows the current visible parent");
+        Check(Recorded.Count == 8 && Recorded[^1].Name == "former child",
+            "pinned confirmation dispatches the painted cell directly, without clicking an ancestor");
         if (!ExpansionMatrix(config))
         {
             Environment.ExitCode = 1;
             return;
         }
-        DistanceMatrix(config);
+        ProximityMatrix(config);
         CheckOverlappingFanPetals();
         Console.WriteLine(checks + " fixed-ring runtime checks");
     }

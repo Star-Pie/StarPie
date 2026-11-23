@@ -94,6 +94,8 @@ public partial class SettingsWindow
 	private void EditMenuBranch(int slot, int child)
 	{
 		if (GetSelectedProfile() is not { } profile || (uint)slot >= (uint)profile.Actions.Count) return;
+		var primary = profile.Actions[slot];
+		if (primary.IsWheelPortal || (child >= 0 && (uint)child < (uint)primary.SubActions.Count && primary.SubActions[child].IsWheelPortal)) return;
 		MappingsViewModeCanvasRadio.IsChecked = true;
 		if (child >= 0)
 		{

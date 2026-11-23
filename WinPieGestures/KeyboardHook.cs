@@ -219,6 +219,8 @@ public class KeyboardHook : IDisposable
 
 	public event EventHandler<GlobalKeyEventArgs>? OnKeyUp;
 	internal event Func<uint, bool, bool>? PinnedReleaseDrain;
+	internal event Func<uint, ModifierKeys, bool>? PinnedArrowPressed;
+	private readonly PinnedArrowKeys _pinnedArrowKeys = new();
 	internal bool TryDrainPinnedRelease(uint key, bool down) => PinnedReleaseDrain?.Invoke(key, down) == true;
 
 	public event EventHandler<GlobalKeyEventArgs>? OnRawKeyEvent;
@@ -367,6 +369,7 @@ public class KeyboardHook : IDisposable
 			{
 				throw new InvalidOperationException("SetWindowsHookEx returned a null keyboard hook handle.");
 			}
+			_pinnedArrowKeys.Initialize(static key => (GetAsyncKeyState((int)key) & 0x8000) != 0);
 			lock (_lifecycleSync)
 			{
 				_hookId = hookId;
@@ -457,13 +460,16 @@ public class KeyboardHook : IDisposable
 
 			int num = (int)wParam;
 			uint vkCode = kbd.vkCode;
+			bool isDown = num is WM_KEYDOWN or WM_SYSKEYDOWN;
+			bool isUp = num is WM_KEYUP or WM_SYSKEYUP;
+			bool physical = (kbd.flags & 0x10) == 0;
+			var arrowState = physical && (isDown || isUp)
+				? _pinnedArrowKeys.Observe(vkCode, kbd.scanCode, kbd.flags, isDown) : PinnedArrowKeyEvent.Native;
+			if (arrowState == PinnedArrowKeyEvent.Owned) return 1;
 			ModifierKeys currentModifiers = GetCurrentModifiers();
 
 			if (SuppressGlobalHotkeysForRecording)
 			{
-				bool isDown = (num == WM_KEYDOWN || num == WM_SYSKEYDOWN);
-				bool isUp = (num == WM_KEYUP || num == WM_SYSKEYUP);
-
 				if (_isDrainingModifiers)
 				{
 					// 录制完成排空阶段：持续吞没按键松开事件，直到用户释放所有物理按键
@@ -554,13 +560,20 @@ public class KeyboardHook : IDisposable
 				}
 			}
 
-			if ((kbd.flags & 0x10) == 0 && ActionPanelManager.HandleKey(vkCode, currentModifiers, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;
-			if (Plugins.InputPanelCoordinator.HandleEscape(vkCode, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;
+			if (physical && ActionPanelManager.HandleKey(vkCode, currentModifiers, isDown)) return 1;
+			if (Plugins.InputPanelCoordinator.HandleEscape(vkCode, isDown)) return 1;
 
 			if (IsPaused)
 			{
-				if (TryDrainPinnedRelease(vkCode, num == WM_KEYDOWN || num == WM_SYSKEYDOWN)) return 1;
+				if (TryDrainPinnedRelease(vkCode, isDown)) return 1;
 				return CallNextHookEx(_hookId, nCode, wParam, lParam);
+			}
+
+			if (physical && isDown && arrowState == PinnedArrowKeyEvent.Native &&
+				PinnedArrowPressed?.Invoke(vkCode, currentModifiers) == true)
+			{
+				_pinnedArrowKeys.Own(vkCode, kbd.scanCode, kbd.flags);
+				return 1;
 			}
 
 			if (KeyboardRemapController.Current.TryProcessHookEvent(vkCode, (int)num, kbd.flags, kbd.time))

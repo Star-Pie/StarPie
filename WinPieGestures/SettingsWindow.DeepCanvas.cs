@@ -23,6 +23,8 @@ public partial class SettingsWindow
 
 	private void OpenLegacyCanvasBranch(int slot, int index)
 	{
+        var current = GetSelectedProfile();
+        if (current == null || GetCanvasNode(GetCanvasRoot(current, slot), [slot, index])?.IsWheelPortal == true) return;
         ShowStudioActionInspector();
 		SelectSubAction(slot, index);
 		var profile = GetSelectedProfile();
@@ -90,7 +92,7 @@ public partial class SettingsWindow
 		int valid = 1;
 		for (; valid < path.Length && valid < depth - 1; valid++)
 		{
-			if (node?.SubActions is not { } children ||
+			if (node?.InlineSubActions is not { } children ||
 				(uint)path[valid] >= (uint)DeepMenuFrame.VisibleSlotCount(children.Count, fan)) break;
 			node = children[path[valid]];
 		}
@@ -107,7 +109,7 @@ public partial class SettingsWindow
 			_deepCanvasParent = path = path[..valid];
 			_deepCanvasChild = null;
 		}
-		int count = DeepMenuFrame.VisibleSlotCount(node.SubActions?.Count ?? 0, fan);
+		int count = DeepMenuFrame.VisibleSlotCount(node.InlineSubActions?.Count ?? 0, fan);
 		if (_deepCanvasChild is int oldIndex && (uint)oldIndex >= (uint)count) _deepCanvasChild = null;
 		int[] selection = _deepCanvasChild is int child ? [..path, child] : path;
 		var selected = _deepCanvasChild is int index ? node.SubActions![index] : node;
@@ -122,7 +124,7 @@ public partial class SettingsWindow
 		DeepCanvasTitle.Text = I18n.TF("CanvasEditLevel", selection.Length, selected.Name);
 		MappingsCurrentEditIndicator.Text = DeepCanvasTitle.Text;
 		DeepEnter.Content = I18n.T("MenuEditBranch");
-		DeepEnter.Visibility = _deepCanvasChild.HasValue && selection.Length < depth ? Visibility.Visible : Visibility.Collapsed;
+		DeepEnter.Visibility = _deepCanvasChild.HasValue && selection.Length < depth && !selected.IsWheelPortal ? Visibility.Visible : Visibility.Collapsed;
 		var siblings = GetCanvasNode(root, selection[..^1])!.SubActions;
 		DeepEarlier.Content = I18n.T("MoveSubActionUp");
 		DeepLater.Content = I18n.T("MoveSubActionDown");
@@ -150,7 +152,8 @@ public partial class SettingsWindow
 			_deepBoundNode = selected;
 			_deepBoundInherited = inherited;
 			int version = ++_deepBindingVersion;
-			DeepCanvasEditor.BindAction(selected, edited => ApplyCanvasEdit(profile, selection, version, edited));
+			DeepCanvasEditor.BindAction(selected, edited => ApplyCanvasEdit(profile, selection, version, edited),
+				portalContext: CreatePortalEditorContext(profile));
 		}
 		DrawDeepCanvasBranch(profile, path, node, _deepCanvasChild);
 		return true;
@@ -204,6 +207,7 @@ public partial class SettingsWindow
 	{
 		if (_deepCanvasParent is not { } path || _deepCanvasChild is not int child ||
 			path.Length + 1 >= _deepCanvasLayer!.EffectiveMaxMenuDepth) return;
+		if (_deepCanvasProfile != null && GetCanvasNode(GetCanvasRoot(_deepCanvasProfile, path[0]), [..path, child])?.IsWheelPortal == true) return;
 		_deepCanvasParent = [..path, child];
 		_deepCanvasChild = null;
 		RenderMappingsWheelPreview();
@@ -241,7 +245,7 @@ public partial class SettingsWindow
 		if (!HasDeepCanvasContext(profile) || _deepCanvasParent is not { } path ||
 			path.Length >= _deepCanvasLayer!.EffectiveMaxMenuDepth) return;
 		var parent = GetCanvasNode(GetCanvasRoot(profile!, path[0]), path);
-		if (parent == null || (parent.SubActions?.Count ?? 0) >= (ConfigManager.CurrentConfig.SubmenuStyle == "Fan" ? 3 : 4)) return;
+		if (parent == null || parent.IsWheelPortal || (parent.InlineSubActions?.Count ?? 0) >= (ConfigManager.CurrentConfig.SubmenuStyle == "Fan" ? 3 : 4)) return;
 		var before = CaptureSectorSnapshot(profile!, path[0]);
 		parent = GetCanvasNode(EnsureLocalPrimaryActionForEdit(profile!, path[0]), path)!;
 		parent.SubActions ??= new();

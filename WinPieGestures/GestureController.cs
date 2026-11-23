@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -312,11 +312,13 @@ public partial class GestureController : IDisposable
 			_keyboardHook.OnKeyDown += KeyboardHook_OnKeyDown;
 			_keyboardHook.OnKeyUp += KeyboardHook_OnKeyUp;
 			_keyboardHook.PinnedReleaseDrain += DrainPinnedKey;
+			_keyboardHook.PinnedArrowPressed += QueuePinnedArrow;
 		}
 	}
 
 	private long BeginGestureTracking()
 	{
+		RequestPortalStop();
 		EndPinnedTracking();
 		_pinState.Begin(ConfigManager.CurrentConfig.PinWheelAfterTrigger);
 		_keyboardMatchingTarget = null;
@@ -378,6 +380,7 @@ public partial class GestureController : IDisposable
 	}
 	private void CancelGestureTracking(string reason = "Interrupted")
 	{
+		RequestPortalStop();
 		CancelLongPressTimer();
 		// Keep the intercepted Down's release ownership after visibility/session
 		// state is cleared. Raw input drains it even while the host is paused.
@@ -424,8 +427,9 @@ public partial class GestureController : IDisposable
 			bool isSubmenuLocked = _submenuLock.IsLocked || _suppressPrimaryOnRelease;
 			_submenuLock.Reset();
 			_suppressPrimaryOnRelease = false;
-			WheelProfile? endingProfile = _activeActivation?.Profile ?? _activeProfile;
+			WheelProfile? endingProfile = _portalDepth > 1 ? _activeProfile : _activeActivation?.Profile ?? _activeProfile;
 			var result = (_selectedSectorIndex, _selectedSubSectorIndex, endingProfile, _radialWindow, _lastEscapedState, presentationVersion, _interactionSession, isSubmenuLocked, CaptureReleaseLayer(endingProfile), deep);
+			RequestPortalStop();
 			_activeActivation = null;
 			_activeTrigger = null;
 			_interactionSession = null;
@@ -615,6 +619,7 @@ public partial class GestureController : IDisposable
 
 	private void EnqueueGestureAction(ActionItem targetAction, ActionExecutionContext? context, Point? triggerPoint)
 	{
+		if (targetAction.IsWheelPortal) return;
 		// A queued panel must never rebind to whichever application happens to be foreground later.
 		if (targetAction.Type == "ActionPanel" && (context == null || context.TargetHwnd == 0 || context.TargetProcessId == 0)) return;
 		if (TestActionEnqueuedWithContext != null)
@@ -750,7 +755,7 @@ public partial class GestureController : IDisposable
 			return false;
 		}
 		// 若该动作配置了二级级联子动作，首要用途为展开二级轮盘，绝不被误判为音量调音扇区
-		if (action.SubActions != null && action.SubActions.Count > 0)
+		if (action.InlineSubActions != null && action.InlineSubActions.Count > 0)
 		{
 			return false;
 		}
@@ -783,7 +788,7 @@ public partial class GestureController : IDisposable
 			? InputRoot(refSector)
 			: null;
 		// 若该动作配置了二级级联子动作，首要用途为展开二级轮盘，绝不接管为音量拖拽调音
-		if (action != null && action.SubActions != null && action.SubActions.Count > 0)
+		if (action != null && action.InlineSubActions != null && action.InlineSubActions.Count > 0)
 		{
 			if (_volumeAdjustActive)
 			{
@@ -1153,6 +1158,12 @@ public partial class GestureController : IDisposable
 	/// </summary>
 	private void Hook_OnRawMouseButton(object? sender, RawMouseEventArgs e)
 	{
+		if (e.IsButtonDown && e.MouseButton == "RightButton" && !_mouseReleasePending && QueuePortalBack(PortalBackInput.RightButton))
+		{
+			_pinState.OwnMouseUp(e.MouseButton);
+			e.Handled = true;
+			return;
+		}
 		if (HandlePinnedMouse(e)) return;
 		if (e.IsButtonDown && (ProfileTriggerRouter.IsRecording || _isGestureActive || _isWaitingForThreshold)) return;
 		bool gesturesEnabled = ConfigManager.CurrentConfig.GestureEnabled && !IsLongPressOnlyTriggerEnabled;
@@ -1747,8 +1758,15 @@ public partial class GestureController : IDisposable
 	private bool CompleteMouseTriggerRelease(
 		Point releasePosition,
 		string triggerButton,
-		ProfileTriggerActivation? activation = null)
+		ProfileTriggerActivation? activation = null,
+		bool portalRelease = false, long? sampledPortalFrame = null)
 	{
+		if (!portalRelease && QueuePortalRelease(releasePosition, triggerButton, activation, sampledPortalFrame)) return true;
+		if (sampledPortalFrame.HasValue && sampledPortalFrame != Interlocked.Read(ref _portalVisualEpoch))
+		{
+			CancelGestureTracking("PortalLayerSwitchDuringRelease");
+			return true;
+		}
 		if (activation != null)
 		{
 			if (!ReferenceEquals(activation, _activeActivation))
@@ -1782,19 +1800,25 @@ public partial class GestureController : IDisposable
 		{
 			CancelGestureTracking();
 			_isWaitingForThreshold = false;
-			ThreadPool.QueueUserWorkItem(_ => _mouseHook.ReplayTriggerClick(triggerButton));
+			if (!string.IsNullOrEmpty(triggerButton))
+				ThreadPool.QueueUserWorkItem(_ => _mouseHook.ReplayTriggerClick(triggerButton));
 			return true;
 		}
 
 		if (!_isGestureActive)
 		{
 			// 等待状态已结束但手势未激活时补发原生点击，避免丢键。
-			ThreadPool.QueueUserWorkItem(_ => _mouseHook.ReplayTriggerClick(triggerButton));
+			if (!string.IsNullOrEmpty(triggerButton))
+				ThreadPool.QueueUserWorkItem(_ => _mouseHook.ReplayTriggerClick(triggerButton));
 			return true;
 		}
 		bool volumeTookOver = _volumeGestureTookOver;
 		float volumeBaseline = _volumeBaseline;
+		long? portalRevision = _portalAcceptInput ? _portalStack?.Revision : null;
+		nint panelTarget = _keyboardPanelTarget;
+		uint panelTargetPid = _keyboardPanelTargetPid;
 		var finalState = EndActiveGesture(releasePosition);
+		long executionVersion = GetCurrentGestureVersion();
 			var endedInteractionSession = finalState.Interaction;
 		int finalSector = finalState.Sector;
 		int finalSubSector = finalState.SubSector;
@@ -1845,6 +1869,11 @@ public partial class GestureController : IDisposable
 					}
 				}
 				CloseGestureWindow(endedWindow, endedPresentationVersion);
+				if (portalRevision.HasValue && portalRevision != ConfigManager.ConfigurationRevision)
+				{
+					endedInteractionSession?.Cancel("PortalSourceChanged");
+					return;
+				}
 				if (volumeTookOver)
 				{
 					endedInteractionSession?.End("VolumeAdjusted");
@@ -1856,6 +1885,7 @@ public partial class GestureController : IDisposable
 					endedInteractionSession?.Cancel("LayerRemoved");
 					return;
 				}
+				if (targetAction?.IsWheelPortal == true) targetAction = null;
 				if (targetAction == null)
 				{
 					ActionItem? cancelAction = ConfigManager.CurrentConfig?.CancelAction;
@@ -1897,7 +1927,7 @@ public partial class GestureController : IDisposable
 
 				if (targetAction != null)
 				{
-					endedInteractionSession?.Confirm(targetAction, PluginInteractionSession.Target(finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
+					endedInteractionSession?.Confirm(targetAction, ReleaseInteractionTarget(finalState.Deep, finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
 
 					// 构建目标执行上下文，将目标保护延伸至 ActionExecutor 队列消费入口
 					ActionExecutionContext? execContext = null;
@@ -1916,6 +1946,11 @@ public partial class GestureController : IDisposable
 								Interlocked.CompareExchange(ref _pendingExecutionSession, null, focusSession);
 							}
 						);
+					}
+					else if (targetAction.Type == "ActionPanel" && panelTarget != 0 && panelTargetPid != 0)
+					{
+						execContext = new ActionExecutionContext(panelTarget, panelTargetPid, "",
+							() => !_disposed && (_mouseHook == null || !_mouseHook.IsPaused) && IsCurrentGesture(executionVersion));
 					}
 
 					EnqueueGestureAction(targetAction, execContext, releasePosition);
@@ -1956,6 +1991,7 @@ public partial class GestureController : IDisposable
                     _debouncedFixedRelease = new(selection, _fixedSession, _selectedSectorIndex, _selectedSubSectorIndex, _lastEscapedState);
                 }
             _mouseReleasePending = true;
+			_pendingPortalReleaseFrame = _portalAcceptInput ? Interlocked.Read(ref _portalVisualEpoch) : null;
             _pendingMouseReleasePosition = releasePosition;
 			_pendingMouseReleaseButton = triggerButton;
 			_pendingMouseReleaseActivation = activation;
@@ -1983,7 +2019,8 @@ public partial class GestureController : IDisposable
 			_mouseReleaseDebounceTimer = null;
 			ProfileTriggerActivation? activation = _pendingMouseReleaseActivation;
 			_pendingMouseReleaseActivation = null;
-			CompleteMouseTriggerRelease(_pendingMouseReleasePosition, _pendingMouseReleaseButton, activation);
+			CompleteMouseTriggerRelease(_pendingMouseReleasePosition, _pendingMouseReleaseButton, activation,
+				sampledPortalFrame: _pendingPortalReleaseFrame);
 		}
 		completedTimer?.Dispose();
 	}
@@ -2038,6 +2075,7 @@ public partial class GestureController : IDisposable
 
 	private void Hook_OnMouseWheel(object? sender, MouseWheelHookEventArgs e)
 	{
+		if (_portalDepth > 1) return;
 		if (_isGestureActive && _radialWindow != null && _activeProfile != null)
 		{
 			_activeProfile.EnsureLayers();
@@ -2081,6 +2119,13 @@ public partial class GestureController : IDisposable
 
 	private void KeyboardHook_OnKeyDown(object? sender, GlobalKeyEventArgs e)
 	{
+		if (_pinState.OwnsKeyUp(e.VkCode)) { e.Handled = true; return; }
+		if ((e.VkCode is 8 or 27) && QueuePortalBack(e.VkCode == 27 ? PortalBackInput.Escape : PortalBackInput.Backspace))
+		{
+			_pinState.OwnKeyUp(e.VkCode);
+			e.Handled = true;
+			return;
+		}
 		if (HandlePinnedKeyDown(e)) return;
 		if (_isGestureActive)
 		{
@@ -2093,7 +2138,7 @@ public partial class GestureController : IDisposable
 			}
 		}
 
-		if (_isGestureActive && _radialWindow != null && _activeProfile != null)
+		if (_portalDepth < 2 && _isGestureActive && _radialWindow != null && _activeProfile != null)
 		{
 			_activeProfile.EnsureLayers();
 			if (_activeProfile.Layers.Count > 1)
@@ -2193,6 +2238,18 @@ public partial class GestureController : IDisposable
 		}
 		TriggerConfig? triggerConfig = _activeActivation?.Trigger ?? _activeTrigger;
 		if (triggerConfig == null || !ProfileTriggerRouter.IsKeyboardRelease(triggerConfig, e.VkCode)) return;
+		if (_portalAcceptInput)
+		{
+			_portalKeyReleased = true;
+			Point release = KeyboardReleasePointerOverride is { } readPortalPointer ? readPortalPointer() ?? _lastMovePoint :
+				GetCursorPos(out var portalCursor) ? new Point(portalCursor.x, portalCursor.y) : _lastMovePoint;
+			if (QueuePortalRelease(release, "", _activeActivation))
+			{
+				// The matching keyboard down was deliberately passed to Windows.
+				e.Handled = false;
+				return;
+			}
+		}
 		if (_activeActivation?.IsLayerAvailable == false)
 		{
 			CancelGestureTracking("LayerRemoved");
@@ -2289,7 +2346,7 @@ public partial class GestureController : IDisposable
 				}
 				if (targetAction != null)
 				{
-					endedInteractionSession?.Confirm(targetAction, PluginInteractionSession.Target(finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
+					endedInteractionSession?.Confirm(targetAction, ReleaseInteractionTarget(finalState.Deep, finalSector, finalSubSector, isEscaped), isEscaped ? "Escaped" : "NoAction");
 					ActionExecutionContext? context = keyboardTarget?.CreateExecutionContext(
 						() => !_disposed && !_mouseHook.IsPaused && IsCurrentGesture(executionVersion));
 					if (targetAction.Type == "ActionPanel" && context == null && panelTarget != 0 && panelTargetPid != 0)
@@ -2436,6 +2493,12 @@ public partial class GestureController : IDisposable
 
 	private void ProcessMove(Point currentPoint)
 	{
+		if (currentPoint != _lastMovePoint) RelinquishPinnedArrowSelection();
+		if (!QueuePortalMove(currentPoint)) ProcessMoveCore(currentPoint);
+	}
+
+	private void ProcessMoveCore(Point currentPoint)
+	{
 		if (ProcessFixedMove(currentPoint)) return;
 		if (_pinState.Enabled)
 		{
@@ -2461,6 +2524,7 @@ public partial class GestureController : IDisposable
 			num6 = 15.0;
 		}
 		bool flag2 = false;
+		bool? fixedPopupExpansion = _fixedSession?.Persistent;
 		double num7 = ((ConfigManager.CurrentConfig.SubWheelTriggerDistance > 20.0) ? ConfigManager.CurrentConfig.SubWheelTriggerDistance : 95.0);
 		if (num3 < num6 && _fixedSession is not { IsHoneycomb: true })
 		{
@@ -2540,7 +2604,7 @@ public partial class GestureController : IDisposable
 						ActionItem? previousParent = InputRoot(_selectedSectorIndex);
 						double angleDiff = Math.Abs(NormalizeAngleDeg(num11 - _selectedSectorIndex * num13));
 						int previousHit = _submenuLock.HitTestFan(ConfigManager.CurrentConfig, num, num2,
-							_selectedSectorIndex, num12, previousParent?.SubActions?.Count ?? 0, _selectedSubSectorIndex);
+							_selectedSectorIndex, num12, previousParent?.InlineSubActions?.Count ?? 0, _selectedSubSectorIndex);
 						if (num3 >= SubmenuLockTracker.GetSubmenuExitDistance(ConfigManager.CurrentConfig, true, wheelRadius)
 							&& (previousHit >= 0 || angleDiff <= num13 * 0.90))
 						{
@@ -2569,7 +2633,7 @@ public partial class GestureController : IDisposable
 				if (enableMultiTier && _activeProfile != null && num4 >= 0 && num4 < _activeProfile.Actions.Count)
 				{
 					ActionItem? actionItem = InputRoot(num4);
-					if (actionItem != null && actionItem.SubActions != null && actionItem.SubActions.Count > 0)
+					if (actionItem != null && actionItem.InlineSubActions != null && actionItem.InlineSubActions.Count > 0)
 					{
 						if (isFan)
 						{
@@ -2586,13 +2650,14 @@ public partial class GestureController : IDisposable
 								flag2 = true;
 								num5 = lockEnabled
 									? _submenuLock.HitTestFan(ConfigManager.CurrentConfig, num, num2, num4, num12,
-										actionItem.SubActions.Count, _selectedSubSectorIndex)
-									: HitTestFanSubs(currentPoint, _startPoint, num4, actionItem.SubActions.Count);
+										actionItem.InlineSubActions.Count, _selectedSubSectorIndex)
+									: HitTestFanSubs(currentPoint, _startPoint, num4, actionItem.InlineSubActions.Count);
 							}
 						}
 						else
 						{
-							if (num3 >= num7 || _fixedSession?.ExtendedPrimary == num4 || (ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup && ConfigManager.CurrentConfig.SubmenuStyle == "Wheel") || (lockEnabled && _submenuLock.IsLocked))
+							bool expandOnPopup = fixedPopupExpansion ?? ConfigManager.CurrentConfig.ExpandsSubRingsOnPopup;
+							if (num3 >= num7 || _fixedSession?.ExtendedPrimary == num4 || expandOnPopup || (lockEnabled && _submenuLock.IsLocked))
 							{
 								flag2 = true;
 							}
@@ -2600,7 +2665,7 @@ public partial class GestureController : IDisposable
 							double num15 = wheelRadius + num14 + 2.0;
 							if (num3 >= num15 && (!lockEnabled || (flag2 && num3 <= num8)))
 							{
-								int count = actionItem.SubActions.Count;
+								int count = actionItem.InlineSubActions.Count;
 								double num16 = (double)num4 * num13 - num13 / 2.0;
 								double num17;
 								for (num17 = num11 - num16; num17 < 0.0; num17 += 360.0)
@@ -2624,25 +2689,26 @@ public partial class GestureController : IDisposable
 						// Deep branches are navigation targets. An angular projection through a gap
 						// or beyond a petal must never replace the current page.
 						if (!lockEnabled && num5 >= 0 && !UsesFixedRings(_activeProfile) && CaptureReleaseLayer(_activeProfile)?.EffectiveMaxMenuDepth > 2 &&
-							num5 < actionItem.SubActions.Count && actionItem.SubActions[num5]?.SubActions is { Count: > 0 })
+							num5 < actionItem.InlineSubActions.Count && actionItem.InlineSubActions[num5]?.InlineSubActions is { Count: > 0 })
 						{
 							if (isFan)
 								num5 = _submenuLock.HitTestFan(ConfigManager.CurrentConfig, num, num2, num4, num12,
-									actionItem.SubActions.Count, _selectedSubSectorIndex);
-							else if (!_submenuLock.ContainsWheelSub(ConfigManager.CurrentConfig, num, num2, num4, num12, actionItem.SubActions.Count, num5))
+									actionItem.InlineSubActions.Count, _selectedSubSectorIndex);
+							else if (!_submenuLock.ContainsWheelSub(ConfigManager.CurrentConfig, num, num2, num4, num12, actionItem.InlineSubActions.Count, num5))
 								num5 = -1;
 						}
 
 						// 安全守卫：在启用锁定时，若子项命中了未配置或禁用的槽位，清除命中，防止松手误触发
 						if (lockEnabled && num5 >= 0)
 						{
-							ActionItem? effectiveSub = num5 < actionItem.SubActions.Count ? actionItem.SubActions[num5] : null;
+							ActionItem? effectiveSub = num5 < actionItem.InlineSubActions.Count ? actionItem.InlineSubActions[num5] : null;
 							if (!IsInputChildConfigured(num4, num5, effectiveSub) || (!isFan &&
-								!_submenuLock.ContainsWheelSub(ConfigManager.CurrentConfig, num, num2, num4, num12, actionItem.SubActions.Count, num5)))
+								!_submenuLock.ContainsWheelSub(ConfigManager.CurrentConfig, num, num2, num4, num12, actionItem.InlineSubActions.Count, num5)))
 							{
 								num5 = -1;
 							}
-							else if (!_submenuLock.IsLocked && num3 >= SubmenuLockTracker.GetSubmenuEntryDistance(ConfigManager.CurrentConfig, isFan, wheelRadius))
+							else if (!_submenuLock.IsLocked && num3 >= SubmenuLockTracker.GetSubmenuEntryDistance(
+								ConfigManager.CurrentConfig, isFan, wheelRadius, fixedPopupExpansion))
 							{
 								_submenuLock.Lock(num4);
 							}
@@ -2657,7 +2723,7 @@ public partial class GestureController : IDisposable
 			else _pinExpandedParent = -1;
 		}
 		// 音量"拖距调音"：音量加/减扇区越过子轮盘触发距离即接管为距离映射调音，屏蔽二级子轮盘
-		if (!_pinState.Enabled && ProcessVolumeAdjust(num3, num4, flag, num7))
+		if (_portalDepth < 2 && !_pinState.Enabled && ProcessVolumeAdjust(num3, num4, flag, num7))
 		{
 			_submenuLock.Reset();
 			flag2 = false;
@@ -2667,11 +2733,10 @@ public partial class GestureController : IDisposable
 		{
 			bool isFan = ConfigManager.CurrentConfig.SubmenuStyle == "Fan";
 			_suppressPrimaryOnRelease = _submenuLock.IsLocked || num3 >= SubmenuLockTracker.GetSubmenuEntryDistance(
-				ConfigManager.CurrentConfig, isFan, ConfigManager.CurrentConfig.WheelRadius);
+				ConfigManager.CurrentConfig, isFan, ConfigManager.CurrentConfig.WheelRadius, fixedPopupExpansion);
 		}
 		TrackReturnHover(currentPoint, num4, num5);
 		QueueHighlightUpdate(num4, num5, flag, flag2, GetCurrentGestureVersion());
-        AimFixedSecondary(currentPoint, num4, flag2 && !flag ? num5 : -1);
 	}
 
 	internal bool SelectActivationLayer(WheelProfile profile)
@@ -2769,18 +2834,22 @@ public partial class GestureController : IDisposable
 		{
 			bool pinned = _pinState.Enabled;
 			if (pinned) interaction.Update(-2, -1, false, false, preservePrimaryTarget: true);
+			long revision = ConfigManager.ConfigurationRevision;
+			window.ConfigurePinnedArrowSelection(pinned && _keyboardHook != null
+				? slots => PublishPinnedArrows(window, gestureVersion, revision, slots) : null);
 			window.EnableFixedGestureLayout();
-			window.Present(center, profile, ConfigManager.ConfigurationRevision, gestureVersion, () =>
+			window.Present(center, profile, revision, gestureVersion, () =>
 			{
 				// Hit testing needs the revealed geometry; publish no initial angular hover first.
                 lock (_uiUpdateSync)
                     if (_fixedSession is { } session && session.Version == gestureVersion)
                     {
-                        window.UpdateFixedRings(session.Path, session.Hover);
+                        window.UpdateFixedRings(session.Visibility, session.Hover);
                         session.Present();
                     }
 				if (pinned) ApplyPinnedHoverAtPresentation(gestureVersion, ignoreWindowScale: true);
                 else if (_fixedSession != null) ProcessMove(_lastMovePoint);
+				PreparePortalRoot(window, profile, gestureVersion);
                 interaction.Presented();
 			}, pinned, pinned ? () => RefreshHoverAfterUiChange(_lastMovePoint, gestureVersion) : null);
 			PrepareFixedSession(window, profile, gestureVersion);
@@ -2975,6 +3044,9 @@ public partial class GestureController : IDisposable
 
 		CancelMouseReleaseDebounce();
 		CancelLongPressTimer();
+		RequestPortalStop();
+		if (Application.Current?.Dispatcher.CheckAccess() == true) StopPortalRendering();
+		else if (_portalRendering) DispatchUi(StopPortalRendering);
 		_mouseHook.OnTriggerButtonDown -= Hook_OnTriggerButtonDown;
 		_mouseHook.OnTriggerButtonUp -= Hook_OnTriggerButtonUp;
 		_mouseHook.OnMouseMove -= Hook_OnMouseMove;
@@ -2988,6 +3060,7 @@ public partial class GestureController : IDisposable
 			_keyboardHook.OnKeyDown -= KeyboardHook_OnKeyDown;
 			_keyboardHook.OnKeyUp -= KeyboardHook_OnKeyUp;
 			_keyboardHook.PinnedReleaseDrain -= DrainPinnedKey;
+			_keyboardHook.PinnedArrowPressed -= QueuePinnedArrow;
 		}
 
 		RadialWindow? window;
@@ -3071,11 +3144,11 @@ public partial class GestureController : IDisposable
 		{
 			return true;
 		}
-		if (action.SubActions != null)
+		if (action.InlineSubActions != null)
 		{
-			for (int i = 0; i < action.SubActions.Count; i++)
+			for (int i = 0; i < action.InlineSubActions.Count; i++)
 			{
-				if (ActionRequiresTaskbar(action.SubActions[i])) return true;
+				if (ActionRequiresTaskbar(action.InlineSubActions[i])) return true;
 			}
 		}
 		return false;

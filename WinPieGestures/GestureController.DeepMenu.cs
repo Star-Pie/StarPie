@@ -11,7 +11,7 @@ public partial class GestureController
     private sealed record SlotBinding(ActionItem? Source, ActionItem? Action, bool HasChildren)
     {
         internal static SlotBinding Capture(ActionItem? item) => new(item, item?.CloneWithoutSubActions(),
-            item?.SubActions is { Count: > 0 } && WheelProfile.IsActionConfigured(item));
+            item?.InlineSubActions is { Count: > 0 } && WheelProfile.IsActionConfigured(item));
 
         internal bool Matches(ActionItem? current, bool inherited)
         {
@@ -20,6 +20,7 @@ public partial class GestureController
                 saved.Arguments != current.Arguments || saved.CommandTerminal != current.CommandTerminal ||
                 saved.BrowserChoice != current.BrowserChoice || saved.BrowserPath != current.BrowserPath ||
                 saved.RunAsStandardUser != current.RunAsStandardUser || saved.LaunchOnCursorMonitor != current.LaunchOnCursorMonitor ||
+                !WheelPortalTarget.SameValue(saved.PortalTarget, current.PortalTarget) ||
                 saved.PluginActionRef?.PluginId != current.PluginActionRef?.PluginId ||
                 saved.PluginActionRef?.ContributionId != current.PluginActionRef?.ContributionId ||
                 saved.ExtensionData?.Count != current.ExtensionData?.Count) return false;
@@ -41,7 +42,7 @@ public partial class GestureController
             var slots = new SlotBinding?[count];
             for (int i = 0; i < count; i++)
             {
-                var child = parent.SubActions[i];
+                var child = parent.InlineSubActions[i];
                 if (FixedRingMenu.IsLegacySlotVisible(child, remaining, fan)) slots[i] = SlotBinding.Capture(child);
             }
             return slots;
@@ -96,9 +97,9 @@ public partial class GestureController
         for (int sector = 0; sector < actions.Length; sector++)
         {
             var action = actions[sector] = profile.GetEffectiveAction(sector);
-            int count = DeepMenuFrame.VisibleSlotCount(action?.SubActions?.Count ?? 0, fan);
+            int count = DeepMenuFrame.VisibleSlotCount(action?.InlineSubActions?.Count ?? 0, fan);
             var slots = configured[sector] = new bool[count];
-            for (int i = 0; i < count; i++) slots[i] = WheelProfile.IsActionConfigured(action!.SubActions[i]);
+            for (int i = 0; i < count; i++) slots[i] = WheelProfile.IsActionConfigured(action!.InlineSubActions[i]);
         }
         _inputRoots = new(profile, layer, revision, actions, configured);
     }
@@ -128,6 +129,7 @@ public partial class GestureController
     }
 
     private volatile DeepPage? _deepPage;
+    private DeepRelease? _pinnedKeyboardRelease;
     private int _deepHover = -1;
     private bool _deepUiPending;
     private bool _deepReturned;
@@ -147,6 +149,7 @@ public partial class GestureController
         _fixedPress = null;
         _fixedRenderQueued = false;
         _deepPage = null;
+        _pinnedKeyboardRelease = null;
         _deepHover = -1;
         _deepUiPending = false;
         _deepReturned = false;
@@ -171,7 +174,7 @@ public partial class GestureController
         int[] path = [sector, sub];
         long revision = ConfigManager.ConfigurationRevision;
         var branch = profile!.GetEffectiveMenuAction(path);
-        if (branch?.SubActions is not { Count: > 0 }) return false;
+        if (branch?.InlineSubActions is not { Count: > 0 }) return false;
         string rootName = profile.GetEffectiveAction(sector)?.Name ?? "";
         return ShowDeepPage(window, profile, layer, revision, version, path, branch,
             rootName + " › " + branch.Name, point, null);
@@ -185,7 +188,7 @@ public partial class GestureController
         bool inherited = previous?.IsInheritedBranch ?? parent.IsInherited;
         var current = profile.GetEffectiveMenuAction(path, layerIndex: profile.Layers.IndexOf(layer));
         if (!ReferenceEquals(layer, CaptureReleaseLayer(_activeProfile)) || revision != ConfigManager.ConfigurationRevision ||
-            current?.SubActions is not { Count: > 0 } || current.IsInherited != inherited ||
+            current?.InlineSubActions is not { Count: > 0 } || current.IsInherited != inherited ||
             !SlotBinding.Capture(parent).Matches(current, inherited))
         {
             CancelGestureTracking("MenuSourceChanged");
@@ -300,6 +303,11 @@ public partial class GestureController
 
     private DeepRelease CaptureDeepRelease(Point point)
     {
+        if (_pinnedKeyboardRelease is { } keyboardRelease)
+        {
+            _pinnedKeyboardRelease = null;
+            return keyboardRelease;
+        }
         if (_switchingFixedLayer)
         {
             _lastEscapedState = false;
@@ -331,7 +339,7 @@ public partial class GestureController
             {
                 fixedHit = fixedSession.Hit(point);
                 if (!fixedSession.WasVisible(fixedHit)) fixedHit = default;
-                (_selectedSectorIndex, _selectedSubSectorIndex) = fixedSession.Target(fixedHit);
+                (_selectedSectorIndex, _selectedSubSectorIndex) = (-2, -1);
                 _lastEscapedState = !_pinState.Enabled && fixedSession.IsEscaped(point);
             }
             else if (fixedSession.IsHoneycomb && !_pinState.Enabled)
@@ -347,10 +355,10 @@ public partial class GestureController
             else if (!wasOuter && !_lastEscapedState)
             {
                 // The legacy controller owns center/primary/secondary selection and its lock suppression.
-                if (_selectedSectorIndex == -1 && fixedSession.Path.Length == 0) fixedHit = new(0, -1);
+                if (_selectedSectorIndex == -1) fixedHit = new(0, -1);
                 else if (fixedSession.CanConfirmSecondary(point, _selectedSectorIndex, _selectedSubSectorIndex))
                     fixedHit = new(2, FixedRingMenu.SecondaryKey(_selectedSectorIndex, _selectedSubSectorIndex));
-                else if (fixedSession.Path.Length == 0 && _selectedSubSectorIndex < 0 && _selectedSectorIndex >= 0 && !_suppressPrimaryOnRelease && !_submenuLock.IsLocked)
+                else if (_selectedSubSectorIndex < 0 && _selectedSectorIndex >= 0 && !_suppressPrimaryOnRelease && !_submenuLock.IsLocked)
                     fixedHit = new(1, _selectedSectorIndex);
             }
             return new(null, -1, false) { Fixed = new(fixedSession, fixedHit) };
@@ -367,6 +375,13 @@ public partial class GestureController
 
     private static bool IsDeepMenuLeafAvailable(ActionItem? action) =>
         action != null && IsExecutablePinnedAction(action) && Plugins.PluginHost.IsMenuActionAvailable(action);
+
+    private static StarPie.Plugin.InteractionTarget ReleaseInteractionTarget(DeepRelease selection, int sector, int sub, bool escaped)
+    {
+        if (!escaped && selection.Fixed is { Hit.IsOuter: true } fixedRelease)
+            (sector, sub) = fixedRelease.Session.FeedbackAddress(fixedRelease.Hit);
+        return Plugins.PluginInteractionSession.Target(sector, sub, escaped);
+    }
 
     private bool ResolveGestureRelease(DeepRelease selection, WheelProfile? profile, WheelLayer? layer,
         int sector, int sub, bool escaped, bool locked, out ActionItem? action)

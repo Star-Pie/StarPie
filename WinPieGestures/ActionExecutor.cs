@@ -495,7 +495,7 @@ public static class ActionExecutor
 
 	private static void ExecuteCore(ActionItem action, ActionExecutionContext? context)
 	{
-		if (action == null)
+		if (action == null || action.IsWheelPortal)
 		{
 			return;
 		}

@@ -29,7 +29,7 @@ public partial class MappingsProfileRail : UserControl
         public string Delete => I18n.T("StudioRailDelete");
         public string AddLayer => I18n.T("AddLayer");
     }
-    private sealed record LayerRow(WheelProfile Profile, WheelLayer Layer, bool Selected, string Caption)
+    private sealed record LayerRow(WheelProfile Profile, WheelLayer Layer, bool Selected, string Caption, string Tooltip)
     {
         public string Actions => I18n.T("StudioRailLayerMenu");
     }
@@ -69,8 +69,9 @@ public partial class MappingsProfileRail : UserControl
         Filter.Content = _tag == null ? "#" : "# ✓";
         bool advanced = string.Equals(_config.ConfigMode, "Pro", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(_config.ConfigMode, "Advanced", StringComparison.OrdinalIgnoreCase);
+        var graph = advanced ? new PortalReferenceAnalyzer(_config.Profiles) : null;
         var rows = _config.Profiles.Where(p => StudioProfileLibrary.Matches(p, Search.Text, _tag))
-            .Select(p => CreateCard(p, advanced)).ToArray();
+            .Select(p => CreateCard(p, advanced, graph)).ToArray();
         if (_displayLanguage != I18n.CurrentLanguage || !SameRows(_visibleCards, rows))
         {
             _visibleCards = rows;
@@ -92,7 +93,7 @@ public partial class MappingsProfileRail : UserControl
         return true;
     }
 
-    private CardRow CreateCard(WheelProfile profile, bool advanced)
+    private CardRow CreateCard(WheelProfile profile, bool advanced, PortalReferenceAnalyzer? graph)
     {
         bool selected = ReferenceEquals(_selection, profile);
         bool showLayers = selected && advanced;
@@ -107,7 +108,12 @@ public partial class MappingsProfileRail : UserControl
         var layerRows = !showLayers || layers == null ? Array.Empty<LayerRow>() :
             layers.Select((l, i) => {
                 string badge = ProfilePresentation.GetLayerTriggerPresentation(_config, profile, l, false).BadgeText;
-                return new LayerRow(profile, l, i == index, badge + " · " + I18n.TF("StudioRailDepth", l.EffectiveMaxMenuDepth));
+                string caption = badge + " · " + I18n.TF("StudioRailDepth", l.EffectiveMaxMenuDepth);
+                var incoming = graph!.FindIncomingReferences(profile, l).ToArray();
+                if (incoming.Length == 0) return new LayerRow(profile, l, i == index, caption, caption);
+                string tooltip = I18n.TF("PortalReferences", incoming.Length) + "\n" + string.Join("\n", incoming.Select(reference =>
+                    reference.Source.Profile.FriendlyName + " › " + reference.Source.Layer.DisplayName + " › " + reference.Action.Name));
+                return new LayerRow(profile, l, i == index, caption + " · ◎" + incoming.Length, tooltip);
             }).ToArray();
         return new(profile, selected, showLayers, GlyphFor(profile), summary,
             string.Join("  ", profile.Tags.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => "#" + t)), profile.IconKey + "|" + profile.ApplicationIconPath + "|" + profile.BoundProcesses, layerRows);

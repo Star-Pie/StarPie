@@ -627,7 +627,11 @@ public partial class SettingsWindow : Window
 				});
 			}
 		};
-		base.Deactivated += delegate { CancelExclusiveRecordingIfActive(); };
+		base.Deactivated += delegate
+		{
+			CancelExclusiveRecordingIfActive();
+			StopPinnedNavRecording();
+		};
 	}
 
 	private void CancelDeferredClose()
@@ -772,6 +776,10 @@ public partial class SettingsWindow : Window
 
 	private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
 	{
+		if (TryHandlePinnedNavRecordingKeyDown(e))
+		{
+			return;
+		}
 		if (_isRecordingTrigger || _isRecordingProcessTrigger || ConfigManager.CurrentConfig == null)
 		{
 			return;
@@ -796,6 +804,9 @@ public partial class SettingsWindow : Window
 		{
 			return;
 		}
+
+		if (TryHandleSettingsSearchShortcut(e))
+			return;
 
 		if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
 		{
@@ -1023,6 +1034,7 @@ public partial class SettingsWindow : Window
 		{
 			PinWheelCheckBox.IsChecked = ConfigManager.CurrentConfig.PinWheelAfterTrigger;
 		}
+		RefreshPinnedNavKeyControls();
 		UpdateLongPressTriggerControls();
 		if (GestureEnabledCheckBox != null)
 		{
@@ -1551,6 +1563,7 @@ public partial class SettingsWindow : Window
 		}
 		UpdateLayerIndicatorCustomPanelVisibility();
 		UpdateLayerIndicatorPreview();
+		LoadPortalAppearanceSettings();
 
 		// Scene Isolation
 		DisableOnFullScreenCheckBox.IsChecked = ConfigManager.CurrentConfig.DisableOnFullScreen;
@@ -1775,6 +1788,7 @@ public partial class SettingsWindow : Window
 
 	public void ApplyConfigMode(string mode, bool save = true)
 	{
+		ClearSettingsSearchReveal();
 		bool isSimple = !string.Equals(mode, "Pro", StringComparison.OrdinalIgnoreCase) &&
 						!string.Equals(mode, "Advanced", StringComparison.OrdinalIgnoreCase);
 
@@ -1896,6 +1910,8 @@ public partial class SettingsWindow : Window
 	{
 		_appearanceSidebarNeedsRefresh = true;
 		LocalizeStudio();
+		LocalizeSettingsSearch();
+		LocalizePortalAppearanceSettings();
 		RefreshAutoSaveStatus();
 		ReloadUiFontOptions();
 		PopulateWheelFontFamilies();
@@ -3764,6 +3780,9 @@ public partial class SettingsWindow : Window
 
 	public void SwitchToTab(int index)
 	{
+		if (SettingsSearchPanel?.Visibility == Visibility.Visible)
+			CloseSettingsSearch(restoreFocus: false);
+		ClearSettingsSearchReveal();
 		CancelExclusiveRecordingIfActive();
 		if (TriggerSettingsGrid == null || AppearanceSettingsGrid == null || MappingsSettingsGrid == null || SystemSettingsGrid == null || AboutSettingsGrid == null || PluginsSettingsGrid == null)
 		{
@@ -4183,6 +4202,9 @@ public partial class SettingsWindow : Window
 
 	private void Window_Closing(object sender, CancelEventArgs e)
 	{
+		if (SettingsSearchPanel?.Visibility == Visibility.Visible)
+			CloseSettingsSearch(restoreFocus: false);
+		ClearSettingsSearchReveal();
 		StopProfileActivationRecording();
 		CancelTriggerSceneRecordings();
 		if (!_isClosingForRelease && !App.IsExiting)
@@ -4691,8 +4713,8 @@ public partial class SettingsWindow : Window
 			{
 				var a = GetSource(idxA);
 				var b = GetSource(idxB);
-				bool aConfigured = a != null && (!string.IsNullOrWhiteSpace(a.Parameter) || !string.IsNullOrWhiteSpace(a.InheritAppIconPath) || (a.SubActions != null && a.SubActions.Count > 0));
-				bool bConfigured = b != null && (!string.IsNullOrWhiteSpace(b.Parameter) || !string.IsNullOrWhiteSpace(b.InheritAppIconPath) || (b.SubActions != null && b.SubActions.Count > 0));
+				bool aConfigured = a != null && (a.IsWheelPortal || !string.IsNullOrWhiteSpace(a.Parameter) || !string.IsNullOrWhiteSpace(a.InheritAppIconPath) || (a.InlineSubActions != null && a.InlineSubActions.Count > 0));
+				bool bConfigured = b != null && (b.IsWheelPortal || !string.IsNullOrWhiteSpace(b.Parameter) || !string.IsNullOrWhiteSpace(b.InheritAppIconPath) || (b.InlineSubActions != null && b.InlineSubActions.Count > 0));
 				if (aConfigured) return a!;
 				if (bConfigured) return b!;
 				return a ?? b ?? CreateDefaultPreset(8, fallbackIdx8);
@@ -5233,7 +5255,8 @@ public partial class SettingsWindow : Window
 			return;
 		}
 		string procName = _selectedProfile.ProcessName;
-		if (AppMessageBox.Show(this, $"确定要删除配置方案 [{procName}] 吗？\n删除后该程序将自动回退使用全局 (Global) 默认轮盘配置。", "确认删除", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+		if (AppMessageBox.Show(this, I18n.TF("PortalDeleteProfileConfirm", procName) + PortalDeleteImpact(_selectedProfile),
+			I18n.T("StudioRailDelete"), MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
 		{
 			var target = _selectedProfile;
 			ConfigManager.CurrentConfig.Profiles.RemoveAll(p => p == target || string.Equals(p.ProcessName, procName, StringComparison.OrdinalIgnoreCase));
@@ -5565,6 +5588,7 @@ public partial class SettingsWindow : Window
 				SubActions = new List<ActionItem>()
 			});
 		}
+		newLayer.EnsureLayerId();
 		_selectedProfile.Layers.Add(newLayer);
 		_selectedProfile.ActiveLayerIndex = _selectedProfile.Layers.Count - 1;
 		_selectedProfile.SyncRootPropertiesFromActiveLayer();
@@ -5611,6 +5635,7 @@ public partial class SettingsWindow : Window
 			clonedLayer.ActivationTrigger = null;
 		}
 
+		clonedLayer.EnsureLayerId();
 		_selectedProfile.Layers.Add(clonedLayer);
 		_selectedProfile.ActiveLayerIndex = _selectedProfile.Layers.Count - 1;
 		_selectedProfile.SyncRootPropertiesFromActiveLayer();
@@ -5660,6 +5685,7 @@ public partial class SettingsWindow : Window
 		if (dlg.ShowDialog() == true && !string.IsNullOrWhiteSpace(dlg.InputText))
 		{
 			curLayer.Name = dlg.InputText.Trim();
+			RefreshPortalTargetNames(_selectedProfile, curLayer);
 			RefreshLayersUi();
 			UpdateLayerIndicatorPreview();
 			ScheduleAutoSave();
@@ -5687,7 +5713,7 @@ public partial class SettingsWindow : Window
 		}
 		var result = AppMessageBox.Show(
 			this,
-			I18n.TF("DeleteLayerConfirmMessage", layerToDelete.DisplayName),
+			I18n.TF("DeleteLayerConfirmMessage", layerToDelete.DisplayName) + PortalDeleteImpact(_selectedProfile, layerToDelete),
 			I18n.T("DeleteLayerConfirmTitle"),
 			MessageBoxButton.YesNo,
 			MessageBoxImage.Question);
@@ -5699,7 +5725,11 @@ public partial class SettingsWindow : Window
 
 	internal bool DeleteLayerCore(WheelLayer layerToDelete)
 	{
-		if (_selectedProfile == null || !_selectedProfile.RemoveLayer(layerToDelete)) return false;
+		if (_selectedProfile == null || _selectedProfile.Layers.Count <= 1 || !_selectedProfile.Layers.Contains(layerToDelete)) return false;
+		foreach (var reference in new PortalReferenceAnalyzer(ConfigManager.CurrentConfig.Profiles).FindIncomingReferences(_selectedProfile))
+			if (reference.Destination is { } destination && string.IsNullOrWhiteSpace(reference.Target.TargetLayerId))
+				reference.Target.TargetLayerId = destination.Layer.EnsureLayerId();
+		if (!_selectedProfile.RemoveLayer(layerToDelete)) return false;
 
 		RefreshLayersUi();
 
@@ -5898,7 +5928,7 @@ public partial class SettingsWindow : Window
 			WheelProfile? profile = _selectedProfile ?? ConfigManager.CurrentConfig?.Profiles.FirstOrDefault();
 			if (profile != null && _selectedSlotIndex < profile.Actions.Count)
 			{
-				int subCount = profile.Actions[_selectedSlotIndex].SubActions?.Count ?? 0;
+				int subCount = profile.Actions[_selectedSlotIndex].InlineSubActions?.Count ?? 0;
 				if (subCount > 0)
 				{
 					int nextSub = (_selectedSubActionIndex.Value - 1 + subCount) % subCount;
@@ -5930,7 +5960,7 @@ public partial class SettingsWindow : Window
 			WheelProfile? profile = _selectedProfile ?? ConfigManager.CurrentConfig?.Profiles.FirstOrDefault();
 			if (profile != null && _selectedSlotIndex < profile.Actions.Count)
 			{
-				int subCount = profile.Actions[_selectedSlotIndex].SubActions?.Count ?? 0;
+				int subCount = profile.Actions[_selectedSlotIndex].InlineSubActions?.Count ?? 0;
 				if (subCount > 0)
 				{
 					int nextSub = (_selectedSubActionIndex.Value + 1) % subCount;
@@ -6131,10 +6161,11 @@ public partial class SettingsWindow : Window
 				}
 			}
 
-			bool hasAnySubActions = primaryAction?.SubActions is { Count: > 0 } ||
+			bool hasAnySubActions = primaryAction?.InlineSubActions is { Count: > 0 } ||
                 (isInherited && (_selectedSubActionIndex.HasValue ? effectiveInheritedAction != null :
-                    effectiveInheritedAction?.SubActions is { Count: > 0 }));
-			bool isTier2NoSubActions = (MappingsTier2SegmentRadio?.IsChecked == true && _selectedSlotIndex >= 0 && !hasAnySubActions);
+                    effectiveInheritedAction?.InlineSubActions is { Count: > 0 }));
+			bool isTier2NoSubActions = (MappingsTier2SegmentRadio?.IsChecked == true && _selectedSlotIndex >= 0 &&
+				primaryAction?.IsWheelPortal != true && !hasAnySubActions);
 
 			if (FocusSlotInheritedBadge != null)
 			{
@@ -6326,6 +6357,7 @@ public partial class SettingsWindow : Window
 			if (FocusPluginPanel != null) FocusPluginPanel.Visibility = (type == PluginActionBinding.TypeName) ? Visibility.Visible : Visibility.Collapsed;
 			if (type == PluginActionBinding.TypeName) RefreshFocusPluginPanel(displayItem);
 			RefreshActionPanelSettings(displayItem);
+			BindFocusPortal(displayItem);
             FocusContributedParamsHost?.SetAction(displayItem, () => GetCurrentFocusActionItem(ensureLocalForEdit: true));
 
 			// 插件动作子下拉（按插件分组）。非插件类型时由该方法自行隐藏并清空。
@@ -6490,12 +6522,12 @@ public partial class SettingsWindow : Window
 			}
 		}
 
-		var subActions = (primaryAction.SubActions != null && primaryAction.SubActions.Count > 0)
-			? primaryAction.SubActions
-			: (isInherited && effAction?.SubActions != null && effAction.SubActions.Count > 0 ? effAction.SubActions : primaryAction.SubActions);
+		var subActions = (primaryAction.InlineSubActions != null && primaryAction.InlineSubActions.Count > 0)
+			? primaryAction.InlineSubActions
+			: (isInherited && !primaryAction.IsWheelPortal && effAction?.InlineSubActions != null && effAction.InlineSubActions.Count > 0 ? effAction.InlineSubActions : primaryAction.InlineSubActions);
 
 		int count = subActions?.Count ?? 0;
-		bool isUsingInheritedSubs = isInherited && (primaryAction.SubActions == null || primaryAction.SubActions.Count == 0) && count > 0;
+		bool isUsingInheritedSubs = isInherited && !primaryAction.IsWheelPortal && (primaryAction.InlineSubActions == null || primaryAction.InlineSubActions.Count == 0) && count > 0;
 
 		bool isFan = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
 		int maxAllowed = isFan ? 3 : 4;
@@ -6666,11 +6698,12 @@ public partial class SettingsWindow : Window
 		WheelProfile? profile = _selectedProfile ?? ConfigManager.CurrentConfig?.Profiles.FirstOrDefault();
 		if (profile == null) return;
 		if (profile.Actions != null && _selectedSlotIndex >= profile.Actions.Count) return;
+		if (profile.Actions != null && profile.Actions[_selectedSlotIndex].IsWheelPortal) return;
 
 		ActionItem? eff = profile.GetEffectiveAction(_selectedSlotIndex);
-		var existingSubs = (profile.Actions != null && _selectedSlotIndex < profile.Actions.Count && profile.Actions[_selectedSlotIndex].SubActions != null)
-			? profile.Actions[_selectedSlotIndex].SubActions
-			: eff?.SubActions;
+		var existingSubs = (profile.Actions != null && _selectedSlotIndex < profile.Actions.Count && profile.Actions[_selectedSlotIndex].InlineSubActions != null)
+			? profile.Actions[_selectedSlotIndex].InlineSubActions
+			: eff?.InlineSubActions;
 		int currentCount = existingSubs?.Count ?? 0;
 
 		bool isFan = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
@@ -6718,11 +6751,12 @@ public partial class SettingsWindow : Window
 		if (_selectedSlotIndex < 0) return;
 		WheelProfile? profile = _selectedProfile ?? ConfigManager.CurrentConfig?.Profiles.FirstOrDefault();
 		if (profile?.Actions == null || _selectedSlotIndex >= profile.Actions.Count) return;
+		if (profile.Actions[_selectedSlotIndex].IsWheelPortal) return;
 
 		ActionItem? eff = profile.GetEffectiveAction(_selectedSlotIndex);
-		var existingSubs = (profile.Actions != null && _selectedSlotIndex < profile.Actions.Count && profile.Actions[_selectedSlotIndex].SubActions != null)
-			? profile.Actions[_selectedSlotIndex].SubActions
-			: eff?.SubActions;
+		var existingSubs = (profile.Actions != null && _selectedSlotIndex < profile.Actions.Count && profile.Actions[_selectedSlotIndex].InlineSubActions != null)
+			? profile.Actions[_selectedSlotIndex].InlineSubActions
+			: eff?.InlineSubActions;
 
 		if (existingSubs != null && existingSubs.Count > 0)
 		{
@@ -8112,7 +8146,7 @@ public partial class SettingsWindow : Window
 	{
 		if (FocusActionTypeComboBox == null) return;
 		bool isSimple = string.Equals(ConfigManager.CurrentConfig?.ConfigMode, "Simple", StringComparison.OrdinalIgnoreCase);
-		var allTypes = SlotViewModel.AggregatedActionTypes;
+		var allTypes = ActionTypeCatalog.BuildAggregatedActionTypes(includePortal: _selectedSlotIndex >= 0);
 		List<ActionTypeItem> targetList;
 		if (isSimple)
 		{
@@ -9409,7 +9443,7 @@ public partial class SettingsWindow : Window
 			if (profile != null && _selectedSlotIndex >= 0 && _selectedSlotIndex < profile.Actions.Count)
 			{
 				var action = profile.Actions[_selectedSlotIndex];
-				if (action.SubActions != null && action.SubActions.Count > 0)
+				if (action.InlineSubActions != null && action.InlineSubActions.Count > 0)
 				{
 					_selectedSubActionIndex = 0;
 				}
@@ -9545,6 +9579,7 @@ public partial class SettingsWindow : Window
 			};
 
 			UpdateStudioWheelFit();
+			RenderPortalBackLink();
             if (RenderFixedCanvas(profile) || RenderActiveDeepCanvas(profile)) { RefreshStudioBranchTools(profile); RefreshStudioAppearance(); return; }
             RefreshStudioBranchTools(profile);
             RefreshStudioAppearance();
@@ -10343,10 +10378,13 @@ public partial class SettingsWindow : Window
 				}
 
 				// 3. Draw SubActions (icon, icon+text, or centered/truncated text label in TextOnly / ShowText / iconless fallback)
+				DrawPortalMarker(action, new Point(contentX, contentY), outerR - innerR);
+				if (isSectorSelected && _selectedSubActionIndex == null)
+					DrawPortalGhost(profile, new Point(centerX, centerY), new Point(contentX, contentY), scaleFactor, outerR);
 				bool isFanMode = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
 				bool shouldShowSub = !isFanMode ? true : (isTier2Mode || isParentSlot);
 
-                if (action?.SubActions != null && action.SubActions.Count > 0 && shouldShowSub)
+                if (action?.InlineSubActions is { Count: > 0 } && shouldShowSub)
 				{
 					// 功能配置画布：外圈同心子环布局，显示全部子动作，不截断已有超额数据（如 8 项预设或历史配置）
 					int subCount = action.SubActions.Count;
@@ -10370,6 +10408,9 @@ public partial class SettingsWindow : Window
 						RegisterCanvasHitItem(subGeo, new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, slotIdx, subIdx), isCenter: false, isSubAction: true, slotIndex: slotIdx, subIndex: subIdx, action: action.SubActions[j]);
 
 						bool isSubSelected = (_selectedSlotIndex == slotIdx && _selectedSubActionIndex == subIdx);
+						DrawPortalMarker(action.SubActions[j], new Point(subContentX, subContentY), subOuterR - subInnerR);
+						if (isSubSelected) DrawPortalGhost(profile, new Point(centerX, centerY),
+							new Point(subContentX, subContentY), scaleFactor, subOuterR);
 
 						System.Windows.Shapes.Path subPath = new System.Windows.Shapes.Path
 						{
@@ -11211,6 +11252,14 @@ public partial class SettingsWindow : Window
 
 	private void ProfileActivationInteraction_PreviewMouseDown(object sender, MouseButtonEventArgs e)
 	{
+		if (e.ChangedButton == MouseButton.Left && _recordingPinnedNavSlot != PinnedNavAction.None)
+		{
+			var navControl = FindInputControl(e.OriginalSource as DependencyObject);
+			if (!IsPinnedNavKeyButton(navControl))
+			{
+				StopPinnedNavRecording();
+			}
+		}
 		if (_recordingActivationProfile == null || e.ChangedButton != MouseButton.Left) return;
 		var control = FindInputControl(e.OriginalSource as DependencyObject);
 		if (control == null) return;
@@ -11329,6 +11378,7 @@ public partial class SettingsWindow : Window
 		if (_selectedProfile == null || SelectedActivationLayer == null) return;
 		StopTriggerRecording(saved: false);
 		StopProcessTriggerRecording(saved: false);
+		StopPinnedNavRecording();
 		CancelExclusiveRecordingIfActive();
 		_recordingActivationProfile = _selectedProfile;
 		_recordingActivationLayer = SelectedActivationLayer;
@@ -11408,6 +11458,7 @@ public partial class SettingsWindow : Window
 	private void StartTriggerRecording()
 	{
 		StopProfileActivationRecording();
+		StopPinnedNavRecording();
 		_isRecordingTrigger = true;
 		if (RecordTriggerButton != null)
 		{
@@ -15511,6 +15562,8 @@ public partial class SettingsWindow : Window
 			"LayerIndicatorBg" => LayerIndicatorBgTextBox,
 			"LayerIndicatorBorder" => LayerIndicatorBorderTextBox,
 			"LayerIndicatorText" => LayerIndicatorTextTextBox,
+			"PortalCustomFill" => PortalCustomFillTextBox,
+			"PortalCustomBorder" => PortalCustomBorderTextBox,
 			_ => null, 
 		};
 	}
@@ -15704,6 +15757,7 @@ public partial class SettingsWindow : Window
 		try
 		{
 			RefreshTriggerRuleStatus(config);
+			if (newConfig) RefreshPortalTriggerControls();
 			BlacklistListBox.ItemsSource = rows;
 			BlacklistListBox.SelectedItem = rows.FirstOrDefault(row => string.Equals(row.ProcessName, selected, StringComparison.OrdinalIgnoreCase));
 			DeleteBlacklistButton.IsEnabled = BlacklistListBox.SelectedItem != null;
@@ -15822,6 +15876,7 @@ public partial class SettingsWindow : Window
 	private void StartProcessTriggerRecording()
 	{
 		StopProfileActivationRecording();
+		StopPinnedNavRecording();
 		if (string.IsNullOrWhiteSpace(_recordingProcessName))
 		{
 			return;
@@ -17241,7 +17296,7 @@ public partial class SettingsWindow : Window
 				SectorCount = 8,
 				Actions = new List<ActionItem>()
 			};
-			bool num4 = enableMultiTier && wheelProfile.Actions != null && wheelProfile.Actions.Any((ActionItem a) => a != null && a.SubActions != null && a.SubActions.Count > 0);
+			bool num4 = enableMultiTier && wheelProfile.Actions != null && wheelProfile.Actions.Any((ActionItem a) => a != null && a.InlineSubActions != null && a.InlineSubActions.Count > 0);
 			double num5 = Math.Max(80.0, ConfigManager.CurrentConfig.WheelRadius);
 			double num6 = ((ConfigManager.CurrentConfig.SubWheelOuterRadius > 0.0) ? ConfigManager.CurrentConfig.SubWheelOuterRadius : (ConfigManager.CurrentConfig.WheelRadius * num3));
 			double baseScaleRef = Math.Max(215.0, ConfigManager.CurrentConfig.WheelRadius * 1.55);
@@ -17865,7 +17920,7 @@ public partial class SettingsWindow : Window
 			{
 				foreach (var a in wheelProfile.Actions)
 				{
-					if (a?.SubActions != null) totalActualSubActions += a.SubActions.Count;
+					if (a?.InlineSubActions != null) totalActualSubActions += a.InlineSubActions.Count;
 				}
 			}
 			for (int num21 = 0; num21 < num19; num21++)
@@ -18292,11 +18347,11 @@ public partial class SettingsWindow : Window
 				ActionItem? actionItem = ConfigManager.CurrentConfig.LockParentSectorOnSubmenu ? action : wheelProfile.Actions[num21];
 
 				List<ActionItem>? subActionsList = null;
-				if (actionItem?.SubActions != null && actionItem.SubActions.Count > 0)
+				if (actionItem?.InlineSubActions != null && actionItem.InlineSubActions.Count > 0)
 				{
-					subActionsList = actionItem.SubActions;
+					subActionsList = actionItem.InlineSubActions;
 				}
-				else if (totalActualSubActions == 0)
+				else if (totalActualSubActions == 0 && actionItem?.IsWheelPortal != true)
 				{
 					// 全方案完全未配置任何实际二级动作时，仅当用户主动展开左侧二级尺寸/配色折叠栏（或蜂窝扇二级模式）时，
 					// 为当前选中的单个主扇区提供3项预览，方便微调视觉效果；正常浏览时绝不全量虚构填充全部扇区
@@ -18686,9 +18741,9 @@ public partial class SettingsWindow : Window
 			if (subIndex >= 0 && subIndex < _previewSubIndices.Count && subIndex < _previewSubParentIndices.Count && _previewSubParentIndices[subIndex] == mainIndex)
 			{
 				int localSubIndex = _previewSubIndices[subIndex];
-				if (action?.SubActions != null && localSubIndex >= 0 && localSubIndex < action.SubActions.Count)
+				if (action?.InlineSubActions != null && localSubIndex >= 0 && localSubIndex < action.InlineSubActions.Count)
 				{
-					selectedName = action.SubActions[localSubIndex]?.Name ?? string.Empty;
+					selectedName = action.InlineSubActions[localSubIndex]?.Name ?? string.Empty;
 				}
 			}
 			if (string.IsNullOrWhiteSpace(selectedName))

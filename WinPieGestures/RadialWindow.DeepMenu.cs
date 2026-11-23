@@ -23,7 +23,7 @@ public partial class RadialWindow
         Dispatcher.VerifyAccess();
         var config = ConfigManager.CurrentConfig;
         var screen = ScreenHelper.GetScreenContextAtPoint(ActualPhysicalCenter);
-        var children = parent.SubActions!;
+        var children = parent.InlineSubActions!;
         bool fan = config.SubmenuStyle == "Fan";
         int count = children.Count;
         double direction = GetDeepDirection(_profile, parentPath, fan, LegacyRingGeometry.SecondaryShape(config));
@@ -32,6 +32,7 @@ public partial class RadialWindow
             config.GetEffectiveCoreDeadzone(), _outerRadius, second, direction, parentPath.Count + 1, count, fan,
             config.EnableOuterEscapeCancel ? config.OuterEscapeDistance : 0);
 
+        InvalidatePinnedArrowSlots();
         RemoveDeepOverlay();
         // An edge page occupies the second ring's space; restore those visuals when returning to it.
         if (frame.IsPaged)
@@ -42,7 +43,7 @@ public partial class RadialWindow
 
         ResizeForDeepMenu(Math.Max(_wheelCanvasSize, 2 * frame.CanvasRadius));
         int remaining = Math.Max(0, (GestureController.CaptureReleaseLayer(_profile)?.EffectiveMaxMenuDepth ?? 2) - parentPath.Count - 1);
-        _deepOverlay = new DeepMenuOverlay(this, frame, children, breadcrumb, remaining, fan);
+        _deepOverlay = new DeepMenuOverlay(this, frame, children, breadcrumb, remaining, fan, parentPath.Count + 1);
         Panel.SetZIndex(_deepOverlay, 2000);
         MainGrid.Children.Add(_deepOverlay);
         return frame;
@@ -53,7 +54,7 @@ public partial class RadialWindow
         double unit = 360.0 / Math.Max(1, profile.SectorCount);
         double angle = path[0] * unit;
         var node = profile.GetEffectiveAction(path[0]);
-        for (int depth = 1; depth < path.Count && node?.SubActions is { Count: > 0 } items; depth++)
+        for (int depth = 1; depth < path.Count && node?.InlineSubActions is { Count: > 0 } items; depth++)
         {
             int index = path[depth];
             int visible = DeepMenuFrame.VisibleSlotCount(items.Count, fan);
@@ -99,6 +100,7 @@ public partial class RadialWindow
     internal void ClearDeepMenu()
     {
         if (_deepOverlay == null) return;
+        InvalidatePinnedArrowSlots();
         RemoveDeepOverlay();
         ResizeForDeepMenu(_wheelCanvasSize);
         _deepWindowSize = 0;
@@ -111,7 +113,7 @@ public partial class RadialWindow
         var cfg = ConfigManager.CurrentConfig;
         string mode = string.IsNullOrEmpty(item.LayoutMode) || item.LayoutMode == "Inherit" ? cfg.IconLayoutMode : item.LayoutMode;
         Brush ink = TryGetFrozenBrush(item.CustomTextColor) ?? _subTextColorBrush;
-        double markerWidth = entersBranch ? Math.Min(10, slot.LabelWidth * .25) : 0;
+        double markerWidth = entersBranch || item.IsWheelPortal ? Math.Min(10, slot.LabelWidth * .25) : 0;
         double width = slot.LabelWidth - markerWidth;
         var center = new Point(slot.Label.X - markerWidth / 2, slot.Label.Y);
         Geometry? icon = null;
@@ -164,10 +166,10 @@ public partial class RadialWindow
             DrawMenuText(dc, name, new Point(center.X, center.Y + (hasIcon ? 7 : 0)), width,
                 Math.Clamp(item.CustomFontSize ?? cfg.SubWheelFontSize, 10, 16), ink);
         }
-        if (entersBranch)
+        if (entersBranch || item.IsWheelPortal)
         {
             var marker = new Point(slot.Label.X + (slot.LabelWidth - markerWidth) / 2, center.Y);
-            DrawMenuText(dc, "›", marker, markerWidth, 12, ink);
+            DrawMenuText(dc, item.IsWheelPortal ? "◎" : "›", marker, markerWidth, 12, ink);
         }
     }
 
@@ -187,15 +189,21 @@ public partial class RadialWindow
     {
         private readonly RadialWindow _wheel;
         private readonly DeepMenuFrame _frame;
+        private readonly int _level;
         private readonly DrawingGroup?[] _labels;
         private readonly DrawingGroup _backText;
         private readonly Pen _border, _activeBorder;
         private int _highlight = DeepMenuFrame.None;
 
-        internal DeepMenuOverlay(RadialWindow wheel, DeepMenuFrame frame, IReadOnlyList<ActionItem> actions, string breadcrumb, int remaining, bool fan)
+        internal bool ArrowFramePresented { get; private set; }
+        internal PinnedArrowAddress? ArrowPointerSelection => _highlight >= 0 ? new(_level, _highlight) : null;
+
+        internal DeepMenuOverlay(RadialWindow wheel, DeepMenuFrame frame, IReadOnlyList<ActionItem> actions,
+            string breadcrumb, int remaining, bool fan, int level)
         {
             _wheel = wheel;
             _frame = frame;
+            _level = level;
             IsHitTestVisible = false;
             _border = new Pen(wheel._subSectorBorderBrush, Math.Max(1, wheel._borderThickness));
             _activeBorder = new Pen(wheel._subHighlightBorderBrush, Math.Max(1.5, wheel._borderThickness));
@@ -209,7 +217,7 @@ public partial class RadialWindow
                 using (var dc = drawing.Open())
                 {
                     if (item != null) wheel.DrawMenuLabel(dc, slot, item,
-                        remaining > 0 && item.SubActions is { Count: > 0 } && WheelProfile.IsActionConfigured(item));
+                        remaining > 0 && item.InlineSubActions is { Count: > 0 } && WheelProfile.IsActionConfigured(item));
                 }
                 if (drawing.CanFreeze) drawing.Freeze();
                 _labels[i] = drawing;
@@ -232,22 +240,36 @@ public partial class RadialWindow
             InvalidateVisual();
         }
 
+        internal void AppendPinnedArrowSlots(List<PinnedArrowSlot> slots)
+        {
+            for (int i = 0; i < _labels.Length; i++)
+            {
+                if (_labels[i] == null || _frame.Slots[i].Shape.IsEmpty()) continue;
+                slots.Add(new(new(_level, i), _frame.Slots[i].Label));
+            }
+        }
+
         protected override void OnRender(DrawingContext dc)
         {
             dc.PushTransform(new TranslateTransform(ActualWidth / 2, ActualHeight / 2));
             for (int i = 0; i < _labels.Length; i++)
             {
                 if (_labels[i] is not { } label) continue;
-                bool active = i == _highlight;
+                bool active = _wheel.PaintsPinnedArrowSelection(new(_level, i), i == _highlight);
                 dc.DrawGeometry(active ? _wheel._subHighlightSectorBrush : _wheel._subDefaultSectorBrush,
                     active ? _activeBorder : _border, _frame.Slots[i].Shape);
                 dc.DrawDrawing(label);
             }
-            bool back = _highlight == DeepMenuFrame.Back;
+            bool back = _wheel._pinnedArrowSelection == null && _highlight == DeepMenuFrame.Back;
             dc.DrawRoundedRectangle(back ? _wheel._subHighlightSectorBrush : _wheel._subDefaultSectorBrush,
                 back ? _activeBorder : _border, _frame.BackBounds, 7, 7);
             dc.DrawDrawing(_backText);
             dc.Pop();
+            if (_wheel._pinnedArrowSlotsChanged != null && !ArrowFramePresented)
+            {
+                ArrowFramePresented = true;
+                _wheel.QueuePinnedArrowRefresh();
+            }
         }
     }
 }
