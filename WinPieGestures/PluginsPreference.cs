@@ -45,7 +45,7 @@ public class PluginsPreference
     /// </summary>
     public List<string> ExtraScanDirectories { get; set; } = new List<string>();
 
-    /// <summary>启动完成后是否预加载标了 <c>Preload</c> 的插件。默认关闭以守住内存红线。</summary>
+    /// <summary>启动完成后是否预加载标了 <c>Preload</c> 的插件。首次生成配置时开启，旧配置缺失此字段时维持关闭。</summary>
     public bool PreloadOnStartup { get; set; }
 
     /// <summary>串行类插件动作的默认超时（秒）。单个插件可在描述符里覆盖。</summary>

@@ -576,6 +576,7 @@ public partial class SettingsWindow
 		    a.InheritAppIconPath != b.InheritAppIconPath ||
 		    a.RunAsStandardUser != b.RunAsStandardUser ||
 		    a.LaunchOnCursorMonitor != b.LaunchOnCursorMonitor ||
+		    !WheelPortalTarget.SameValue(a.PortalTarget, b.PortalTarget) ||
 		    a.LayoutMode != b.LayoutMode ||
 		    a.CustomTextColor != b.CustomTextColor ||
 		    a.CustomFontFamily != b.CustomFontFamily ||

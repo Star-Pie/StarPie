@@ -14,21 +14,15 @@ public partial class GestureController
 
     internal sealed class FixedRingSession
     {
-        internal sealed record Cell(ActionItem? Display, FixedRingSlot? SourceSlot, int? Parent, Geometry Shape)
-        {
-            internal bool IsVisible(bool persistent, int level, int[] path) => Display != null &&
-                (persistent || level - 3 < path.Length && Parent == path[level - 3]);
-        }
+        internal sealed record Cell(ActionItem? Display, FixedRingSlot? SourceSlot, Geometry Shape);
 
         // The radial span of a petal changes with the pointer angle. Read cached line segments
         // of the actual rendered outline; a projected angle alone cannot arm a hidden or empty slot.
         private sealed class ParentOutline
         {
-            private readonly Rect _bounds;
             private readonly (Point Start, Vector Edge)[] _edges;
             internal ParentOutline(Geometry shape)
             {
-                _bounds = shape.Bounds;
                 var polygon = shape.GetFlattenedPathGeometry(.08, ToleranceType.Absolute);
                 var edges = new List<(Point, Vector)>();
                 Point Map(Point p) => polygon.Transform?.Transform(p) ?? p;
@@ -47,9 +41,6 @@ public partial class GestureController
                 }
                 _edges = edges.ToArray();
             }
-
-            internal bool Contains(Point p, double radius) => _bounds.Contains(p) &&
-                TrySpan(p, radius, out double inner, out double outer) && radius >= inner && radius <= outer;
 
             internal bool TrySpan(Point p, double radius, out double inner, out double outer)
             {
@@ -80,38 +71,46 @@ public partial class GestureController
         internal readonly bool Persistent;
         internal bool IsHoneycomb => Geometry.IsHoneycomb;
         internal readonly Cell[][] Rows;
-        private readonly Dictionary<RingHit, ParentOutline> _parents = new();
         private readonly Dictionary<int, ParentOutline> _secondaryOutlines = new();
         private readonly Dictionary<int, SlotBinding> _secondaryBindings = new();
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FixedRingGeometry,
             Dictionary<(int Level, int Owner, int Index, int Count), ParentOutline>> CachedOutlines = new();
         private readonly HashSet<(int Level, int Index)> _configuredSlots;
         private readonly SlotBinding[] _rootBindings;
+        private readonly int[] _secondaryCounts;
         private readonly SlotBinding _center;
         private readonly SlotBinding[][] _bindings;
         private readonly Point _origin;
         private readonly DpiScale _dpi;
         private readonly double _trigger, _primaryRadius;
-        private readonly double[] _returnRadii = new double[3];
-        private RingHit _armed;
-        private double _armedRadius;
+        private readonly FixedRingProximity _proximity;
+        private readonly double _configuredExtent;
+        private long _presentedThird, _presentedFourth, _presentedFifth;
         private int _trackedPrimary = -1;
         private double _trackedRadius;
         internal bool Pinned { private get; set; }
         internal int ExtendedPrimary { get; private set; } = -1;
-        internal bool ShowingExtendedPrimary => ControlsOuter && Path.Length == 0 && ExtendedPrimary >= 0;
+        internal bool ShowingExtendedPrimary => ControlsOuter && Visibility.VisibleDepth == 2 && ExtendedPrimary >= 0;
+        internal bool NeedsExtendedSecondary => ControlsOuter && ExtendedPrimary >= 0 &&
+            !ShowAllSecondary && ShownParent != ExtendedPrimary;
         private readonly Dictionary<int, ParentOutline> _primaryOutlines = new();
         private readonly double _legacyExtent;
         internal int ShownParent { get; private set; } = -1;
         internal bool ShowAllSecondary { get; private set; }
-        internal int[] Path { get; private set; } = [];
-        private volatile int[]? _presentedPath;
+        internal FixedRingVisibility Visibility { get; private set; }
         internal bool Presented { get; private set; }
         internal void Present() => Presented = true;
-        internal void PublishFrame(int[] path) => _presentedPath = path;
+
+        // Input may sample during rendering. Each hit checks just the published mask for its tier.
+        internal void PublishFrame(FixedRingVisibility visibility)
+        {
+            System.Threading.Volatile.Write(ref _presentedThird, (long)visibility.Third);
+            System.Threading.Volatile.Write(ref _presentedFourth, (long)visibility.Fourth);
+            System.Threading.Volatile.Write(ref _presentedFifth, (long)visibility.Fifth);
+        }
+
         internal RingHit Hover { get; private set; }
-        internal int ActiveLevel => Path.Length + 2;
-        internal int VisibleDepth => Persistent ? Rows.Length : ActiveLevel;
+        internal int VisibleDepth => Visibility.VisibleDepth;
         internal bool ControlsOuter { get; private set; }
 
         internal FixedRingSession(WheelProfile profile, WheelLayer layer, long version, FixedRingGeometry geometry,
@@ -130,11 +129,16 @@ public partial class GestureController
             var config = ConfigManager.CurrentConfig;
             _center = SlotBinding.Capture(profile.GetEffectiveCenterAction());
             _rootBindings = new SlotBinding[layer.SectorCount];
+            _secondaryCounts = new int[layer.SectorCount];
             Rows = new Cell[layer.EffectiveMaxMenuDepth][];
             _bindings = new SlotBinding[Rows.Length][];
             _configuredSlots = Menu.ConfiguredSlots(profile, Rows.Length, config.SubmenuStyle == "Fan");
             _trigger = config.SubWheelTriggerDistance > 20 ? config.SubWheelTriggerDistance : 95;
             _primaryRadius = Math.Max(1, config.WheelRadius);
+            _proximity = new(geometry, Menu, Rows.Length, _configuredSlots);
+            Visibility = Persistent ? _proximity.Configured : default;
+            int deepest = _proximity.Configured.VisibleDepth;
+            _configuredExtent = deepest > 2 ? geometry.OuterForCount(deepest, Menu.GetCount(deepest)) : _legacyExtent;
             var cache = CachedOutlines.GetOrCreateValue(geometry);
             for (int level = 3; level <= Rows.Length; level++)
             {
@@ -145,27 +149,17 @@ public partial class GestureController
                     var slot = Menu.GetSlot(level, i);
                     var bound = bindings[i] = SlotBinding.Capture(slot?.Action);
                     var display = _configuredSlots.Contains((level, i)) ? bound.Action : null;
-                    row[i] = new(display, slot, slot?.ParentIndex, geometry.GetShape(level, i, row.Length));
-                    if (level > 3 && slot?.ParentIndex is int parent && (uint)parent < (uint)Rows[level - 2].Length)
-                    {
-                        var owner = Rows[level - 2][parent];
-                        var address = new RingHit(level - 1, parent);
-                        if (!Persistent && owner.Display != null && !_parents.ContainsKey(address))
-                        {
-                            var key = (level - 1, -1, parent, Rows[level - 2].Length);
-                            if (!cache.TryGetValue(key, out var outline)) cache[key] = outline = new(owner.Shape);
-                            _parents[address] = outline;
-                        }
-                    }
+                    row[i] = new(display, slot, display != null ? geometry.GetShape(level, i, row.Length) : System.Windows.Media.Geometry.Empty);
                 }
             }
             for (int root = 0; root < layer.SectorCount; root++)
             {
                 var parent = Persistent ? FixedRingMenu.DisplayRoot(profile, root) : profile.GetEffectiveAction(root);
                 _rootBindings[root] = SlotBinding.Capture(parent);
-                int count = parent?.SubActions?.Count ?? 0;
+                int count = parent?.InlineSubActions?.Count ?? 0;
+                _secondaryCounts[root] = count;
                 int visible = config.SubmenuStyle == "Fan" ? Math.Min(RadialWindow.FanSubmenuSlotCount, count) : count;
-                if (IsHoneycomb || (!Persistent && !config.ExpandsSubRingsOnPopup && visible > 0))
+                if (IsHoneycomb || (!Persistent && visible > 0))
                 {
                     var cacheKey = (1, -1, root, layer.SectorCount);
                     if (!cache.TryGetValue(cacheKey, out var primary))
@@ -174,7 +168,7 @@ public partial class GestureController
                 }
                 for (int sub = 0; sub < visible; sub++)
                 {
-                    var child = parent!.SubActions[sub];
+                    var child = parent!.InlineSubActions[sub];
                     int key = FixedRingMenu.SecondaryKey(root, sub);
                     if (!_configuredSlots.Contains((2, key))) continue;
                     _secondaryBindings[key] = SlotBinding.Capture(child);
@@ -186,14 +180,17 @@ public partial class GestureController
                         cache[cacheKey] = outline = new(shape);
                     }
                     _secondaryOutlines[key] = outline;
-                    if (!Persistent && Array.Exists(Rows[2], c => c.Display != null && c.Parent == key))
-                        _parents[new(2, key)] = outline;
                 }
             }
         }
 
         private Point Relative(Point point) => new((point.X - _origin.X) / _dpi.DpiScaleX, (point.Y - _origin.Y) / _dpi.DpiScaleY);
-        internal bool IsOuterPoint(Point point) => ((Vector)Relative(point)).Length > _legacyExtent || (IsHoneycomb && Hit(point).IsOuter);
+        internal bool IsOuterPoint(Point point)
+        {
+            var local = Relative(point);
+            return ((Vector)local).LengthSquared > _legacyExtent * _legacyExtent ||
+                (IsHoneycomb && HitAt(local, _proximity.Configured).IsOuter);
+        }
         internal bool IsCurrent(WheelProfile? profile) => ReferenceEquals(profile, Profile) &&
             ReferenceEquals(CaptureReleaseLayer(profile), Layer) && ReferenceEquals(Layer.ActiveFixedRings, Menu) &&
             Revision == ConfigManager.ConfigurationRevision && ConfigManager.CurrentConfig.EnableMultiTier &&
@@ -204,80 +201,44 @@ public partial class GestureController
             if (ShownParent == parent && all == ShowAllSecondary) return false;
             ShownParent = parent;
             ShowAllSecondary = all;
-            if (_armed.Level == 2 && !all && FixedRingMenu.TryDecodeSecondaryKey(_armed.Index, out int root, out _) && root != parent)
-                _armed = default;
             return true;
         }
 
         internal bool WasVisible(RingHit hit)
         {
-            var rendered = _presentedPath;
-            return Presented && rendered != null && hit.IsOuter &&
-                Rows[hit.Level - 1][hit.Index].IsVisible(Persistent, hit.Level, rendered);
+            if (!Presented || (uint)hit.Index >= 64) return false;
+            long tier = hit.Level switch
+            {
+                3 => System.Threading.Volatile.Read(ref _presentedThird),
+                4 => System.Threading.Volatile.Read(ref _presentedFourth),
+                5 => System.Threading.Volatile.Read(ref _presentedFifth),
+                _ => 0
+            };
+            return ((ulong)tier & (1UL << hit.Index)) != 0;
         }
 
-        internal RingHit Hit(Point point)
+        internal RingHit Hit(Point point) => HitAt(Relative(point), Visibility);
+
+        // The existing interaction event contract has two address fields. Report the
+        // geometric direction and a distinct slot address for feedback on fixed tiers.
+        internal (int Sector, int Sub) FeedbackAddress(RingHit hit)
         {
-            var local = Relative(point);
-            for (int level = 3; level <= VisibleDepth; level++)
+            if (!hit.IsOuter) return (-2, -1);
+            var center = Geometry.GetCenter(hit.Level, hit.Index, Rows[hit.Level - 1].Length);
+            int roots = _rootBindings.Length;
+            double turn = Math.Atan2(center.Y, center.X) / Math.Tau;
+            int sector = (int)Math.Floor((turn + 1) * roots + .5) % roots;
+            return (sector, _secondaryCounts[sector] + (hit.Level - 3) * FixedRingMenu.MaximumCount(5) + hit.Index);
+        }
+
+        private RingHit HitAt(Point local, FixedRingVisibility visible)
+        {
+            for (int level = 3; level <= visible.VisibleDepth; level++)
             {
-                int index = Geometry.Hit(local, level, Rows[level - 1].Length);
-                if (index >= 0 && Rows[level - 1][index].IsVisible(Persistent, level, Path)) return new(level, index);
+                int index = Geometry.HitVisible(local, level, Rows[level - 1].Length, visible.At(level));
+                if (index >= 0) return new(level, index);
             }
             return default;
-        }
-
-        internal bool Eligible(RingHit hit) => hit.IsOuter && (Persistent || hit.Level == ActiveLevel ||
-            (hit.Level - 2 < Path.Length && Path[hit.Level - 2] == hit.Index)) &&
-            Rows[hit.Level - 1][hit.Index] is { Display: not null } cell && (Persistent || cell.Parent == Path[hit.Level - 3]);
-
-        private double Threshold(int level, double inner, double outer)
-        {
-            if (_trigger <= _primaryRadius)
-                return inner + (outer - inner) * _trigger / _primaryRadius;
-            double nextMiddle = (Geometry.Inner(level + 1) + Geometry.OuterForCount(level + 1, Rows[level].Length)) / 2;
-            double fraction = Math.Clamp((_trigger - _primaryRadius) / (Math.Max(260, _trigger) - _primaryRadius), 0, 1);
-            return outer + Math.Max(0, nextMiddle - outer) * fraction;
-        }
-
-        private bool CheckDistance(RingHit hit, Point local, double radius, bool mayArm)
-        {
-            if (!Presented || (hit.IsOuter && !WasVisible(hit)) || hit.Level != ActiveLevel || !_parents.TryGetValue(hit, out var outline) ||
-                !outline.TrySpan(local, radius, out double inner, out double outer))
-            {
-                _armed = default;
-                return false;
-            }
-            bool inside = radius >= inner && radius <= outer;
-            if (!(inside && mayArm) && !(_armed == hit && radius >= _armedRadius && radius >= outer))
-            {
-                _armed = default;
-                return false;
-            }
-            _armed = hit;
-            _armedRadius = radius;
-            double threshold = Threshold(hit.Level, inner, outer);
-            if (radius + 1e-7 < threshold) return false;
-            // A move into the new ring must remain selectable even when a large global
-            // distance required crossing its parent's outer edge first.
-            Open(hit, Math.Max(inner, Math.Min(outer, threshold) - .12 * (outer - inner)));
-            return true;
-        }
-
-        internal bool AimSecondary(Point point, int root, int sub)
-        {
-            if (Persistent || Path.Length != 0 || ControlsOuter || !Presented) return false;
-            int key = root >= 0 && sub >= 0 ? FixedRingMenu.SecondaryKey(root, sub) : -1;
-            var hit = new RingHit(2, key);
-            if (!(ShowAllSecondary || root == ShownParent) || !_parents.ContainsKey(hit))
-            {
-                // Legacy hit testing can return no slot between a short Fan petal and its
-                // complete radial envelope. Keep a continuous outward projection in that gap.
-                if (sub >= 0 || (root >= 0 && root != ShownParent && !ShowAllSecondary)) _armed = default;
-                return false;
-            }
-            var local = Relative(point);
-            return CheckDistance(hit, local, ((Vector)local).Length, true);
         }
 
         internal RingHit HitHoneycombInner(Point point, SubmenuLockTracker parentLock)
@@ -295,14 +256,14 @@ public partial class GestureController
                 int parent = address / 3, child = address % 3;
                 int key = FixedRingMenu.SecondaryKey(parent, child);
                 if ((ShowAllSecondary || parent == ShownParent) && (!parentLock.IsLocked || parentLock.LockedParentSector == parent) &&
-                    (Path.Length == 0 || Path[0] == key) && _secondaryBindings.ContainsKey(key))
+                    _secondaryBindings.ContainsKey(key))
                 {
                     if (lockEnabled) parentLock.Lock(parent);
                     return new(2, key);
                 }
                 return default;
             }
-            if (parentLock.IsLocked || Path.Length > 0) return default;
+            if (parentLock.IsLocked) return default;
             double deadzone = config.GetEffectiveCoreDeadzone();
             if (radius < Geometry.CoreDeadzoneRadius(deadzone > 0 ? deadzone : 15)) return new(0, -1);
             int root = Geometry.Hit(local, 1, _rootBindings.Length);
@@ -313,7 +274,6 @@ public partial class GestureController
         {
             if (root < 0 || sub < 0 || !(ShowAllSecondary || root == ShownParent)) return false;
             var hit = new RingHit(2, FixedRingMenu.SecondaryKey(root, sub));
-            if (Path.Length > 0 && Path[0] != hit.Index) return false;
             if (!_secondaryOutlines.TryGetValue(hit.Index, out var outline)) return false;
             var local = Relative(point);
             double radius = ((Vector)local).Length;
@@ -322,7 +282,7 @@ public partial class GestureController
 
         private void TrackExtendedPrimary(Point local, double radius)
         {
-            if (Persistent || _primaryOutlines.Count == 0 || ShowAllSecondary || Path.Length != 0) return;
+            if (Persistent || _primaryOutlines.Count == 0 || ShowAllSecondary) return;
             if (IsHoneycomb)
             {
                 int rootHit = Geometry.Hit(local, 1, _rootBindings.Length);
@@ -371,82 +331,28 @@ public partial class GestureController
 
         internal bool Move(Point point)
         {
-            _lastPointer = point;
             var local = Relative(point);
             double radius = ((Vector)local).Length;
             TrackExtendedPrimary(local, radius);
-            var previous = Path;
-            var oldHover = Hover;
-            bool outer = radius > _legacyExtent || (IsHoneycomb && Hit(point).IsOuter);
-            bool changed = outer != ControlsOuter;
+            var visible = Persistent ? _proximity.Configured : _proximity.Around(local, Visibility);
+            var hit = HitAt(local, visible);
+            bool outer = radius > _legacyExtent || (IsHoneycomb && hit.IsOuter);
+            if (!outer) hit = default;
+            bool changed = visible != Visibility || outer != ControlsOuter || hit != Hover;
+            Visibility = visible;
             ControlsOuter = outer;
-            while (Path.Length > 0 && radius < _returnRadii[Path.Length - 1])
-            {
-                Path = Path[..^1];
-                _armed = default;
-            }
-            var hit = outer ? Hit(point) : default;
-            Hover = Eligible(hit) ? hit : default;
-            if (!Persistent)
-            {
-                if (Hover.IsOuter && Hover.Level == ActiveLevel)
-                    CheckDistance(Hover, local, radius, true);
-                else if (_armed.Level != 0)
-                {
-                    // A secondary still inside the legacy envelope receives the authoritative
-                    // Wheel/Fan selection below. Outside its shape continue only on the same ray corridor.
-                    bool inLegacyParent = _armed.Level == 2 && !outer && _parents.TryGetValue(_armed, out var outline) &&
-                        outline.TrySpan(local, radius, out double inner, out double edge) && radius >= inner && radius <= edge;
-                    if (!inLegacyParent) CheckDistance(_armed, local, radius, false);
-                }
-            }
-            return changed || !ReferenceEquals(previous, Path) || oldHover != Hover;
-        }
+            Hover = hit;
+            return changed;
 
-        internal bool Enter(RingHit hit)
-        {
-            if (!Presented || Persistent || hit.Level != ActiveLevel || !_parents.ContainsKey(hit) ||
-                (hit.IsOuter && (!WasVisible(hit) || !Eligible(hit)))) return false;
-            // An explicit pinned click opens a navigation-only parent at any distance.
-            var local = Relative(_lastPointer);
-            double radius = ((Vector)local).Length;
-            double exit = _parents[hit].TrySpan(local, radius, out double inner, out _) ?
-                inner : hit.Level == 2 ? _primaryRadius : Geometry.Inner(hit.Level);
-            Open(hit, exit);
-            return true;
         }
-
-        private void Open(RingHit hit, double exit)
-        {
-            _returnRadii[hit.Level - 2] = exit;
-            Path = AppendMenuSlot(Path, hit.Index);
-            _armed = default;
-        }
-
-        private Point _lastPointer;
 
         internal bool IsEscaped(Point point)
         {
             var config = ConfigManager.CurrentConfig;
-            double outer = VisibleDepth >= 3 ? Geometry.OuterForCount(VisibleDepth, Rows[VisibleDepth - 1].Length) : _legacyExtent;
+            double outer = _configuredExtent;
             double limit = Math.Max(outer + 1, config.OuterEscapeDistance > 0 ? config.OuterEscapeDistance : outer * 1.5);
             if (ShowingExtendedPrimary) limit = Math.Max(limit, _trigger + 2);
             return config.EnableOuterEscapeCancel && ((Vector)Relative(point)).Length > limit;
-        }
-
-        internal (int sector, int sub) Target(RingHit hit)
-        {
-            if (!Eligible(hit)) return (-2, -1);
-            int index = hit.Index;
-            for (int level = hit.Level; level >= 3; level--)
-            {
-                if (Rows[level - 1][index].Parent is not int parent || parent < 0) return (-2, -1);
-                if (level == 3) return _secondaryBindings.ContainsKey(parent) &&
-                    FixedRingMenu.TryDecodeSecondaryKey(parent, out int root, out int sub) ? (root, sub) : (-2, -1);
-                if ((uint)parent >= (uint)Rows[level - 2].Length || Rows[level - 2][parent].Display == null) return (-2, -1);
-                index = parent;
-            }
-            return (-2, -1);
         }
 
         private bool BindingCurrent(int level, int i)
@@ -454,7 +360,7 @@ public partial class GestureController
             var row = Rows[level - 1];
             if (Menu.GetCount(level) != row.Length) return false;
             var slot = Menu.GetSlot(level, i);
-            return slot != null && ReferenceEquals(row[i].SourceSlot, slot) && slot.ParentIndex == row[i].Parent &&
+            return slot != null && ReferenceEquals(row[i].SourceSlot, slot) &&
                 _bindings[level - 1][i].Matches(slot.Action, false);
         }
 
@@ -465,7 +371,7 @@ public partial class GestureController
             var action = Persistent ? FixedRingMenu.DisplayRoot(Profile, root) : Profile.GetEffectiveAction(root);
             bool inherited = _rootBindings[root].Action?.IsInherited == true;
             return inherited == (action?.IsInherited == true) && _rootBindings[root].Matches(action, inherited) &&
-                action?.SubActions is { } children && sub < children.Count && binding.Matches(children[sub], inherited);
+                action?.InlineSubActions is { } children && sub < children.Count && binding.Matches(children[sub], inherited);
         }
 
         internal bool Resolve(RingHit hit, out ActionItem? action)
@@ -498,31 +404,15 @@ public partial class GestureController
                 if (IsDeepMenuLeafAvailable(binding.Action)) action = binding.Action;
                 return true;
             }
-            if (!Eligible(hit)) return true;
-            if (Persistent && !Menu.HasEnabledAncestry(hit.Level, hit.Index, Layer.SectorCount, root => FixedRingMenu.DisplayRoot(Profile, root)))
-                return false;
-            // Independent or already-hidden owners remain valid direct targets. If an owner was
-            // present when shown, any replacement, reordering or removal invalidates this release.
-            int index = hit.Index;
-            for (int level = hit.Level; level >= 3; level--)
-            {
-                if (!BindingCurrent(level, index)) return false;
-                if (Rows[level - 1][index].Parent is not int parent || parent < 0) break;
-                if (level == 3)
-                {
-                    if (_secondaryBindings.ContainsKey(parent) && !SecondaryCurrent(parent)) return false;
-                    break;
-                }
-                if ((uint)parent >= (uint)Rows[level - 2].Length || Rows[level - 2][parent].Display == null) break;
-                index = parent;
-            }
+            if (!Visibility.Contains(hit.Level, hit.Index) || !WasVisible(hit)) return true;
+            if (!BindingCurrent(hit.Level, hit.Index)) return false;
             var saved = _bindings[hit.Level - 1][hit.Index].Action;
             if (IsDeepMenuLeafAvailable(saved)) action = saved;
             return true;
         }
     }
     private sealed record FixedRelease(FixedRingSession Session, RingHit Hit);
-    private sealed record FixedPress(FixedRingSession Session, int[] Path, RingHit Hit);
+    private sealed record FixedPress(FixedRingSession Session, RingHit Hit);
     private sealed record DebouncedFixedRelease(DeepRelease Selection, FixedRingSession? Session, int Sector, int Sub, bool Escaped);
     private DebouncedFixedRelease? _debouncedFixedRelease;
     private FixedRingSession? _fixedSession;
@@ -539,7 +429,7 @@ public partial class GestureController
         lock (_uiUpdateSync)
         {
             long request = ++_layerSwitchSequence;
-            if (_switchingFixedLayer || _fixedSession != null || UsesFixedRings(profile) ||
+            if (_portalAcceptInput || _switchingFixedLayer || _fixedSession != null || UsesFixedRings(profile) ||
                 profile.Layers[next] is { ActiveFixedRings: not null, EffectiveMaxMenuDepth: > 2 })
             {
                 _switchingFixedLayer = true;
@@ -607,7 +497,8 @@ public partial class GestureController
                 if (_pinState.Enabled) _pinExpandedParent = session.ExtendedPrimary;
                 QueueHighlightUpdate(session.ExtendedPrimary, -1, escaped, !escaped, _gestureVersion);
             }
-            if (changed || (session.ControlsOuter && escaped != _lastEscapedState))
+            if (changed || (session.ControlsOuter && escaped != _lastEscapedState) ||
+                (session.NeedsExtendedSecondary && !session.ShowingExtendedPrimary && !escaped))
             {
                 if (session.ControlsOuter) _lastEscapedState = escaped;
                 QueueFixedRender(session);
@@ -616,22 +507,12 @@ public partial class GestureController
         }
     }
 
-    private void AimFixedSecondary(Point point, int sector, int sub)
-    {
-        if (_fixedSession == null) return;
-        lock (_uiUpdateSync)
-            if (_fixedSession is { } session && session.AimSecondary(point, sector, sub))
-                QueueFixedRender(session);
-    }
-
     private void PublishSecondaryVisuals(RadialWindow window)
     {
         lock (_uiUpdateSync)
         {
             if (_fixedSession is not { } session) return;
-            bool changed = session.SetShownSecondary(window.ShownSecondaryParent, window.AllShownSecondaries);
-            if (session.AimSecondary(_lastMovePoint, _selectedSectorIndex, _selectedSubSectorIndex) || changed)
-                QueueFixedRender(session);
+            session.SetShownSecondary(window.ShownSecondaryParent, window.AllShownSecondaries);
         }
     }
 
@@ -644,6 +525,8 @@ public partial class GestureController
 
     private void RenderFixed(FixedRingSession session)
     {
+        int secondaryToReveal = -1;
+        RadialWindow? window;
         lock (_uiUpdateSync)
         {
             if (!ReferenceEquals(session, _fixedSession) || !_isGestureActive || _gestureVersion != session.Version) return;
@@ -656,13 +539,27 @@ public partial class GestureController
             }
             if (session.ControlsOuter && !session.ShowingExtendedPrimary)
             {
-                (_selectedSectorIndex, _selectedSubSectorIndex) = session.Target(session.Hover);
-                _interactionSession?.Update(_selectedSectorIndex, _selectedSubSectorIndex, session.VisibleDepth > 2, _lastEscapedState,
-                    preservePrimaryTarget: _pinState.Enabled);
+                (_selectedSectorIndex, _selectedSubSectorIndex) = (-2, -1);
+                if (_interactionSession is { } interaction)
+                {
+                    var (sector, sub) = session.FeedbackAddress(session.Hover);
+                    interaction.Update(sector, sub, session.VisibleDepth > 2, _lastEscapedState,
+                        preservePrimaryTarget: _pinState.Enabled);
+                }
                 _radialWindow?.SetOuterEscapeState(_lastEscapedState);
+                if (session.NeedsExtendedSecondary && !_lastEscapedState)
+                    secondaryToReveal = session.ExtendedPrimary;
             }
-            _radialWindow?.UpdateFixedRings(session.Path, session.Hover);
+            window = _radialWindow;
+            window?.UpdateFixedRings(session.Visibility, session.Hover);
         }
+
+        if (secondaryToReveal < 0 || window == null || !ReferenceEquals(session, _fixedSession) ||
+            window.PresentationVersion != session.Version || !IsCurrentGesture(session.Version) ||
+            session.ExtendedPrimary != secondaryToReveal || !session.NeedsExtendedSecondary) return;
+        // Reveal the old L2 ring without replacing a currently visible fixed-tier hover.
+        window.RevealFixedSecondary(secondaryToReveal);
+        if (ReferenceEquals(session, _fixedSession)) PublishSecondaryVisuals(window);
     }
 
     private bool ConfirmFixedSelection(Point point, FixedPress? down)
@@ -673,16 +570,10 @@ public partial class GestureController
             if (_switchingFixedLayer) return true;
             if (session == null) return down != null || UsesFixedRings(_activeProfile);
             if (down == null && !session.IsOuterPoint(point)) return false;
-            if (!session.IsCurrent(_activeProfile) || down == null || !ReferenceEquals(down.Session, session) ||
-                !ReferenceEquals(down.Path, session.Path)) return true;
+            if (!session.IsCurrent(_activeProfile) || down == null || !ReferenceEquals(down.Session, session)) return true;
             var hit = session.Hit(point);
             if (down.Hit != hit || !session.WasVisible(hit)) return true;
-            if (!session.Resolve(hit, out var action)) return true;
-            if (action == null)
-            {
-                if (session.Enter(hit)) QueueFixedRender(session);
-                return true;
-            }
+            if (!session.Resolve(hit, out var action) || action == null) return true;
             _mouseTriggerDown = true;
             CompleteMouseTriggerRelease(point, _pinTrigger?.MouseButton ?? "RightButton", _activeActivation);
             return true;

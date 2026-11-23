@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
+using BitOperations = System.Numerics.BitOperations;
 
 namespace WinPieGestures;
 
@@ -196,14 +197,45 @@ internal sealed partial class FixedRingGeometry
     }
 
     internal Geometry GetShape(int level, int index, int count) => Get(level, index, count).Shape;
-    internal int Hit(Point relativeDips, int level, int count)
+
+    internal ulong NearSlots(Point point, int level, int count, ulong configured, ulong previous)
+    {
+        if (configured == 0) return 0;
+        double approach = Math.Clamp(CellWidth(level, count) * .65, 6, 32);
+        // A slightly wider exit margin keeps the same cell visible during small pointer jitters.
+        double retreat = approach * 1.25;
+        if (!WithinRadius(point, Math.Max(0, Inner(level) - retreat), OuterForCount(level, count) + retreat)) return 0;
+
+        ulong visible = 0;
+        while (configured != 0)
+        {
+            int index = BitOperations.TrailingZeroCount(configured);
+            ulong bit = 1UL << index;
+            configured &= ~bit;
+            double distance = (previous & bit) == 0 ? approach : retreat;
+            if (Get(level, index, count).IsNear(point, distance)) visible |= bit;
+        }
+        return visible;
+    }
+
+    internal int Hit(Point relativeDips, int level, int count) => HitVisible(relativeDips, level, count, ulong.MaxValue);
+
+    internal int HitVisible(Point relativeDips, int level, int count, ulong visible)
     {
         if (level == 1) count = _rootCount;
-        if (count < 1 || !WithinRadius(relativeDips, Inner(level), OuterForCount(level, count))) return -1;
-        if (_honeycomb != null) return _honeycomb.Hit(relativeDips, level, count);
+        if (visible == 0 || count < 1 || !WithinRadius(relativeDips, Inner(level), OuterForCount(level, count))) return -1;
+        if (_honeycomb != null)
+        {
+            int cell = _honeycomb.Hit(relativeDips, level, count);
+            return cell >= 0 && IsVisible(cell) ? cell : -1;
+        }
         double angle = Math.Atan2(relativeDips.Y, relativeDips.X) * Degrees;
         int index = (int)Math.Floor((angle + 360) * count / 360 + .5) % count;
-        return Get(level, index, count).Contains(relativeDips) ? index : -1;
+        // Adjacent slots can be visible while the pointer is over an empty slot.
+        // Reject that slot before reaching the outline cache's geometry builder.
+        return IsVisible(index) && Get(level, index, count).Contains(relativeDips) ? index : -1;
+
+        bool IsVisible(int index) => visible == ulong.MaxValue || (uint)index < 64 && (visible & (1UL << index)) != 0;
     }
 
     private static bool WithinRadius(Point point, double inner, double outer)
@@ -261,6 +293,8 @@ internal sealed partial class FixedRingGeometry
 
     private sealed record Outline(Geometry Shape, Point[] Points)
     {
+        private Rect Bounds { get; } = Shape.Bounds;
+
         // Geometry is prepared by the renderer; hot input reads its identical polygon without WPF allocations.
         internal bool Contains(Point p)
         {
@@ -275,6 +309,31 @@ internal sealed partial class FixedRingGeometry
                 previous = current;
             }
             return inside;
+        }
+
+        internal bool IsNear(Point point, double distance)
+        {
+            if (Points.Length == 0) return false;
+            var area = Bounds;
+            area.Inflate(distance, distance);
+            if (!area.Contains(point)) return false;
+            if (Contains(point)) return true;
+
+            double limit = distance * distance;
+            var start = Points[^1];
+            foreach (var end in Points)
+            {
+                Vector edge = end - start;
+                double length = edge.LengthSquared;
+                if (length > 0)
+                {
+                    Vector delta = point - start;
+                    double fraction = Math.Clamp(Vector.Multiply(delta, edge) / length, 0, 1);
+                    if ((delta - edge * fraction).LengthSquared <= limit) return true;
+                }
+                start = end;
+            }
+            return false;
         }
     }
 }

@@ -51,34 +51,32 @@ public static partial class I18n
 
 	public static event Action? LanguageChanged;
 
-public static void SetLanguage(string code)
+	public static void SetLanguage(string code) => CurrentLanguage = ResolveLanguage(code);
+
+	internal static LanguageCode ResolveLanguage(string code)
 	{
 		if (string.Equals(code, "Auto", StringComparison.OrdinalIgnoreCase))
 		{
 			string name = CultureInfo.CurrentUICulture.Name;
 			if (name.StartsWith("zh-TW", StringComparison.OrdinalIgnoreCase) || name.StartsWith("zh-HK", StringComparison.OrdinalIgnoreCase) || name.StartsWith("zh-MO", StringComparison.OrdinalIgnoreCase) || name.StartsWith("zh-Hant", StringComparison.OrdinalIgnoreCase))
 			{
-				CurrentLanguage = LanguageCode.ZhTw;
+				return LanguageCode.ZhTw;
 			}
 			else if (name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
 			{
-				CurrentLanguage = LanguageCode.ZhCn;
+				return LanguageCode.ZhCn;
 			}
 			else if (name.StartsWith("ja", StringComparison.OrdinalIgnoreCase))
 			{
-				CurrentLanguage = LanguageCode.Ja;
+				return LanguageCode.Ja;
 			}
-			else
-			{
-				CurrentLanguage = LanguageCode.En;
-			}
-			return;
+			return LanguageCode.En;
 		}
 		// 反编译残留清理：原文是 ILSpy 还原结构化控制流失败后吐出的「长度 + 字符试探 + 跳转表」
 		// （31 处 `IL_xxxx` 标签跳转），这里改回它本来的形状 —— 对受支持的语言代码做精确匹配。
 		// 注意 code 为 null（配置文件里 Language 缺失）时，原实现兜底落到的同样是 ZhCn，
 		// 因此并入 `_` 分支，语义与原来逐条等价。
-		CurrentLanguage = code switch
+		return code switch
 		{
 			"zh-TW" or "zh-Hant" or "zh-HK" => LanguageCode.ZhTw,
 			"en" or "en-US" or "en-GB" => LanguageCode.En,
@@ -86,6 +84,9 @@ public static void SetLanguage(string code)
 			_ => LanguageCode.ZhCn
 		};
 	}
+
+	internal static string GetBuiltInString(string key, LanguageCode language) =>
+		Translations.TryGetValue(key, out var localized) ? localized.Get(language) : key;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static string T(string key) => GetString(key);
@@ -514,6 +515,8 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		RegisterWheelAppearanceStrings(Add);
 		RegisterPluginLibraryStatsStrings(Add);
 		RegisterTriggerSceneStrings(Add);
+		RegisterOpenWheelStrings(Add);
+		RegisterSettingsSearchStrings(Add);
 		Add("StudioProfiles", "方案与层", "方案與層", "Profiles & layers", "プロファイルとレイヤー");
 		Add("StudioInspector", "属性", "屬性", "Inspector", "プロパティ");
 		Add("StudioList", "列表", "清單", "List", "一覧");
@@ -1149,8 +1152,8 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("CoreDeadzoneTitle", "🎯 核心圆唤醒与死区灵敏度:", "🎯 核心圓喚醒與死區靈敏度:", "🎯 Center Deadzone & Activation Sensitivity:", "🎯 センターデッドゾーンと起動感度:");
 		Add("CoreDeadzoneDesc", "调节呼出轮盘后光标停留在中心核心圆触发核心动作或静默取消的有效半径。数值较小时轻划即可命中扇区，数值较大时中心判定区更宽容，更易触发中心核圆动作或防手抖取消。", "調節呼出輪盤後游標停留在中心核心圓觸發核心動作或靜默取消的有效半徑。數值較小時輕劃即可命中扇區，數值較大時中心判定區更寬容，更易觸發中心核圓動作或防手抖取消。", "Effective radius to trigger the center core action or silently cancel. Smaller values select outer sectors easily; larger values provide a wider center safe zone to prevent jitter.", "センター円で中央アクションまたはサイレントキャンセルをトリガーする有効半径。値が小さいと少しのスワイプでセクターを選択でき、値が大きいと中央の許容範囲が広がり手ブレを防止します。");
 		Add("MultiTierSectionTitle", "多级轮盘与级联子菜单", "多級輪盤與級聯子選單", "Multi-Tier Cascading Sub-Wheels", "マルチ階層カスケードサブホイール");
-		Add("SubWheelTriggerDistLabel", "轮盘逐级展开距离", "輪盤逐級展開距離", "Progressive wheel expansion distance", "ホイールを順に展開する距離");
-		Add("SubWheelTriggerDistDesc", "二级菜单和三级至五级固定圈共用此距离。减小后更早展开，增大后需要向外划得更远。", "二級選單與三級至五級固定圈共用此距離。調小後會較早展開，調大後需將游標再往外移。", "The level 2 submenu and fixed rings at levels 3–5 share this distance. A shorter distance opens the next level sooner. A longer distance requires moving farther outward.", "第2階層のサブメニューと第3～5階層の固定リングで共通の距離です。短くすると早く展開し、長くするとポインターをより外側へ動かす必要があります。");
+		Add("SubWheelTriggerDistLabel", "二级轮盘展开距离", "二級輪盤展開距離", "Level 2 expansion distance", "第2階層の展開距離");
+		Add("SubWheelTriggerDistDesc", "此距离仅调节二级菜单。三级至五级固定圈在光标靠近时显示附近的已配置扇区。", "此距離僅適用於二級選單。三級至五級固定圈會在游標靠近時顯示附近已設定的扇區。", "This distance applies to the level 2 submenu. At levels 3–5, configured fixed slots appear as the pointer approaches them.", "この距離は第2階層のサブメニューに適用されます。第3～5階層では、ポインターを近づけると設定済みのスロットが表示されます。");
 		Add("DirAuto", "✨ 自动（运动反方向）", "✨ 自動（運動反方向）", "✨ Auto (Opposite Motion)", "✨ 自動（移動の逆方向）");
 		Add("DirUp", "⬆ 上方", "⬆ 上方", "⬆ Up", "⬆ 上");
 		Add("DirDown", "⬇ 下方", "⬇ 下方", "⬇ Down", "⬇ 下");
@@ -1850,17 +1853,13 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("FixedSlotsSummary", "已配置 {0} · 空位 {1} · 推荐 {2} · 上限 {3}", "已配置 {0} · 空位 {1} · 建議 {2} · 上限 {3}", "{0} assigned · {1} empty · {2} recommended · {3} maximum", "設定済み {0} · 空き {1} · 推奨 {2} · 最大 {3}");
 		Add("FixedDisplay", "轮盘显示方式", "輪盤顯示方式", "Ring display", "リングの表示方法");
 		Add("FixedAll", "全部常驻", "全部常駐", "Always visible", "すべて常時表示");
-		Add("FixedAllConditional", "全部常驻（需开启同时展开）", "全部常駐（需開啟同時展開）", "Always visible (enable simultaneous expansion)", "すべて常時表示（同時展開を有効にしてください）");
-		Add("FixedStep", "逐级展开", "逐級展開", "Expand one level at a time", "階層ごとに展開");
-		Add("FixedParent", "归属上级", "所屬上級", "Parent slot", "親スロット");
-		Add("FixedIndependent", "独立扇区（仅常驻）", "獨立扇區（僅常駐）", "Independent (always-visible mode)", "独立（常時表示のみ）");
-		Add("FixedMissingParent", "已隐藏或清空的上级 · {0}", "已隱藏或清空的上級 · {0}", "Hidden or empty parent · {0}", "非表示または空の親 · {0}");
+		Add("FixedStep", "就近展开", "就近展開", "Expand nearby", "近くの項目を展開");
 		Add("FixedApply", "应用到扇区", "套用至扇區", "Apply to slot", "スロットに適用");
 		Add("FixedNext", "下一个空位", "下一個空位", "Next empty slot", "次の空きスロット");
 		Add("FixedEmpty", "空位", "空位", "Empty", "空き");
 		Add("FixedClear", "清空扇区", "清空扇區", "Clear slot", "スロットを空にする");
 		Add("FixedGuideDisabled", "多级轮盘已在触发设置中关闭，可继续编辑此布局。", "多級輪盤已在觸發設定中關閉，可繼續編輯此佈局。", "Multi-tier wheels are disabled in Trigger Settings. You can still edit this layout.", "トリガー設定で多階層ホイールが無効です。この配置は引き続き編集できます。");
-		Add("FixedGuide", "点击扇区选择位置和上级归属，空位也可以配置。", "點擊扇區選取位置和上級歸屬，空位也可以配置。", "Select a slot to edit its action and parent. Empty slots can be assigned.", "スロットを選び、アクションと親を設定します。空きスロットも選べます。");
+		Add("FixedGuide", "点击任意位置配置扇区。逐级展开时，移动光标即可显示附近的已配置扇区。", "點擊任意位置設定扇區。逐級展開時，移動游標即可顯示附近已設定的扇區。", "Select any slot to configure it. In progressive mode, move the pointer near configured slots to reveal them.", "空きスロットも選んで設定できます。段階表示では、ポインターを近づけると設定済みのスロットが表示されます。");
 		Add("CanvasMainWheel", "主轮盘", "主輪盤", "Main wheel", "メインホイール");
 		Add("CanvasDeleteBranch", "删除「{0}」及其子动作？", "刪除「{0}」及其子動作？", "Delete “{0}” and its children?", "「{0}」とその子アクションを削除しますか？");
 		Add("MenuDepthLabel", "菜单级数", "選單級數", "Menu levels", "メニュー階層数");
@@ -1916,6 +1915,9 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("SysCategory_Screenshot", "窗口管理", "視窗管理", "Window Management", "ウィンドウ管理");
 		Add("SysPreset_Screenshot", "屏幕截图 (Screenshot / Win+Shift+S)", "螢幕截圖 (Screenshot / Win+Shift+S)", "Screen Snipping (Win+Shift+S)", "画面切り取り (Win+Shift+S)");
 		Add("SysPresetName_Screenshot", "屏幕截图", "螢幕截圖", "Screenshot", "スクリーンショット");
+		Add("DefaultWheelCopyWindowScreenshot", "复制窗口截图", "複製視窗截圖", "Copy Window Screenshot", "ウィンドウの画像をコピー");
+		Add("DefaultWheelSaveScreenshot", "保存全屏截图", "儲存全螢幕截圖", "Save Full-Screen Screenshot", "全画面キャプチャを保存");
+		Add("DefaultWheelNewDesktop", "新建虚拟桌面", "新增虛擬桌面", "New Virtual Desktop", "仮想デスクトップを追加");
 		Add("SysCategory_TaskManager", "系统工具", "系統工具", "System Tools", "システムツール");
 		Add("SysPreset_TaskManager", "任务管理器 (Task Manager / Ctrl+Shift+Esc)", "工作管理員 (Task Manager / Ctrl+Shift+Esc)", "Task Manager (Ctrl+Shift+Esc)", "タスクマネージャー (Ctrl+Shift+Esc)");
 		Add("SysPresetName_TaskManager", "任务管理器", "工作管理員", "Task Manager", "タスクマネージャー");

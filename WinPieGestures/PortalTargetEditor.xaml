@@ -1,0 +1,27 @@
+<UserControl x:Class="WinPieGestures.PortalTargetEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:WinPieGestures"
+             Visibility="Collapsed">
+  <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+          BorderThickness="1" CornerRadius="{DynamicResource ControlCornerRadius}" Padding="10" Margin="0,0,0,10">
+    <StackPanel>
+      <TextBlock x:Name="Title" FontWeight="SemiBold" Margin="0,0,0,6" Foreground="{DynamicResource TextPrimaryBrush}" />
+      <ComboBox x:Name="Sources" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30" Margin="0,0,0,6"
+                DisplayMemberPath="Caption" SelectedValuePath="Key" SelectionChanged="SourceChanged" />
+      <ComboBox x:Name="Destinations" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30" Margin="0,0,0,6"
+                DisplayMemberPath="Caption" SelectionChanged="DestinationChanged" />
+      <TextBlock x:Name="Warning" TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,2,0,6" />
+      <ComboBox x:Name="Anchors" Style="{DynamicResource FlatComboBoxStyle}" MinHeight="30" Margin="0,0,0,6"
+                DisplayMemberPath="Caption" SelectedValuePath="Key" SelectionChanged="AnchorChanged" />
+      <CheckBox x:Name="SyncName" Click="SyncChanged" Margin="0,0,0,8" />
+      <WrapPanel>
+        <local:PortalWheelPreview x:Name="Thumbnail" Width="96" Height="96" Margin="0,0,8,6" />
+        <StackPanel>
+          <Button x:Name="Jump" Style="{DynamicResource ModernButtonStyle}" Padding="8,4" Click="JumpClick" />
+          <Button x:Name="Ghost" Style="{DynamicResource ModernButtonStyle}" Padding="8,4" Margin="0,5,0,0" Click="GhostClick" />
+        </StackPanel>
+      </WrapPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

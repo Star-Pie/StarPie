@@ -2,6 +2,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
 using WinPieGestures;
@@ -24,6 +25,21 @@ internal static class Program
         Environment.SetEnvironmentVariable("LOCALAPPDATA", Path.Combine(Sandbox, "app-data"));
         PluginPaths.OverrideRootsForTesting(Path.Combine(Sandbox, "plugins"), Path.Combine(Sandbox, "scan"));
         PluginHost.HeadlessMode = true;
+        string? candidate = typeof(Program).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+            .SingleOrDefault(attribute => attribute.Key == "StarPieCandidateDir")?.Value;
+        if (candidate != null)
+        {
+            byte[] expected = SHA256.HashData(File.ReadAllBytes(Path.Combine(candidate, "StarPie.dll")));
+            byte[] actual = SHA256.HashData(File.ReadAllBytes(typeof(App).Assembly.Location));
+            Check(expected.SequenceEqual(actual), "loaded host matches the specified candidate");
+        }
+        if (args.Contains("--online-defaults-only"))
+        {
+            Check(args.Contains("--test-instance"), "the online-defaults scenario requires test isolation");
+            await TestOnlineInstallDefaults();
+            Console.WriteLine($"PASS {_checks} online installation defaults checks with simulated downloads.");
+            return 0;
+        }
         OfficialPluginClient.HttpHandlerOverrideForTesting = new Handler(_ =>
         {
             _requests++;
@@ -187,6 +203,48 @@ internal static class Program
         try { await OfficialPluginClient.SaveOfflinePackageAsync(module, destination, new("direct"), cts.Token); Check(false, "cancelled export rejected"); }
         catch (OperationCanceledException) { Check(File.ReadAllBytes(destination).SequenceEqual(original), "cancelled export preserves destination"); }
         Check(!Directory.GetFiles(Sandbox, "*.download-*").Any(), "partial downloads removed");
+    }
+
+    private static async Task TestOnlineInstallDefaults()
+    {
+        PluginHost.Initialize();
+        byte[] first = File.ReadAllBytes(CreatePackage("online-first", "1.0.0", _ => { }));
+        var module = ModuleFor(Path.Combine(Sandbox, "online-first.spkg"));
+        OfficialPluginClient.HttpHandlerOverrideForTesting = new Handler(request =>
+        {
+            Check(request.RequestUri?.AbsoluteUri == module.PackageUrl, "only the fixture package route is requested");
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(first) };
+        });
+        var unverifiable = ModuleFor(Path.Combine(Sandbox, "online-first.spkg"));
+        unverifiable.Sha256 = new string('0', 64);
+        var rejected = await OfficialPluginClient.InstallAsync(unverifiable, downloadOptions: new("direct"));
+        Check(!rejected.Success && PluginRegistryStore.FindEntry(module.Id) == null, "failed download creates no plugin preferences");
+
+        var installed = await OfficialPluginClient.InstallAsync(module, downloadOptions: new("direct"));
+        Check(installed.Success && installed.Enabled, "explicit online install enables the fixture: " + installed.Error);
+        var entry = PluginRegistryStore.FindEntry(module.Id)!;
+        Check(entry.Enabled && entry.Preload && PluginHost.Find(module.Id)!.Entry.Preload,
+            "online install records enabled and preload in the registry and host");
+
+        foreach (var update in new[] { (Version: "1.0.1", Preload: false), (Version: "1.0.2", Preload: true) })
+        {
+            PluginHost.SetPreload(module.Id, update.Preload);
+            string path = CreatePackage("online-" + update.Version, update.Version, _ => { });
+            byte[] bytes = File.ReadAllBytes(path);
+            var newer = ModuleFor(path, update.Version);
+            OfficialPluginClient.HttpHandlerOverrideForTesting = new Handler(request =>
+            {
+                Check(request.RequestUri?.AbsoluteUri == newer.PackageUrl, "only the fixture update route is requested");
+                if (update.Version == "1.0.1")
+                    Check(PluginHost.Disable(module.Id, out _), "fixture can be disabled during download");
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) };
+            });
+            var updated = await OfficialPluginClient.InstallAsync(newer, downloadOptions: new("direct"));
+            Check(updated.Success && !updated.Enabled, "an update keeps the disabled fixture disabled: " + updated.Error);
+            entry = PluginRegistryStore.FindEntry(module.Id)!;
+            Check(entry.Version == update.Version && !entry.Enabled && entry.Preload == update.Preload,
+                "online update preserves the explicit preload preference");
+        }
     }
 
     private static string CreatePackage(string name, string version, Action<ZipArchive> customize, bool wrongIdentity = false, bool wrongAssembly = false)

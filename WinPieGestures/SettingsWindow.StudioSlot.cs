@@ -56,7 +56,7 @@ public partial class SettingsWindow
             var menu = profile.GetActiveLayer().ActiveFixedRings!;
             var saved = menu.GetSlot(_fixedLevel, _fixedIndices[_fixedLevel]);
             var target = new PaletteSlot([_fixedIndices[_fixedLevel]], _fixedLevel);
-            WritePaletteFixedSlot(profile, new Placement(target, saved?.Action, saved == null ? draft.ParentIndex : saved.ParentIndex), item);
+            WritePaletteFixedSlot(profile, new Placement(target, saved?.Action), item);
         }
         else if (_deepBoundPath is { } path) ApplyCanvasEdit(profile, path, _deepBindingVersion, item);
         return true;

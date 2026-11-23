@@ -118,6 +118,18 @@ public class WheelLayer : INotifyPropertyChanged
 
 	public int SectorCount { get; set; } = 8;
 
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public string? LayerId { get; set; }
+
+	[System.Text.Json.Serialization.JsonExtensionData]
+	public Dictionary<string, System.Text.Json.JsonElement>? Extras { get; set; }
+
+	internal string EnsureLayerId()
+	{
+		if (string.IsNullOrWhiteSpace(LayerId)) LayerId = Guid.NewGuid().ToString("N");
+		return LayerId;
+	}
+
 	// The root is level one. Keep imported values intact until explicitly edited.
 	public int MaxMenuDepth { get; set; } = 2;
 
@@ -155,6 +167,7 @@ public class WheelLayer : INotifyPropertyChanged
 		WheelLayer clone = new WheelLayer
 		{
 			Name = this.Name,
+			Extras = Extras == null ? null : new(Extras),
 			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
 			MaxMenuDepth = this.MaxMenuDepth,
@@ -164,6 +177,7 @@ public class WheelLayer : INotifyPropertyChanged
 			CenterAction = this.CenterAction?.Clone(),
 			Actions = new List<ActionItem>()
 		};
+		if (!string.IsNullOrWhiteSpace(LayerId)) clone.EnsureLayerId();
 		if (this.Actions != null)
 		{
 			foreach (var action in this.Actions)

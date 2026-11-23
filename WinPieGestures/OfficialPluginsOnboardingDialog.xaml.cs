@@ -234,7 +234,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
             titleStack.Children.Add(new TextBlock
             {
                 Text = $"({target.Id})",
-                FontSize = 10.5,
+                FontSize = 11,
                 Foreground = ResolveBrush("TextMutedBrush", Brushes.Gray),
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 0, 0, 0)
@@ -287,7 +287,7 @@ public partial class OfficialPluginsOnboardingDialog : Window
             badgeBorder.Child = new TextBlock
             {
                 Text = badgeText,
-                FontSize = 10,
+                FontSize = 11,
                 FontWeight = FontWeights.SemiBold,
                 Foreground = badgeFg
             };

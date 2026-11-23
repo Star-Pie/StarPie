@@ -26,28 +26,34 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
      <ItemsControl x:Name="Cards" HorizontalContentAlignment="Stretch">
       <ItemsControl.ItemTemplate><DataTemplate>
-       <Border x:Name="Card" Margin="0,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="4">
+       <Border x:Name="Card" Background="Transparent" Margin="0,2" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6" Padding="4">
         <StackPanel>
-         <Button Style="{StaticResource RailButton}" Tag="{Binding Profile}" Click="SelectClick" ToolTip="{Binding Profile.DisplayTitle}">
-          <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition/></Grid.ColumnDefinitions>
-           <Grid Width="24" Height="24" VerticalAlignment="Top"><TextBlock Text="{Binding Glyph}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{DynamicResource TextPrimaryBrush}"/>
-            <Image Tag="{Binding Profile}" Loaded="ImageLoaded" Stretch="Uniform"/></Grid>
-           <StackPanel Grid.Column="1">
-            <TextBlock Text="{Binding Profile.FriendlyName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
-            <TextBlock Text="{Binding Summary}" ToolTip="{Binding Summary}" FontSize="10" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
-            <TextBlock Text="{Binding TagCaption}" TextTrimming="CharacterEllipsis" Visibility="{Binding HasTags,Converter={StaticResource FlagVisibility}}" FontSize="10" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+         <Grid>
+          <Button Style="{StaticResource RailButton}" Tag="{Binding Profile}" Click="SelectClick" ToolTip="{Binding Profile.DisplayTitle}">
+           <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="30"/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <Grid Width="24" Height="24" VerticalAlignment="Top"><TextBlock Text="{Binding Glyph}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Foreground="{DynamicResource TextPrimaryBrush}"/>
+             <Image Tag="{Binding Profile}" Loaded="ImageLoaded" Stretch="Uniform"/></Grid>
+            <StackPanel Grid.Column="1">
+             <TextBlock Text="{Binding Profile.FriendlyName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+             <TextBlock Text="{Binding Summary}" ToolTip="{Binding Summary}" FontSize="10" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextSecondaryBrush}"/>
+             <TextBlock Text="{Binding TagCaption}" TextTrimming="CharacterEllipsis" Visibility="{Binding HasTags,Converter={StaticResource FlagVisibility}}" FontSize="10" Foreground="{DynamicResource AccentPrimaryBrush}"/>
+            </StackPanel>
+           </Grid>
+          </Button>
+          <Border x:Name="CardActions" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,2,0" Padding="2,1"
+                  CornerRadius="4" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1"
+                  Opacity="0" IsHitTestVisible="False">
+           <StackPanel Orientation="Horizontal">
+            <Button Style="{StaticResource RailButton}" Content="↗" Tag="{Binding Profile}" ToolTip="{Binding Export}" AutomationProperties.Name="{Binding Export}" Click="ExportClick"/>
+            <Button Style="{StaticResource RailButton}" Content="⧉" Tag="{Binding Profile}" ToolTip="{Binding Copy}" AutomationProperties.Name="{Binding Copy}" Click="CopyClick"/>
+            <Button Style="{StaticResource RailButton}" Content="×" Tag="{Binding Profile}" ToolTip="{Binding Delete}" AutomationProperties.Name="{Binding Delete}" Click="DeleteClick" IsEnabled="{Binding CanDelete}"/>
            </StackPanel>
-          </Grid>
-         </Button>
-         <StackPanel x:Name="CardActions" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Right">
-          <Button Style="{StaticResource RailButton}" Content="↗" Tag="{Binding Profile}" ToolTip="{Binding Export}" AutomationProperties.Name="{Binding Export}" Click="ExportClick"/>
-          <Button Style="{StaticResource RailButton}" Content="⧉" Tag="{Binding Profile}" ToolTip="{Binding Copy}" AutomationProperties.Name="{Binding Copy}" Click="CopyClick"/>
-          <Button Style="{StaticResource RailButton}" Content="×" Tag="{Binding Profile}" ToolTip="{Binding Delete}" AutomationProperties.Name="{Binding Delete}" Click="DeleteClick" IsEnabled="{Binding CanDelete}"/>
-         </StackPanel>
+          </Border>
+         </Grid>
          <StackPanel Visibility="{Binding ShowLayers,Converter={StaticResource FlagVisibility}}" Margin="8,2,0,0">
           <ItemsControl ItemsSource="{Binding Layers}"><ItemsControl.ItemTemplate><DataTemplate>
            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <Button Style="{StaticResource RailButton}" Click="LayerClick" PreviewMouseRightButtonUp="LayerRightClick" ToolTip="{Binding Caption}"><StackPanel Orientation="Vertical">
+            <Button Style="{StaticResource RailButton}" Click="LayerClick" PreviewMouseRightButtonUp="LayerRightClick" ToolTip="{Binding Tooltip}"><StackPanel Orientation="Vertical">
              <TextBlock x:Name="LayerTitle" Text="{Binding Layer.DisplayName}" TextTrimming="CharacterEllipsis"/>
              <TextBlock Text="{Binding Caption}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
             </StackPanel></Button>
@@ -60,8 +66,8 @@
        </Border>
        <DataTemplate.Triggers>
         <DataTrigger Binding="{Binding Selected}" Value="True"><Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}"/></DataTrigger>
-        <Trigger SourceName="Card" Property="IsMouseOver" Value="True"><Setter TargetName="CardActions" Property="Visibility" Value="Visible"/></Trigger>
-        <Trigger SourceName="Card" Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="CardActions" Property="Visibility" Value="Visible"/></Trigger>
+        <Trigger SourceName="Card" Property="IsMouseOver" Value="True"><Setter TargetName="CardActions" Property="Opacity" Value="1"/><Setter TargetName="CardActions" Property="IsHitTestVisible" Value="True"/></Trigger>
+        <Trigger SourceName="Card" Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="CardActions" Property="Opacity" Value="1"/><Setter TargetName="CardActions" Property="IsHitTestVisible" Value="True"/></Trigger>
        </DataTemplate.Triggers>
       </DataTemplate></ItemsControl.ItemTemplate>
      </ItemsControl>

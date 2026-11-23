@@ -41,6 +41,9 @@ public class WheelProfile : INotifyPropertyChanged
 	/// <summary>Optional built-in or imported SVG for the profile’s settings icon.</summary>
 	public string? IconKey { get; set; }
 
+	[System.Text.Json.Serialization.JsonExtensionData]
+	public Dictionary<string, System.Text.Json.JsonElement>? Extras { get; set; }
+
 	[System.Text.Json.Serialization.JsonIgnore]
 	public string FriendlyName => !string.IsNullOrWhiteSpace(DisplayName) ? DisplayName.Trim() :
 		string.Equals(ProcessName, "Global", StringComparison.OrdinalIgnoreCase) ? I18n.T("GlobalProfileDefault") : ProcessName;
@@ -206,7 +209,7 @@ public class WheelProfile : INotifyPropertyChanged
 					string.IsNullOrEmpty(a.InheritAppIconPath))))))
 		{
 			// 自愈保护：若仅有第 1 层且层内动作全空，但根属性 Actions 中存在真实自定义配置，则无损同步给第 1 层
-			if (this.Actions != null && this.Actions.Count > 0 && this.Actions.Any(a => !string.IsNullOrEmpty(a.Parameter) || !string.IsNullOrEmpty(a.InheritAppIconPath) || (a.SubActions != null && a.SubActions.Count > 0)))
+			if (this.Actions != null && this.Actions.Count > 0 && this.Actions.Any(a => a?.IsWheelPortal == true || !string.IsNullOrEmpty(a?.Parameter) || !string.IsNullOrEmpty(a?.InheritAppIconPath) || a?.SubActions is { Count: > 0 }))
 			{
 				Layers[0].Actions = new List<ActionItem>();
 				int sCount = Layers[0].SectorCount;
@@ -323,6 +326,7 @@ public class WheelProfile : INotifyPropertyChanged
 			HasExplicitProcessBindings = this.HasExplicitProcessBindings,
 			ApplicationIconPath = this.ApplicationIconPath,
 			IconKey = this.IconKey,
+			Extras = Extras == null ? null : new(Extras),
 			Tags = new List<string>(Tags),
 			ActivationTrigger = this.ActivationTrigger?.Clone(),
 			SectorCount = this.SectorCount,
@@ -336,6 +340,7 @@ public class WheelProfile : INotifyPropertyChanged
 		{
 			clone.Layers.Add(layer.Clone());
 		}
+		PortalReferenceAnalyzer.RemapClonedLayers(this, clone);
 		clone.SyncRootPropertiesFromActiveLayer();
 		return clone;
 	}
@@ -394,9 +399,9 @@ public class WheelProfile : INotifyPropertyChanged
 			if (string.Equals(localAction.Type, "None", StringComparison.OrdinalIgnoreCase)) return null;
 			if (subSectorIndex >= 0)
 			{
-				if (localAction.SubActions != null && subSectorIndex < localAction.SubActions.Count)
+				if (localAction.InlineSubActions is { } children && subSectorIndex < children.Count)
 				{
-					var sub = localAction.SubActions[subSectorIndex];
+					var sub = children[subSectorIndex];
 					if (sub != null && !string.Equals(sub.Type, "None", StringComparison.OrdinalIgnoreCase))
 					{
 						return sub;
@@ -412,9 +417,9 @@ public class WheelProfile : INotifyPropertyChanged
 		{
 			if (subSectorIndex >= 0)
 			{
-				if (localAction!.SubActions != null && subSectorIndex < localAction.SubActions.Count)
+				if (localAction!.InlineSubActions is { } children && subSectorIndex < children.Count)
 				{
-					var sub = localAction.SubActions[subSectorIndex];
+					var sub = children[subSectorIndex];
 					if (IsActionConfigured(sub))
 					{
 						return sub;
@@ -461,9 +466,9 @@ public class WheelProfile : INotifyPropertyChanged
 							ActionItem? globalAction = globalActions[targetGlobalIndex];
 							if (IsActionConfigured(globalAction))
 							{
-								if (subSectorIndex >= 0 && globalAction!.SubActions != null && subSectorIndex < globalAction.SubActions.Count)
+								if (subSectorIndex >= 0 && globalAction!.InlineSubActions is { } children && subSectorIndex < children.Count)
 								{
-									var globalSub = globalAction.SubActions[subSectorIndex];
+									var globalSub = children[subSectorIndex];
 									if (IsActionConfigured(globalSub))
 									{
 										var clonedSub = globalSub.Clone();
@@ -506,12 +511,13 @@ public class WheelProfile : INotifyPropertyChanged
 		if (Layers[index].ActiveFixedRings is { } menu && path.Count > 2)
 		{
 			if (!IsActionConfigured(node)) return null;
-			if (node!.SubActions == null || (uint)path[1] >= (uint)node.SubActions.Count ||
-				!IsActionConfigured(node.SubActions[path[1]])) return null;
+			if (node!.InlineSubActions is not { } children || (uint)path[1] >= (uint)children.Count ||
+				!IsActionConfigured(children[path[1]])) return null;
+			node = children[path[1]];
 			int parent = FixedRingMenu.SecondaryKey(path[0], path[1]);
 			for (int i = 2; i < path.Count; i++)
 			{
-				if ((uint)path[i] >= (uint)menu.GetCount(i + 1) ||
+				if (node?.IsWheelPortal == true || (uint)path[i] >= (uint)menu.GetCount(i + 1) ||
 					menu.GetSlot(i + 1, path[i]) is not { } slot || slot.ParentIndex != parent) return null;
 				node = slot.Action;
 				parent = path[i];
@@ -521,7 +527,7 @@ public class WheelProfile : INotifyPropertyChanged
 		bool inherited = node?.IsInherited == true;
 		for (int i = 1; i < path.Count; i++)
 		{
-			if (!IsActionConfigured(node) || node!.SubActions is not { } children ||
+			if (!IsActionConfigured(node) || node!.InlineSubActions is not { } children ||
 				(uint)path[i] >= (uint)children.Count) return null;
 			node = children[path[i]];
 		}
@@ -542,14 +548,14 @@ public class WheelProfile : INotifyPropertyChanged
 		bool localEnableCenter = localLayer.EnableCenterAction;
 		ActionItem? localCenter = localLayer.CenterAction ?? this.CenterAction;
 
-		if (localEnableCenter && localCenter != null && !string.Equals(localCenter.Type, "None", StringComparison.OrdinalIgnoreCase))
+		if (localEnableCenter && localCenter is { IsWheelPortal: false } && !string.Equals(localCenter.Type, "None", StringComparison.OrdinalIgnoreCase))
 		{
 			return localCenter;
 		}
 
 		if (string.Equals(ProcessName, "Global", StringComparison.OrdinalIgnoreCase))
 		{
-			return (localEnableCenter && localCenter != null && !string.Equals(localCenter.Type, "None", StringComparison.OrdinalIgnoreCase)) ? localCenter : null;
+			return null;
 		}
 
 		if (ConfigManager.CurrentConfig?.EnableGlobalInheritance == true)
@@ -567,7 +573,7 @@ public class WheelProfile : INotifyPropertyChanged
 					bool globalEnableCenter = globalLayer.EnableCenterAction;
 					ActionItem? globalCenter = globalLayer.CenterAction;
 
-					if (globalEnableCenter && globalCenter != null && !string.Equals(globalCenter.Type, "None", StringComparison.OrdinalIgnoreCase))
+					if (globalEnableCenter && globalCenter is { IsWheelPortal: false } && !string.Equals(globalCenter.Type, "None", StringComparison.OrdinalIgnoreCase))
 					{
 						var cloned = globalCenter.Clone();
 						cloned.IsInherited = true;

@@ -229,13 +229,13 @@ internal static class Program
         menu.SetSlot(4, 1, new() { Action = Item("fixed child"), ParentIndex = 1 });
         Invoke("OpenFixedCanvas", profile);
         Invoke("SelectFixedSlot", 3, 1);
-        ((ComboBox)window.FindName("FixedParent")).SelectedValue = -1;
-        Check(menu.GetSlot(3, 1)!.ParentIndex == 0, "unapplied parent assignment is still a draft");
+        Check(window.FindName("FixedParent") == null && menu.GetSlot(3, 1)!.ParentIndex == 0,
+            "the fixed inspector has no parent editor and browsing leaves legacy metadata intact");
         pos = Interior(Hit(h => h.FixedLevel == 3 && h.SlotIndex == 1).Geometry);
         old = State(); undo = history.UndoCount;
         Drop(hotkey, pos, "02");
         Check(menu.GetSlot(3, 1)!.Action.Type == "Hotkey" && menu.GetSlot(3, 1)!.ParentIndex == 0 &&
-            menu.GetSlot(4, 1)!.ParentIndex == 1, "replacement at a fixed address preserves parent and children");
+            menu.GetSlot(4, 1)!.ParentIndex == 1, "replacement at a fixed address preserves legacy metadata");
         Roundtrip(old, State(), undo);
         Invoke("SelectFixedSlot", 3, 1);
         window.CopyCurrentAction();
@@ -243,12 +243,19 @@ internal static class Program
         old = State(); undo = history.UndoCount;
         window.PasteToCurrentSelection();
         Check(menu.GetSlot(3, 1)?.Action.Name == "paste-fixed" && menu.GetSlot(3, 1)?.ParentIndex == 0 &&
-            menu.GetSlot(4, 1)?.ParentIndex == 1, "paste to a fixed slot preserves both sides of its parent mapping");
+            menu.GetSlot(4, 1)?.ParentIndex == 1, "paste to a fixed slot preserves legacy metadata");
         Roundtrip(old, State(), undo);
         pos = Interior(Hit(h => h.FixedLevel == 5 && h.SlotIndex == 3).Geometry);
         old = State(); undo = history.UndoCount;
         Drop(hotkey, pos, "04");
-        Check(menu.GetSlot(5, 3)?.Action.Type == "Hotkey", "vacant fifth-level slot receives the dropped action");
+        Check(menu.GetSlot(5, 3) is { Action.Type: "Hotkey", ParentIndex: null }, "vacant fifth-level slot receives the dropped action without a parent link");
+        Roundtrip(old, State(), undo);
+        menu.SetSlot(3, 6, new() { Action = Item("opposite source") });
+        Invoke("SelectFixedSlot", 3, 6);
+        old = State(); undo = history.UndoCount;
+        Click(entries["AddChild"]);
+        Check(menu.GetSlot(4, 8) is { Action.Type: "Hotkey", ParentIndex: null } && menu.GetSlot(4, 0) == null,
+            "the add action uses a nearby vacant position on the next ring without creating a parent link");
         Roundtrip(old, State(), undo);
         ((ComboBox)window.FindName("MappingsProfileComboBox")).SelectedItem = local;
         window.SelectPrimarySlot(0);

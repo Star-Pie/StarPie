@@ -19,7 +19,7 @@ public partial class SettingsWindow
             I18n.TF("CanvasEditLevel", Level, string.Join(" › ", Path.Select(i => (i + 1).ToString("00"))));
     }
     private sealed record PaletteHit(Geometry Shape, PaletteSlot Slot);
-    private sealed record Placement(PaletteSlot Slot, ActionItem? Previous, int? ParentIndex = null);
+    private sealed record Placement(PaletteSlot Slot, ActionItem? Previous);
     private readonly List<PaletteHit> _paletteHits = new();
     private readonly List<PathShape> _paletteGuides = new();
     private int _paletteRenderVersion;
@@ -176,25 +176,10 @@ public partial class SettingsWindow
         {
             if (menu == null || (uint)slot.Index >= (uint)menu.GetCount(level)) return null;
             var previous = menu.GetSlot(level, slot.Index);
-            if (!child)
-            {
-                int? parent = previous?.ParentIndex;
-                if (previous == null)
-                {
-                    if (_fixedDrafts.TryGetValue((level, slot.Index), out var draft) && draft.Matches(menu, level, slot.Index))
-                        parent = draft.ParentIndex;
-                    else
-                    {
-                        int selectedParent = _fixedIndices[level - 1];
-                        if (selectedParent >= 0 && (level == 3 || selectedParent < menu.GetCount(level - 1)) &&
-                            FixedAction(profile, menu, level - 1, selectedParent) != null)
-                            parent = selectedParent;
-                    }
-                }
-                return new(slot, previous?.Action, parent);
-            }
+            if (!child) return new(slot, previous?.Action);
             if (previous == null || level >= layer.EffectiveMaxMenuDepth) return null;
-            return EmptyFixedChild(menu, level + 1, slot.Index);
+            var geometry = FixedGeometry(profile);
+            return NearestEmptyFixedSlot(menu, geometry, level + 1, geometry.GetCenter(level, slot.Index, menu.GetCount(level)));
         }
 
         int root = slot.Path[0];
@@ -211,15 +196,28 @@ public partial class SettingsWindow
         if (!child) return new(slot, node);
         if (level >= layer.EffectiveMaxMenuDepth) return null;
         if (menu != null && level == 2)
-            return EmptyFixedChild(menu, 3, FixedRingMenu.SecondaryKey(root, slot.Index));
+        {
+            var geometry = FixedGeometry(profile);
+            var (_, center) = geometry.Secondary(ConfigManager.CurrentConfig, root, slot.Index, source!.SubActions.Count);
+            return NearestEmptyFixedSlot(menu, geometry, 3, center);
+        }
         int count = node.SubActions?.Count ?? 0;
         return count < capacity ? new(new([..slot.Path, count], Vacant: true), null) : null;
     }
 
-    private static Placement? EmptyFixedChild(FixedRingMenu menu, int level, int parent)
+    private static Placement? NearestEmptyFixedSlot(FixedRingMenu menu, FixedRingGeometry geometry, int level, Point origin)
     {
-        int empty = FixedRingSlotDraft.NextEmpty(menu, level, -1);
-        return empty < 0 ? null : new(new([empty], level), null, parent);
+        int closest = -1, count = menu.GetCount(level);
+        double distance = double.PositiveInfinity;
+        for (int index = 0; index < count; index++)
+        {
+            if (menu.GetSlot(level, index) != null) continue;
+            double candidate = (geometry.GetCenter(level, index, count) - origin).LengthSquared;
+            if (candidate >= distance) continue;
+            distance = candidate;
+            closest = index;
+        }
+        return closest < 0 ? null : new(new([closest], level), null);
     }
 
     private void ApplyPalettePlacements(WheelProfile profile, DockEntry entry, List<Placement> placements)
@@ -333,8 +331,8 @@ public partial class SettingsWindow
         int length = oldTier?.Slots.Count ?? 0;
         var before = menu.GetSlot(level, index)?.Clone();
         if (before != null) value.SubActions = before.Action.SubActions;
-        if (before?.ParentIndex == placement.ParentIndex && AreActionItemsEquivalent(before?.Action, value)) return;
-        var after = new FixedRingSlot { Action = value, ParentIndex = placement.ParentIndex };
+        if (AreActionItemsEquivalent(before?.Action, value)) return;
+        var after = new FixedRingSlot { Action = value, ParentIndex = before?.ParentIndex };
         if (!EditingOuterFixedSlot) BeginFixedCanvas(profile);
         _fixedLevel = level;
         _fixedIndices[level] = index;

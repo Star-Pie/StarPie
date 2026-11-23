@@ -30,7 +30,7 @@ internal static class Program
         profile.Actions[0] = new() { Name = "Tools", SubActions = { new() { Name = "Edit", SubActions = { new() { Name = "Insert", Type = "Text", Parameter = "I" } } } } };
         profile.Actions[1] = new() { Name = "Window", SubActions = { new() { Name = "Tile", SubActions = { new() { Name = "Docked" } } } } };
         var menu = layer.FixedRings = FixedRingMenu.FromLegacy(profile);
-        Check(menu.GetSlot(3,0)?.Action.Name == "Insert" && menu.GetSlot(3,3)?.ParentIndex == FixedRingMenu.SecondaryKey(1,0), "distinct legacy secondary parents keep distinct descendants");
+        Check(menu.GetSlot(3,0)?.Action.Name == "Insert" && menu.GetSlot(3,3)?.Action.Name == "Docked", "conversion places legacy descendants near their original directions");
         Check(profile.GetEffectiveMenuAction([0,0,0])?.Name == "Insert" && profile.GetEffectiveMenuAction([1,0,0]) == null, "third-level routing checks both lower levels");
         menu.GetSlot(3,0)!.Action.Name = "Edited";
         Check(profile.Actions[0].SubActions[0].SubActions[0].Name == "Insert", "conversion leaves the source tree intact");
@@ -64,18 +64,19 @@ internal static class Program
         Check(protruding.FillContains(tip) && LegacyRingGeometry.SecondaryExtent(narrow,133,45) >= tip.X,
             "narrow legacy hexagon keeps its selectable outer tip before tier three begins");
         menu.SetCount(3,7); menu.SetCount(5,37);
-        menu.SetSlot(5,36,new FixedRingSlot { ParentIndex = null, Action = new ActionItem { Name="Tail", Type="Text", Parameter="T", IconKey="custom:leaf" } });
+        menu.SetSlot(5,36,new FixedRingSlot { ParentIndex = 123, Action = new ActionItem { Name="Tail", Type="Text", Parameter="T", IconKey="custom:leaf" } });
         menu.SetCount(5,4); menu.AlwaysVisible=false; layer.FixedRingsPaused=true;
         var clone=profile.Clone("Copy");
         clone.Layers[0].FixedRings!.GetSlot(5,36)!.Action.Parameter="X";
-        Check(menu.GetSlot(5,36)!.Action.Parameter=="T" && clone.Layers[0].ActiveFixedRings==null, "deep clone keeps paused state and hidden slots independent");
+        Check(menu.GetSlot(5,36)!.Action.Parameter=="T" && clone.Layers[0].ActiveFixedRings==null &&
+            clone.Layers[0].FixedRings!.GetSlot(5,36)!.ParentIndex==123, "deep clone keeps paused state, hidden slots and old parent metadata");
         string config=JsonSerializer.Serialize(new { Profiles = new[]{profile} });
         var copy=JsonDocument.Parse(config).RootElement.GetProperty("Profiles")[0].Deserialize<WheelProfile>()!.Layers[0];
         copy.FixedRingsPaused=false;
         var restored=copy.ActiveFixedRings!;
         restored.SetCount(5,37);
         Check(restored.GetCount(3)==7 && restored.GetSlot(5,36)!.Action.Parameter=="T" && restored.GetSlot(5,35)==null &&
-              !restored.AlwaysVisible, "sparse data, odd counts and hidden slot survive disk round trip");
+              restored.GetSlot(5,36)?.ParentIndex==123 && !restored.AlwaysVisible, "sparse data, odd counts and hidden slot metadata survive disk round trip");
         var oldMenu = JsonSerializer.Deserialize<FixedRingMenu>("""{"Tiers":[{"WakeBandWidth":24,"DwellMs":0}]}""")!;
         var legacy = JsonSerializer.SerializeToElement(oldMenu.Clone()).GetProperty("Tiers")[0];
         var fresh = JsonSerializer.SerializeToElement(new FixedRingTier());
@@ -89,8 +90,10 @@ internal static class Program
         string package=Path.Combine(folder,"fixed.spconfig"); PortableConfigBundle.Export(config,package,src);
         using var imported=PortableConfigBundle.PrepareImport(package,dest);
         var importedLayer=JsonDocument.Parse(imported.ConfigJson).RootElement.GetProperty("Profiles")[0].Deserialize<WheelProfile>()!.Layers[0];
-        string remap=importedLayer.FixedRings!.GetSlot(5,36)!.Action.IconKey;
-        Check(remap.StartsWith("custom:") && remap!="custom:leaf", "portable custom icon collision remaps even in hidden slot of paused layer");
+        var importedSlot=importedLayer.FixedRings!.GetSlot(5,36)!;
+        string remap=importedSlot.Action.IconKey;
+        Check(remap.StartsWith("custom:") && remap!="custom:leaf" && importedSlot.ParentIndex==123,
+            "portable custom icon collision remaps in hidden slot of paused layer and preserves old metadata");
 
         CheckNewAppearanceGeometry();
         CheckConfiguredVisibility();
@@ -227,11 +230,15 @@ internal static class Program
             "legacy invocation hides editable placeholders and keeps a valid child at its original physical address");
         Check(three.Contains((1, 2)) && three.Contains((2, FixedRingMenu.SecondaryKey(2, 0))),
             "progressive invocation retains navigation-only branches with reachable actions");
-        var deep = new FixedRingMenu();
-        deep.SetSlot(3, 4, new FixedRingSlot { ParentIndex = FixedRingMenu.SecondaryKey(2, 0), Action = configured });
-        var fixedVisible = deep.ConfiguredSlots(roots, 3, true);
-        Check(fixedVisible.Contains((3, 4)) && fixedVisible.Contains((1, 2)) &&
-            !fixedVisible.Contains((2, FixedRingMenu.SecondaryKey(1, 0))), "fixed visibility shows a configured descendant and parent chain without vacant children");
+        var deep = JsonSerializer.Deserialize<FixedRingMenu>("""
+            {"Tiers":[{"Slots":[{"ParentIndex":8,"Action":{"Type":"Text","Name":"Third","Parameter":"T8"}}]},
+                       {"Slots":[{"ParentIndex":0,"Action":{"Type":"Text","Name":"Blank"}}]},
+                       {"Slots":[{"ParentIndex":99,"Action":{"Type":"Text","Name":"Fifth","Parameter":"T8"}}]}]}
+            """)!;
+        var fixedVisible = deep.ConfiguredSlots(roots, 5, true);
+        Check(fixedVisible.SetEquals([(1, 1), (2, FixedRingMenu.SecondaryKey(1, 1)), (3, 0), (5, 0)]) &&
+            deep.GetSlot(3, 0)?.ParentIndex == 8 && deep.GetSlot(5, 0)?.ParentIndex == 99,
+            "fixed occupancy ignores old parent links, keeps a populated fifth tier across a blank fourth and retains stored metadata");
     }
 
 }

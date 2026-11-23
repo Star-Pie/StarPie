@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -80,7 +81,10 @@ internal static class Program
             Invoke(window, "RefreshWheelAppearance");
             sidebar.Measure(new Size(300, double.PositiveInfinity));
             sidebar.Arrange(new Rect(0, 0, 300, sidebar.DesiredSize.Height));
-            Check(FindById<Button>(sidebar, "WheelAppearanceLegacy").ActualWidth > 0 &&
+            var depthButtons = Enumerable.Range(1, 5).Select(i => FindById<Button>(sidebar, $"WheelAppearanceDepth{i}")).ToArray();
+            Check(depthButtons.All(b => b.ActualWidth > 0 && ReferenceEquals(b.Parent, depthButtons[0].Parent)) &&
+                depthButtons.Select(b => LayoutInformation.GetLayoutSlot(b).Y).Distinct().Count() == 1 &&
+                depthButtons.Select(b => LayoutInformation.GetLayoutSlot(b).X).Distinct().Count() == 5 &&
                 Walk(sidebar).OfType<TextBlock>().Any(x => x.Text == I18n.T("WheelAppearanceTitle")),
                 "localized sidebar laid out " + lang);
         }
@@ -88,8 +92,16 @@ internal static class Program
         Click(FindById<Button>(choices, "WheelAppearanceConfigure"));
         Click(FindById<Button>(sidebar, "WheelAppearanceCompare"));
         Click(FindById<Button>(sidebar, "WheelAppearanceReturn"));
-        Click(FindById<Button>(sidebar, "WheelAppearanceMulti"));
-        Click(FindById<Button>(sidebar, "WheelAppearanceLegacy"));
+        for (int depth = 1; depth <= 5; depth++)
+        {
+            var buttons = Enumerable.Range(1, 5).Select(i => FindById<Button>(sidebar, $"WheelAppearanceDepth{i}")).ToArray();
+            Check(buttons.All(b => ReferenceEquals(b.Parent, buttons[0].Parent)) && buttons[0].Parent is UniformGrid { Columns: 5 },
+                $"depth {depth}: all five choices share one row");
+            Click(buttons[depth - 1]);
+            Check((int)window.GetType().GetField("_appearanceDepth", Private)!.GetValue(window)! == depth,
+                $"depth {depth}: direct selection updates preview");
+        }
+        Click(FindById<Button>(sidebar, "WheelAppearanceDepth2"));
         Check(ConfigManager.ConfigurationRevision == revision && JsonSerializer.Serialize(cfg) == before,
             "preview modes, depth, compare and localization preserve configuration and revision");
 
@@ -124,7 +136,7 @@ internal static class Program
         Check(cfg.SubWheelInnerGap <= cfg.SubWheelOuterRadius - cfg.WheelRadius - 3,
             "reducing secondary radius updates the gap limit on the same sidebar");
 
-        Click(FindById<Button>(sidebar, "WheelAppearanceMulti"));
+        Click(FindById<Button>(sidebar, "WheelAppearanceDepth4"));
         Invoke(window, "SelectAppearanceLevel", 3);
         var toggle = FindById<CheckBox>(sidebar, "WheelAppearanceTierOverride");
         toggle.IsChecked = true;
@@ -163,6 +175,25 @@ internal static class Program
                 SubActions = [new ActionItem { Type = "Text", Parameter = " " }] }] };
         Check(FixedRingMenu.LowerConfiguredSlots([legacyBranch], 3, false).Count == 0,
             "a classic navigation branch does not point to an unavailable deeper whitespace leaf");
+
+        layer.MaxMenuDepth = 5;
+        var menu = layer.FixedRings = new FixedRingMenu { AlwaysVisible = false };
+        menu.SetSlot(5, 0, new FixedRingSlot { ParentIndex = 27, Action = new ActionItem { Type = "Text", Parameter = "test" } });
+        menu.SetSlot(5, 10, new FixedRingSlot { Action = new ActionItem { Type = "Text", Parameter = "other" } });
+        foreach (string layout in new[] { "Wheel", "Fan" })
+        {
+            cfg.SubmenuStyle = layout;
+            Invoke(window, "RefreshWheelAppearance");
+            stage.Render(cfg, profile, 5, 5, true, 1, null);
+            Check(CellCount(stage, 5, visible: true) == 0, layout + " popup waits for nearby pointer");
+            Invoke(stage, "UpdateNearby", CellCenter(stage, 5, 0));
+            Check(CellCount(stage, 5, visible: true) == 1 && CellCount(stage, 4, visible: true) == 0,
+                layout + " popup shows only the local level-five slot across an empty fourth level");
+            Invoke(stage, "UpdateNearby", new Point());
+            Check(CellCount(stage, 5, visible: true) == 0, layout + " popup hides the slot on retreat");
+            stage.Render(cfg, profile, 5, 5, false, 1, null);
+            Check(CellCount(stage, 5, visible: true) == menu.GetCount(5), layout + " editor shows configured and vacant slots");
+        }
         Check(new WindowInteropHelper(window).Handle == IntPtr.Zero &&
             !WinPieGestures.Plugins.PluginHost.IsInitialized, "offline test never opens a window or initializes the plugin host");
 
@@ -195,6 +226,14 @@ internal static class Program
         var filter = stage.GetType().GetMethod("Visible", Private)!;
         return cells.Cast<object>().Count(cell => (int)cell.GetType().GetProperty("Level")!.GetValue(cell)! == level &&
             (!visible || (bool)filter.Invoke(stage, [cell])!));
+    }
+
+    private static Point CellCenter(WheelAppearanceCanvas stage, int level, int index)
+    {
+        var cells = (IEnumerable)stage.GetType().GetField("_cells", Private)!.GetValue(stage)!;
+        var cell = cells.Cast<object>().Single(item => (int)item.GetType().GetProperty("Level")!.GetValue(item)! == level &&
+            (int)item.GetType().GetProperty("Index")!.GetValue(item)! == index);
+        return (Point)cell.GetType().GetProperty("Center")!.GetValue(cell)!;
     }
 
     private static void Check(bool ok, string label)

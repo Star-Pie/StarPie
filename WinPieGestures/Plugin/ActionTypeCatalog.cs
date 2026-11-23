@@ -65,7 +65,7 @@ internal static class ActionTypeCatalog
     }
 
     /// <summary>构建平铺的动作类型列表，用于子动作编辑器。</summary>
-    public static List<ActionTypeItem> BuildLocalizedActionTypes()
+    public static List<ActionTypeItem> BuildLocalizedActionTypes(bool includePortal = false)
     {
         var items = new List<ActionTypeItem>
         {
@@ -99,11 +99,12 @@ internal static class ActionTypeCatalog
         }
 
         items.Add(new ActionTypeItem { Tag = "ActionPanel", DisplayText = I18n.T("ActionPanelTitle") });
+        if (includePortal) items.Add(new ActionTypeItem { Tag = "OpenWheel", DisplayText = I18n.T("PortalAction") });
         return items;
     }
 
     /// <summary>构建聚合动作类型列表，用于主动作/手势动作编辑器。</summary>
-    public static List<ActionTypeItem> BuildAggregatedActionTypes()
+    public static List<ActionTypeItem> BuildAggregatedActionTypes(bool includePortal = false)
     {
         var items = new List<ActionTypeItem>
         {
@@ -142,11 +143,12 @@ internal static class ActionTypeCatalog
         }
 
         items.Add(new ActionTypeItem { Tag = "ActionPanel", DisplayText = I18n.T("ActionPanelTitle") });
+        if (includePortal) items.Add(new ActionTypeItem { Tag = "OpenWheel", DisplayText = I18n.T("PortalAction") });
         return items;
     }
 
     /// <summary>构建无图标的动作类型列表，供旧的子动作控件绑定使用。</summary>
-    public static List<ActionTypeOption> BuildActionTypeOptions()
+    public static List<ActionTypeOption> BuildActionTypeOptions(bool includePortal = false)
     {
         var items = new List<ActionTypeOption>
         {
@@ -180,6 +182,7 @@ internal static class ActionTypeCatalog
         }
 
         items.Add(new ActionTypeOption { Tag = "ActionPanel", DisplayText = I18n.T("ActionPanelTitle") });
+        if (includePortal) items.Add(new ActionTypeOption { Tag = "OpenWheel", DisplayText = I18n.T("PortalAction") });
         return items;
     }
 

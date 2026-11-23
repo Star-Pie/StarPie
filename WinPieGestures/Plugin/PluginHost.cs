@@ -15,6 +15,9 @@ internal sealed class PluginInstallOptions
     /// <summary>安装后立即启用。默认 false —— 安装与启用是两个动作。</summary>
     public bool EnableAfterInstall { get; set; }
 
+    /// <summary>Preload a new online installation and retain the registered preference on updates.</summary>
+    public bool PreloadOnFirstInstall { get; set; }
+
     /// <summary>目标插件已存在时是否覆盖。</summary>
     public bool OverwriteExisting { get; set; }
 
@@ -298,7 +301,8 @@ internal static class PluginHost
             {
                 string installPath = manifest.Id;
                 string targetDirectory = Path.Combine(PluginPaths.Root, installPath);
-                bool alreadyExists = Directory.Exists(targetDirectory) || PluginRegistryStore.FindEntry(manifest.Id) != null;
+                PluginRegistryEntry? registered = PluginRegistryStore.FindEntry(manifest.Id);
+                bool alreadyExists = Directory.Exists(targetDirectory) || registered != null;
 
                 if (alreadyExists && !options.OverwriteExisting)
                 {
@@ -354,7 +358,7 @@ internal static class PluginHost
                     InstallPath = installPath,
                     ExternalPath = options.DeveloperExternalPath ? scan.DllPath : null,
                     Enabled = false,
-                    Preload = false,
+                    Preload = options.PreloadOnFirstInstall && (registered?.Preload ?? true),
                     EntrySha256 = scan.Sha256,
                     SignerThumbprint = scan.SignerThumbprint,
                     CapabilitiesAck = new List<string>(options.AcknowledgedCapabilities),

@@ -53,13 +53,14 @@ internal static partial class Program
         var level = Find<ComboBox>("FixedLevel");
         var count = Find<ComboBox>("FixedCount");
         var display = Find<ComboBox>("FixedDisplay");
-        var parent = Find<ComboBox>("FixedParent");
         var editor = Find<CanvasMenuActionEditor>("FixedEditor");
         var name = (TextBox)editor.FindName("NameBox");
         var type = (ComboBox)editor.FindName("TypeBox");
         var text = (TextBox)editor.FindName("ParameterBox");
         JsonElement Tier(int d) => JsonSerializer.SerializeToElement(layer).GetProperty("FixedRings").GetProperty("Tiers")[d - 3];
         JsonElement Slot(int d, int i) => Tier(d).GetProperty("Slots")[i];
+        int? LegacyParent(int d, int i) => Slot(d, i).TryGetProperty("ParentIndex", out var value) &&
+            value.ValueKind == JsonValueKind.Number ? value.GetInt32() : null;
         string Id(Button b) => AutomationProperties.GetAutomationId(b);
         var geo = new Size(300, 300);
         void Select(int d, int i)
@@ -80,14 +81,15 @@ internal static partial class Program
             "global expansion-distance control updates the existing configuration value and its readout");
         distance.Value = originalDistance;
         var originalLanguage = I18n.CurrentLanguage;
-        foreach (var (language, levels) in new[] { (LanguageCode.ZhCn, "三级至五级"), (LanguageCode.ZhTw, "三級至五級"),
-            (LanguageCode.En, "levels 3–5"), (LanguageCode.Ja, "第3～5階層") })
+        foreach (var (language, secondary, proximity) in new[] { (LanguageCode.ZhCn, "二级轮盘", "光标靠近"),
+            (LanguageCode.ZhTw, "二級輪盤", "游標靠近"), (LanguageCode.En, "Level 2", "pointer approaches"),
+            (LanguageCode.Ja, "第2階層", "ポインターを近づける") })
         {
             I18n.CurrentLanguage = language;
             window.ApplyLocalization();
-            Check(Find<TextBlock>("SubWheelTriggerDistLabel").Text == I18n.T("SubWheelTriggerDistLabel") &&
-                Find<TextBlock>("SubWheelTriggerDistDesc").Text.Contains(levels),
-                $"global expansion-distance instructions cover the outer rings in {language}");
+            Check(Find<TextBlock>("SubWheelTriggerDistLabel").Text.Contains(secondary) &&
+                Find<TextBlock>("SubWheelTriggerDistDesc").Text.Contains(proximity),
+                $"distance slider describes the second tier and explains outer-ring proximity in {language}");
         }
         I18n.CurrentLanguage = originalLanguage;
         window.ApplyLocalization();
@@ -95,14 +97,15 @@ internal static partial class Program
         Click(toggle);
         Check(Find<Border>("FixedControlsCard").Visibility == Visibility.Visible, "fixed outer editor opens from the explicit entry");
         Check(level.Items.Cast<int>().SequenceEqual(new[] { 3, 4, 5 }) &&
-            new[] { "FixedWakeControls", "FixedTransfer", "FixedWidth", "FixedDelay" }.All(id => window.FindName(id) == null),
-            "fixed editor keeps tiers 3–5 and has no per-transition wake controls");
+            new[] { "FixedWakeControls", "FixedTransfer", "FixedWidth", "FixedDelay", "FixedParentLabel", "FixedParent" }.All(id => window.FindName(id) == null),
+            "fixed editor keeps tiers 3–5 without parent or per-transition wake controls");
         ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup = false;
         Press("FixedBack");
         Press("FixedOpenCanvas");
-        Check(display.SelectedIndex == 0 && layer.FixedRings!.AlwaysVisible &&
+        Check(display.SelectedIndex == 0 && Equals(display.Items[0], I18n.T("FixedAll")) &&
+              layer.FixedRings!.AlwaysVisible && !ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup &&
               canvas.Children.OfType<Button>().Any(b => Id(b).StartsWith("FixedRing5Slot")),
-              "popup gate preserves the resident preference and editable vacant slots");
+              "resident choice remains unconditional and vacant slots stay editable with the legacy switch off");
         ConfigManager.CurrentConfig.AutoExpandSubRingsOnPopup = true;
         Press("FixedBack");
         Press("FixedOpenCanvas");
@@ -121,37 +124,40 @@ internal static partial class Program
         type.SelectedValue = "Text";
         name.Text = "Assigned A";
         text.Text = "safe fixture";
-        parent.SelectedValue = 0;
         Check(ConfigManager.ConfigurationRevision == revision, "typing in a vacant slot leaves saved configuration untouched");
         Press("FixedApply");
         Check(Slot(3, 7).GetProperty("Action").GetProperty("Parameter").GetString() == "safe fixture" &&
-            Slot(3, 7).GetProperty("ParentIndex").GetInt32() == 0, "apply stores typed action and selected parent");
+            LegacyParent(3, 7) == null && Tier(3).GetProperty("Slots").GetArrayLength() == 8,
+            "apply stores an action at its fixed index without creating a parent link");
         display.SelectedIndex = 1;
         Select(3, 7);
         Check(!canvas.Children.OfType<System.Windows.Shapes.Path>().Any() &&
             canvas.Children.OfType<Button>().All(b => b.Effect == null) && name.Text == "Assigned A",
-            "a linked secondary with a third-level child has no extra activation-band geometry or shadow");
+            "a third-level slot has no extra activation-band geometry or shadow");
         display.SelectedIndex = 0;
-        parent.SelectedValue = 4;
-        Press("FixedApply");
-        Check(Slot(3, 7).GetProperty("ParentIndex").GetInt32() == 4 && Tier(3).GetProperty("Slots").GetArrayLength() == 8,
-            "reassigning parent keeps the same globally addressed slot");
         Select(4, 11);
+        type.SelectedValue = "Text";
         name.Text = "Child";
-        parent.SelectedValue = 7;
+        text.Text = "fourth level fixture";
         Press("FixedApply");
+        Check(LegacyParent(4, 11) == null, "editing a vacant next tier ignores the previously selected third-tier slot");
+        var importedAction = layer.FixedRings!.GetSlot(4, 11)!.Action.Clone();
+        layer.FixedRings.SetSlot(4, 11, new FixedRingSlot { Action = importedAction, ParentIndex = 7 });
         Select(3, 7);
         count.SelectedItem = 4;
         Check(!canvas.Children.OfType<Button>().Any(b => Id(b) == "FixedRing3Slot7") &&
             Slot(3, 7).GetProperty("Action").GetProperty("Name").GetString() == "Assigned A", "shrinking hides slot without deleting its action");
         Select(4, 11);
-        Check(Equals(parent.SelectedValue, 7), "hidden parent binding stays selected");
+        Check(name.Text == "Child" && LegacyParent(4, 11) == 7 &&
+            Find<TextBlock>("MappingsCurrentEditIndicator").Text == "Child", "legacy metadata is retained and does not set the canvas selection path");
+        text.Text = "edited legacy fixture";
+        Press("FixedApply");
+        Check(LegacyParent(4, 11) == 7 && Slot(4, 11).GetProperty("Action").GetProperty("Parameter").GetString() == "edited legacy fixture",
+            "editing an existing action preserves its serialized legacy metadata");
         level.SelectedItem = 3;
         count.SelectedItem = 8;
         Select(3, 7);
-        Check(name.Text == "Assigned A" && Equals(parent.SelectedValue, 4), "expanding restores action and parent");
-        parent.SelectedValue = -1;
-        Press("FixedApply");
+        Check(name.Text == "Assigned A" && LegacyParent(3, 7) == null, "expanding restores the fixed action");
         Select(3, 0);
         name.Text = "Temporary";
         Select(3, 7);
@@ -159,21 +165,22 @@ internal static partial class Program
         Check(name.Text == "Temporary" && Slot(3, 0).ValueKind == JsonValueKind.Null, "per-address draft survives navigation without publishing it");
         display.SelectedIndex = 1;
         Check(!canvas.Children.OfType<Button>().Any(b => Id(b).StartsWith("FixedRing4")),
-            "progressive editor shows selected ring and ancestors");
+            "progressive editor shows selected ring and the inner rings");
         level.SelectedItem = 4;
         Select(4, 11);
-        Check(name.Text == "Child" && Equals(parent.SelectedValue, 7), "selecting a fourth-level slot retains its configured parent");
+        Check(name.Text == "Child" && Find<TextBlock>("MappingsCurrentEditIndicator").Text == "Child",
+            "selecting a fourth-level slot shows its action without a legacy parent breadcrumb");
         display.SelectedIndex = 0;
         Select(3, 7);
-        Check(Equals(parent.SelectedValue, -1) && canvas.Children.OfType<Button>().Any(b => Id(b).StartsWith("FixedRing5Slot")),
-            "independent parent and always-visible mode persist");
+        Check(LegacyParent(3, 7) == null && canvas.Children.OfType<Button>().Any(b => Id(b).StartsWith("FixedRing5Slot")),
+            "actions without legacy ancestry and always-visible mode persist");
         Click(toggle);
         Check(Find<Border>("FixedControlsCard").Visibility == Visibility.Collapsed, "pause restores legacy canvas");
         Click(toggle);
         Select(3, 7);
-        Check(name.Text == "Assigned A" && Equals(parent.SelectedValue, -1), "reactivation retains fixed assignments");
+        Check(name.Text == "Assigned A" && LegacyParent(3, 7) == null, "reactivation retains fixed assignments");
         Press("FixedClear");
-        Check(Slot(3, 7).ValueKind == JsonValueKind.Null && Slot(4, 11).GetProperty("ParentIndex").GetInt32() == 7, "clearing parent preserves child slot");
+        Check(Slot(3, 7).ValueKind == JsonValueKind.Null && LegacyParent(4, 11) == 7, "clearing one position preserves another tier's assignment and legacy metadata");
         window.ExecuteUndo();
         Check(name.Text == "Assigned A", "undo restores cleared slot and editor binding");
         var delayed = (Action<ActionItem>)typeof(CanvasMenuActionEditor).GetField("_apply", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(editor)!;
@@ -193,7 +200,7 @@ internal static partial class Program
         depth.SelectedIndex = 3;
         Press("FixedOpenCanvas");
         Select(4, 11);
-        Check(name.Text == "Child" && Equals(parent.SelectedValue, 7), "raising depth restores the assigned child");
+        Check(name.Text == "Child" && LegacyParent(4, 11) == 7, "raising depth restores the assigned action and legacy metadata");
         Press("FixedBack");
         Check(Find<Border>("CanvasTierSelector").Visibility == Visibility.Visible &&
             Find<Border>("FocusActionEditorBorder").Visibility == Visibility.Visible, "return restores original tier selectors and forms");
@@ -216,23 +223,21 @@ internal static partial class Program
         Check(layer.Actions[1].SubActions[1].Name == "Renamed B", "original secondary ordering remains available");
         Press("FixedOpenCanvas");
         level.SelectedItem = 3;
-        var wheelParents = parent.Items.Cast<object>().Select(o => (string)o.GetType().GetProperty("Caption")!.GetValue(o)!).ToArray();
-        Check(wheelParents.Any(c => c.Contains("Root A") && c.Contains("A child 4")) &&
-            wheelParents.Any(c => c.Contains("Root B") && c.Contains("Renamed B")), "third-tier parent picker uses both concrete wheel branches including a fifth secondary");
-        object Fifth() => parent.Items.Cast<object>().Single(o => o.GetType().GetProperty("Caption")!.GetValue(o)!.ToString()!.Contains("A child 4"));
-        int fifth = (int)Fifth().GetType().GetProperty("Index")!.GetValue(Fifth())!;
-        Check(fifth != 4, "fifth secondary and next root's first secondary have distinct keys");
-        parent.SelectedValue = fifth;
-        name.Text = "Fifth secondary child";
-        Press("FixedApply");
+        int fifth = FixedRingMenu.SecondaryKey(0, 4), other = FixedRingMenu.SecondaryKey(1, 0);
+        Check(fifth != other && canvas.Children.OfType<Button>().Any(b => Id(b) == $"FixedRing2Slot{fifth}") &&
+            canvas.Children.OfType<Button>().Any(b => Id(b) == $"FixedRing2Slot{other}"),
+            "the wheel preview retains distinct fifth secondary and next-root slots");
         Press("FixedBack");
         ConfigManager.CurrentConfig.SubmenuStyle = "Fan";
         Press("FixedOpenCanvas");
-        Check(!parent.Items.Cast<object>().Any(o => o.GetType().GetProperty("Caption")!.GetValue(o)!.ToString()!.Contains("A child 4")) &&
-            !canvas.Children.OfType<Button>().Any(b => Id(b) == $"FixedRing2Slot{fifth}"), "Fan preview and available parent list use the original three-child geometry");
-        parent.SelectedValue = 5;
-        name.Text = "Follow secondary";
-        Press("FixedApply");
+        Check(!canvas.Children.OfType<Button>().Any(b => Id(b) == $"FixedRing2Slot{fifth}") &&
+            canvas.Children.OfType<Button>().Any(b => Id(b) == $"FixedRing2Slot{other}"),
+            "Fan preview uses the original three-child limit and retains other second-tier positions");
+        layer.FixedRings!.SetSlot(3, 0, new FixedRingSlot
+        {
+            Action = new ActionItem { Name = "Follow secondary", Type = "Text", Parameter = "legacy fixture" },
+            ParentIndex = FixedRingMenu.SecondaryKey(1, 1)
+        });
         Press("FixedBack");
         int? Link()
         {

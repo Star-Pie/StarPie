@@ -14,14 +14,19 @@ public partial class CanvasMenuActionEditor : UserControl
     private PluginParameterForm? _form;
     private bool _filling;
     private bool _allowEmptyAction;
+    private PortalEditorContext? _portalContext;
+    private bool _deferPortalIdentity;
 
     public CanvasMenuActionEditor() => InitializeComponent();
 
-    internal void BindAction(ActionItem? selected, Action<ActionItem> apply, bool allowEmptyAction = false)
+    internal void BindAction(ActionItem? selected, Action<ActionItem> apply, bool allowEmptyAction = false,
+        PortalEditorContext? portalContext = null, bool deferPortalIdentity = false)
     {
         _allowEmptyAction = allowEmptyAction;
         _apply = apply;
         _draft = selected?.Clone();
+        _portalContext = portalContext;
+        _deferPortalIdentity = deferPortalIdentity;
         RefreshFields();
     }
 
@@ -38,6 +43,7 @@ public partial class CanvasMenuActionEditor : UserControl
             PluginBox.ItemsSource = null;
             PanelBox.ItemsSource = null;
             Fields.Visibility = VisibleIf(_draft != null);
+            PortalEditor.Bind(_portalContext, _draft, PortalChanged, _deferPortalIdentity);
             if (_draft is not { } item) return;
 
             NameLabel.Text = I18n.T("FocusActionNameLabel");
@@ -55,7 +61,7 @@ public partial class CanvasMenuActionEditor : UserControl
             RefreshIcon(item);
 
             string type = DisplayType(item.Type);
-            var types = ActionTypeCatalog.BuildLocalizedActionTypes();
+            var types = ActionTypeCatalog.BuildLocalizedActionTypes(includePortal: _portalContext != null);
             if (_allowEmptyAction) types.Add(new ActionTypeItem { Tag = "None", DisplayText = I18n.T("FixedNoAction") });
             types.Insert(1, new ActionTypeItem { Tag = "Text", DisplayText = TextLabel.Text });
             if (!types.Any(option => option.Tag == type))
@@ -88,7 +94,7 @@ public partial class CanvasMenuActionEditor : UserControl
                 else if (item.PluginActionRef != null)
                     ShowUnavailable(fullId);
             }
-            else if (type is not ("Text" or "Hotkey" or "None"))
+            else if (type is not ("Text" or "Hotkey" or "None" or "OpenWheel"))
             {
                 if (PluginHost.TryGetClaimedEditorRegistration(item.Type, out var registration))
                     BuildSchema(registration, new ClaimedFields(item));
@@ -135,6 +141,16 @@ public partial class CanvasMenuActionEditor : UserControl
     private void Publish()
     {
         if (!_filling && _draft != null) _apply?.Invoke(_draft.Clone());
+    }
+
+    private void PortalChanged(WheelPortalTarget target)
+    {
+        if (_filling || _draft?.IsWheelPortal != true) return;
+        PortalTargetEditor.ApplyTarget(_draft, target);
+        _filling = true;
+        try { NameBox.Text = _draft.Name; }
+        finally { _filling = false; }
+        Publish();
     }
 
     private void NameChanged(object sender, TextChangedEventArgs e)

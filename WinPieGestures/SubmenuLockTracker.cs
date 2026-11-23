@@ -50,7 +50,7 @@ public sealed class SubmenuLockTracker
 		var layouts = new Dictionary<int, Geometry[]>();
 		for (int parent = 0; parent < profile.SectorCount; parent++)
 		{
-			int count = profile.GetEffectiveAction(parent)?.SubActions?.Count ?? 0;
+			int count = profile.GetEffectiveAction(parent)?.InlineSubActions?.Count ?? 0;
 			if (count == 0 || layouts.ContainsKey(count)) continue;
 			var slots = new Geometry[count];
 			for (int sub = 0; sub < count; sub++)
@@ -140,7 +140,10 @@ public sealed class SubmenuLockTracker
 	/// <summary>
 	/// 计算进入二级菜单的触发距离阈值
 	/// </summary>
-	public static double GetSubmenuEntryDistance(AppConfig config, bool isFan, double wheelRadius)
+	public static double GetSubmenuEntryDistance(AppConfig config, bool isFan, double wheelRadius) =>
+		GetSubmenuEntryDistance(config, isFan, wheelRadius, null);
+
+	internal static double GetSubmenuEntryDistance(AppConfig config, bool isFan, double wheelRadius, bool? fixedPopupExpansion)
 	{
 		if (isFan)
 		{
@@ -149,7 +152,7 @@ public sealed class SubmenuLockTracker
 
 		double innerGap = (config.SubWheelInnerGap >= 0.0) ? config.SubWheelInnerGap : 4.0;
 		double subWheelInner = wheelRadius + innerGap + 2.0;
-		if (config.AutoExpandSubRingsOnPopup)
+		if (fixedPopupExpansion ?? config.AutoExpandSubRingsOnPopup)
 		{
 			return subWheelInner;
 		}

@@ -742,7 +742,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 
 	public bool IsPluginType => Type == PluginActionBinding.TypeName;
 
-	public int SubActionCount => Action.SubActions?.Count ?? 0;
+	public int SubActionCount => Action.InlineSubActions?.Count ?? 0;
 
 	public string SubActionButtonText
 	{
@@ -757,7 +757,7 @@ public class SlotViewModel : INotifyPropertyChanged, IDisposable
 	}
 
 	/// <summary>当前已安装且可用的具体动作类型。</summary>
-	public List<ActionTypeOption> ActionTypes => ActionTypeCatalog.BuildActionTypeOptions();
+	public List<ActionTypeOption> ActionTypes => ActionTypeCatalog.BuildActionTypeOptions(includePortal: Action.IsWheelPortal);
 
 	/// <summary>主动作/手势编辑器使用的、按窗口管理聚合后的可用动作类型。</summary>
 	public static List<ActionTypeItem> AggregatedActionTypes => ActionTypeCatalog.BuildAggregatedActionTypes();

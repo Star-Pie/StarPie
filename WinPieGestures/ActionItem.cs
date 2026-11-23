@@ -94,6 +94,15 @@ public class ActionItem
 
 	public List<ActionItem> SubActions { get; set; } = new List<ActionItem>();
 
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public WheelPortalTarget? PortalTarget { get; set; }
+
+	[System.Text.Json.Serialization.JsonIgnore]
+	internal bool IsWheelPortal => string.Equals(Type, "OpenWheel", StringComparison.OrdinalIgnoreCase);
+
+	[System.Text.Json.Serialization.JsonIgnore]
+	internal List<ActionItem>? InlineSubActions => IsWheelPortal ? null : SubActions;
+
 	public ActionItem Clone()
 	{
 		var clone = CloneWithoutSubActions();
@@ -134,6 +143,7 @@ public class ActionItem
 			CustomTextOffsetY = this.CustomTextOffsetY,
 			// 深拷贝插件引用与参数：浅拷贝会让「复制动作后改参数」连带改掉原动作
 			PluginActionRef = this.PluginActionRef?.Clone(),
+			PortalTarget = PortalTarget?.Clone(),
 			ExtensionData = this.ExtensionData == null
 				? null
 				: new Dictionary<string, string>(this.ExtensionData, StringComparer.OrdinalIgnoreCase),

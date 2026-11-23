@@ -311,24 +311,22 @@ internal static partial class Program
             Slot(3,6,Text("blocked via child"),FixedRingMenu.SecondaryKey(2,1));
             Slot(3,7,Text("blocked unresolved inheritance"),FixedRingMenu.SecondaryKey(1,0));
             Slot(3,8,Text("independent"));
-            // Imported Fan menus can retain a fixed child linked to a secondary outside the
-            // three painted addresses. Its effective root must still be revalidated on release.
+            // Older Fan configurations can store a secondary address outside the rendered range.
             Slot(3,9,Text("hidden address link"),FixedRingMenu.SecondaryKey(3,4));
             var geometry = New(Host.GetType("WinPieGestures.FixedRingGeometry")!,4,72d,121d,1d,true);
             var session = New(Nested("FixedRingSession"),profile,layer,18L,geometry,Origin,Dpi,140d);
             Call(session,"SetShownSecondary",-1,true);
             Call(session,"Present");
             PaintFrame(session);
-            var ownerKey = FixedRingMenu.SecondaryKey(2,0);
             var inheritedKey = FixedRingMenu.SecondaryKey(3,0);
-            var expected = new HashSet<(int,int)> { (1,2), (2,ownerKey), (1,3), (2,inheritedKey), (3,4), (4,4), (3,8), (3,9) };
+            var expected = new HashSet<(int,int)> { (1,3), (2,inheritedKey), (3,0), (4,0), (4,4), (4,5), (3,6), (3,7), (3,8), (3,9) };
             var configuredSlots = typeof(FixedRingMenu).GetMethod("ConfiguredSlots", Members, [typeof(WheelProfile), typeof(int), typeof(bool)])!;
             var display = (HashSet<(int,int)>)configuredSlots.Invoke(menu, [profile, 5, true])!;
             var runtime = (HashSet<(int,int)>)session.GetType().GetField("_configuredSlots", Members)!.GetValue(session)!;
             if (!display.SetEquals(expected) || !runtime.SetEquals(expected))
                 throw new InvalidOperationException($"Resident preview/runtime occupancy: unexpected [{string.Join(",", display.Except(expected))}], missing [{string.Join(",", expected.Except(display))}]");
-            foreach (var (level, index) in new[] { (2,0), (2,FixedRingMenu.SecondaryKey(1,0)), (2,FixedRingMenu.SecondaryKey(2,1)),
-                    (3,0), (4,0), (3,1), (3,2), (3,3), (4,5), (3,6), (3,7) })
+            foreach (var (level, index) in new[] { (2,0), (2,FixedRingMenu.SecondaryKey(1,0)), (2,FixedRingMenu.SecondaryKey(2,0)),
+                    (2,FixedRingMenu.SecondaryKey(2,1)), (3,1), (3,2), (3,3), (3,4), (3,5) })
             {
                 var hit = New(Nested("RingHit"),level,index);
                 if (Resolve(session,hit).Action != null || (bool)Call(session, "WasVisible", hit)!)
@@ -337,13 +335,13 @@ internal static partial class Program
             var inheritedHit = New(Nested("RingHit"),2,inheritedKey);
             Check(Resolve(session,inheritedHit).Action?.Name == "inherited child" &&
                 Resolve(session,New(Nested("RingHit"),4,4)).Action?.Name == "navigable grandchild",
-                "resident resolved ancestors retain inherited children and navigation-only cells with active descendants");
+                "resident Fan retains the inherited legacy child and keeps a configured fixed slot with a blank former parent");
             var hiddenLink = New(Nested("RingHit"),3,9);
-            Check(Resolve(session,hiddenLink).Action?.Name == "hidden address link", "stored links to layout-hidden secondary addresses remain direct targets");
+            Check(Resolve(session,hiddenLink).Action?.Name == "hidden address link", "resident fixed slot remains selectable despite an obsolete layout-hidden secondary address");
             var prior = layer.Actions[3];
             layer.Actions[3] = new() { Type = "None" };
-            Check(Resolve(session,hiddenLink).Action == null && Resolve(session,inheritedHit).Action == null,
-                "disabling a previously inherited root invalidates both displayed and layout-hidden child links before release");
+            Check(Resolve(session,hiddenLink).Action?.Name == "hidden address link" && Resolve(session,inheritedHit).Action == null,
+                "disabling a previously inherited root invalidates its legacy child without invalidating a fixed slot");
             layer.Actions[3] = prior;
             var disabledPoint = ((Geometry Shape, Point Label))Call(geometry,"Secondary",config,0,0,1)!;
             int previous = Recorded.Count;

@@ -17,9 +17,18 @@ public partial class RadialWindow
     private ActionItem? DisplayedRoot(int index) => _configuredGestureSlots == null
         ? _profile.GetEffectiveAction(index) : FixedRingMenu.DisplayRoot(_profile, index);
     private sealed record CachedLayout(int Count, double RootRadius, double LegacyExtent, double Scale, bool Honeycomb, long Revision, FixedRingGeometry Geometry);
-    private bool ExpandSecondariesOnPopup => ConfigManager.CurrentConfig.ExpandsSubRingsOnPopup ||
-        (_fixedGestureLayout && _profile != null && GestureController.CaptureReleaseLayer(_profile) is { EffectiveMaxMenuDepth: > 2, ActiveFixedRings: { } menu } &&
-         menu.ShowsAllOnPopup(ConfigManager.CurrentConfig));
+    private bool ExpandSecondariesOnPopup
+    {
+        get
+        {
+            var config = ConfigManager.CurrentConfig;
+            if (_fixedGestureLayout && _profile != null && GestureController.CaptureReleaseLayer(_profile) is
+                { EffectiveMaxMenuDepth: > 2, ActiveFixedRings: { } menu })
+                return menu.ShowsAllOnPopup(config);
+
+            return config.ExpandsSubRingsOnPopup;
+        }
+    }
 
     internal double LegacyOuterExtent { get; private set; }
     internal int ShownSecondaryParent => _activeSubTierParentSector;
@@ -86,6 +95,7 @@ public partial class RadialWindow
     internal void ShowFixedRings(RingSession session)
     {
         ClearFixedRings();
+        InvalidatePinnedArrowSlots();
         _fixedOverlay = new FixedRingOverlay(this, session);
         MainGrid.Children.Add(_fixedOverlay);
     }
@@ -93,28 +103,40 @@ public partial class RadialWindow
     private void ClearFixedRings()
     {
         if (_fixedOverlay == null) return;
+        InvalidatePinnedArrowSlots();
         MainGrid.Children.Remove(_fixedOverlay);
         _fixedOverlay = null;
     }
 
-    internal void UpdateFixedRings(int[] path, RingHit hover) => _fixedOverlay?.Select(path, hover);
+    internal void UpdateFixedRings(FixedRingVisibility visible, RingHit hover) => _fixedOverlay?.Select(visible, hover);
+
+    internal void RevealFixedSecondary(int parentIndex)
+    {
+        Dispatcher.VerifyAccess();
+        if (!_allSubTiersActive && _activeSubTierParentSector != parentIndex && (uint)parentIndex < (uint)_profile.SectorCount)
+            ShowSubTier(parentIndex);
+    }
 
     private sealed class FixedRingOverlay : FrameworkElement
     {
         private sealed record VisualCell(RingSession.Cell Cell, DrawingGroup Label);
         private readonly RingSession _session;
         private readonly RadialWindow _wheel;
-        private readonly bool _persistent;
         private readonly VisualCell?[][] _rows;
         private readonly Pen _border, _activeBorder;
-        private int[] _path = [];
+        private FixedRingVisibility _visible;
+        private FixedRingVisibility? _arrowRenderedVisibility;
         private RingHit _hover;
+
+        internal bool ArrowFramePresented => _arrowRenderedVisibility == _visible;
+        internal bool PointerControlsOuter => _session.ControlsOuter && !_session.ShowingExtendedPrimary;
+        internal PinnedArrowAddress? ArrowPointerSelection => _hover.IsOuter ? new(_hover.Level, _hover.Index) : null;
 
         internal FixedRingOverlay(RadialWindow wheel, RingSession session)
         {
             _session = session;
             _wheel = wheel;
-            _persistent = session.Persistent;
+            _visible = session.Visibility;
             IsHitTestVisible = false;
             _border = new Pen(wheel._subSectorBorderBrush, Math.Max(.7, wheel._borderThickness));
             _activeBorder = new Pen(wheel._subHighlightBorderBrush, Math.Max(1.5, wheel._highlightBorderThickness));
@@ -140,34 +162,54 @@ public partial class RadialWindow
             }
         }
 
-        internal void Select(int[] path, RingHit hover)
+        internal void Select(FixedRingVisibility visible, RingHit hover)
         {
-            if (ReferenceEquals(path, _path) && hover == _hover) return;
-            _path = path;
+            if (visible == _visible && hover == _hover) return;
+            if (visible != _visible) _wheel.InvalidatePinnedArrowSlots();
+            _visible = visible;
             _hover = hover;
             InvalidateVisual();
+        }
+
+        internal void AppendPinnedArrowSlots(List<PinnedArrowSlot> slots)
+        {
+            if (_arrowRenderedVisibility is not { } rendered) return;
+            for (int level = 3; level <= rendered.VisibleDepth; level++)
+            {
+                var row = _rows[level - 1];
+                for (int i = 0; i < row.Length; i++)
+                {
+                    if (!rendered.Contains(level, i) || row[i] is not { } cell || cell.Cell.Shape.IsEmpty() ||
+                        !_session.WasVisible(new(level, i))) continue;
+                    slots.Add(new(new(level, i), _session.Geometry.GetCenter(level, i, row.Length)));
+                }
+            }
         }
 
         protected override void OnRender(DrawingContext dc)
         {
             dc.PushTransform(new TranslateTransform(ActualWidth / 2, ActualHeight / 2));
-            int visible = _persistent ? _rows.Length : _path.Length + 2;
+            int visible = _visible.VisibleDepth;
             for (int level = 3; level <= visible; level++)
             {
                 var row = _rows[level - 1];
                 for (int i = 0; i < row.Length; i++)
                 {
-                    if (row[i] is not { } visual || !visual.Cell.IsVisible(_persistent, level, _path)) continue;
+                    if (row[i] is not { } visual || !_visible.Contains(level, i)) continue;
                     var cell = visual.Cell;
-                    bool selected = _hover == new RingHit(level, i);
-                    bool path = level - 2 < _path.Length && _path[level - 2] == i;
-                    dc.DrawGeometry(selected || path ? _wheel._subHighlightSectorBrush : _wheel._subDefaultSectorBrush,
-                        selected || path ? _activeBorder : _border, cell.Shape);
+                    bool selected = _wheel.PaintsPinnedArrowSelection(new(level, i), _hover == new RingHit(level, i));
+                    dc.DrawGeometry(selected ? _wheel._subHighlightSectorBrush : _wheel._subDefaultSectorBrush,
+                        selected ? _activeBorder : _border, cell.Shape);
                     dc.DrawDrawing(visual.Label);
                 }
             }
             dc.Pop();
-            _session.PublishFrame(_path);
+            _session.PublishFrame(_visible);
+            if (_wheel._pinnedArrowSlotsChanged != null && !ArrowFramePresented)
+            {
+                _arrowRenderedVisibility = _visible;
+                _wheel.QueuePinnedArrowRefresh();
+            }
         }
     }
 }

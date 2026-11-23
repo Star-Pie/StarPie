@@ -46,5 +46,6 @@ public static partial class I18n
         add("WheelAppearanceCanvasHint", "点击扇区选择层级，拖动尺寸手柄可直接调整。虚线轮廓表示空槽。", "點擊扇區選擇階層，拖曳尺寸控點可直接調整。虛線輪廓代表空槽。", "Click a sector to select its level. Drag the size handle to adjust it. Dashed outlines mark empty slots.", "セクターをクリックして階層を選び、ハンドルをドラッグしてサイズを調整します。破線は空きスロットです。");
         add("WheelAppearancePopupHint", "显示已配置动作及通向有效子项的父扇区。", "顯示已配置動作及通往有效子項的父扇區。", "Shows configured actions and parent sectors that lead to available actions.", "設定済みの操作と、有効な子項目を持つ親セクターが表示されます。");
         add("WheelAppearancePopupFixedHint", "此处显示一级和二级。要预览第三级以上，请在「手势动作」中启用固定圈。", "此處顯示一級和二級。要預覽第三級以上，請在「手勢動作」中啟用固定圈。", "Showing levels 1 and 2. Enable fixed rings in Gesture Actions to preview level 3 and up.", "第1・第2階層を表示しています。第3階層以降をプレビューするには、ジェスチャー操作で固定リングを有効にしてください。");
+        add("WheelAppearancePopupNearbyHint", "将光标滑到外圈附近，预览周围已配置的扇区。", "將游標滑到外圈附近，預覽周圍已設定的扇區。", "Move the pointer toward the outer tiers to preview nearby configured slots.", "ポインターを外側の階層に近づけると、付近の設定済みスロットをプレビューできます。");
     }
 }

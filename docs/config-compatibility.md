@@ -1,5 +1,12 @@
 # 配置与兼容性规范
 
+## 链式轮盘
+
+- `OpenWheel` 扇区通过可选的 `PortalTarget` 指向其他轮盘层。切换到此类型时先挂起该槽位的内联子菜单，原有动作参数和子树继续保存，切回普通动作后恢复。
+- `PortalParentVisualMode`（默认 `ParentCore`、可选 `FadedWheel`、`CustomMarker`、`OutlineCircle`）、`PortalTrailShowBeam`、`PortalFadeOpacity` 与自定义标记字段（`PortalCustomShape`/`PortalCustomSizeDip`/`PortalCustomFillColor`/`PortalCustomBorderColor`/`PortalCustomOpacity`/`PortalCustomIconKey`/`PortalCustomImagePath`）均支持旧配置缺省回退与边界钳位；五级固定外圈由 `FixedRingProximity` 按光标就近计算，不再使用固定父级从属索引约束。
+- 旧层缺省 `LayerId`。新建层或首次选为目标时分配标识。目标层被删除后保留原标识和名称用于断链提示。无标识的目标按索引解析。克隆方案时，同方案引用改指新方案的对应层。
+- 单方案便携包可包含关联方案及其 SVG。主方案在首项，旧的单方案包继续可读。导入时为各方案分配独立名称，并重映射包内引用。取消或保存失败时回滚本次导入的资源和方案草稿。
+
 ## 配置显示与平行轮盘（在研）
 
 - 配置友好名称与内部 ProcessName 身份分离，包括 Global；层名继续使用 WheelLayer.Name。运行切层提示和外观预览共用格式化入口。
@@ -45,6 +52,8 @@
 - `ConfigManager.ExportConfig` 必须包含 `CustomColorPresets`、主题、色彩微调和几何尺寸等全局状态。
 - 导入成功后刷新主题预设、动作槽位和实时画布；防止 `_isUpdatingUi` 留在错误状态。
 - 不要手工构造最小 JSON 当真实首装配置。`EnsureConfigHealth` 负责校验，不保证补全默认轮盘。
+- 首次生成和主动恢复默认配置时创建一个全局二级轮盘，包含 8 个一级扇区，每个一级扇区预配 3 个二级动作。已保存的应用方案、扇区数量、菜单深度和动作继续随原配置载入。
+- 新默认配置开启 `Plugins.PreloadOnStartup`。旧配置缺失该字段时沿用旧默认值 `false`，已有值照常载入。损坏配置的恢复会话关闭预加载。
 - 配置迁移要对旧版本、当前版本和重复执行做测试；迁移失败不得覆盖原文件。
 
 ## 自定义按键与宿主动作面板（beta.4候选）
@@ -104,9 +113,9 @@ LongPressDelayMs 缺失时保留450ms默认值，显式0作为合法值往返保
 
 固定布局按轮盘层保存于可选的 `WheelLayer.FixedRings`。旧配置缺省使用原布局。首次从原布局启用时，从第三级开始将已有后代复制到固定槽位，原来的动作树保留。超过单圈上限的旧动作仍可在原布局访问。暂停固定布局不会删除两套配置。 在当前层明确将蜂窝扇的菜单级数调至三级或更深，或在已有三级以上的当前层选择蜂窝扇时，首次建立固定槽位并默认逐级唤醒。单纯读取旧配置或切换到已暂停的层时保留原布局。
 
-`Tiers[0]` 对应第三级。每圈的 Slots 按绝对编号索引，空位为 null。三级的 ParentIndex 由一级方向与该方向的二级子项编号共同编码，四、五级引用上圈固定槽编号。null 表示常驻模式下的独立槽。一级与二级继续读取原 Actions 与 SubActions。Count 只控制可见范围。缩减、暂停和复制配置仍保留隐藏槽的动作、插件参数和图标。导出便携包时，也会收集并在必要时重映射这些槽位的自定义图标。
+`Tiers[0]` 对应第三级。每圈的 `Slots` 按绝对编号索引，空位为 `null`。三级至五级使用槽位位置确定展开与选择。`ParentIndex` 作为旧配置元数据保留，可随配置读写和复制。一级与二级继续读取原 `Actions` 与 `SubActions`。`Count` 只控制可见范围。缩减、暂停和复制配置仍保留隐藏槽的动作、插件参数和图标。导出便携包时，也会收集并在必要时重映射这些槽位的自定义图标。
 
-展开距离读取全局 `SubWheelTriggerDistance`。旧预览配置中的 `WakeBandWidth`、`DwellMs` 只在复制及保存时保留原值；新建的层级无需写入这两个字段。
+二级的展开距离读取全局 `SubWheelTriggerDistance`。固定布局的三级至五级以光标到实际轮廓的距离判断展开，留出少量收起余量以平滑边缘移动。旧预览配置中的 `WakeBandWidth`、`DwellMs` 随配置保留。
 
 ## Studio 方案字段与交换
 

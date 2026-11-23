@@ -40,7 +40,7 @@ public partial class SettingsWindow
 		canvas.Children.Clear();
 		var cfg = ConfigManager.CurrentConfig;
 		bool fan = cfg.SubmenuStyle == "Fan";
-		int count = parent.SubActions?.Count ?? 0;
+		int count = parent.InlineSubActions?.Count ?? 0;
 		double radius = cfg.WheelRadius, inner = cfg.InnerRadius;
 		double second = cfg.SubWheelOuterRadius > 0 ? cfg.SubWheelOuterRadius : radius * 1.55;
 		double sweep = 360.0 / profile.SectorCount;
@@ -59,7 +59,7 @@ public partial class SettingsWindow
 				cfg.EnableOuterEscapeCancel ? cfg.OuterEscapeDistance : 0);
 
 		var root = GetCanvasRoot(profile, parentPath[0])!;
-		int outerCount = DeepMenuFrame.VisibleSlotCount(root.SubActions.Count, fan);
+		int outerCount = DeepMenuFrame.VisibleSlotCount(root.InlineSubActions.Count, fan);
 		var ancestorShapes = new List<Geometry>();
 		if (fan)
 		{
@@ -81,13 +81,13 @@ public partial class SettingsWindow
 				second, LegacyRingGeometry.SecondaryShape(cfg), gap, cfg.SubWheelCornerRadius >= 0 ? cfg.SubWheelCornerRadius : cfg.SectorCornerRadius));
 		}
 		var prefix = new List<int> { parentPath[0], parentPath[1] };
-		var ancestor = root.SubActions[parentPath[1]];
+		var ancestor = root.InlineSubActions[parentPath[1]];
 		for (int d = 2; d < parentPath.Count; d++)
 		{
 			int index = parentPath[d];
-			ancestorShapes.Add(Frame(prefix, ancestor.SubActions.Count).Slots[index].Shape);
+			ancestorShapes.Add(Frame(prefix, ancestor.InlineSubActions.Count).Slots[index].Shape);
 			prefix.Add(index);
-			ancestor = ancestor.SubActions[index];
+			ancestor = ancestor.InlineSubActions[index];
 		}
 		var frame = count > 0 ? Frame(parentPath, count) : null;
 		var vacantShape = count == 0 ? Frame(parentPath, 1).Slots[0].Shape : null;
@@ -152,7 +152,7 @@ public partial class SettingsWindow
 		for (int i = 0; i < ancestorShapes.Count; i++)
 		{
 			int depth = i + 2;
-			ancestorItem = ancestorItem.SubActions[parentPath[depth - 1]];
+			ancestorItem = ancestorItem.InlineSubActions[parentPath[depth - 1]];
 			var shape = ancestorShapes[i];
 			var slot = PlaceSlot(shape, "DeepCanvasAncestor" + depth, ancestorItem.Name, false, () => ShowDeepAncestor(depth));
 			RegisterPaletteTreeHit(OnCanvas(shape), parentPath.Take(depth).ToArray());
@@ -171,10 +171,10 @@ public partial class SettingsWindow
 			{
 				int index = i;
 				var slot = frame.Slots[i];
-				var item = parent.SubActions![i];
+				var item = parent.InlineSubActions![i];
 				string name = !string.IsNullOrWhiteSpace(item?.Name) ? item.Name : I18n.TF("EditSubActionNumber", i + 1);
 				bool selected = selectedChild == i;
-				bool branch = item?.SubActions?.Count > 0 && parentPath.Count + 1 < _deepCanvasLayer!.EffectiveMaxMenuDepth;
+				bool branch = item?.InlineSubActions?.Count > 0 && parentPath.Count + 1 < _deepCanvasLayer!.EffectiveMaxMenuDepth;
 				var button = PlaceSlot(slot.Shape, "DeepCanvasChild" + i, name, selected, () => SelectDeepCanvasChild(index));
 				RegisterPaletteTreeHit(OnCanvas(slot.Shape), [..parentPath, index]);
 				if (branch) button.ToolTip = name + "  ›";
@@ -191,6 +191,9 @@ public partial class SettingsWindow
 				Canvas.SetLeft(label, labelLeft);
 				Canvas.SetTop(label, labelCenterY - label.DesiredSize.Height / 2);
 				canvas.Children.Add(label);
+				var portalAnchor = new Point(x + slot.Label.X * scale, labelCenterY);
+				DrawPortalMarker(item, portalAnchor, totalWidth);
+				if (selected) DrawPortalGhost(profile, new Point(x, y), portalAnchor, scale, (frame?.OuterDistance ?? radius) * scale);
 				if (branch)
 				{
 					var chevron = new TextBlock { Text = "›", FontSize = 13, Foreground = ink, IsHitTestVisible = false };

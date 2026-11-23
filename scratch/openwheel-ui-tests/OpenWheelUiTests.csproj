@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>test_process_launch</AssemblyName>
+  </PropertyGroup>
+  <Target Name="RequireCandidate" BeforeTargets="ResolveReferences" Condition="!Exists('$(StarPieCandidateDir)\StarPie.dll')">
+    <Error Text="Specify the timestamped Release candidate in StarPieCandidateDir." />
+  </Target>
+  <ItemGroup>
+    <Reference Include="StarPie" HintPath="$(StarPieCandidateDir)\StarPie.dll" />
+    <Reference Include="StarPie.Plugin.Abstractions" HintPath="$(StarPieCandidateDir)\StarPie.Plugin.Abstractions.dll" />
+    <AssemblyMetadata Include="CandidateDll" Value="$(StarPieCandidateDir)\StarPie.dll" />
+  </ItemGroup>
+</Project>

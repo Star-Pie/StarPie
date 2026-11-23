@@ -45,19 +45,9 @@ public partial class SettingsWindow
         var assignedFill = (Brush)FindResource("SubtleCardBrush");
 
         var path = new Dictionary<int, int>();
-        int? ancestor = _fixedInnerLevel == null ? _fixedIndices[_fixedLevel] : null;
+        if (_fixedInnerLevel == null) path[_fixedLevel] = _fixedIndices[_fixedLevel];
         if (_fixedInnerLevel is 1 or 2) path[1] = _selectedSlotIndex;
         if (_fixedInnerLevel == 2 && _selectedSubActionIndex is int subIndex) path[2] = FixedRingMenu.SecondaryKey(_selectedSlotIndex, subIndex);
-        for (int d = _fixedLevel; d >= 3 && ancestor is int i; d--)
-        {
-            path[d] = i;
-            ancestor = menu.GetSlot(d, i)?.ParentIndex;
-        }
-        if (ancestor is int key && FixedRingMenu.TryDecodeSecondaryKey(key, out int parent, out _))
-        {
-            path[2] = key;
-            path[1] = parent;
-        }
         UpdateStudioFixedBreadcrumb(profile, menu, path);
         MappingsCurrentEditIndicator.Text = _fixedInnerLevel == 0 ? I18n.T("FocusSlotCenterCoreTitle") : string.Join(" › ", path.OrderBy(p => p.Key)
             .Select(pair => FixedAction(profile, menu, pair.Key, pair.Value)?.Name is { Length: > 0 } name ? name : $"{pair.Key} · {pair.Value + 1:00}"));
@@ -120,6 +110,10 @@ public partial class SettingsWindow
             Canvas.SetLeft(label, 150 + position.X * scale - slotWidth / 2);
             Canvas.SetTop(label, 150 + position.Y * scale - label.DesiredSize.Height / 2);
             canvas.Children.Add(label);
+            var center = new Point(150 + position.X * scale, 150 + position.Y * scale);
+            DrawPortalMarker(action, center, slotWidth);
+            if (selected) DrawPortalGhost(profile, new Point(150, 150), center, scale,
+                geometry.OuterForCount(depth, menu.GetCount(depth)) * scale);
         }
 
         void PlaceButton(Button button, Geometry shape, string id, Action select)

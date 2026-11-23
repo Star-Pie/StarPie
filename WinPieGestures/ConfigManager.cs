@@ -182,6 +182,7 @@ public static class ConfigManager
 			BackupCorruptConfig();
 			IsFallbackConfig = true;
 			CurrentConfig = CreateDefaultConfig();
+			CurrentConfig.Plugins.PreloadOnStartup = false;
 			EnsureConfigHealth(CurrentConfig);
 			I18n.SetLanguage(CurrentConfig.Language);
 			IconHelper.PinIconsForConfig(CurrentConfig);
@@ -400,6 +401,26 @@ public static class ConfigManager
 	// 返回是否保存成功，调用方据此决定提示文案，避免无条件宣称“已保存”。
 	public static bool SaveConfig() => SaveConfig(allowOverwriteFallback: false);
 
+	internal static bool CommitProfileImport(AppConfig config, IReadOnlyList<WheelProfile> profiles)
+	{
+		if (!ReferenceEquals(CurrentConfig, config) || profiles.Count == 0) return false;
+		config.Profiles.AddRange(profiles);
+		bool committed = false;
+		try
+		{
+			committed = SaveConfig();
+			return committed;
+		}
+		finally
+		{
+			if (!committed)
+			{
+				foreach (var profile in profiles) config.Profiles.Remove(profile);
+				MarkConfigurationChanged();
+			}
+		}
+	}
+
 	public static bool SaveConfig(bool allowOverwriteFallback)
 	{
 		// 配置即使因磁盘故障或降级保护跳过写盘，当前进程中的内存态也已经改变；
@@ -567,8 +588,11 @@ public static class ConfigManager
 	{
 		AppConfig obj = new AppConfig
 		{
-			DragThreshold = 25.0
+			DragThreshold = 25.0,
+			Plugins = new PluginsPreference { PreloadOnStartup = true }
 		};
+		LanguageCode language = I18n.ResolveLanguage(obj.Language);
+		string Label(string key) => I18n.GetBuiltInString(key, language);
 		WheelProfile item = new WheelProfile
 		{
 			ProcessName = "Global",
@@ -593,7 +617,13 @@ public static class ConfigManager
 					Type = "System",
 					Name = "屏幕截图",
 					Parameter = "Screenshot",
-					IconKey = "Screenshot"
+					IconKey = "Screenshot",
+					SubActions = new List<ActionItem>
+					{
+						new ActionItem { Type = "Hotkey", Name = Label("DefaultWheelCopyWindowScreenshot"), Parameter = "Alt+PrintScreen", IconKey = "Copy" },
+						new ActionItem { Type = "Hotkey", Name = Label("DefaultWheelSaveScreenshot"), Parameter = "Win+PrintScreen", IconKey = "Save" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_ClipboardHistory"), Parameter = "Win+V", IconKey = "ClipboardHistory" }
+					}
 				},
 				new ActionItem
 				{
@@ -603,7 +633,9 @@ public static class ConfigManager
 					IconKey = "ShowDesktop",
 					SubActions = new List<ActionItem>
 					{
-						new ActionItem { Type = "System", Name = "锁定电脑", Parameter = "Lock", IconKey = "Lock" }
+						new ActionItem { Type = "System", Name = "锁定电脑", Parameter = "Lock", IconKey = "Lock" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_Explorer"), Parameter = "Win+E", IconKey = "Explorer" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_Settings"), Parameter = "Win+I", IconKey = "Settings" }
 					}
 				},
 				new ActionItem
@@ -611,7 +643,13 @@ public static class ConfigManager
 					Type = "System",
 					Name = "多任务视图",
 					Parameter = "TaskView",
-					IconKey = "Camera"
+					IconKey = "Camera",
+					SubActions = new List<ActionItem>
+					{
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_PrevDesktop"), Parameter = "Win+Ctrl+Left", IconKey = "PrevDesktop" },
+						new ActionItem { Type = "Hotkey", Name = Label("DefaultWheelNewDesktop"), Parameter = "Win+Ctrl+D", IconKey = "NewTab" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_NextDesktop"), Parameter = "Win+Ctrl+Right", IconKey = "NextDesktop" }
+					}
 				},
 				new ActionItem
 				{
@@ -623,8 +661,7 @@ public static class ConfigManager
 					{
 						new ActionItem { Type = "System", Name = "任务管理器", Parameter = "TaskManager", IconKey = "Terminal" },
 						new ActionItem { Type = "System", Name = "计算器", Parameter = "Calculator", IconKey = "Code" },
-						new ActionItem { Type = "Launch", Name = "记事本", Parameter = "notepad.exe", IconKey = "Code" },
-						new ActionItem { Type = "System", Name = "控制面板", Parameter = "ControlPanel", IconKey = "Settings" }
+						new ActionItem { Type = "Launch", Name = "记事本", Parameter = "notepad.exe", IconKey = "Code" }
 					}
 				},
 				new ActionItem
@@ -632,7 +669,13 @@ public static class ConfigManager
 					Type = "System",
 					Name = "音量减",
 					Parameter = "VolumeDown",
-					IconKey = "VolumeDown"
+					IconKey = "VolumeDown",
+					SubActions = new List<ActionItem>
+					{
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_VolumeMute"), Parameter = "VolumeMute", IconKey = "VolumeMute" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_PrevTrack"), Parameter = "PrevTrack", IconKey = "PrevTrack" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_PlayPause"), Parameter = "MediaPlayPause", IconKey = "PlayPause" }
+					}
 				},
 				new ActionItem
 				{
@@ -652,117 +695,18 @@ public static class ConfigManager
 					Type = "System",
 					Name = "音量增",
 					Parameter = "VolumeUp",
-					IconKey = "VolumeUp"
+					IconKey = "VolumeUp",
+					SubActions = new List<ActionItem>
+					{
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_PlayPause"), Parameter = "MediaPlayPause", IconKey = "PlayPause" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_NextTrack"), Parameter = "NextTrack", IconKey = "NextTrack" },
+						new ActionItem { Type = "Hotkey", Name = Label("SysPresetName_VolumeMute"), Parameter = "VolumeMute", IconKey = "VolumeMute" }
+					}
 				}
 			}
 		};
-		WheelProfile item2 = new WheelProfile
-		{
-			ProcessName = "chrome.exe",
-			SectorCount = 4,
-			Actions = new List<ActionItem>
-			{
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "关闭标签",
-					Parameter = "Ctrl+W",
-					IconKey = "CloseTab"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "后退",
-					Parameter = "Alt+Left",
-					IconKey = "Back"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "新建标签",
-					Parameter = "Ctrl+T",
-					IconKey = "NewTab"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "刷新",
-					Parameter = "F5",
-					IconKey = "Refresh"
-				}
-			}
-		};
-		WheelProfile item3 = new WheelProfile
-		{
-			ProcessName = "code.exe",
-			SectorCount = 8,
-			Actions = new List<ActionItem>
-			{
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "定义跳转",
-					Parameter = "F12",
-					IconKey = "Code"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "代码格式化",
-					Parameter = "Shift+Alt+F",
-					IconKey = "Edit"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "控制台",
-					Parameter = "Ctrl+`",
-					IconKey = "Terminal"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "快速查找文件",
-					Parameter = "Ctrl+P",
-					IconKey = "Search"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "保存全部",
-					Parameter = "Ctrl+K,S",
-					IconKey = "Save"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "全局搜索",
-					Parameter = "Ctrl+Shift+F",
-					IconKey = "Search"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "撤销",
-					Parameter = "Ctrl+Z",
-					IconKey = "Undo"
-				},
-				new ActionItem
-				{
-					Type = "Hotkey",
-					Name = "重做",
-					Parameter = "Ctrl+Y",
-					IconKey = "Redo"
-				}
-			}
-		};
+		item.EnsureLayers();
 		obj.Profiles.Add(item);
-		obj.Profiles.Add(item2);
-		obj.Profiles.Add(item3);
-		foreach (var p in obj.Profiles)
-		{
-			p.EnsureLayers();
-		}
 		return obj;
 	}
 

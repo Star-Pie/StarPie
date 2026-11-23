@@ -52,7 +52,8 @@ public partial class SettingsWindow
 
     private bool HandleTriggerRecorderInterfaceClick(string mouseButton, System.Windows.Point position)
     {
-        if (mouseButton != "LeftButton" || (!_isRecordingTrigger && !_isRecordingProcessTrigger) ||
+        if (mouseButton != "LeftButton" ||
+            (!_isRecordingTrigger && !_isRecordingProcessTrigger && _recordingPinnedNavSlot == PinnedNavAction.None) ||
             !IsVisible || PresentationSource.FromVisual(this) == null) return false;
         // The routed wheel target skips this window; use the actual hit HWND for recording.
         if (WindowIdentification.GetRootWindowAtPoint(position) != new WindowInteropHelper(this).Handle) return false;
@@ -64,7 +65,9 @@ public partial class SettingsWindow
         }
         var control = FindInputControl(InputHitTest(point) as DependencyObject);
         if (control == null) return false;
-        if (!ReferenceEquals(control, RecordTriggerButton) && !ReferenceEquals(control, RecordProcessTriggerButton))
+        if (!ReferenceEquals(control, RecordTriggerButton) &&
+            !ReferenceEquals(control, RecordProcessTriggerButton) &&
+            !IsPinnedNavKeyButton(control))
             CancelTriggerSceneRecordings();
         return true;
     }
@@ -73,6 +76,7 @@ public partial class SettingsWindow
     {
         if (_isRecordingTrigger) StopTriggerRecording(saved: false);
         if (_isRecordingProcessTrigger) HideProcessTriggerCard();
+        StopPinnedNavRecording();
     }
 
     private DependencyObject? FindInputControl(DependencyObject? element)
@@ -104,6 +108,7 @@ public partial class SettingsWindow
         bool advanced = section == "advanced";
         if (!rules && _isRecordingProcessTrigger) HideProcessTriggerCard();
         if ((rules || advanced) && _isRecordingTrigger) StopTriggerRecording(saved: false);
+        if (rules || advanced) StopPinnedNavRecording();
         if (!advanced && _currentExclusiveSession?.Kind == ExclusiveRecordingTargetKind.Gesture)
             CancelExclusiveRecordingIfActive();
 
@@ -339,6 +344,8 @@ public partial class SettingsWindow
 
     private void ApplyTriggerSceneLocalization()
     {
+        RefreshPortalTriggerControls();
+        RefreshPinnedNavKeyControls();
         if (TriggerCommonTab == null) return;
         TriggerCommonTab.Content = I18n.T("TriggerSceneCommonTab");
         TriggerRulesTab.Content = I18n.T("TriggerSceneRulesTab");
@@ -384,5 +391,69 @@ public partial class SettingsWindow
             TriggerSimulatorInputBox.SelectedValue = previous;
         }
         finally { _refreshingTriggerScene = wasRefreshing; }
+    }
+
+    private void RefreshPortalTriggerControls()
+    {
+        if (PortalTriggerHeading == null || ConfigManager.CurrentConfig is not { } config) return;
+        bool wasUpdating = _isUpdatingUi;
+        _isUpdatingUi = true;
+        try
+        {
+            PortalTriggerHeading.Text = I18n.T("PortalTriggerTitle");
+            PortalCrossToggle.Content = I18n.T("PortalCross");
+            PortalDwellToggle.Content = I18n.T("PortalDwell");
+            PortalReentryToggle.Content = I18n.T("PortalReentry");
+            PortalCursorLabel.Text = I18n.T("PortalCursorPolicy");
+            PortalEscLabel.Text = I18n.T("PortalEsc");
+            PortalCursorOptions.ItemsSource = new[]
+            {
+                new ActionTypeItem { Tag = "WarpToCenter", DisplayText = I18n.T("PortalWarp") },
+                new ActionTypeItem { Tag = "AutoPin", DisplayText = I18n.T("PortalAutoPin") }
+            };
+            PortalEscOptions.ItemsSource = new[]
+            {
+                new ActionTypeItem { Tag = "StepBack", DisplayText = I18n.T("PortalStepBack") },
+                new ActionTypeItem { Tag = "CloseAll", DisplayText = I18n.T("PortalCloseAll") }
+            };
+            PortalCrossToggle.IsChecked = config.PortalEnableCrossExpand;
+            PortalCrossSlider.Value = Math.Round(config.EffectivePortalCrossExpandRatio * 100);
+            PortalDwellToggle.IsChecked = config.PortalEnableDwellExpand;
+            PortalDwellSlider.Value = config.EffectivePortalDwellMs;
+            PortalCursorOptions.SelectedValue = config.PortalAutoPins ? "AutoPin" : "WarpToCenter";
+            PortalReentryToggle.IsChecked = config.PortalEnableReentryGuard;
+            PortalEscOptions.SelectedValue = config.PortalEscapeClosesAll ? "CloseAll" : "StepBack";
+            PortalGapSlider.Value = config.EffectivePortalOuterTangentGapDip;
+            PortalDepthSlider.Value = config.EffectivePortalMaxDepth;
+            RefreshPortalTriggerValues(config);
+        }
+        finally { _isUpdatingUi = wasUpdating; }
+    }
+
+    private void RefreshPortalTriggerValues(AppConfig config)
+    {
+        PortalCrossValue.Text = I18n.TF("PortalCrossValue", Math.Round(config.EffectivePortalCrossExpandRatio * 100));
+        PortalDwellValue.Text = I18n.TF("PortalDwellValue", config.EffectivePortalDwellMs);
+        PortalGapValue.Text = I18n.TF("PortalTangentGap", config.EffectivePortalOuterTangentGapDip);
+        PortalDepthValue.Text = I18n.TF("PortalDepthValue", config.EffectivePortalMaxDepth);
+        PortalCrossSlider.IsEnabled = config.PortalEnableCrossExpand;
+        PortalDwellSlider.IsEnabled = config.PortalEnableDwellExpand;
+    }
+
+    private void PortalTriggerOptionChanged(object sender, RoutedEventArgs e)
+    {
+        if (!CanEditTriggerScene || PortalDepthSlider == null || ConfigManager.CurrentConfig is not { } config) return;
+        if (ReferenceEquals(sender, PortalCrossToggle)) config.PortalEnableCrossExpand = PortalCrossToggle.IsChecked == true;
+        else if (ReferenceEquals(sender, PortalCrossSlider)) config.PortalCrossExpandRatio = PortalCrossSlider.Value / 100;
+        else if (ReferenceEquals(sender, PortalDwellToggle)) config.PortalEnableDwellExpand = PortalDwellToggle.IsChecked == true;
+        else if (ReferenceEquals(sender, PortalDwellSlider)) config.PortalDwellMs = (int)PortalDwellSlider.Value;
+        else if (ReferenceEquals(sender, PortalCursorOptions) && PortalCursorOptions.SelectedValue is string pointer) config.PortalOffsetCursorPolicy = pointer;
+        else if (ReferenceEquals(sender, PortalEscOptions) && PortalEscOptions.SelectedValue is string escape) config.PortalEscBehavior = escape;
+        else if (ReferenceEquals(sender, PortalReentryToggle)) config.PortalEnableReentryGuard = PortalReentryToggle.IsChecked == true;
+        else if (ReferenceEquals(sender, PortalGapSlider)) config.PortalOuterTangentGapDip = PortalGapSlider.Value;
+        else if (ReferenceEquals(sender, PortalDepthSlider)) config.PortalMaxDepth = (int)PortalDepthSlider.Value;
+        else return;
+        RefreshPortalTriggerValues(config);
+        ScheduleAutoSave();
     }
 }
