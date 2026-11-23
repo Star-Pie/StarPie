@@ -31,6 +31,11 @@ public partial class StudioProfileIdentity : UserControl
         TagsEntry.ToolTip = I18n.T("StudioRailTagPrompt");
         AutomationProperties.SetName(TagsEntry, TagsLabel.Text);
         Apply.Content = I18n.T("BtnApply");
+        bool isGlobal = string.Equals(profile?.ProcessName, "Global", StringComparison.OrdinalIgnoreCase);
+        GlobalScopeBadge.Visibility = GlobalHint.Visibility = isGlobal ? Visibility.Visible : Visibility.Collapsed;
+        GlobalScopeText.Text = I18n.T("StudioProfileDefaultScope");
+        GlobalHint.Text = I18n.T("StudioProfileDefaultHint");
+        GlobalHint.ToolTip = I18n.T("GlobalProfileHint");
         string name = profile?.FriendlyName ?? "";
         string tags = profile == null ? "" : string.Join(", ", profile.Tags);
         bool selectionChanged = !ReferenceEquals(profile, _profile);

@@ -510,13 +510,15 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 			dictionary[key] = new LocalizedString(zhCn, zhTw, en, ja);
 		}
 		RegisterStudioRailStrings(Add);
-		RegisterStudioPaletteStrings(Add);
 		RegisterWheelAppearanceStrings(Add);
 		RegisterPluginLibraryStatsStrings(Add);
 		RegisterTriggerSceneStrings(Add);
-		Add("StudioProfiles", "方案与层", "方案與層", "Profiles & layers", "プロファイルとレイヤー");
-		Add("StudioInspector", "属性", "屬性", "Inspector", "プロパティ");
+		Add("StudioProfileInspectorHeading", "方案属性", "方案屬性", "Profile properties", "プロファイルの設定");
 		Add("StudioList", "列表", "清單", "List", "一覧");
+		Add("StudioSwitchToList", "切换列表模式", "切換列表模式", "Switch to list mode", "一覧モードに切り替え");
+		Add("StudioDragInsert", "插入", "插入", "Insert", "挿入");
+		Add("StudioDragSwap", "交换", "交換", "Swap", "交換");
+		Add("StudioDragMove", "移动", "移動", "Move", "移動");
 		Add("StudioStructure", "轮盘结构与行为", "輪盤結構與行為", "Layout and behavior", "構成と動作");
 		Add("StudioConditions", "生效条件", "生效條件", "Activation conditions", "適用条件");
 		Add("StudioSlotAppearance", "单槽外观排版", "單槽外觀排版", "Slot appearance", "スロットの表示形式");
@@ -1837,7 +1839,6 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("FontJetBrainsMono", "🔤 JetBrains Mono", "🔤 JetBrains Mono", "🔤 JetBrains Mono", "🔤 JetBrains Mono");
 		Add("GlobalProfileDefault", "Global (全局默认)", "Global (全域預設)", "Global (Default)", "Global (グローバル既定)");
 		Add("DeepMenuBack", "返回", "返回", "Back", "戻る");
-		Add("CanvasSubmenus", "在画布编辑子菜单", "在畫布編輯子選單", "Edit submenu on canvas", "キャンバスでサブメニューを編集");
 		Add("CanvasBranchGuide", "点击扇区编辑动作，点击分支进入下一级。点击路径可返回上级。", "點擊扇區編輯動作，點擊分支進入下一級。點擊路徑可返回上級。", "Click a sector to edit it or a branch to enter it. Click an ancestor to go back.", "セクターをクリックして編集し、分岐をクリックして次の階層へ進みます。パスから上の階層に戻れます。");
 		Add("CanvasEditLevel", "第 {0} 级 · {1}", "第 {0} 級 · {1}", "Level {0} · {1}", "第 {0} 階層 · {1}");
 		Add("FixedOuterEditor", "编辑第 3–5 级", "編輯第 3–5 級", "Edit levels 3–5", "第3～5階層を編集");

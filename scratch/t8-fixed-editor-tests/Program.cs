@@ -342,9 +342,8 @@ internal static partial class Program
         own.EnsureLayers();
         ConfigManager.CurrentConfig.Profiles = [global, local, own];
         var settings = new SettingsWindow();
-        settings.SelectSubAction(2, 0);
-        var branchButton = (Button)settings.FindName("EditMenuBranchButton");
-        branchButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent, branchButton));
+        typeof(SettingsWindow).GetMethod("OpenLegacyCanvasBranch", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(settings, [2, 0]);
         var originalEditor = (CanvasMenuActionEditor)settings.FindName("DeepCanvasEditor");
         ((TextBox)originalEditor.FindName("NameBox")).Text = "Renamed secondary";
         Check(root.Actions[2].SubActions[0].Name == "Renamed secondary" && Keys(root)[0] == 8 && Keys(inherit)[0] == 8,

@@ -36,9 +36,6 @@ public partial class SettingsWindow
 	public void ClearCanvasHitItems()
 	{
 		_canvasHitItems.Clear();
-		_paletteHits.Clear();
-		_paletteRenderVersion++;
-		if (_paletteOrigin != null) EndPaletteDrag();
 	}
 
 	public void RegisterCanvasHitItem(Geometry geometry, ActionAddress address, bool isCenter, bool isSubAction, int slotIndex, int? subIndex, ActionItem? action)

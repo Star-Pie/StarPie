@@ -1,6 +1,8 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using RadioButton = System.Windows.Controls.RadioButton;
 
 namespace WinPieGestures;
 
@@ -35,7 +37,6 @@ public partial class SettingsWindow
             _studioHomes.Add(element, (parent, parent.Children.IndexOf(element)));
         }
         InitializeStudioRail();
-        InitializeStudioPalette();
         _studioReady = true;
         RootScaleGrid.SizeChanged += (_, _) => UpdateStudioWindowSpacing();
         CanvasTierSelector.IsVisibleChanged += (_, _) => UpdateStudioStageTools();
@@ -65,16 +66,19 @@ public partial class SettingsWindow
             LegacyMappingsHeading.Visibility = canvas ? Visibility.Collapsed : Visibility.Visible;
             if (canvas)
             {
-                MoveStudioElement(MenuDepthControls, _studioAction ? StudioActionDepthHost : StudioDepthHost);
                 MoveStudioElement(ApplicationIdentificationPanel, StudioConditionsHost);
-                MoveStudioElement(LayerSwitchTriggerLabel, StudioStructureTools);
-                MoveStudioElement(LayerSwitchTriggerComboBox, StudioStructureTools);
+                ApplicationIdentificationPanel.Tag = "Studio";
+                MoveStudioElement(LayerSwitchTriggerLabel, StudioLayerSwitchLabelHost);
+                MoveStudioElement(LayerSwitchTriggerComboBox, StudioLayerSwitchHost);
             }
             else
             {
                 foreach (var item in _studioHomes.OrderBy(pair => pair.Value.Index))
                     MoveStudioElement(item.Key, item.Value.Parent, item.Value.Index);
+                ApplicationIdentificationPanel.Tag = null;
             }
+            UpdateStudioMenuDepthPlacement(canvas);
+            LocalizeStudioSharedControlLabels();
         }
         finally { _isUpdatingUi = updating; }
         UpdateStudioLayout();
@@ -90,11 +94,44 @@ public partial class SettingsWindow
         _studioAction = action;
         StudioProfileSection.Visibility = action ? Visibility.Collapsed : Visibility.Visible;
         StudioActionSection.Visibility = action ? Visibility.Visible : Visibility.Collapsed;
-        if (MappingsCanvasModeGrid.Visibility == Visibility.Visible)
-            MoveStudioElement(MenuDepthControls, action ? StudioActionDepthHost : StudioDepthHost);
+        UpdateStudioMenuDepthPlacement(MappingsCanvasModeGrid.Visibility == Visibility.Visible);
+        LocalizeStudioSharedControlLabels();
         _studioRailDrawer = false;
         UpdateStudioLayout();
         if (!action) RefreshStudioRail();
+    }
+
+    // The profile inspector separates depth from its commands; the action/list views keep the original group.
+    private void UpdateStudioMenuDepthPlacement(bool canvas)
+    {
+        bool updating = _isUpdatingUi;
+        _isUpdatingUi = true;
+        try
+        {
+            bool profile = canvas && !_studioAction;
+            MoveStudioElement(MenuDepthCaption, profile ? StudioDepthLabelHost : MenuDepthControls);
+            MoveStudioElement(MenuDepthPicker, profile ? StudioDepthHost : MenuDepthControls);
+            MoveStudioElement(FixedLayoutToggle, profile ? StudioDepthActions : MenuDepthControls);
+            MoveStudioElement(FixedOpenCanvas, profile ? StudioDepthActions : MenuDepthControls);
+            if (canvas) MoveStudioElement(MenuDepthControls, profile ? _studioHomes[MenuDepthControls].Parent : StudioActionDepthHost,
+                profile ? _studioHomes[MenuDepthControls].Index : -1);
+        }
+        finally { _isUpdatingUi = updating; }
+    }
+
+    private void LocalizeStudioSharedControlLabels()
+    {
+        MenuDepthCaption.Text = I18n.T(MenuDepthCaption.Parent == StudioDepthLabelHost ? "StudioProfileMenuDepth" : "MenuDepthLabel");
+        LayerSwitchTriggerLabel.Text = I18n.T(LayerSwitchTriggerLabel.Parent == StudioLayerSwitchLabelHost ? "StudioProfileLayerSwitch" : "LayerSwitchTriggerLabel");
+    }
+
+    private static void LocalizeStudioSectorChoice(RadioButton? choice, int count, string detailKey)
+    {
+        if (choice == null) return;
+        choice.Content = I18n.TF("StudioProfileSectorChoice", count);
+        string detail = I18n.T(detailKey);
+        choice.ToolTip = detail;
+        AutomationProperties.SetName(choice, detail);
     }
 
     private void UpdateStudioMode(bool simple)
@@ -109,18 +146,16 @@ public partial class SettingsWindow
     private void LocalizeStudio()
     {
         if (!_studioReady) return;
-        StudioRailToggle.Content = StudioContextBack.Content = I18n.T("StudioProfiles");
-        StudioListToggle.Content = I18n.T("StudioList");
+        string back = I18n.T("StudioBackToProfileSettings");
+        StudioContextBack.Content = "← " + back;
+        AutomationProperties.SetName(StudioContextBack, back);
         StudioListOptions.Header = I18n.T("StudioListOptions");
-        StudioInspectorToggle.Content = I18n.T("StudioInspector");
-        StudioStructure.Header = I18n.T("StudioStructure");
-        StudioConditions.Header = I18n.T("StudioConditions");
+        UpdateStudioPaneButtons(StudioRailPane.Visibility == Visibility.Visible, StudioInspector.Visibility == Visibility.Visible);
+        StudioProfileDisplayLabel.Text = I18n.T("StudioProfileDisplayLabel");
         StudioChildren.Header = I18n.T("StudioChildren");
-        StudioCore.Header = I18n.T("CenterCoreTitle");
         StudioPluginActionCaption.Text = I18n.T("ActionTypePluginShort");
         FocusPluginPanel.ManageButton.Content = I18n.T("PluginPageHeader");
         LocalizeStudioAppearance();
-        StudioPalette.RefreshEntries();
         UpdateStudioStageTools();
         RefreshStudioRail();
     }
@@ -153,30 +188,32 @@ public partial class SettingsWindow
         StudioTierToggle.ToolTip = I18n.T("CanvasMainWheel") + " / " + MappingsTier2SegmentRadio.Content;
         bool compact = StudioStage.ActualHeight is > 0 and < 400 || StudioStage.ActualWidth < 490;
         StudioStage.Padding = new Thickness(compact ? 5 : 14);
-        StudioPalette.SetCompact(compact || StudioStage.ActualWidth < 820);
         StudioCanvasTitleRow.Visibility = StudioSaveFooter.Visibility = MappingsCanvasInstructionsText.Visibility =
             compact ? Visibility.Collapsed : Visibility.Visible;
         MappingsLinkSubActionsText.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
-        if (compact)
-        {
-            StudioRailToggle.Content = "☰";
-            StudioInspectorToggle.Content = "⚙";
-            StudioListToggle.Content = "☷";
-        }
-        else SetStudioToolbarLabels();
-        System.Windows.Automation.AutomationProperties.SetName(StudioRailToggle, I18n.T("StudioProfiles"));
-        System.Windows.Automation.AutomationProperties.SetName(StudioInspectorToggle, I18n.T("StudioInspector"));
-        System.Windows.Automation.AutomationProperties.SetName(StudioListToggle, I18n.T("StudioList"));
-        StudioRailToggle.ToolTip = I18n.T("StudioProfiles");
-        StudioInspectorToggle.ToolTip = I18n.T("StudioInspector");
-        StudioListToggle.ToolTip = I18n.T("StudioList");
+        string list = I18n.T("StudioSwitchToList");
+        StudioListToggle.Content = list;
+        StudioListToggle.ToolTip = list;
+        AutomationProperties.SetName(StudioListToggle, list);
     }
 
-    private void SetStudioToolbarLabels()
+    private void UpdateStudioPaneButtons(bool railShown, bool inspectorShown)
     {
-        StudioRailToggle.Content = I18n.T("StudioProfiles");
-        StudioInspectorToggle.Content = I18n.T("StudioInspector");
-        StudioListToggle.Content = I18n.T("StudioList");
+        UpdatePaneButton(StudioRailToggle, StudioRailClose, railShown, isLeft: true);
+        UpdatePaneButton(StudioInspectorToggle, StudioInspectorClose, inspectorShown, isLeft: false);
+    }
+
+    private static void UpdatePaneButton(Button toggle, Button drawerClose, bool shown, bool isLeft)
+    {
+        string collapse = I18n.T(isLeft ? "StudioRailCollapse" : "StudioInspectorCollapse");
+        string label = shown ? collapse : I18n.T(isLeft ? "StudioRailExpand" : "StudioInspectorExpand");
+        string collapseGlyph = isLeft ? "<" : ">";
+        toggle.Content = shown ? collapseGlyph : (isLeft ? ">" : "<");
+        toggle.ToolTip = label;
+        drawerClose.Content = collapseGlyph;
+        drawerClose.ToolTip = collapse;
+        AutomationProperties.SetName(toggle, label);
+        AutomationProperties.SetName(drawerClose, collapse);
     }
 
     private void UpdateStudioWindowSpacing()
@@ -221,6 +258,7 @@ public partial class SettingsWindow
         SetStudioPane(StudioInspector, Tab2RightColumn, Tab2GridSplitter, 4, showInspector, narrowInspector, inspector, width);
         StudioRailClose.Visibility = showRail && narrowRail ? Visibility.Visible : Visibility.Collapsed;
         StudioInspectorClose.Visibility = showInspector && narrowInspector ? Visibility.Visible : Visibility.Collapsed;
+        UpdateStudioPaneButtons(showRail, showInspector);
     }
 
     private static void SetStudioPane(FrameworkElement pane, ColumnDefinition column, GridSplitter splitter,
@@ -262,7 +300,6 @@ public partial class SettingsWindow
         UpdateStudioLayout();
     }
 
-    private void StudioCoreClick(object sender, RoutedEventArgs e) => SelectCenterCore();
     private void StudioProfileClick(object sender, RoutedEventArgs e) => ShowStudioProfileInspector();
     private void StudioListClick(object sender, RoutedEventArgs e) => MappingsViewModeListRadio.IsChecked = true;
 }
