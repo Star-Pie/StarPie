@@ -2857,10 +2857,6 @@ public partial class SettingsWindow : Window
 		{
 			MappingsSectorCount12Radio.Content = I18n.T("MappingsSectorCount12");
 		}
-		if (EnableGlobalInheritanceCheckBox != null)
-		{
-			EnableGlobalInheritanceCheckBox.Content = I18n.T("EnableGlobalInheritance");
-		}
 		if (FocusBackToParentBtn != null)
 		{
 			FocusBackToParentBtn.Content = I18n.T("FocusBackToParent");
@@ -3363,7 +3359,6 @@ public partial class SettingsWindow : Window
 		if (LayerCtxRenameMenuItem != null) LayerCtxRenameMenuItem.Header = I18n.T("RenameLayerBtnText");
 		if (LayerCtxCopyMenuItem != null) LayerCtxCopyMenuItem.Header = I18n.T("CopyLayerBtnText");
 		if (LayerCtxDeleteMenuItem != null) LayerCtxDeleteMenuItem.Header = I18n.T("DeleteLayerBtnText");
-		if (LayerSwitchTriggerLabel != null) LayerSwitchTriggerLabel.Text = I18n.T("LayerSwitchTriggerLabel");
 		if (LayerSwitchTriggerComboBox != null) LayerSwitchTriggerComboBox.ToolTip = I18n.T("LayerSwitchTriggerComboBoxToolTip");
 		if (LayerSwitchModeScrollItem != null) LayerSwitchModeScrollItem.Content = I18n.T("LayerSwitchModeScroll");
 		if (LayerSwitchModeTabItem != null) LayerSwitchModeTabItem.Content = I18n.T("LayerSwitchModeTab");
@@ -3380,11 +3375,6 @@ public partial class SettingsWindow : Window
 		if (AddProfileCustomMenuItem != null) AddProfileCustomMenuItem.Header = I18n.T("AddProfileCustom");
 		if (RenameProfileBtn2 != null) { RenameProfileBtn2.Content = I18n.T("RenameProfileBtnText"); RenameProfileBtn2.ToolTip = I18n.T("RenameProfileBtnToolTip"); }
 		if (DeleteProfileBtn2 != null) DeleteProfileBtn2.ToolTip = I18n.T("DeleteProfileBtnToolTip");
-		if (GlobalProfileHintText != null)
-		{
-			GlobalProfileHintText.Text = I18n.T("GlobalProfileShortHint");
-			GlobalProfileHintText.ToolTip = I18n.T("GlobalProfileHint");
-		}
 		if (ProfileBoundProcessesLabel != null)
 		{
 			ProfileBoundProcessesLabel.Text = I18n.T("ProfileApplicableAppsLabel");
@@ -3395,18 +3385,18 @@ public partial class SettingsWindow : Window
 		if (ProfilePickProgramBtn != null) { ProfilePickProgramBtn.Content = I18n.T("ProfilePickProgramBtnText"); ProfilePickProgramBtn.ToolTip = I18n.T("ProfilePickProgramBtnToolTip"); }
 		if (ProfileBrowseExeBtn != null) { ProfileBrowseExeBtn.Content = I18n.T("ProfileBrowseExeBtnText"); ProfileBrowseExeBtn.ToolTip = I18n.T("ProfileBrowseExeBtnToolTip"); }
 		if (ProfileBoundProcessesHintText != null) ProfileBoundProcessesHintText.Text = I18n.T("ProfileBoundProcessesHint");
-		if (SectorCountLabel != null) SectorCountLabel.Text = I18n.T("SectorCountLabel");
-		if (MappingsSectorCount4Radio != null) MappingsSectorCount4Radio.Content = I18n.T("SectorCount4Text");
-		if (MappingsSectorCount8Radio != null) MappingsSectorCount8Radio.Content = I18n.T("SectorCount8Text");
-		if (MappingsSectorCount12Radio != null) MappingsSectorCount12Radio.Content = I18n.T("SectorCount12Text");
-		if (EnableGlobalInheritanceCheckBox != null) { EnableGlobalInheritanceCheckBox.Content = I18n.T("EnableGlobalInheritanceText"); EnableGlobalInheritanceCheckBox.ToolTip = I18n.T("EnableGlobalInheritanceToolTip"); }
+		if (SectorCountLabel != null) SectorCountLabel.Text = I18n.T("StudioProfileSectorLabel");
+		LocalizeStudioSectorChoice(MappingsSectorCount4Radio, 4, "SectorCount4Text");
+		LocalizeStudioSectorChoice(MappingsSectorCount8Radio, 8, "SectorCount8Text");
+		LocalizeStudioSectorChoice(MappingsSectorCount12Radio, 12, "SectorCount12Text");
+		if (StudioInheritLabel != null) StudioInheritLabel.Text = I18n.T("StudioProfileInherit");
+		if (EnableGlobalInheritanceCheckBox != null) EnableGlobalInheritanceCheckBox.ToolTip = I18n.T("EnableGlobalInheritanceToolTip");
 
 		// Group 3: Focus Editor Navigation & Center Core
 		if (FocusSlotInheritedBadge != null) FocusSlotInheritedBadge.ToolTip = I18n.T("FocusSlotInheritedBadgeToolTip");
 		if (FocusSlotInheritedBadgeText != null) FocusSlotInheritedBadgeText.Text = I18n.T("FocusSlotInheritedBadgeText");
 		if (FocusBackToParentBtn != null) FocusBackToParentBtn.Content = I18n.T("FocusBackToParentBtnText");
-		if (MenuDepthCaption != null) MenuDepthCaption.Text = I18n.T("MenuDepthLabel");
-		if (EditMenuBranchButton != null) EditMenuBranchButton.Content = I18n.T("CanvasSubmenus");
+		if (MenuDepthCaption != null && LayerSwitchTriggerLabel != null) LocalizeStudioSharedControlLabels();
 		if (FocusPrevSlotBtn != null) FocusPrevSlotBtn.Content = I18n.T("FocusPrevSlotBtnText");
 		if (FocusNextSlotBtn != null) FocusNextSlotBtn.Content = I18n.T("FocusNextSlotBtnText");
 		if (FocusCenterCoreBtn != null) FocusCenterCoreBtn.Content = I18n.T("FocusCenterCoreBtnText");
@@ -4196,7 +4186,6 @@ public partial class SettingsWindow : Window
 
 		// 官方插件的安装/启用/停用/卸载可能发生在后台目录同步线程，
 		// 动作类型下拉必须在同一 UI 线程即时重建，避免列表与实际派发路由不一致。
-		if (_studioReady) StudioPalette.RefreshEntries();
 		UpdateOnboardingBannerVisibility();
 		RefreshSlots();
 		RefreshGestureMappings();
@@ -5084,12 +5073,11 @@ public partial class SettingsWindow : Window
 		if (_studioReady) RefreshStudioRail();
 		RefreshProfilePresentation();
 		RefreshProfileActivationUi();
-		if (ProfileBindingCardBorder == null) return;
+		if (StudioProfileApplicationScope == null) return;
 
 		bool isGlobal = _selectedProfile == null || string.Equals(_selectedProfile.ProcessName, "Global", StringComparison.OrdinalIgnoreCase);
 		bool showContextBindings = !isGlobal && _selectedProfile != null && _selectedProfile.UseApplicationContext;
 
-		if (ProfileGlobalHintPanel != null) ProfileGlobalHintPanel.Visibility = isGlobal ? Visibility.Visible : Visibility.Collapsed;
 		if (ProfileContextSwitchRow != null) ProfileContextSwitchRow.Visibility = isGlobal ? Visibility.Collapsed : Visibility.Visible;
 		if (ProfileCustomBindingPanel != null) ProfileCustomBindingPanel.Visibility = showContextBindings ? Visibility.Visible : Visibility.Collapsed;
 
@@ -6176,7 +6164,6 @@ public partial class SettingsWindow : Window
 			bool hasAnySubActions = primaryAction?.InlineSubActions is { Count: > 0 } ||
                 (isInherited && (_selectedSubActionIndex.HasValue ? effectiveInheritedAction != null :
                     effectiveInheritedAction?.InlineSubActions is { Count: > 0 }));
-			if (EditMenuBranchButton != null) EditMenuBranchButton.IsEnabled = _selectedSlotIndex >= 0;
 			bool isTier2NoSubActions = (MappingsTier2SegmentRadio?.IsChecked == true && _selectedSlotIndex >= 0 &&
 				primaryAction?.IsWheelPortal != true && !hasAnySubActions);
 
@@ -10397,9 +10384,6 @@ public partial class SettingsWindow : Window
 				bool isFanMode = string.Equals(ConfigManager.CurrentConfig?.SubmenuStyle, "Fan", StringComparison.OrdinalIgnoreCase);
 				bool shouldShowSub = !isFanMode ? true : (isTier2Mode || isParentSlot);
 
-				if (action?.IsWheelPortal != true && shouldShowSub && (action?.SubActions?.Count ?? 0) == 0)
-                    RegisterPaletteSecondaryVacancy(profile, slotIdx, IconHelper.CreateAdvancedSectorGeometry(centerX, centerY,
-                        startAngle, endAngle, outerR + 4, outerR + 26, "Original", 1.5, 3));
                 if (action?.InlineSubActions is { Count: > 0 } && shouldShowSub)
 				{
 					// 功能配置画布：外圈同心子环布局，显示全部子动作，不截断已有超额数据（如 8 项预设或历史配置）
@@ -11809,6 +11793,12 @@ public partial class SettingsWindow : Window
 		SwitchToTab(2);
 		Dispatcher.BeginInvoke(new Action(() =>
 		{
+			if (_studioReady && MappingsViewModeCanvasRadio.IsChecked == true)
+			{
+				ShowStudioProfileInspector();
+				if (StudioInspector.Visibility != Visibility.Visible) StudioInspectorClick(sender, e);
+				StudioInspector.UpdateLayout();
+			}
 			ApplicationIdentificationPanel?.BringIntoView();
 			ComponentIdentificationCheckBox?.Focus();
 		}), DispatcherPriority.Loaded);

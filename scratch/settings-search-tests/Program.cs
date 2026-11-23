@@ -133,9 +133,9 @@ internal static class Program
             "searching and navigating do not change or save settings");
 
         layer.MaxMenuDepth = 2;
-        Find<Expander>("StudioStructure").IsExpanded = false;
         Navigate("全部常驻", "FixedDisplay", "MenuDepthPicker");
-        Check(Find<Expander>("StudioStructure").IsExpanded && layer.ActiveFixedRings != null && layer.EffectiveMaxMenuDepth == 2,
+        Check(Find<Border>("FixedControlsCard").Visibility == Visibility.Collapsed &&
+            layer.ActiveFixedRings != null && layer.EffectiveMaxMenuDepth == 2,
             "a two-level layer with saved fixed rings navigates to menu depth without enabling the fixed editor");
 
         Check(new WindowInteropHelper(window).Handle == nint.Zero && !PluginHost.IsInitialized,

@@ -27,8 +27,6 @@ public partial class SettingsWindow
         var context = _selectedSlotIndex < 0 ? null : CreatePortalEditorContext(profile);
         if (item.IsWheelPortal && _selectedSubActionIndex == null && FocusSubActionsBorder != null)
             FocusSubActionsBorder.Visibility = Visibility.Collapsed;
-        if (EditMenuBranchButton != null)
-            EditMenuBranchButton.IsEnabled = _selectedSlotIndex >= 0 && !item.IsWheelPortal;
         int sector = _selectedSlotIndex;
         int? sub = _selectedSubActionIndex;
         FocusPortalEditor.Bind(context, item, target =>

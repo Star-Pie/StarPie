@@ -48,11 +48,11 @@ public partial class SettingsWindow
         new(1, "LayerIndicatorSectionTitle", LayerIndicatorSectionTitle, null, "ConfigModeProRadio",
             () => RevealSearchAdvancedPanel(Tab1_LayerIndicatorCardBorder)),
         new(1, "PortalAppearanceTitle", Tab1_PortalAppearanceCardBorder, "SettingsSearchPortalAppearanceWords"),
-        new(2, "StudioProfiles", StudioProfileRail, "SettingsSearchProfilesWords", null, ShowSearchProfileRail),
-        new(2, "StudioConditions", StudioConditions, "SettingsSearchBindingWords", "StudioProfiles", ShowSearchProfileInspector),
+        new(2, "StudioRailLibrary", StudioProfileRail, "SettingsSearchProfilesWords", null, ShowSearchProfileRail),
+        new(2, "StudioConditions", StudioProfileApplicationScope, "SettingsSearchBindingWords", "StudioProfileInspectorHeading", ShowSearchProfileInspector),
         new(2, "MenuDepthLabel", MenuDepthPicker, null, "StudioStructure", ShowSearchProfileInspector),
         new(2, "FixedDisplay", FixedDisplay, "SettingsSearchDisplayWords", "StudioStructure", RevealSearchWheelDisplay, MenuDepthPicker),
-        new(2, "CenterCoreTitle", StudioCore, null, "StudioProfiles", ShowSearchProfileInspector),
+        new(2, "CenterCoreTitle", StudioCoreVisibilityLabel, null, "StudioProfileInspectorHeading", ShowSearchProfileInspector),
         new(2, "StudioList", ListModeActionListHeaderTitle, null, null, () => MappingsViewModeListRadio.IsChecked = true),
         new(3, "LanguageTitle", LanguageComboBox),
         new(3, "UiFontTitle", UiFontTitle),
@@ -300,7 +300,5 @@ public partial class SettingsWindow
         if (GetSelectedProfile() is { } profile && profile.GetActiveLayer() is
             { EffectiveMaxMenuDepth: >= 3, ActiveFixedRings: not null })
             OpenFixedCanvas(profile);
-        else
-            StudioStructure.IsExpanded = true;
     }
 }

@@ -55,11 +55,36 @@ public partial class SettingsWindow
         {
             var menu = profile.GetActiveLayer().ActiveFixedRings!;
             var saved = menu.GetSlot(_fixedLevel, _fixedIndices[_fixedLevel]);
-            var target = new PaletteSlot([_fixedIndices[_fixedLevel]], _fixedLevel);
-            WritePaletteFixedSlot(profile, new Placement(target, saved?.Action), item);
+            PasteFixedSlot(profile, _fixedLevel, _fixedIndices[_fixedLevel], saved?.ParentIndex, item);
         }
         else if (_deepBoundPath is { } path) ApplyCanvasEdit(profile, path, _deepBindingVersion, item);
         return true;
+    }
+
+    private void PasteFixedSlot(WheelProfile profile, int level, int index, int? parentIndex, ActionItem value)
+    {
+        var menu = profile.GetActiveLayer().ActiveFixedRings!;
+        int tierCount = menu.Tiers.Count;
+        var oldTier = menu.Tiers.ElementAtOrDefault(level - 3);
+        int length = oldTier?.Slots.Count ?? 0;
+        var before = menu.GetSlot(level, index)?.Clone();
+        if (before != null) value.SubActions = before.Action.SubActions;
+        if (before?.ParentIndex == parentIndex && AreActionItemsEquivalent(before?.Action, value)) return;
+        var after = new FixedRingSlot { Action = value, ParentIndex = parentIndex };
+        CommitFixedChange(profile, "EditPasteSector", layer =>
+        {
+            if (!ReferenceEquals(layer.ActiveFixedRings, menu)) return;
+            menu.SetSlot(level, index, before?.Clone());
+            var tier = menu.Tiers[level - 3]!;
+            if (tier.Slots.Count > length && tier.Slots.Skip(length).All(s => s == null))
+                tier.Slots.RemoveRange(length, tier.Slots.Count - length);
+            if (oldTier == null && tier.Slots.Count == 0) menu.Tiers[level - 3] = null;
+            if (menu.Tiers.Count > tierCount && menu.Tiers.Skip(tierCount).All(t => t == null))
+                menu.Tiers.RemoveRange(tierCount, menu.Tiers.Count - tierCount);
+        }, layer =>
+        {
+            if (ReferenceEquals(layer.ActiveFixedRings, menu)) menu.SetSlot(level, index, after.Clone());
+        });
     }
 
     private void StudioBranchTestClick(object sender, RoutedEventArgs e)

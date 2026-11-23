@@ -3008,8 +3008,37 @@
                     <Button Name="RenameLayerBtn" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="6,0" Margin="0,0,2,0" ToolTip="重命名当前轮盘层" Click="RenameLayerBtn_Click" />
                     <Button Name="DeleteLayerBtn" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="5,0" Margin="0,0,2,0" ToolTip="删除当前轮盘层（至少保留一层）" Click="DeleteLayerBtn_Click" />
                     <Border Width="1" Height="12" Background="{DynamicResource CardBorderBrush}" Margin="4,0" VerticalAlignment="Center" />
-                    <TextBlock Name="LayerSwitchTriggerLabel" Text="🔄 切换:" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="2,0,4,0" />
-                    <ComboBox Name="LayerSwitchTriggerComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="25" Width="108" VerticalAlignment="Center" ToolTip="多层轮盘切换方式：支持鼠标滚轮上下滑动切换或 Tab 键循环切换" SelectionChanged="LayerSwitchTriggerComboBox_SelectionChanged">
+                    <TextBlock Name="LayerSwitchTriggerLabel" Text="🔄 切换:" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center">
+                      <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                          <Setter Property="FontSize" Value="11" />
+                          <Setter Property="FontWeight" Value="SemiBold" />
+                          <Setter Property="Margin" Value="2,0,4,0" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding Name, RelativeSource={RelativeSource AncestorType=ContentControl}}" Value="StudioLayerSwitchLabelHost">
+                              <Setter Property="FontSize" Value="12" />
+                              <Setter Property="FontWeight" Value="Normal" />
+                              <Setter Property="Margin" Value="0,0,8,0" />
+                              <Setter Property="TextWrapping" Value="Wrap" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </TextBlock.Style>
+                    </TextBlock>
+                    <ComboBox Name="LayerSwitchTriggerComboBox" VerticalAlignment="Center" ToolTip="多层轮盘切换方式：支持鼠标滚轮上下滑动切换或 Tab 键循环切换" SelectionChanged="LayerSwitchTriggerComboBox_SelectionChanged">
+                      <ComboBox.Style>
+                        <Style TargetType="ComboBox" BasedOn="{StaticResource FlatComboBoxStyle}">
+                          <Setter Property="Height" Value="25" />
+                          <Setter Property="Width" Value="108" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding Name, RelativeSource={RelativeSource AncestorType=ContentControl}}" Value="StudioLayerSwitchHost">
+                              <Setter Property="Height" Value="28" />
+                              <Setter Property="Width" Value="Auto" />
+                              <Setter Property="MinWidth" Value="108" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </ComboBox.Style>
                       <ComboBoxItem x:Name="LayerSwitchModeScrollItem" Content="🖱️ 滚轮切换" Tag="Wheel" />
                       <ComboBoxItem x:Name="LayerSwitchModeTabItem" Content="⌨️ Tab 键切换" Tag="Tab" />
                     </ComboBox>
@@ -3022,7 +3051,6 @@
                   </ComboBox>
                   <Button Name="FixedLayoutToggle" Margin="6,0,0,0" Height="26" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="FixedLayoutToggle_Click" />
                   <Button Name="FixedOpenCanvas" Visibility="Collapsed" Margin="6,0,0,0" Height="26" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="FixedOpenCanvas_Click" />
-                  <Button Name="EditMenuBranchButton" Margin="6,0,0,0" Height="26" Padding="8,0" Style="{StaticResource ModernButtonStyle}" Click="FocusEditMenuBranch_Click" />
                 </WrapPanel>
               </WrapPanel>
 
@@ -3036,24 +3064,120 @@
               <ColumnDefinition Width="Auto" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-          <Border Name="ApplicationIdentificationPanel" Visibility="Collapsed" HorizontalAlignment="Left" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,4" Margin="0,0,0,8">
+          <Border Name="ApplicationIdentificationPanel" Visibility="Collapsed">
+            <Border.Style>
+              <Style TargetType="Border">
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="Background" Value="{DynamicResource SubtleCardBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="Margin" Value="0,0,0,8" />
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Studio">
+                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="Padding" Value="0,4" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Border.Style>
             <Border.ToolTip>
               <ToolTip>
                 <TextBlock Name="ComponentIdentificationDescText" MaxWidth="360" TextWrapping="Wrap" />
               </ToolTip>
             </Border.ToolTip>
-            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+            <ItemsControl VerticalAlignment="Center">
+              <ItemsControl.Resources>
+                <Style x:Key="RecognitionLegacyHeading" TargetType="FrameworkElement">
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding Tag, ElementName=ApplicationIdentificationPanel}" Value="Studio">
+                      <Setter Property="Visibility" Value="Collapsed" />
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </ItemsControl.Resources>
+              <ItemsControl.Style>
+                <Style TargetType="ItemsControl">
+                  <Setter Property="ItemsPanel">
+                    <Setter.Value>
+                      <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                    </Setter.Value>
+                  </Setter>
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding Tag, ElementName=ApplicationIdentificationPanel}" Value="Studio">
+                      <Setter Property="ItemsPanel">
+                        <Setter.Value>
+                          <ItemsPanelTemplate>
+                            <Grid>
+                              <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                            </Grid>
+                          </ItemsPanelTemplate>
+                        </Setter.Value>
+                      </Setter>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </ItemsControl.Style>
+              <StackPanel Style="{StaticResource RecognitionLegacyHeading}" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
                 <TextBlock Name="ApplicationIdentificationHeadingText" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
                 <Border Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" Margin="8,0,0,0">
                   <TextBlock Name="ApplicationIdentificationGlobalText" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
                 </Border>
               </StackPanel>
-              <CheckBox Name="ComponentIdentificationCheckBox" Style="{StaticResource ToggleSwitchStyle}" VerticalAlignment="Center" Checked="ComponentIdentificationCheckBox_Changed" Unchecked="ComponentIdentificationCheckBox_Changed">
-                <TextBlock Name="ComponentIdentificationTitleText" FontWeight="Medium" Foreground="{DynamicResource TextPrimaryBrush}" Margin="6,0,0,0" />
+              <TextBlock Text="{Binding Text, ElementName=ComponentIdentificationTitleText}" TextWrapping="Wrap"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,8,0">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Tag, ElementName=ApplicationIdentificationPanel}" Value="Studio">
+                        <Setter Property="Visibility" Value="Visible" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+              <CheckBox Name="ComponentIdentificationCheckBox" Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Center"
+                        AutomationProperties.Name="{Binding Text, ElementName=ComponentIdentificationTitleText}"
+                        Checked="ComponentIdentificationCheckBox_Changed" Unchecked="ComponentIdentificationCheckBox_Changed">
+                <CheckBox.Style>
+                  <Style TargetType="CheckBox" BasedOn="{StaticResource ToggleSwitchStyle}">
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Tag, ElementName=ApplicationIdentificationPanel}" Value="Studio">
+                        <!-- The existing switch template reserves space after its 40-DIP track for a caption. -->
+                        <Setter Property="Width" Value="40" />
+                        <Setter Property="ClipToBounds" Value="True" />
+                        <Setter Property="HorizontalAlignment" Value="Right" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </CheckBox.Style>
+                <TextBlock Name="ComponentIdentificationTitleText" Style="{StaticResource RecognitionLegacyHeading}" FontWeight="Medium"
+                           Foreground="{DynamicResource TextPrimaryBrush}" Margin="6,0,0,0" />
               </CheckBox>
-              <TextBlock Name="ComponentIdentificationStateText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" Margin="12,0,0,0" VerticalAlignment="Center" MaxWidth="240" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" />
-            </WrapPanel>
+              <TextBlock Name="ComponentIdentificationStateText" Grid.Row="1" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Center" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Margin" Value="12,0,0,0" />
+                    <Setter Property="MaxWidth" Value="240" />
+                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding Tag, ElementName=ApplicationIdentificationPanel}" Value="Studio">
+                        <Setter Property="Margin" Value="0,2,8,0" />
+                        <Setter Property="HorizontalAlignment" Value="Left" />
+                        <Setter Property="TextWrapping" Value="Wrap" />
+                        <Setter Property="TextTrimming" Value="None" />
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </ItemsControl>
           </Border>
           <Border Name="ProfileActivationPanel" Grid.Column="1" Visibility="Collapsed" HorizontalAlignment="Right" VerticalAlignment="Top" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="8,4" Margin="8,0,0,8">
             <WrapPanel VerticalAlignment="Center">
@@ -3074,156 +3198,224 @@
               <ColumnDefinition Name="Tab2RightColumn" Width="340"/>
             </Grid.ColumnDefinitions>
             <DockPanel Name="StudioRailPane" Grid.Column="0" Panel.ZIndex="5" Background="{DynamicResource CardBackgroundBrush}">
-              <Button Name="StudioRailClose" DockPanel.Dock="Top" Content="×" ToolTip="{Binding Content, ElementName=StudioRailToggle}" HorizontalAlignment="Right" Visibility="Collapsed" Click="StudioRailClick" Style="{StaticResource ModernButtonStyle}"/>
+              <Button Name="StudioRailClose" DockPanel.Dock="Top" Content="&lt;" HorizontalAlignment="Right" Visibility="Collapsed" Click="StudioRailClick" Style="{StaticResource ModernButtonStyle}"/>
               <local:MappingsProfileRail x:Name="StudioProfileRail"/>
             </DockPanel>
             <GridSplitter Name="StudioRailSplitter" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource CardBorderBrush}" DragCompleted="StudioSplitCompleted"/>
 
             <!-- 左栏：方案工具卡片 + 聚焦精调卡片 (Focus Editor Card) -->
             <Border Grid.Column="4" x:Name="StudioInspector" Panel.ZIndex="4" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource CardCornerRadius}">
-              <DockPanel><Button Name="StudioInspectorClose" DockPanel.Dock="Top" Content="×" ToolTip="{Binding Content, ElementName=StudioInspectorToggle}" HorizontalAlignment="Right" Visibility="Collapsed" Click="StudioInspectorClick" Style="{StaticResource ModernButtonStyle}"/>
+              <DockPanel><Button Name="StudioInspectorClose" DockPanel.Dock="Top" Content="&gt;" HorizontalAlignment="Right" Visibility="Collapsed" Click="StudioInspectorClick" Style="{StaticResource ModernButtonStyle}"/>
               <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="8">
               <StackPanel>
                 <StackPanel x:Name="StudioProfileSection">
-                  <local:StudioProfileIdentity x:Name="StudioIdentity"/>
-                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="14" Margin="0,0,0,12">
-                  <Grid>
-                    <Grid.RowDefinitions>
-                      <RowDefinition Height="Auto" />
-                      <RowDefinition Height="Auto" />
-                      <RowDefinition Height="Auto" />
-                      <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    
-                    <Grid Visibility="Collapsed" x:Name="ProfileHeaderRowGrid" Grid.Row="0" Margin="0,0,0,8" MinHeight="30" VerticalAlignment="Top">
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                      </Grid.ColumnDefinitions>
-                      <TextBlock x:Name="CurrentProfileLabel" Text="当前配置方案:" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
-                      <ComboBox Name="MappingsProfileComboBox" Grid.Column="1" MinWidth="110" Style="{StaticResource FlatComboBoxStyle}" Height="28" DisplayMemberPath="DisplayTitle" SelectionChanged="MappingsProfileComboBox_SelectionChanged" VerticalAlignment="Center" />
-                      
-                      <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
-                        <Button Name="DuplicateProfileBtn" Content="📑 复制方案" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="将当前方案的所有动作与多层配置复制为新程序方案" Click="DuplicateProfileBtn_Click" />
-                        <Button Name="AddProfileBtn2" Content="➕ 新增" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="添加新的轮盘配置方案（点击可选择从程序添加、捕捉窗口或自定义命名）" Click="AddProfileBtn2_Click">
-                          <Button.ContextMenu>
-                            <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
-                              <MenuItem x:Name="AddProfileFromProgramMenuItem" Header="🖥️ 从已安装软件中添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileButton_Click" />
-                              <MenuItem x:Name="AddProfileCaptureWindowMenuItem" Header="🎯 捕捉运行中窗口添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByCapture_Click" />
-                              <MenuItem x:Name="AddProfileBrowseExeMenuItem" Header="📁 浏览本地程序文件添加 (.exe / .lnk)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByBrowse_Click" />
-                              <MenuItem x:Name="AddProfileCustomMenuItem" Header="✏️ 新建自定义名称方案 (工作流/模式配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddCustomProfileButton_Click" />
-                            </ContextMenu>
-                          </Button.ContextMenu>
-                        </Button>
-                        <Button Name="RenameProfileBtn2" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="重命名选中的配置方案" Click="RenameProfileButton_Click" />
-                        <Button Name="DeleteProfileBtn2" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" ToolTip="删除当前选中的配置方案" Click="DeleteProfileButton_Click" />
-                      </StackPanel>
-                    </Grid>
-
-                    <!-- Direct profile selection shares the existing selected profile; bottom scrollbar is hidden in favor of horizontal mouse-wheel scrolling. -->
-                    <Grid Visibility="Collapsed" x:Name="ProfileQuickSwitchRowGrid" Grid.Row="1" Margin="0,0,0,8">
-                      <ScrollViewer x:Name="ProfileQuickSwitchScrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center" PreviewMouseWheel="ProfileQuickSwitchScrollViewer_PreviewMouseWheel">
-                        <StackPanel x:Name="ProfileQuickSwitchPanel" Orientation="Horizontal" />
-                      </ScrollViewer>
-                    </Grid>
-
-                    <!-- 程序情景与当前层按键摘要卡片 (Profile Context & Layer Key Card) -->
-<Expander Grid.Row="2" x:Name="StudioConditions" IsExpanded="True"><StackPanel x:Name="StudioConditionsHost">
-                    <Border Name="ProfileBindingCardBorder" Grid.Row="2" Background="{DynamicResource WindowBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10,6" Margin="0,0,0,8">
-                      <StackPanel>
-                        <StackPanel x:Name="ProfileSummaryHeaderGrid">
-
-                          <WrapPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                            <StackPanel Name="ProfileGlobalHintPanel" Orientation="Vertical" VerticalAlignment="Center" Margin="0,1,4,1">
-                              <TextBlock Text="🌐" FontSize="12" Margin="0,0,5,0" VerticalAlignment="Center" />
-                              <TextBlock x:Name="GlobalProfileHintText" Text="全局基础轮盘：未匹配专属程序时默认使用" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="280" />
-                            </StackPanel>
-                            <WrapPanel Name="ProfileContextSwitchRow" Visibility="Collapsed" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,1,4,1">
-                              <CheckBox x:Name="ProfileUseContextCheckBox" FontSize="12" Style="{StaticResource ToggleSwitchStyle}" Checked="ProfileUseContext_Changed" Unchecked="ProfileUseContext_Changed" VerticalAlignment="Center" />
-                              <Border x:Name="ProfileModeBadgeBorder" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
-                                <TextBlock x:Name="ProfileModeHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
-                              </Border>
-                            </WrapPanel>
-                          </WrapPanel>
-                          <WrapPanel x:Name="ProfileInlineActivationBar" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,1,0,1">
-                            <TextBlock x:Name="ProfileCurrentLayerKeyLabel" Text="当前层按键：" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,4,0" />
-                            <Border x:Name="ProfileLayerKeyBadgeBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
-                              <TextBlock x:Name="ProfileLayerKeyBadgeText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" MaxWidth="210" TextTrimming="CharacterEllipsis" />
+                  <StackPanel.Resources>
+                    <Style x:Key="StudioProfileDivider" TargetType="Border">
+                      <Setter Property="BorderBrush" Value="{DynamicResource CardBorderBrush}" />
+                      <Setter Property="BorderThickness" Value="0,1,0,0" />
+                      <Setter Property="Margin" Value="0,12,0,0" />
+                      <Setter Property="Padding" Value="0,10,0,0" />
+                    </Style>
+                    <Style x:Key="StudioSectorChoice" TargetType="RadioButton">
+                      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                      <Setter Property="MinHeight" Value="28" />
+                      <Setter Property="MinWidth" Value="40" />
+                      <Setter Property="Padding" Value="6,3" />
+                      <Setter Property="Margin" Value="3,0,0,3" />
+                      <Setter Property="Template">
+                        <Setter.Value>
+                          <ControlTemplate TargetType="RadioButton">
+                            <Border x:Name="Frame" Background="{DynamicResource CardBackgroundBrush}"
+                                    BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4"
+                                    Padding="{TemplateBinding Padding}">
+                              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
                             </Border>
-                            <Button x:Name="ProfileModeRecordButton" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="0,0,4,0" VerticalAlignment="Center" Click="RecordProfileActivationButton_Click" />
-                            <Button x:Name="ProfileModeResetButton" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="7,0" VerticalAlignment="Center" Visibility="Collapsed" Click="ResetProfileActivationButton_Click" />
-                          </WrapPanel>
-                        </StackPanel>
+                            <ControlTemplate.Triggers>
+                              <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Frame" Property="Background" Value="{DynamicResource SubtleCardBrush}" />
+                              </Trigger>
+                              <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Frame" Property="Background" Value="{DynamicResource NavTabActiveBgBrush}" />
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentPrimaryBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource NavTabActiveFgBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                              </Trigger>
+                              <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Frame" Property="BorderThickness" Value="2" />
+                              </Trigger>
+                              <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Frame" Property="Opacity" Value="0.55" />
+                              </Trigger>
+                            </ControlTemplate.Triggers>
+                          </ControlTemplate>
+                        </Setter.Value>
+                      </Setter>
+                    </Style>
+                  </StackPanel.Resources>
+                  <local:StudioProfileIdentity x:Name="StudioIdentity" />
+                  <Grid Visibility="Collapsed" x:Name="ProfileHeaderRowGrid" Grid.Row="0" Margin="0,0,0,8" MinHeight="30" VerticalAlignment="Top">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="CurrentProfileLabel" Text="当前配置方案:" VerticalAlignment="Center" FontSize="12.5" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,8,0" />
+                    <ComboBox Name="MappingsProfileComboBox" Grid.Column="1" MinWidth="110" Style="{StaticResource FlatComboBoxStyle}" Height="28" DisplayMemberPath="DisplayTitle" SelectionChanged="MappingsProfileComboBox_SelectionChanged" VerticalAlignment="Center" />
 
-                        <!-- 专属程序模式摘要行与按需展开管理面板 -->
-                        <StackPanel Name="ProfileCustomBindingPanel" Visibility="Collapsed" Margin="0,4,0,0">
-                          <Grid x:Name="ProfileBindingsSummaryRow">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="6,0,0,0">
+                      <Button Name="DuplicateProfileBtn" Content="📑 复制方案" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="将当前方案的所有动作与多层配置复制为新程序方案" Click="DuplicateProfileBtn_Click" />
+                      <Button Name="AddProfileBtn2" Content="➕ 新增" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="添加新的轮盘配置方案（点击可选择从程序添加、捕捉窗口或自定义命名）" Click="AddProfileBtn2_Click">
+                        <Button.ContextMenu>
+                          <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
+                            <MenuItem x:Name="AddProfileFromProgramMenuItem" Header="🖥️ 从已安装软件中添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileButton_Click" />
+                            <MenuItem x:Name="AddProfileCaptureWindowMenuItem" Header="🎯 捕捉运行中窗口添加 (专属程序配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByCapture_Click" />
+                            <MenuItem x:Name="AddProfileBrowseExeMenuItem" Header="📁 浏览本地程序文件添加 (.exe / .lnk)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddProfileByBrowse_Click" />
+                            <MenuItem x:Name="AddProfileCustomMenuItem" Header="✏️ 新建自定义名称方案 (工作流/模式配置)..." Style="{StaticResource ModernMenuItemStyle}" Click="AddCustomProfileButton_Click" />
+                          </ContextMenu>
+                        </Button.ContextMenu>
+                      </Button>
+                      <Button Name="RenameProfileBtn2" Content="✏️ 重命名" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" Margin="0,0,4,0" ToolTip="重命名选中的配置方案" Click="RenameProfileButton_Click" />
+                      <Button Name="DeleteProfileBtn2" Content="🗑️" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="7,0" ToolTip="删除当前选中的配置方案" Click="DeleteProfileButton_Click" />
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- Direct profile selection shares the existing selected profile; bottom scrollbar is hidden in favor of horizontal mouse-wheel scrolling. -->
+                  <Grid Visibility="Collapsed" x:Name="ProfileQuickSwitchRowGrid" Grid.Row="1" Margin="0,0,0,8">
+                    <ScrollViewer x:Name="ProfileQuickSwitchScrollViewer" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center" PreviewMouseWheel="ProfileQuickSwitchScrollViewer_PreviewMouseWheel">
+                      <StackPanel x:Name="ProfileQuickSwitchPanel" Orientation="Horizontal" />
+                    </ScrollViewer>
+                  </Grid>
+
+                  <StackPanel x:Name="StudioProfileApplicationScope">
+                    <WrapPanel Name="ProfileContextSwitchRow" Visibility="Collapsed" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,8,4,1">
+                      <CheckBox x:Name="ProfileUseContextCheckBox" FontSize="12" Style="{StaticResource ToggleSwitchStyle}" Checked="ProfileUseContext_Changed" Unchecked="ProfileUseContext_Changed" VerticalAlignment="Center" />
+                      <Border x:Name="ProfileModeBadgeBorder" Visibility="Collapsed" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="ProfileModeHint" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="320" />
+                      </Border>
+                    </WrapPanel>
+                    <StackPanel Name="ProfileCustomBindingPanel" Visibility="Collapsed" Margin="0,4,0,0">
+                      <Grid x:Name="ProfileBindingsSummaryRow">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="Auto" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ProfileBoundProcessesLabel" Grid.Column="0" Text="适用程序：" VerticalAlignment="Top" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,6,2" />
+                        <WrapPanel x:Name="ProfileQuickBindingsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                          <Button x:Name="ProfileQuickAddProgramBtn" Content="+ 添加程序" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="0,2,4,2" VerticalAlignment="Center" Click="ProfileQuickAddProgramBtn_Click">
+                            <Button.ContextMenu>
+                              <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
+                                <MenuItem x:Name="ProfileQuickCaptureMenuItem" Header="🎯 捕捉窗口..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfileCaptureWindowBtn_Click" />
+                                <MenuItem x:Name="ProfileQuickPickProgramMenuItem" Header="🖥️ 软件库..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfilePickProgramBtn_Click" />
+                                <MenuItem x:Name="ProfileQuickBrowseExeMenuItem" Header="📁 浏览..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfileBrowseExeBtn_Click" />
+                              </ContextMenu>
+                            </Button.ContextMenu>
+                          </Button>
+                        </WrapPanel>
+                        <Button x:Name="ProfileManageBindingsToggleBtn" Grid.Column="2" Content="管理…" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="6,2,0,2" VerticalAlignment="Top" Click="ProfileManageBindingsToggleBtn_Click" />
+                      </Grid>
+
+                      <Border x:Name="ProfileBindingsDetailPanel" Visibility="Collapsed" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
+                        <StackPanel>
+                          <WrapPanel x:Name="ProfileBindingsPanel" Margin="0,0,0,4" />
+                          <Grid x:Name="ProfileBindingButtons">
                             <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="Auto" />
                               <ColumnDefinition Width="*" />
                               <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="ProfileBoundProcessesLabel" Grid.Column="0" Text="适用程序：" VerticalAlignment="Top" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,5,6,2" />
-                            <WrapPanel x:Name="ProfileQuickBindingsPanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                              <Button x:Name="ProfileQuickAddProgramBtn" Content="+ 添加程序" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="0,2,4,2" VerticalAlignment="Center" Click="ProfileQuickAddProgramBtn_Click">
-                                <Button.ContextMenu>
-                                  <ContextMenu Style="{StaticResource ModernContextMenuStyle}">
-                                    <MenuItem x:Name="ProfileQuickCaptureMenuItem" Header="🎯 捕捉窗口..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfileCaptureWindowBtn_Click" />
-                                    <MenuItem x:Name="ProfileQuickPickProgramMenuItem" Header="🖥️ 软件库..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfilePickProgramBtn_Click" />
-                                    <MenuItem x:Name="ProfileQuickBrowseExeMenuItem" Header="📁 浏览..." Style="{StaticResource ModernMenuItemStyle}" Click="ProfileBrowseExeBtn_Click" />
-                                  </ContextMenu>
-                                </Button.ContextMenu>
-                              </Button>
+                            <TextBox Name="ProfileBoundProcessesTextBox" Visibility="Collapsed" Grid.Column="0" Height="26" FontSize="11" VerticalContentAlignment="Center" TextChanged="ProfileBoundProcessesTextBox_TextChanged" />
+                            <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                              <Button Name="ProfileCaptureWindowBtn" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" ToolTip="直接点击桌面上运行中的目标软件窗口，自动识别并绑定其进程" Click="ProfileCaptureWindowBtn_Click" />
+                              <Button Name="ProfilePickProgramBtn" Content="🖥️ 软件库..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" ToolTip="从已安装的软件列表中选择程序并绑定" Click="ProfilePickProgramBtn_Click" />
+                              <Button Name="ProfileBrowseExeBtn" Content="📁 浏览..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" ToolTip="浏览选取本地可执行程序文件 (.exe / .lnk)" Click="ProfileBrowseExeBtn_Click" />
                             </WrapPanel>
-                            <Button x:Name="ProfileManageBindingsToggleBtn" Grid.Column="2" Content="管理…" Style="{StaticResource ModernButtonStyle}" Height="24" Padding="8,0" Margin="6,2,0,2" VerticalAlignment="Top" Click="ProfileManageBindingsToggleBtn_Click" />
                           </Grid>
-
-                          <Border x:Name="ProfileBindingsDetailPanel" Visibility="Collapsed" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="0,1,0,0" Padding="0,6,0,0" Margin="0,6,0,0">
-                            <StackPanel>
-                              <WrapPanel x:Name="ProfileBindingsPanel" Margin="0,0,0,4" />
-                              <Grid x:Name="ProfileBindingButtons">
-                                <Grid.ColumnDefinitions>
-                                  <ColumnDefinition Width="*" />
-                                  <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox Name="ProfileBoundProcessesTextBox" Visibility="Collapsed" Grid.Column="0" Height="26" FontSize="11" VerticalContentAlignment="Center" TextChanged="ProfileBoundProcessesTextBox_TextChanged" />
-                                <WrapPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                  <Button Name="ProfileCaptureWindowBtn" Content="🎯 捕捉窗口..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" ToolTip="直接点击桌面上运行中的目标软件窗口，自动识别并绑定其进程" Click="ProfileCaptureWindowBtn_Click" />
-                                  <Button Name="ProfilePickProgramBtn" Content="🖥️ 软件库..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" ToolTip="从已安装的软件列表中选择程序并绑定" Click="ProfilePickProgramBtn_Click" />
-                                  <Button Name="ProfileBrowseExeBtn" Content="📁 浏览..." Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" ToolTip="浏览选取本地可执行程序文件 (.exe / .lnk)" Click="ProfileBrowseExeBtn_Click" />
-                                </WrapPanel>
-                              </Grid>
-                              <TextBlock x:Name="ProfileBoundProcessesHintText" Visibility="Collapsed" Text="💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
-                            </StackPanel>
-                          </Border>
+                          <TextBlock x:Name="ProfileBoundProcessesHintText" Visibility="Collapsed" Text="💡 提示：在此程序处于前台活跃状态时唤起轮盘将自动应用本方案。支持以英文逗号分隔多个进程名 (例如 chrome.exe, msedge.exe)。" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
                         </StackPanel>
-                      </StackPanel>
-                    </Border>
-</StackPanel></Expander>
+                      </Border>
+                    </StackPanel>
+                  </StackPanel>
 
-<Expander Grid.Row="3" x:Name="StudioStructure" IsExpanded="True"><StackPanel>
-<WrapPanel x:Name="StudioStructureTools">
-                        <TextBlock x:Name="SectorCountLabel" Text="扇区方位数量:" VerticalAlignment="Center" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,12,0" />
-                          <RadioButton Name="MappingsSectorCount4Radio" GroupName="MappingsSectorCountGroup" Content="4 键十字方位" Margin="0,0,20,0" Checked="MappingsSectorCountRadio_Checked" />
-                          <RadioButton Name="MappingsSectorCount8Radio" GroupName="MappingsSectorCountGroup" Content="8 键全向方位 (推荐)" Margin="0,0,20,0" IsChecked="True" Checked="MappingsSectorCountRadio_Checked" />
-                          <RadioButton Name="MappingsSectorCount12Radio" GroupName="MappingsSectorCountGroup" Content="12 键钟表方位" Checked="MappingsSectorCountRadio_Checked" />
-                        <CheckBox Name="EnableGlobalInheritanceCheckBox" Grid.Column="2" Content="🌐 继承全局方案未配置槽位" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" ToolTip="当专属程序方案中的某个扇区未配置动作时，自动级联继承并执行全局方案对应方位的动作" Checked="EnableGlobalInheritanceCheckBox_Changed" Unchecked="EnableGlobalInheritanceCheckBox_Changed" />
-                        <ComboBox x:Name="ProfileDisplayModeComboBox" Style="{StaticResource FlatComboBoxStyle}" Height="28" MinWidth="92" Padding="8,0,6,0" Margin="0,0,6,0" VerticalAlignment="Center" SelectionChanged="ProfileDisplayModeComboBox_SelectionChanged">
+                  <Border Style="{StaticResource StudioProfileDivider}">
+                    <StackPanel>
+                      <Grid MinHeight="36" Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ProfileCurrentLayerKeyLabel" Text="当前层按键：" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <Grid x:Name="ProfileInlineActivationBar" Grid.Column="1" VerticalAlignment="Center">
+                          <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                          <Border x:Name="ProfileLayerKeyBadgeBorder" HorizontalAlignment="Right" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
+                            <TextBlock x:Name="ProfileLayerKeyBadgeText" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" MaxWidth="132" TextTrimming="CharacterEllipsis" />
+                          </Border>
+                          <Button x:Name="ProfileModeRecordButton" Grid.Column="1" MinHeight="28" Padding="8,0" VerticalAlignment="Center" Click="RecordProfileActivationButton_Click">
+                            <Button.Style>
+                              <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding Visibility, ElementName=ProfileModeResetButton}" Value="Visible">
+                                    <Setter Property="Margin" Value="0,0,4,0" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </Button.Style>
+                          </Button>
+                          <Button x:Name="ProfileModeResetButton" Grid.Column="2" Style="{StaticResource ModernButtonStyle}" MinHeight="28" Padding="7,0" VerticalAlignment="Center" Visibility="Collapsed" Click="ResetProfileActivationButton_Click" />
+                        </Grid>
+                      </Grid>
+                      <Grid MinHeight="36" Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="SectorCountLabel" Margin="0,0,8,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                          <RadioButton x:Name="MappingsSectorCount4Radio" Style="{StaticResource StudioSectorChoice}" GroupName="MappingsSectorCountGroup" Checked="MappingsSectorCountRadio_Checked" />
+                          <RadioButton x:Name="MappingsSectorCount8Radio" Style="{StaticResource StudioSectorChoice}" GroupName="MappingsSectorCountGroup" Checked="MappingsSectorCountRadio_Checked" IsChecked="True" />
+                          <RadioButton x:Name="MappingsSectorCount12Radio" Style="{StaticResource StudioSectorChoice}" GroupName="MappingsSectorCountGroup" Checked="MappingsSectorCountRadio_Checked" />
+                        </StackPanel>
+                      </Grid>
+                      <Grid MinHeight="36">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <ContentControl x:Name="StudioDepthLabelHost" VerticalAlignment="Center" />
+                        <ContentControl x:Name="StudioDepthHost" Grid.Column="1" VerticalAlignment="Center" />
+                      </Grid>
+                      <WrapPanel x:Name="StudioDepthActions" HorizontalAlignment="Right" Margin="0,4,0,0" />
+                      <Grid MinHeight="36" Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="StudioCoreVisibilityLabel" Text="{Binding Content, ElementName=ShowCoreCircleCheckBox}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0" />
+                        <CheckBox Name="StudioCoreToggle" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                  AutomationProperties.LabeledBy="{Binding ElementName=StudioCoreVisibilityLabel}"
+                                  IsChecked="{Binding IsChecked, ElementName=ShowCoreCircleCheckBox, Mode=TwoWay}" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Style="{StaticResource StudioProfileDivider}">
+                    <StackPanel x:Name="StudioSharedSettings" Grid.IsSharedSizeScope="True">
+                      <StackPanel x:Name="StudioConditionsHost" />
+                      <Grid MinHeight="36">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="StudioInheritLabel" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <CheckBox x:Name="EnableGlobalInheritanceCheckBox" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"
+                                  AutomationProperties.LabeledBy="{Binding ElementName=StudioInheritLabel}"
+                                  Checked="EnableGlobalInheritanceCheckBox_Changed" Unchecked="EnableGlobalInheritanceCheckBox_Changed" />
+                      </Grid>
+                      <Grid MinHeight="36" Visibility="{Binding Visibility, ElementName=LayerSwitchTriggerComboBox}">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" SharedSizeGroup="StudioGlobalValue" /></Grid.ColumnDefinitions>
+                        <ContentControl x:Name="StudioLayerSwitchLabelHost" VerticalAlignment="Center" HorizontalContentAlignment="Stretch" />
+                        <ContentControl x:Name="StudioLayerSwitchHost" Grid.Column="1" VerticalAlignment="Center" HorizontalContentAlignment="Stretch" />
+                      </Grid>
+                      <Grid MinHeight="36">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" SharedSizeGroup="StudioGlobalValue" /></Grid.ColumnDefinitions>
+                        <TextBlock x:Name="StudioProfileDisplayLabel" Margin="0,0,8,0" VerticalAlignment="Center" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <ComboBox x:Name="ProfileDisplayModeComboBox" Style="{StaticResource FlatComboBoxStyle}" Grid.Column="1" Height="28" MinWidth="108" Padding="8,0,6,0" VerticalAlignment="Center" AutomationProperties.LabeledBy="{Binding ElementName=StudioProfileDisplayLabel}" SelectionChanged="ProfileDisplayModeComboBox_SelectionChanged">
                           <ComboBoxItem x:Name="ProfileDisplayModeIconAndTextItem" Tag="IconAndText" Content="图标和文字" />
                           <ComboBoxItem x:Name="ProfileDisplayModeTextOnlyItem" Tag="TextOnly" Content="仅文字" />
                           <ComboBoxItem x:Name="ProfileDisplayModeIconOnlyItem" Tag="IconOnly" Content="仅图标" />
                         </ComboBox>
-</WrapPanel>
-<ContentControl Name="StudioDepthHost"/>
-</StackPanel></Expander>
-                  </Grid>
-                </Border>
-<Expander x:Name="StudioCore"><WrapPanel>
-<CheckBox Name="StudioCoreToggle" IsChecked="{Binding IsChecked, ElementName=ShowCoreCircleCheckBox, Mode=TwoWay}" Content="{Binding Content, ElementName=ShowCoreCircleCheckBox}"/>
-<Button Click="StudioCoreClick" Content="{Binding Content, ElementName=FocusCenterCoreBtn}" Style="{StaticResource ModernButtonStyle}"/>
-</WrapPanel></Expander>
-</StackPanel>
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
 <StackPanel x:Name="StudioActionSection" Visibility="Collapsed">
 <Button Name="StudioContextBack" HorizontalAlignment="Left" Style="{StaticResource ModernButtonStyle}" Click="StudioProfileClick"/>
 <ContentControl Name="StudioActionDepthHost"/>
@@ -3973,17 +4165,21 @@
                   <RowDefinition Height="Auto" />
                   <RowDefinition Height="*" />
                   <RowDefinition Height="Auto" />
-<RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 
                 <!-- 画布顶部工具条与分段切换 -->
                 <StackPanel Grid.Row="0" Margin="0,0,0,8">
-<WrapPanel Name="StudioTopTools" Margin="0,0,0,4">
-<Button Name="StudioRailToggle" Click="StudioRailClick" Style="{StaticResource ModernButtonStyle}" Padding="7,2"/>
-<Button Name="StudioInspectorToggle" Click="StudioInspectorClick" Style="{StaticResource ModernButtonStyle}" Padding="7,2"/>
-<Button Name="StudioTierToggle" Visibility="Collapsed" Click="StudioTierClick" Style="{StaticResource ModernButtonStyle}" Padding="6,2"/>
-<Button Name="StudioListToggle" Click="StudioListClick" Style="{StaticResource ModernButtonStyle}" Padding="7,2"/>
-</WrapPanel>
+                  <Grid Margin="0,0,0,4">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <WrapPanel x:Name="StudioTopTools">
+                      <Button x:Name="StudioRailToggle" Content="&lt;" Width="28" MinHeight="24" Padding="0"
+                              Click="StudioRailClick" Style="{StaticResource ModernButtonStyle}" />
+                      <Button x:Name="StudioTierToggle" Visibility="Collapsed" Click="StudioTierClick" Style="{StaticResource ModernButtonStyle}" Padding="6,2" />
+                      <Button x:Name="StudioListToggle" Click="StudioListClick" Style="{StaticResource ModernButtonStyle}" Padding="7,2" />
+                    </WrapPanel>
+                    <Button x:Name="StudioInspectorToggle" Grid.Column="1" Content="&gt;" Width="28" MinHeight="24" Padding="0"
+                            Margin="6,0,0,0" VerticalAlignment="Top" Click="StudioInspectorClick" Style="{StaticResource ModernButtonStyle}" />
+                  </Grid>
                   <Grid Name="StudioCanvasTitleRow" Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="*" />
@@ -4068,9 +4264,8 @@
                   </Grid>
                 </Border>
 
-<local:ActionPaletteDock x:Name="StudioPalette" Grid.Row="2" Margin="0,4,0,4"/>
                 <!-- 底部保存/提示与自动保存状态 -->
-                <Grid Name="StudioSaveFooter" Grid.Row="3" Margin="0,4,0,0">
+                <Grid Name="StudioSaveFooter" Grid.Row="2" Margin="0,4,0,0">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />

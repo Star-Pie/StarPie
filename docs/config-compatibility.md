@@ -48,6 +48,7 @@
 
 - `LockParentSectorOnSubmenu` 为可选布尔字段，缺失时按 `false` 保持原交互；显式 `false` 和 `true` 均须往返保留。父扇区锁定状态只属于当前手势，不持久化。
 - `PinWheelAfterTrigger` 为全局可选布尔字段，默认 `false`；旧配置无需迁移，显式 `false` 和 `true` 均须落盘并往返保留。定格目标、点击版本与输入释放所有权属于会话，不写入配置，也不复用插件常驻轮盘的会话状态。
+- `PinnedNavUpVkCode`、`PinnedNavDownVkCode`、`PinnedNavLeftVkCode`、`PinnedNavRightVkCode` 与 `PinnedNavConfirmVkCode` 为可选单键虚拟键码，默认依次对应方向键 ↑/↓/←/→ 与 Enter；缺失、非法、修饰键或重复冲突时由 `PinnedNavBindings.FromConfig` 回退至安全不冲突键码，并在 JSON 与 `.starpie-config` 便携包中往返保留。
 
 - `ConfigManager.ExportConfig` 必须包含 `CustomColorPresets`、主题、色彩微调和几何尺寸等全局状态。
 - 导入成功后刷新主题预设、动作槽位和实时画布；防止 `_isUpdatingUi` 留在错误状态。

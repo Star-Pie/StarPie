@@ -39,11 +39,17 @@ internal static class Program
         finally { root.Delete(true); }
     }
 
-    private static void CheckPicker()
+    private static void EnsureApp()
     {
         ConfigManager.DisableAutoStartSync = true;
+        if (Application.Current != null) return;
         var app = new App();
         app.InitializeComponent();
+    }
+
+    private static void CheckPicker()
+    {
+        EnsureApp();
         foreach (var language in new[] { LanguageCode.ZhCn, LanguageCode.ZhTw, LanguageCode.En, LanguageCode.Ja })
         {
             I18n.CurrentLanguage = language;
@@ -127,6 +133,7 @@ internal static class Program
         Check(StudioProfileLibrary.HasImportConflict(live, incoming), "profiles with independent layer keys still compete for the ordinary application route");
         incoming.ActivationTrigger = Key(0x7f);
         Check(!StudioProfileLibrary.HasImportConflict(live, incoming), "different dedicated routes can share an application with its ordinary profile");
+        EnsureApp();
         var rail = new MappingsProfileRail();
         var config = new AppConfig { Profiles = new() { p, new WheelProfile { ProcessName = "other" } }, ConfigMode = "Pro" };
         rail.Refresh(config, p);

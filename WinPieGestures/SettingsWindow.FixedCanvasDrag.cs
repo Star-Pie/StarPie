@@ -21,7 +21,6 @@ public partial class SettingsWindow
             var vacant = FixedGeometry(profile).Secondary(cfg, key, 0, 1);
             var guide = new GeometryGroup { Children = { vacant.Shape }, Transform = geometry.Transform };
             guide.Freeze();
-            RegisterPaletteSecondaryVacancy(profile, key, guide);
             RegisterFixedSecondaryVacancy(profile, menu, key, guide);
         }
         int slot = key;

@@ -236,7 +236,7 @@ internal static class Program
             radial.CloseFast();
         }
 
-        // Fix 5: SettingsWindow inspector EditMenuBranchButton & FocusSubActionsBorder stay consistent when toggling OpenWheel.
+        // Fix 5: SettingsWindow inspector FocusSubActionsBorder stays consistent when toggling OpenWheel.
         config.AutoCheckUpdate = false;
         var settings = new SettingsWindow();
         settings.EnsureUiInitialized();
@@ -245,19 +245,16 @@ internal static class Program
         ((ComboBox)settings.FindName("MappingsProfileComboBox")).SelectedItem = profile;
         ((ComboBox)settings.FindName("LayerSelectComboBox")).SelectedItem = profile.Layers[0];
         settings.SelectPrimarySlot(0); // OpenWheel slot
-        var editBranchBtn = (Button)settings.FindName("EditMenuBranchButton");
         var subActionsBorder = (Border)settings.FindName("FocusSubActionsBorder");
-        Check(editBranchBtn.Visibility == Visibility.Visible && !editBranchBtn.IsEnabled &&
-            subActionsBorder.Visibility == Visibility.Collapsed,
-            "Primary OpenWheel sector disables EditMenuBranchButton without hiding it permanently");
+        Check(subActionsBorder.Visibility == Visibility.Collapsed,
+            "Primary OpenWheel sector hides FocusSubActionsBorder");
         settings.SelectPrimarySlot(2); // Normal sector with child
-        Check(editBranchBtn.Visibility == Visibility.Visible && editBranchBtn.IsEnabled &&
-            subActionsBorder.Visibility == Visibility.Visible,
-            "Selecting a normal sector restores EditMenuBranchButton and FocusSubActionsBorder");
+        Check(subActionsBorder.Visibility == Visibility.Visible,
+            "Selecting a normal sector restores FocusSubActionsBorder");
         subTarget.Type = "OpenWheel";
         settings.SelectSubAction(2, 0);
-        Check(!editBranchBtn.IsEnabled && subActionsBorder.Visibility == Visibility.Visible,
-            "Secondary OpenWheel sub-slot keeps parent sibling FocusSubActionsBorder visible while disabling nested branch entry");
+        Check(subActionsBorder.Visibility == Visibility.Visible,
+            "Secondary OpenWheel sub-slot keeps parent sibling FocusSubActionsBorder visible");
 
         // P1-3 & P2-3: OpenWheel sector hides stashed SubActions from tier-2 navigation/edit buttons and SlotViewModel.
         var stashedSub = new ActionItem { Type = "Hotkey", Parameter = "Ctrl+A", Name = "StashedAll" };
