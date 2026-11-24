@@ -21,7 +21,8 @@ public partial class SettingsWindow
 		if (_configTransferBusy) return;
 		string name = GetSelectedConfigProfileName();
 		var dialog = new SaveFileDialog {
-			Filter = I18n.T("PortableConfigFilter"), FileName = $"StarPie_Config_{name}_{DateTime.Now:yyyyMMdd}",
+			Filter = I18n.T("PortableConfigFilter"), DefaultExt = StudioProfileLibrary.PackageExtension,
+			FileName = $"StarPie_Config_{ConfigManager.CleanFileName(name)}_{DateTime.Now:yyyyMMdd}{StudioProfileLibrary.PackageExtension}",
 			Title = I18n.T("ConfigTransferExportTitle"), AddExtension = true
 		};
 		if (dialog.ShowDialog(this) != true) return;
@@ -34,9 +35,10 @@ public partial class SettingsWindow
 			}
 			else
 			{
+				string targetPath = StudioProfileLibrary.EnsureExportPackagePath(dialog.FileName);
 				string json = ConfigManager.GetConfigJsonForExport(name);
 				string icons = IconHelper.GetCustomIconsDirectory();
-				await Task.Run(() => PortableConfigBundle.Export(json, dialog.FileName, icons));
+				await Task.Run(() => PortableConfigBundle.Export(json, targetPath, icons));
 			}
 			if (!_resourcesReleased) AppMessageBox.Show(this, I18n.T("ConfigTransferExported"), I18n.T("ConfigTransferExportTitle"), MessageBoxButton.OK, MessageBoxImage.Information);
 		}

@@ -44,6 +44,26 @@ internal static class StudioProfileLibrary
         return processes.Count != 0 && config.Profiles.Any(p => HasOrdinaryRoute(p) && processes.Overlaps(ProfileProcessBindings.GetNames(p)));
     }
 
+    internal const string PackageExtension = ".starpie-config";
+
+    internal static string BuildExportFileName(string? friendlyName)
+    {
+        string raw = (friendlyName ?? "").Trim();
+        if (raw.EndsWith(PackageExtension, StringComparison.OrdinalIgnoreCase))
+            raw = raw[..^PackageExtension.Length].Trim();
+        string clean = ConfigManager.CleanFileName(raw);
+        if (string.IsNullOrWhiteSpace(clean)) clean = "StarPie_Profile";
+        return clean + PackageExtension;
+    }
+
+    internal static string EnsureExportPackagePath(string path)
+    {
+        string trimmed = path.Trim();
+        return trimmed.EndsWith(PackageExtension, StringComparison.OrdinalIgnoreCase)
+            ? trimmed
+            : trimmed + PackageExtension;
+    }
+
     internal static string SerializeProfile(WheelProfile profile) =>
         SerializeProfiles([profile]);
 
@@ -99,6 +119,16 @@ internal static class StudioProfileLibrary
         {
             ValidateActions(layer.Actions);
             if (layer.CenterAction != null) ValidateAction(layer.CenterAction);
+            if (layer.SectorCountSnapshots != null)
+            {
+                foreach (var (countKey, snapshotActions) in layer.SectorCountSnapshots)
+                {
+                    if (!WheelLayer.TryParseSnapshotKey(countKey, out int expectedCount) ||
+                        snapshotActions == null || snapshotActions.Count != expectedCount)
+                        throw new InvalidDataException();
+                    ValidateActions(snapshotActions);
+                }
+            }
             if (layer.FixedRings == null) continue;
             if (layer.FixedRings.Tiers == null) throw new InvalidDataException();
             foreach (var tier in layer.FixedRings.Tiers)

@@ -289,7 +289,7 @@ public static class WindowTiler
 			string? excl = ConfigManager.CurrentConfig?.TileExcludeProcesses;
 			if (!string.IsNullOrWhiteSpace(excl))
 			{
-				foreach (string token in excl.Split(new[] { ',', ';', '，', '；', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+				foreach (string token in ProfileProcessBindings.ParseProcessTokenList(excl))
 				{
 					exclude.Add(token.Trim().ToLowerInvariant());
 				}

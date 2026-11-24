@@ -137,9 +137,10 @@ public partial class SettingsWindow
             if (include == MessageBoxResult.Cancel) return;
             if (include != MessageBoxResult.Yes) profiles = [profile];
         }
-        var dialog = new SaveFileDialog { Filter = I18n.T("StudioRailFileType"), DefaultExt = ".starpie-config",
-            AddExtension = true, FileName = ConfigManager.CleanFileName(profile.FriendlyName), Title = I18n.T("StudioRailExport") };
+        var dialog = new SaveFileDialog { Filter = I18n.T("StudioRailFileType"), DefaultExt = StudioProfileLibrary.PackageExtension,
+            AddExtension = true, FileName = StudioProfileLibrary.BuildExportFileName(profile.FriendlyName), Title = I18n.T("StudioRailExport") };
         if (dialog.ShowDialog(this) != true) return;
+        string targetPath = StudioProfileLibrary.EnsureExportPackagePath(dialog.FileName);
         SetConfigTransferBusy(true);
         try
         {
@@ -147,7 +148,7 @@ public partial class SettingsWindow
                 throw new InvalidOperationException(I18n.T("ConfigTransferChanged"));
             string snapshot = StudioProfileLibrary.SerializeProfiles(profiles);
             string icons = StudioProfileLibrary.IconDirectory;
-            await Task.Run(() => PortableConfigBundle.ExportProfile(snapshot, dialog.FileName, icons));
+            await Task.Run(() => PortableConfigBundle.ExportProfile(snapshot, targetPath, icons));
         }
         catch (Exception ex) { ShowConfigTransferError(ex, exporting: true); }
         finally { if (!_resourcesReleased) SetConfigTransferBusy(false); }

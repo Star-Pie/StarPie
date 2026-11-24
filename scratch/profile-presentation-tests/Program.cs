@@ -63,6 +63,23 @@ static class Program
             Check(!ConfigManager.IsProfileBoundToProcess(spaced, "Friendly.exe") && !ConfigManager.IsProfileBoundToProcess(spaced, "Label.exe"), "friendly-name words do not become separate process bindings");
             var legacyList = new WheelProfile { ProcessName = "legacy-list", BoundProcesses = "chrome.exe code.exe" };
             Check(ConfigManager.IsProfileBoundToProcess(legacyList, "chrome.exe") && ConfigManager.IsProfileBoundToProcess(legacyList, "code.exe"), "legacy space-separated lists unchanged");
+            var legacySpacedExe = new WheelProfile { ProcessName = "my app.exe", BoundProcesses = "my app.exe" };
+            Check(ConfigManager.IsProfileBoundToProcess(legacySpacedExe, "my app.exe") &&
+                  !ConfigManager.IsProfileBoundToProcess(legacySpacedExe, "my.exe") &&
+                  !ConfigManager.IsProfileBoundToProcess(legacySpacedExe, "app.exe"), "legacy spaced .exe stays a single process binding");
+            var legacyMixedSpaced = new WheelProfile { ProcessName = "mixed", BoundProcesses = "Adobe Premiere Pro.exe code.exe" };
+            Check(ConfigManager.IsProfileBoundToProcess(legacyMixedSpaced, "Adobe Premiere Pro.exe") &&
+                  ConfigManager.IsProfileBoundToProcess(legacyMixedSpaced, "code.exe") &&
+                  !ConfigManager.IsProfileBoundToProcess(legacyMixedSpaced, "Adobe.exe"), "legacy mixed spaced .exe list splits only on .exe boundaries");
+            var legacyBareMatch = new WheelProfile { ProcessName = "my app.exe", BoundProcesses = "my app" };
+            Check(ConfigManager.IsProfileBoundToProcess(legacyBareMatch, "my app.exe"), "legacy bare spaced name matching ProcessName stays intact");
+            var explicitSemi = new WheelProfile { ProcessName = "s1", BoundProcesses = "my app.exe；other app.exe", HasExplicitProcessBindings = true };
+            Check(ConfigManager.IsProfileBoundToProcess(explicitSemi, "my app.exe") &&
+                  ConfigManager.IsProfileBoundToProcess(explicitSemi, "other app.exe"), "explicit fullwidth semicolon separates spaced process bindings");
+            var parsedTokens = ProfileProcessBindings.ParseProcessTokenList("my app.exe, notepad.exe calc.exe; code.exe");
+            Check(parsedTokens.SequenceEqual(new[] { "my app.exe", "notepad.exe", "calc.exe", "code.exe" }), "shared token list parser preserves spaced .exe names");
+
+            VerifyProfileApplicationIconLoading(isolated);
 
             var global = Profile("Global"); global.DisplayName = "我的基础轮盘";
             global.Layers[0].Name = "通用层";
@@ -679,5 +696,37 @@ static class Program
         Check(jianying.Layers[0].ActivationTrigger == null && badgeText.Text == I18n.T("LayerActivationUnset") &&
             (string)recordBtn.Content == I18n.T("ProfileActivationRecordShort") && resetBtn.Visibility == Visibility.Collapsed,
             "Reset button clears layer trigger and restores Unset state");
+    }
+
+    static void VerifyProfileApplicationIconLoading(string isolated)
+    {
+        var candidates = new[]
+        {
+            Path.Combine(Environment.SystemDirectory, "notepad.exe"),
+            Path.Combine(Environment.SystemDirectory, "cmd.exe"),
+            Path.Combine(Environment.SystemDirectory, "taskmgr.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "regedit.exe")
+        }.Where(File.Exists).ToArray();
+        Check(candidates.Length >= 2, "at least two system executables exist for concurrent icon extraction test");
+
+        IconHelper.TrimDynamicCache();
+        var tasks = Enumerable.Range(0, 12)
+            .Select(i => Task.Run(() => IconHelper.GetProfileApplicationIcon(candidates[i % candidates.Length], 32)))
+            .ToArray();
+        var results = Task.WhenAll(tasks).GetAwaiter().GetResult();
+        Check(results.All(bmp => bmp is { IsFrozen: true, PixelWidth: > 0, PixelHeight: > 0 }),
+            "concurrent GetProfileApplicationIcon loads all succeed with frozen bitmaps");
+
+        // Verify persistent snapshot fallback survives source file disappearance and dynamic cache trim.
+        string tempExe = Path.Combine(isolated, "My Spaced App.exe");
+        File.Copy(candidates[0], tempExe, overwrite: true);
+        var first = IconHelper.GetProfileApplicationIcon(tempExe, 32);
+        Check(first is { IsFrozen: true, PixelWidth: > 0, PixelHeight: > 0 }, "initial extraction succeeds for spaced temp executable");
+        File.Delete(tempExe);
+        IconHelper.TrimDynamicCache();
+        var persisted = IconHelper.GetProfileApplicationIcon(tempExe, 32);
+        Check(persisted is { IsFrozen: true, PixelWidth: > 0, PixelHeight: > 0 },
+            "persistent snapshot restores profile app icon even when cache trimmed and source unavailable");
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 
 namespace WinPieGestures;
 
@@ -149,6 +150,107 @@ public class WheelLayer : INotifyPropertyChanged
 
 	public List<ActionItem> Actions { get; set; } = new List<ActionItem>();
 
+	/// <summary>按扇区档位（"4" / "8" / "12"）无损暂存的历史槽位动作快照，防止切向时丢失动作</summary>
+	[System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+	public Dictionary<string, List<ActionItem>>? SectorCountSnapshots { get; set; }
+
+	internal static int NormalizeSupportedSectorCount(int count) => count is 4 or 8 or 12 ? count : 8;
+
+	internal static bool TryParseSnapshotKey(string? key, out int count)
+	{
+		count = 0;
+		return key switch
+		{
+			"4" => (count = 4) == 4,
+			"8" => (count = 8) == 8,
+			"12" => (count = 12) == 12,
+			_ => false
+		};
+	}
+
+	internal static Dictionary<string, List<ActionItem>>? CloneSectorCountSnapshots(Dictionary<string, List<ActionItem>>? source)
+	{
+		if (source == null || source.Count == 0) return null;
+		var result = new Dictionary<string, List<ActionItem>>(StringComparer.Ordinal);
+		foreach (var (key, actions) in source)
+		{
+			if (!TryParseSnapshotKey(key, out int expectedCount) || actions == null) continue;
+			var cloned = new List<ActionItem>(expectedCount);
+			for (int i = 0; i < expectedCount; i++)
+			{
+				ActionItem? item = i < actions.Count ? actions[i] : null;
+				cloned.Add(item?.Clone() ?? new ActionItem
+				{
+					Type = "Hotkey",
+					Name = $"动作 {i + 1}",
+					Parameter = "",
+					SubActions = new List<ActionItem>()
+				});
+			}
+			result[key] = cloned;
+		}
+		return result.Count == 0 ? null : result;
+	}
+
+	internal static List<ActionItem> SwitchSectorCountWithSnapshots(
+		WheelLayer layer,
+		List<ActionItem>? currentActions,
+		int oldSectorCount,
+		int newSectorCount,
+		Func<List<ActionItem>?, int, int, Dictionary<ActionItem, int>?, List<ActionItem>> migrate,
+		out Dictionary<int, int> mapping)
+	{
+		oldSectorCount = NormalizeSupportedSectorCount(oldSectorCount);
+		newSectorCount = NormalizeSupportedSectorCount(newSectorCount);
+
+		var currentSnapshot = new List<ActionItem>(oldSectorCount);
+		for (int i = 0; i < oldSectorCount; i++)
+		{
+			ActionItem? item = currentActions != null && i < currentActions.Count ? currentActions[i] : null;
+			currentSnapshot.Add(item?.Clone() ?? new ActionItem
+			{
+				Type = "Hotkey",
+				Name = $"动作 {i + 1}",
+				Parameter = "",
+				SubActions = new List<ActionItem>()
+			});
+		}
+
+		layer.SectorCountSnapshots ??= new Dictionary<string, List<ActionItem>>(StringComparer.Ordinal);
+		string oldKey = oldSectorCount.ToString(CultureInfo.InvariantCulture);
+		string newKey = newSectorCount.ToString(CultureInfo.InvariantCulture);
+		layer.SectorCountSnapshots[oldKey] = currentSnapshot;
+
+		mapping = new Dictionary<int, int>();
+		if (layer.SectorCountSnapshots.TryGetValue(newKey, out var existing) &&
+			existing != null &&
+			existing.Count == newSectorCount &&
+			existing.All(a => a != null))
+		{
+			var tempOrigins = new Dictionary<ActionItem, int>();
+			var geometric = migrate(currentActions, oldSectorCount, newSectorCount, tempOrigins);
+			for (int i = 0; i < geometric.Count; i++)
+			{
+				if (tempOrigins.TryGetValue(geometric[i], out int prev))
+				{
+					mapping[prev] = i;
+				}
+			}
+			return existing.Select(a => a.Clone()).ToList();
+		}
+
+		var origins = new Dictionary<ActionItem, int>();
+		var migrated = migrate(currentActions, oldSectorCount, newSectorCount, origins);
+		for (int i = 0; i < migrated.Count; i++)
+		{
+			if (origins.TryGetValue(migrated[i], out int prev))
+			{
+				mapping[prev] = i;
+			}
+		}
+		return migrated;
+	}
+
 	/// <summary>本层专属中心核心圆动作</summary>
 	public ActionItem? CenterAction { get; set; }
 
@@ -175,7 +277,8 @@ public class WheelLayer : INotifyPropertyChanged
 			FixedRingsPaused = FixedRingsPaused,
 			EnableCenterAction = this.EnableCenterAction,
 			CenterAction = this.CenterAction?.Clone(),
-			Actions = new List<ActionItem>()
+			Actions = new List<ActionItem>(),
+			SectorCountSnapshots = CloneSectorCountSnapshots(this.SectorCountSnapshots)
 		};
 		if (!string.IsNullOrWhiteSpace(LayerId)) clone.EnsureLayerId();
 		if (this.Actions != null)

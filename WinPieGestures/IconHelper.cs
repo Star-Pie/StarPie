@@ -1407,6 +1407,8 @@ public static class IconHelper
 		return null;
 	}
 
+	private static readonly object _shellItemIconLock = new();
+
 	public static BitmapSource? ExtractShellItemIcon(string path, int size = 64)
 	{
 		if (string.IsNullOrWhiteSpace(path))
@@ -1414,57 +1416,174 @@ public static class IconHelper
 			return null;
 		}
 		string text = path.Trim().Trim('"');
+		string expanded = Environment.ExpandEnvironmentVariables(text);
 		List<string> list = new List<string>();
-		if (text.StartsWith("shell:AppsFolder\\", StringComparison.OrdinalIgnoreCase))
+		if (expanded.StartsWith("shell:AppsFolder\\", StringComparison.OrdinalIgnoreCase))
 		{
-			list.Add(text);
+			list.Add(expanded);
 		}
-		else if (text.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
+		else if (expanded.StartsWith("shell:", StringComparison.OrdinalIgnoreCase))
 		{
-			list.Add(text);
-			list.Add("shell:AppsFolder\\" + text);
+			list.Add(expanded);
+			list.Add("shell:AppsFolder\\" + expanded);
+		}
+		else if (File.Exists(expanded) || Directory.Exists(expanded))
+		{
+			list.Add(expanded);
 		}
 		else
 		{
 			list.Add("shell:AppsFolder\\" + text);
-			list.Add(text);
+			list.Add(expanded);
 		}
-		foreach (string item in list)
+		lock (_shellItemIconLock)
 		{
-			try
+			foreach (string item in list)
 			{
-				if (SHCreateItemFromParsingName(item, IntPtr.Zero, IShellItemImageFactoryGuid, out IShellItemImageFactory ppv) != 0 || ppv == null)
-				{
-					continue;
-				}
-				nint phbm = IntPtr.Zero;
+				IShellItemImageFactory? ppv = null;
 				try
 				{
-					int image = ppv.GetImage(new SIZE(size, size), 0, out phbm);
-					if (image != 0 || phbm == IntPtr.Zero)
+					if (SHCreateItemFromParsingName(item, IntPtr.Zero, IShellItemImageFactoryGuid, out ppv) != 0 || ppv == null)
 					{
-						image = ppv.GetImage(new SIZE(size, size), 2, out phbm);
+						continue;
 					}
-					if (image == 0 && phbm != IntPtr.Zero)
+					nint phbm = IntPtr.Zero;
+					try
 					{
-						BitmapSource bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(phbm, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-						((Freezable)bitmapSource).Freeze();
-						return bitmapSource;
+						int image = ppv.GetImage(new SIZE(size, size), 0, out phbm);
+						if (image != 0 || phbm == IntPtr.Zero)
+						{
+							image = ppv.GetImage(new SIZE(size, size), 2, out phbm);
+						}
+						if (image == 0 && phbm != IntPtr.Zero)
+						{
+							BitmapSource bitmapSource = Imaging.CreateBitmapSourceFromHBitmap(phbm, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+							((Freezable)bitmapSource).Freeze();
+							return bitmapSource;
+						}
 					}
+					finally
+					{
+						if (phbm != IntPtr.Zero)
+						{
+							DeleteObject(phbm);
+						}
+					}
+				}
+				catch
+				{
 				}
 				finally
 				{
-					if (phbm != IntPtr.Zero)
+					if (ppv != null && Marshal.IsComObject(ppv))
 					{
-						DeleteObject(phbm);
+						try { Marshal.ReleaseComObject(ppv); } catch { }
 					}
 				}
 			}
-			catch
-			{
-			}
 		}
 		return null;
+	}
+
+	public static BitmapSource? GetProfileApplicationIcon(string? path, int size = 32)
+	{
+		if (string.IsNullOrWhiteSpace(path))
+		{
+			return null;
+		}
+		string cleanPath = path.Trim().Trim('"');
+		if (cleanPath.Length == 0)
+		{
+			return null;
+		}
+
+		if (_pinnedIcons.TryGetValue(cleanPath, out BitmapSource? pinnedVal) && pinnedVal is { IsFrozen: true })
+		{
+			return pinnedVal;
+		}
+		if (_dynamicIcons.TryGetValue(cleanPath, out BitmapSource? dynamicVal) && dynamicVal is { IsFrozen: true })
+		{
+			lock (_dynamicLruLock)
+			{
+				_dynamicLruList.Remove(cleanPath);
+				_dynamicLruList.AddLast(cleanPath);
+			}
+			return dynamicVal;
+		}
+
+		bool sourceUnavailable = IsUnavailableFileSystemSource(cleanPath);
+		if (sourceUnavailable)
+		{
+			BitmapSource? persisted = LoadPersistentIconSnapshot(cleanPath);
+			if (persisted != null)
+			{
+				CacheDynamicIcon(cleanPath, persisted);
+				return persisted;
+			}
+			return null;
+		}
+
+		BitmapSource? extracted = null;
+		try
+		{
+			string expanded = Environment.ExpandEnvironmentVariables(cleanPath);
+			string ext = Path.GetExtension(expanded);
+			if (File.Exists(expanded) && ext.ToLowerInvariant() is ".png" or ".jpg" or ".jpeg" or ".bmp" or ".webp")
+			{
+				extracted = DecodeImageFile(expanded, size);
+			}
+			extracted ??= ExtractIconRaw(cleanPath);
+			if (extracted == null && File.Exists(expanded) && string.Equals(ext, ".ico", StringComparison.OrdinalIgnoreCase))
+			{
+				extracted = DecodeImageFile(expanded, size);
+			}
+		}
+		catch
+		{
+			extracted = null;
+		}
+
+		if (extracted != null)
+		{
+			if (extracted.CanFreeze && !extracted.IsFrozen)
+			{
+				extracted.Freeze();
+			}
+			CacheDynamicIcon(cleanPath, extracted);
+			PersistIconSnapshot(cleanPath, extracted);
+			return extracted;
+		}
+
+		BitmapSource? fallback = LoadPersistentIconSnapshot(cleanPath);
+		if (fallback != null)
+		{
+			CacheDynamicIcon(cleanPath, fallback);
+			return fallback;
+		}
+		return null;
+	}
+
+	private static BitmapSource? DecodeImageFile(string filePath, int decodeWidth)
+	{
+		try
+		{
+			using FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			BitmapImage bitmap = new BitmapImage();
+			bitmap.BeginInit();
+			bitmap.CacheOption = BitmapCacheOption.OnLoad;
+			if (decodeWidth > 0)
+			{
+				bitmap.DecodePixelWidth = decodeWidth;
+			}
+			bitmap.StreamSource = stream;
+			bitmap.EndInit();
+			bitmap.Freeze();
+			return bitmap;
+		}
+		catch
+		{
+			return null;
+		}
 	}
 
 	private static BitmapSource? ExtractPureIconFromFile(string filePath, int iconIndex)

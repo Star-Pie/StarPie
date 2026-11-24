@@ -273,6 +273,7 @@ public class WheelProfile : INotifyPropertyChanged
 					layer.Actions[a].SubActions ??= new List<ActionItem>();
 				}
 			}
+			layer.SectorCountSnapshots = WheelLayer.CloneSectorCountSnapshots(layer.SectorCountSnapshots);
 		}
 
 		if (ActiveLayerIndex < 0 || ActiveLayerIndex >= Layers.Count)
