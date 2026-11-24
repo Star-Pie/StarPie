@@ -156,14 +156,18 @@ public partial class SettingsWindow
     }
 
     private sealed record PrimaryCountEdit(ActionAddress Address, int BeforeCount, List<ActionItem> Before,
-        int AfterCount, List<ActionItem> After) : IActionTransaction
+        Dictionary<string, List<ActionItem>>? BeforeSnapshots,
+        int AfterCount, List<ActionItem> After,
+        Dictionary<string, List<ActionItem>>? AfterSnapshots) : IActionTransaction
     {
         public string Description => "SectorCountLabel";
         public int ItemsCount => Before.Count + After.Count;
         public bool MatchesContext(WheelProfile? profile, int index) => Address.MatchesContext(profile, index);
         public bool MatchesContext(string? name, int index) => Address.MatchesContext(name, index);
-        public void Undo(SettingsWindow window) => window.SetPrimaryCount(BeforeCount, Before.Select(a => a.Clone()).ToList());
-        public void Redo(SettingsWindow window) => window.SetPrimaryCount(AfterCount, After.Select(a => a.Clone()).ToList());
+        public void Undo(SettingsWindow window) => window.SetPrimaryCount(
+            BeforeCount, Before.Select(a => a.Clone()).ToList(), WheelLayer.CloneSectorCountSnapshots(BeforeSnapshots));
+        public void Redo(SettingsWindow window) => window.SetPrimaryCount(
+            AfterCount, After.Select(a => a.Clone()).ToList(), WheelLayer.CloneSectorCountSnapshots(AfterSnapshots));
     }
 
     private static List<ParentChange> MigrateFixedParents(WheelProfile profile, WheelLayer layer, int oldCount, int newCount,

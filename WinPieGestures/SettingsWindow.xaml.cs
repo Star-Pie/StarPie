@@ -4520,15 +4520,20 @@ public partial class SettingsWindow : Window
 
 		var profile = _selectedProfile;
 		int oldCount = profile.SectorCount;
-		var origins = new Dictionary<ActionItem, int>();
-		var next = MigrateActionsBetweenSectorCounts(profile.Actions, oldCount, sectorCount, origins);
-		var mapping = new Dictionary<int, int>();
-		for (int i = 0; i < next.Count; i++)
-			if (origins.TryGetValue(next[i], out int previous)) mapping[previous] = i;
 		var layer = profile.GetActiveLayer();
+		var beforeSnapshots = WheelLayer.CloneSectorCountSnapshots(layer.SectorCountSnapshots);
+		var next = WheelLayer.SwitchSectorCountWithSnapshots(
+			layer, profile.Actions, oldCount, sectorCount, MigrateActionsBetweenSectorCounts, out var mapping);
+		var afterSnapshots = WheelLayer.CloneSectorCountSnapshots(layer.SectorCountSnapshots);
 		var address = new ActionAddress(profile.ProcessName, profile.ActiveLayerIndex, -1, null, GetProfileInstanceId(profile), layer);
-		var countEdit = new PrimaryCountEdit(address, oldCount, profile.Actions.Select(a => a.Clone()).ToList(), sectorCount,
-			next.Select(a => a.Clone()).ToList());
+		var countEdit = new PrimaryCountEdit(
+			address,
+			oldCount,
+			profile.Actions.Select(a => a.Clone()).ToList(),
+			beforeSnapshots,
+			sectorCount,
+			next.Select(a => a.Clone()).ToList(),
+			afterSnapshots);
 		var links = MigrateFixedParents(profile, layer, oldCount, sectorCount, next, mapping);
 		IActionTransaction edit = countEdit;
 		if (links.Count > 0)
@@ -4538,16 +4543,17 @@ public partial class SettingsWindow : Window
 			edit = combined;
 		}
 		_transactionHistory.Push(edit);
-		SetPrimaryCount(sectorCount, next);
+		SetPrimaryCount(sectorCount, next, afterSnapshots);
 		return true;
 	}
 
-	private void SetPrimaryCount(int sectorCount, List<ActionItem> actions)
+	private void SetPrimaryCount(int sectorCount, List<ActionItem> actions, Dictionary<string, List<ActionItem>>? snapshots = null)
 	{
 		if (_selectedProfile == null) return;
 		_isChangingSectorCount = true;
 		try
 		{
+			_selectedProfile.GetActiveLayer().SectorCountSnapshots = snapshots;
 			_selectedProfile.Actions = actions;
 			_selectedProfile.SectorCount = sectorCount;
 			_selectedProfile.SyncActiveLayerFromRootProperties();
@@ -5123,17 +5129,24 @@ public partial class SettingsWindow : Window
 			}
 			return false;
 		}
+		bool bindingsChanged = !ProfileProcessBindings.GetNames(_selectedProfile)
+			.SetEquals(ProfileProcessBindings.GetNames(_selectedProfile, proposedBindings));
 		_selectedProfile.BoundProcesses = proposedBindings;
 		_selectedProfile.HasExplicitProcessBindings = true;
-		_selectedProfile.ApplicationIconPath = null;
+		if (bindingsChanged) _selectedProfile.ApplicationIconPath = null;
 		return true;
 	}
 
 	private bool TryAppendProfileBinding(string processName)
 	{
 		var parts = (ProfileBoundProcessesTextBox?.Text ?? _selectedProfile?.BoundProcesses ?? "")
-			.Split(new[] { ',', '，' }, StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim()).ToList();
-		if (!parts.Any(p => p.Equals(processName, StringComparison.OrdinalIgnoreCase))) parts.Add(processName);
+			.Split(new[] { ',', ';', '|', '，', '；' }, StringSplitOptions.RemoveEmptyEntries)
+			.Select(p => p.Trim())
+			.Where(p => p.Length > 0)
+			.ToList();
+		string normalizedNew = ProfileProcessBindings.NormalizeProcessToken(processName);
+		if (!parts.Any(p => string.Equals(ProfileProcessBindings.NormalizeProcessToken(p), normalizedNew, StringComparison.OrdinalIgnoreCase)))
+			parts.Add(processName);
 		if (!TryApplyProfileBindings(string.Join(", ", parts))) return false;
 		UpdateProfileBindingUi();
 		return true;
@@ -8602,15 +8615,16 @@ public partial class SettingsWindow : Window
 					!procLower.Equals("winpiegestures", StringComparison.OrdinalIgnoreCase))
 				{
 					string current = TileExcludeProcessesTextBox?.Text?.Trim() ?? "";
-					var list = current.Split(new[] { ',', '，', ' ' }, StringSplitOptions.RemoveEmptyEntries)
-						.Select(s => s.Trim().ToLowerInvariant())
+					var list = ProfileProcessBindings.ParseProcessTokenList(current)
+						.Select(s => s.ToLowerInvariant())
 						.ToList();
-					if (!list.Contains(procLower))
+					string normalizedProc = ProfileProcessBindings.NormalizeProcessToken(procLower);
+					if (!list.Any(s => string.Equals(ProfileProcessBindings.NormalizeProcessToken(s), normalizedProc, StringComparison.OrdinalIgnoreCase)))
 					{
 						list.Add(procLower);
 						if (TileExcludeProcessesTextBox != null)
 						{
-							TileExcludeProcessesTextBox.Text = string.Join(",", list);
+							TileExcludeProcessesTextBox.Text = string.Join(", ", list);
 						}
 					}
 				}

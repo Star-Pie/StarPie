@@ -464,6 +464,23 @@ public static class PortableConfigBundle
 		}
 	}
 
+	// Includes stashed actions preserved across primary sector count switches.
+	private static IEnumerable<(string Path, JsonNode Action)> SectorCountSnapshotActions(JsonObject layer)
+	{
+		if (!TryGetKnownProperty(layer, "SectorCountSnapshots", out string snapshotsName, out var snapshotsNode) ||
+			snapshotsNode is not JsonObject snapshots)
+			yield break;
+		foreach (var entry in snapshots)
+		{
+			if (entry.Value is not JsonArray actions) continue;
+			for (int i = 0; i < actions.Count; i++)
+			{
+				if (actions[i] is { } action)
+					yield return ($".{snapshotsName}.{entry.Key}[{i}]", action);
+			}
+		}
+	}
+
 	private static List<string> CollectCustomIconKeys(JsonObject root)
 	{
 		var keys = new List<string>();
@@ -571,7 +588,7 @@ public static class PortableConfigBundle
 						{
 							continue;
 						}
-						ValidateKnownProperties(layer, "Actions", "CenterAction");
+						ValidateKnownProperties(layer, "Actions", "CenterAction", "SectorCountSnapshots");
 						if (TryGetKnownProperty(layer, "Actions", out _, out JsonNode? layerActionsNode))
 						{
 							AddActions(layerActionsNode);
@@ -581,6 +598,7 @@ public static class PortableConfigBundle
 							AddAction(layerCenterActionNode);
 						}
 						foreach (var (_, action) in FixedRingActions(layer)) AddAction(action);
+						foreach (var (_, action) in SectorCountSnapshotActions(layer)) AddAction(action);
 					}
 				}
 			}
@@ -744,7 +762,7 @@ public static class PortableConfigBundle
 						{
 							continue;
 						}
-						ValidateKnownProperties(layer, "Actions", "CenterAction");
+						ValidateKnownProperties(layer, "Actions", "CenterAction", "SectorCountSnapshots");
 						string layerPath = layersPath + "[" + layerIndex.ToString() + "]";
 						if (TryGetKnownProperty(layer, "Actions", out string layerActionsPropertyName, out JsonNode? layerActionsNode))
 						{
@@ -755,6 +773,7 @@ public static class PortableConfigBundle
 							AddAction(layerPath + "." + layerCenterActionPropertyName, layerCenterActionNode);
 						}
 						foreach (var (suffix, action) in FixedRingActions(layer)) AddAction(layerPath + suffix, action);
+						foreach (var (suffix, action) in SectorCountSnapshotActions(layer)) AddAction(layerPath + suffix, action);
 					}
 				}
 			}

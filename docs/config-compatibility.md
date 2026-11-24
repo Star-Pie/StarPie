@@ -12,8 +12,9 @@
 - 配置友好名称与内部 ProcessName 身份分离，包括 Global；层名继续使用 WheelLayer.Name。运行切层提示和外观预览共用格式化入口。
 - UseApplicationContext 缺失默认 true；false 为平行轮盘，仅在有效独立触发时接管全局精确路由，不成为 Global 触发的隐式应用配置。
 - HasExplicitProcessBindings 缺失为 false，保留旧名称回退；编辑/移除绑定后为 true，空列表即未绑定。关闭情景保留原绑定以便恢复。显式 false 和克隆均须往返保留。
-- 旧绑定字符串保留空格分隔兼容；新显式列表使用逗号/分号/竖线分隔，使包含空格的真实进程名不会拆成多个绑定。UI、普通匹配和路由编译共用归一化入口。
-- ApplicationIconPath 只为设置页图标提供本地路径提示，失效时显示后备图标，不影响动作和触发，不在钩子中读取。
+- 旧绑定字符串保留空格分隔兼容，但包含 `.exe` 边界（如 `my app.exe` 或 `my app.exe code.exe`）及与原 `ProcessName` 匹配的完整含空格名均保留不被拆碎；新显式列表使用逗号/分号/竖线分隔，使包含空格的真实进程名不会拆成多个绑定。UI、普通匹配、窗口平铺排除名单与路由编译共用归一化入口。
+- `ApplicationIconPath` 只为设置页图标提供本地路径提示，设置页通过序列化 Shell COM + Win32 提取 + 持久化磁盘快照降级加载（且不缓存空结果）；路径暂时不可用时回退磁盘快照或后备图标，不影响动作和触发，不在钩子中读取。
+- `WheelLayer.SectorCountSnapshots` 为可选按扇区档位（`"4"` / `"8"` / `"12"`）暂存动作快照映射，切换扇区数量时自动保存离开档位并无损恢复曾配置过的目标档位动作（撤销/重做与 JSON/便携包导出重映射均同步保留与处理隐藏档位中的自定义 SVG）；旧配置缺失该字段时保持兼容并按几何对齐迁移。
 - `AppConfig.ProfileQuickSwitchDisplayMode` 为配置快捷列表三态显示方式（`IconAndText` 默认、`TextOnly`、`IconOnly`）；旧配置缺失或未知值均回退为 `IconAndText`，三种合法值在 JSON 与 `.starpie-config` 便携包往返保持。
 - 平行键与 Global 默认、有效层键、应用专属键、黑名单覆盖的相同完整按键冲突。冲突/无键的导入方案保留数据但不注册平行路由；旧 Global 与应用层复用语义保持。
 - 删除层须清除被删层的 `WheelLayer.ActivationTrigger`，删除第一层同时清除旧根 `WheelProfile.ActivationTrigger`，预先验证剩余路由，禁止隐藏旧键转移到新的第一层；删除后立即同步落盘并重新发布路由快照。

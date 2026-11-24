@@ -385,9 +385,7 @@ public partial class SettingsWindow
 							}
 						}
 						if (string.IsNullOrWhiteSpace(path)) return null;
-						var result = IconHelper.ExtractShellItemIcon(path, 32);
-						if (result?.CanFreeze == true) result.Freeze();
-						return result;
+						return IconHelper.GetProfileApplicationIcon(path, 32);
 					});
 					_profileIconLoads[cacheKey] = loading;
 				}
@@ -396,8 +394,11 @@ public partial class SettingsWindow
 			catch { icon = null; }
 			_profileIconLoads.Remove(cacheKey);
 			if (_resourcesReleased) return null;
-			if (_profileIcons.Count >= 128) _profileIcons.Clear();
-			_profileIcons[cacheKey] = icon;
+			if (icon != null)
+			{
+				if (_profileIcons.Count >= 128) _profileIcons.Clear();
+				_profileIcons[cacheKey] = icon;
+			}
 		}
 		return icon;
 	}

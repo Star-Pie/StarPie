@@ -224,6 +224,93 @@ internal static class Program
                 ProfileIconPresentation.TrySetVector(importedImage, imported.IconKey) && importedImage.Source is DrawingImage,
                 "full configuration import remaps the profile SVG and renders it from the shared icon library");
         }
+        Check(StudioProfileLibrary.BuildExportFileName("chrome.exe") == "chrome.exe.starpie-config" &&
+            StudioProfileLibrary.BuildExportFileName("code.exe") == "code.exe.starpie-config" &&
+            StudioProfileLibrary.BuildExportFileName("WPS 文字") == "WPS 文字.starpie-config" &&
+            StudioProfileLibrary.BuildExportFileName("Blender 4.2") == "Blender 4.2.starpie-config" &&
+            StudioProfileLibrary.BuildExportFileName("demo.starpie-config") == "demo.starpie-config" &&
+            StudioProfileLibrary.BuildExportFileName("") == "StarPie_Profile.starpie-config" &&
+            StudioProfileLibrary.EnsureExportPackagePath(@"C:\tmp\chrome.exe") == @"C:\tmp\chrome.exe.starpie-config" &&
+            StudioProfileLibrary.EnsureExportPackagePath(@"C:\tmp\ok.starpie-config") == @"C:\tmp\ok.starpie-config",
+            "export filenames always preserve .starpie-config extension even when profile name ends with .exe");
+
+        var stashProfile = new WheelProfile { ProcessName = "stash", DisplayName = "Stash", SectorCount = 12 };
+        stashProfile.EnsureLayers();
+        var stashLayer = stashProfile.Layers[0];
+        stashLayer.SectorCount = 12;
+        stashLayer.Actions = Enumerable.Range(0, 12).Select(i => new ActionItem
+        {
+            Type = "Hotkey",
+            Name = $"S12_{i}",
+            Parameter = $"Ctrl+Alt+F{i + 1}",
+            IconKey = i == 11 ? "custom:stash" : ""
+        }).ToList();
+        stashProfile.SyncRootPropertiesFromActiveLayer();
+
+        Func<List<ActionItem>?, int, int, Dictionary<ActionItem, int>?, List<ActionItem>> migrateForTest =
+            (actions, oldCount, newCount, _) => SettingsWindow.MigrateActionsBetweenSectorCounts(actions, oldCount, newCount);
+
+        var to4 = WheelLayer.SwitchSectorCountWithSnapshots(
+            stashLayer, stashLayer.Actions, 12, 4, migrateForTest, out _);
+        stashLayer.SectorCount = 4;
+        stashLayer.Actions = to4;
+        Check(to4.Count == 4 && to4[0].Name == "S12_0" && to4[1].Name == "S12_3" && to4[2].Name == "S12_6" && to4[3].Name == "S12_9",
+            "switching 12 -> 4 maps cardinal actions while stashing 12-sector snapshot");
+
+        var to8 = WheelLayer.SwitchSectorCountWithSnapshots(
+            stashLayer, stashLayer.Actions, 4, 8, migrateForTest, out _);
+        stashLayer.SectorCount = 8;
+        stashLayer.Actions = to8;
+        var backTo12 = WheelLayer.SwitchSectorCountWithSnapshots(
+            stashLayer, stashLayer.Actions, 8, 12, migrateForTest, out _);
+        stashLayer.SectorCount = 12;
+        stashLayer.Actions = backTo12;
+        Check(backTo12.Count == 12 &&
+            Enumerable.Range(0, 12).All(i => backTo12[i].Name == $"S12_{i}" && backTo12[i].Parameter == $"Ctrl+Alt+F{i + 1}") &&
+            backTo12[11].IconKey == "custom:stash",
+            "switching 12 -> 4 -> 8 -> 12 losslessly restores all 12 actions and custom icon");
+
+        var clonedStash = stashProfile.Clone("stash-copy");
+        clonedStash.Layers[0].SectorCountSnapshots!["4"][0].Name = "MUTATED";
+        Check(stashProfile.Layers[0].SectorCountSnapshots!["4"][0].Name == "S12_0",
+            "cloning profile deep-clones SectorCountSnapshots independently");
+        var backTo4BeforeExport = WheelLayer.SwitchSectorCountWithSnapshots(
+            stashLayer, stashLayer.Actions, 12, 4, migrateForTest, out _);
+        stashLayer.SectorCount = 4;
+        stashLayer.Actions = backTo4BeforeExport;
+        stashProfile.SyncRootPropertiesFromActiveLayer();
+        var roundtrippedStash = StudioProfileLibrary.ReadProfile(StudioProfileLibrary.SerializeProfile(stashProfile));
+        Check(roundtrippedStash.Layers[0].SectorCountSnapshots != null &&
+            roundtrippedStash.Layers[0].SectorCountSnapshots!.TryGetValue("12", out var round12) &&
+            round12.Count == 12 && round12[11].IconKey == "custom:stash",
+            "SectorCountSnapshots survives StudioProfileLibrary JSON roundtrip");
+
+        string stashInput = Path.Combine(root.FullName, "stash-icons");
+        string stashOutput = Path.Combine(root.FullName, "stash-out");
+        Directory.CreateDirectory(stashInput);
+        File.WriteAllText(Path.Combine(stashInput, "stash.svg"), """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M0 0 L10 0 L10 10 Z"/></svg>""");
+        string stashPkg = Path.Combine(root.FullName, "stash.exe.starpie-config");
+        PortableConfigBundle.ExportProfile(StudioProfileLibrary.SerializeProfile(stashProfile), stashPkg, stashInput);
+        using (var stashPending = PortableConfigBundle.PrepareProfileImport(stashPkg, stashOutput))
+        {
+            var importedStash = StudioProfileLibrary.ReadProfile(stashPending.ConfigJson);
+            string? remappedStashKey = importedStash.Layers[0].SectorCountSnapshots?["12"]?[11]?.IconKey;
+            Check(remappedStashKey?.StartsWith("custom:stash_portable_", StringComparison.Ordinal) == true &&
+                File.Exists(Path.Combine(stashOutput, remappedStashKey["custom:".Length..] + ".svg")),
+                "portable profile bundle exports and remaps custom SVG inside stashed SectorCountSnapshots");
+        }
+
+        foreach (var badSnapLayer in new[] {
+            """{"SectorCount":4,"SectorCountSnapshots":{"6":[{"Type":"Hotkey","Name":"x"}]}}""",
+            """{"SectorCount":4,"SectorCountSnapshots":{"4":[]}}""",
+            """{"SectorCount":4,"SectorCountSnapshots":{"4":[null,{"Type":"Hotkey","Name":"a"},{"Type":"Hotkey","Name":"b"},{"Type":"Hotkey","Name":"c"}]}}"""
+        })
+        {
+            try { StudioProfileLibrary.ReadProfile("""{"Profiles":[{"ProcessName":"x","Layers":[""" + badSnapLayer + "]}]}"); }
+            catch (InvalidDataException) { _checks++; continue; }
+            throw new InvalidOperationException("malformed SectorCountSnapshots accepted " + badSnapLayer);
+        }
+
         CheckPicker();
         Console.WriteLine($"{_checks} checks passed.");
     }
