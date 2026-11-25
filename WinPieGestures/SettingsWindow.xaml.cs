@@ -7669,6 +7669,22 @@ public partial class SettingsWindow : Window
 		{
 			PluginsPageSubheader.Text = I18n.T("PluginLibraryIntro");
 		}
+		if (PluginLibrarySearchPlaceholder != null)
+		{
+			PluginLibrarySearchPlaceholder.Text = I18n.T("PluginLibrarySearchPlaceholder");
+		}
+		if (PluginLibrarySearchBox != null)
+		{
+			string searchPrompt = I18n.T("PluginLibrarySearchPlaceholder");
+			System.Windows.Automation.AutomationProperties.SetName(PluginLibrarySearchBox, searchPrompt);
+			PluginLibrarySearchBox.ToolTip = searchPrompt;
+		}
+		if (PluginLibrarySearchClearButton != null)
+		{
+			string clearLabel = I18n.T("PluginLibrarySearchClear");
+			System.Windows.Automation.AutomationProperties.SetName(PluginLibrarySearchClearButton, clearLabel);
+			PluginLibrarySearchClearButton.ToolTip = clearLabel;
+		}
 		if (InstallPluginButton != null)
 		{
 			InstallPluginButton.Content = I18n.T("PluginsInstallButton");

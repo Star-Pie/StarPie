@@ -129,13 +129,40 @@ public partial class SettingsWindow
         else if (ReferenceEquals(sender, InstalledFilterCombo) || ReferenceEquals(sender, InstalledSortCombo)) ApplyInstalledFilter();
     }
 
+    private void PluginLibrarySearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        bool hasQuery = !string.IsNullOrEmpty(PluginLibrarySearchBox?.Text);
+        if (PluginLibrarySearchPlaceholder != null)
+            PluginLibrarySearchPlaceholder.Visibility = hasQuery ? Visibility.Collapsed : Visibility.Visible;
+        if (PluginLibrarySearchClearButton != null)
+            PluginLibrarySearchClearButton.Visibility = hasQuery ? Visibility.Visible : Visibility.Collapsed;
+        ApplyMarketFilter();
+        ApplyInstalledFilter();
+    }
+
+    private void PluginLibrarySearchClearButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (PluginLibrarySearchBox == null) return;
+        PluginLibrarySearchBox.Text = "";
+        PluginLibrarySearchBox.Focus();
+    }
+
+    private void PluginLibrarySearchBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != System.Windows.Input.Key.Escape || string.IsNullOrEmpty(PluginLibrarySearchBox?.Text)) return;
+        PluginLibrarySearchBox.Text = "";
+        e.Handled = true;
+    }
+
     private void ApplyMarketFilter()
     {
         if (OfficialPluginItemsControl == null || MarketEmptyText == null) return;
         string? category = MarketFilterCombo?.SelectedValue as string;
         string? filter = MarketStatusCombo?.SelectedValue as string;
+        string? query = PluginLibrarySearchBox?.Text;
         DateTimeOffset now = DateTimeOffset.UtcNow;
-        var rows = PluginLibraryQuery.Sort(_marketCards.Where(item => PluginLibraryQuery.Matches(item, category, filter, now)),
+        var rows = PluginLibraryQuery.Sort(
+            _marketCards.Where(item => PluginLibraryQuery.Matches(item, category, filter, now, query)),
             MarketSortCombo?.SelectedValue as string, item => item.ReleaseInfo, item => item.DisplayName, item => item.Module.Id).ToList();
         OfficialPluginItemsControl.ItemsSource = rows;
         MarketEmptyText.Text = I18n.T(_marketCards.Count == 0 ? "PluginLibraryMarketEmpty" : "PluginStatsNoMatches");
@@ -146,10 +173,26 @@ public partial class SettingsWindow
     {
         if (PluginListBox == null || PluginsEmptyStatePanel == null) return;
         string? source = InstalledFilterCombo.SelectedValue as string;
-        var rows = PluginLibraryQuery.Sort(_installedCards.Where(item => string.IsNullOrEmpty(source) ||
-                item.IsOfficial == (source == "official")), InstalledSortCombo?.SelectedValue as string,
+        string? query = PluginLibrarySearchBox?.Text;
+        var rows = PluginLibraryQuery.Sort(
+            _installedCards.Where(item => (string.IsNullOrEmpty(source) || item.IsOfficial == (source == "official")) &&
+                PluginLibraryQuery.MatchesSearch(item, query)),
+            InstalledSortCombo?.SelectedValue as string,
             item => item.ReleaseInfo, item => item.DisplayName, item => item.PluginId).ToList();
         PluginListBox.ItemsSource = rows;
+        if (PluginsEmptyTitleText != null && PluginsEmptyHintText != null)
+        {
+            if (_installedCards.Count == 0)
+            {
+                PluginsEmptyTitleText.Text = I18n.T("PluginsEmptyTitle");
+                PluginsEmptyHintText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PluginsEmptyTitleText.Text = I18n.T("PluginStatsNoMatches");
+                PluginsEmptyHintText.Visibility = Visibility.Collapsed;
+            }
+        }
         PluginsEmptyStatePanel.Visibility = rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 }

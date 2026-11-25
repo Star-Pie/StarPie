@@ -728,5 +728,22 @@ static class Program
         var persisted = IconHelper.GetProfileApplicationIcon(tempExe, 32);
         Check(persisted is { IsFrozen: true, PixelWidth: > 0, PixelHeight: > 0 },
             "persistent snapshot restores profile app icon even when cache trimmed and source unavailable");
+
+        // Issue #255: taskbar & thumbnail preview window class bypass checks
+        foreach (string tbClass in new[] {
+            "Shell_TrayWnd", "Shell_SecondaryTrayWnd", "NotifyIconOverflowWindow",
+            "TopLevelWindowForOverflowXamlIsland", "TrayNotifyWnd",
+            "TaskListThumbnailWnd", "TaskListOverlayWnd", "MSTaskListWClass", "MSTaskSwWClass" })
+        {
+            Check(GestureController.IsTaskbarWindowClass(tbClass), $"taskbar class recognized: {tbClass}");
+        }
+        Check(!GestureController.IsTaskbarWindowClass("Chrome_WidgetWin_1") &&
+              !GestureController.IsTaskbarWindowClass("Notepad"),
+            "non-taskbar window classes are not bypassed");
+        Check(GestureController.IsTaskbarExplorerPopupClass("XamlExplorerHostIslandWindow", "explorer.exe") &&
+              GestureController.IsTaskbarExplorerPopupClass("XamlExplorerHostIslandWindow", "explorer") &&
+              !GestureController.IsTaskbarExplorerPopupClass("XamlExplorerHostIslandWindow", "chrome.exe") &&
+              !GestureController.IsTaskbarExplorerPopupClass("OtherClass", "explorer.exe"),
+            "Win11 XamlExplorerHostIslandWindow bypass requires explorer process");
     }
 }

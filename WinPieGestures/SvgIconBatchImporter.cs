@@ -27,13 +27,20 @@ public sealed class SvgIconBatchItemResult
 	public SvgIconBatchItemStatus Status { get; }
 	public string ReasonCode { get; }
 	public string? TargetPath { get; }
+	public bool ConvertedToMonochrome { get; }
 
-	public SvgIconBatchItemResult(string sourcePath, SvgIconBatchItemStatus status, string reasonCode, string? targetPath = null)
+	public SvgIconBatchItemResult(
+		string sourcePath,
+		SvgIconBatchItemStatus status,
+		string reasonCode,
+		string? targetPath = null,
+		bool convertedToMonochrome = false)
 	{
 		SourcePath = sourcePath;
 		Status = status;
 		ReasonCode = reasonCode;
 		TargetPath = targetPath;
+		ConvertedToMonochrome = convertedToMonochrome;
 	}
 }
 
@@ -165,7 +172,8 @@ public static class SvgIconBatchImporter
 		string folderPath,
 		string? targetDirectory = null,
 		Action? invalidateCache = null,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default,
+		bool allowMonochromeConversion = false)
 	{
 		if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
 		{
@@ -194,14 +202,15 @@ public static class SvgIconBatchImporter
 				SvgIconReasonCodes.SourceDirectoryInvalid);
 		}
 
-		return ImportFiles(files, targetDirectory, invalidateCache, cancellationToken);
+		return ImportFiles(files, targetDirectory, invalidateCache, cancellationToken, allowMonochromeConversion);
 	}
 
 	public static SvgIconBatchImportResult ImportFiles(
 		IEnumerable<string> sourcePaths,
 		string? targetDirectory = null,
 		Action? invalidateCache = null,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default,
+		bool allowMonochromeConversion = false)
 	{
 		string target;
 		try
@@ -259,7 +268,7 @@ public static class SvgIconBatchImporter
 					continue;
 				}
 
-				SvgPathValidationResult validation = ValidateSvgFile(fullPath, cancellationToken);
+				SvgPathValidationResult validation = ValidateSvgFile(fullPath, allowMonochromeConversion, cancellationToken);
 				if (!validation.IsSuccess)
 				{
 					items.Add(Failure(fullPath, validation.ReasonCode));
@@ -283,7 +292,8 @@ public static class SvgIconBatchImporter
 					fullPath,
 					SvgIconBatchItemStatus.Success,
 					SvgIconReasonCodes.Success,
-					targetPath));
+					targetPath,
+					validation.ConvertedToMonochrome));
 			}
 		}
 		catch (OperationCanceledException)
@@ -421,6 +431,12 @@ public static class SvgIconBatchImporter
 	}
 
 	private static SvgPathValidationResult ValidateSvgFile(string sourcePath, CancellationToken cancellationToken)
+		=> ValidateSvgFile(sourcePath, allowMonochromeConversion: false, cancellationToken);
+
+	private static SvgPathValidationResult ValidateSvgFile(
+		string sourcePath,
+		bool allowMonochromeConversion,
+		CancellationToken cancellationToken)
 	{
 		try
 		{
@@ -466,7 +482,12 @@ public static class SvgIconBatchImporter
 			cancellationToken.ThrowIfCancellationRequested();
 			XDocument document = XDocument.Load(reader, LoadOptions.None);
 			cancellationToken.ThrowIfCancellationRequested();
-			return ValidateDocument(document, cancellationToken);
+			SvgPathValidationResult strict = ValidateDocument(document, cancellationToken);
+			if (strict.IsSuccess || !allowMonochromeConversion)
+			{
+				return strict;
+			}
+			return ValidateDocumentMonochromeConvert(document, cancellationToken);
 		}
 		catch (OperationCanceledException)
 		{
@@ -2568,18 +2589,820 @@ public static class SvgIconBatchImporter
 		public bool IsSuccess { get; }
 		public string PathData { get; }
 		public string ReasonCode { get; }
+		public bool ConvertedToMonochrome { get; }
 
-		private SvgPathValidationResult(bool success, string pathData, string reasonCode)
+		private SvgPathValidationResult(bool success, string pathData, string reasonCode, bool convertedToMonochrome = false)
 		{
 			IsSuccess = success;
 			PathData = pathData;
 			ReasonCode = reasonCode;
+			ConvertedToMonochrome = convertedToMonochrome;
 		}
 
-		public static SvgPathValidationResult Success(string pathData)
-			=> new(true, pathData, SvgIconReasonCodes.Success);
+		public static SvgPathValidationResult Success(string pathData, bool convertedToMonochrome = false)
+			=> new(true, pathData, SvgIconReasonCodes.Success, convertedToMonochrome);
 
 		public static SvgPathValidationResult Failure(string reasonCode)
 			=> new(false, "", reasonCode);
+	}
+
+	// ==================== Issue #258: Safe Monochrome Conversion Fallback ====================
+
+	private static readonly Regex ExternalUrlFunctionRegex = new(
+		@"url\s*\(\s*(?!['""]?#)",
+		RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+	private static readonly Regex CssCommentRegex = new(
+		@"/\*[\s\S]*?\*/",
+		RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+	private static readonly Regex CssRuleBlockRegex = new(
+		@"([^{}]+)\{([^{}]*)\}",
+		RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+	private sealed record ConvertRenderState(
+		string Fill,
+		FillRule FillRule,
+		string Stroke,
+		double StrokeWidth,
+		PenLineCap StrokeLineCap,
+		PenLineJoin StrokeLineJoin,
+		double StrokeMiterLimit,
+		Matrix Transform,
+		bool Visible,
+		double Opacity,
+		bool FillIsNearWhite,
+		bool StrokeIsNearWhite)
+	{
+		public static ConvertRenderState CreateRootDefault()
+			=> new("#FF000000", FillRule.Nonzero, "none", 1.0, PenLineCap.Flat, PenLineJoin.Miter, 4.0, Matrix.Identity, true, 1.0, false, false);
+	}
+
+	private sealed record ConvertShapeEntry(PathGeometry Geometry, bool IsNearWhite);
+
+	private sealed class ConvertDocumentState
+	{
+		public Dictionary<string, XElement> ElementsById { get; } = new(StringComparer.Ordinal);
+		public Dictionary<string, Dictionary<string, string>> TagCssRules { get; } = new(StringComparer.OrdinalIgnoreCase);
+		public Dictionary<string, Dictionary<string, string>> ClassCssRules { get; } = new(StringComparer.OrdinalIgnoreCase);
+		public List<ConvertShapeEntry> Shapes { get; } = new();
+		public HashSet<string> ActiveUseIds { get; } = new(StringComparer.Ordinal);
+		public int DrawableCount { get; set; }
+		public int TotalSegmentCount { get; set; }
+		public int UseExpansionCount { get; set; }
+		public bool SawInvisibleGeometry { get; set; }
+	}
+
+	private static SvgPathValidationResult ValidateDocumentMonochromeConvert(XDocument document, CancellationToken cancellationToken)
+	{
+		XElement? root = document.Root;
+		if (root == null || root.Name.LocalName != "svg" || !IsAllowedNamespace(root.Name.Namespace))
+		{
+			return SvgPathValidationResult.Failure(SvgIconReasonCodes.InvalidRoot);
+		}
+
+		string? securityError = CheckConvertSecurity(root, cancellationToken);
+		if (securityError != null)
+		{
+			return SvgPathValidationResult.Failure(securityError);
+		}
+
+		var state = new ConvertDocumentState();
+		IndexDefsAndCollectStyles(root, state, cancellationToken);
+		string? err = TraverseConvertElement(root, ConvertRenderState.CreateRootDefault(), isRoot: true, depth: 0, useDepth: 0, state, cancellationToken);
+		if (err != null)
+		{
+			return SvgPathValidationResult.Failure(err);
+		}
+		if (state.Shapes.Count == 0)
+		{
+			return SvgPathValidationResult.Failure(state.SawInvisibleGeometry ? SvgIconReasonCodes.InvisiblePath : SvgIconReasonCodes.PathDataMissing);
+		}
+
+		return BuildConvertedMonochromePath(state);
+	}
+
+	private static string? CheckConvertSecurity(XElement root, CancellationToken cancellationToken)
+	{
+		foreach (XElement el in root.DescendantsAndSelf())
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			string local = el.Name.LocalName;
+			if (local is "script" or "image" or "foreignObject")
+			{
+				return SvgIconReasonCodes.ExternalReference;
+			}
+			foreach (XAttribute attr in el.Attributes())
+			{
+				if (attr.IsNamespaceDeclaration) continue;
+				string attrName = attr.Name.LocalName;
+				string val = attr.Value;
+				if (attrName.StartsWith("on", StringComparison.OrdinalIgnoreCase))
+				{
+					return SvgIconReasonCodes.UnsupportedAttribute;
+				}
+				if (attrName == "href")
+				{
+					string trimmed = val.Trim();
+					if (!trimmed.StartsWith('#'))
+					{
+						return SvgIconReasonCodes.ExternalReference;
+					}
+				}
+				if (ExternalUrlFunctionRegex.IsMatch(val))
+				{
+					return attrName is "fill" or "stroke"
+						? SvgIconReasonCodes.GradientUnsupported
+						: SvgIconReasonCodes.ExternalReference;
+				}
+			}
+		}
+		return null;
+	}
+
+	private static void IndexDefsAndCollectStyles(XElement root, ConvertDocumentState state, CancellationToken cancellationToken)
+	{
+		foreach (XElement el in root.DescendantsAndSelf())
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			if (el.Attribute("id")?.Value is { Length: > 0 } id && state.ElementsById.Count < 2048)
+			{
+				state.ElementsById.TryAdd(id.Trim(), el);
+			}
+			if (IsAllowedNamespace(el.Name.Namespace) && el.Name.LocalName == "style" && !string.IsNullOrWhiteSpace(el.Value))
+			{
+				ParseConvertStylesheet(el.Value, state);
+			}
+		}
+	}
+
+	private static void ParseConvertStylesheet(string cssText, ConvertDocumentState state)
+	{
+		string clean = CssCommentRegex.Replace(cssText, "");
+		if (clean.Contains("@import", StringComparison.OrdinalIgnoreCase) || ExternalUrlFunctionRegex.IsMatch(clean))
+		{
+			return;
+		}
+		foreach (Match m in CssRuleBlockRegex.Matches(clean))
+		{
+			string selectorList = m.Groups[1].Value;
+			string declBody = m.Groups[2].Value;
+			var decls = ParseStyleDeclarations(declBody);
+			if (decls == null || decls.Count == 0) continue;
+
+			foreach (string rawSel in selectorList.Split(','))
+			{
+				string sel = rawSel.Trim();
+				if (sel.Length == 0) continue;
+				if (sel.StartsWith('.') && sel.AsSpan(1).IndexOfAny(" >+~:".AsSpan()) < 0)
+				{
+					MergeCssRules(state.ClassCssRules, sel[1..], decls);
+				}
+				else if (sel.AsSpan().IndexOfAny(" >+~:.[".AsSpan()) < 0)
+				{
+					MergeCssRules(state.TagCssRules, sel, decls);
+				}
+			}
+		}
+	}
+
+	private static void MergeCssRules(
+		Dictionary<string, Dictionary<string, string>> target,
+		string key,
+		Dictionary<string, string> decls)
+	{
+		if (!target.TryGetValue(key, out var existing))
+		{
+			target[key] = new Dictionary<string, string>(decls, StringComparer.OrdinalIgnoreCase);
+			return;
+		}
+		foreach (var kv in decls) existing[kv.Key] = kv.Value;
+	}
+
+	private static Dictionary<string, string>? ParseStyleDeclarations(string styleText)
+	{
+		if (string.IsNullOrWhiteSpace(styleText)) return null;
+		if (ExternalUrlFunctionRegex.IsMatch(styleText)) return null;
+		var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		foreach (string item in styleText.Split(';'))
+		{
+			int colon = item.IndexOf(':');
+			if (colon <= 0) continue;
+			string prop = item[..colon].Trim();
+			string val = item[(colon + 1)..].Trim();
+			if (val.EndsWith("!important", StringComparison.OrdinalIgnoreCase))
+			{
+				val = val[..^"!important".Length].TrimEnd();
+			}
+			if (prop.Length > 0 && val.Length > 0)
+			{
+				dict[prop] = val;
+			}
+		}
+		return dict;
+	}
+
+	private static string? TraverseConvertElement(
+		XElement element,
+		ConvertRenderState parentState,
+		bool isRoot,
+		int depth,
+		int useDepth,
+		ConvertDocumentState docState,
+		CancellationToken cancellationToken,
+		bool allowSymbolAsContainer = false)
+	{
+		cancellationToken.ThrowIfCancellationRequested();
+		if (depth > MaxElementDepth)
+		{
+			return SvgIconReasonCodes.UnsupportedElement;
+		}
+		if (!IsAllowedNamespace(element.Name.Namespace))
+		{
+			// Non-SVG editor metadata blocks (e.g. sodipodi:namedview, inkscape:*) are safely ignored.
+			return null;
+		}
+
+		string local = element.Name.LocalName;
+		switch (local)
+		{
+			case "defs":
+			case "linearGradient":
+			case "radialGradient":
+			case "pattern":
+			case "clipPath":
+			case "mask":
+			case "filter":
+			case "style":
+			case "title":
+			case "desc":
+			case "metadata":
+				return null;
+			case "symbol":
+				if (!allowSymbolAsContainer) return null;
+				return TraverseConvertContainer(element, parentState, depth, useDepth, docState, cancellationToken);
+			case "svg":
+				if (!isRoot) return TraverseConvertContainer(element, parentState, depth, useDepth, docState, cancellationToken);
+				return TraverseConvertContainer(element, parentState, depth, useDepth, docState, cancellationToken);
+			case "g":
+			case "a":
+			case "switch":
+				return TraverseConvertContainer(element, parentState, depth, useDepth, docState, cancellationToken);
+			case "use":
+				return TraverseConvertUse(element, parentState, depth, useDepth, docState, cancellationToken);
+			case "path":
+				return CollectConvertDrawable(element, ElementKind.Path, parentState, docState);
+			case "circle":
+				return CollectConvertDrawable(element, ElementKind.Circle, parentState, docState);
+			case "ellipse":
+				return CollectConvertDrawable(element, ElementKind.Ellipse, parentState, docState);
+			case "rect":
+				return CollectConvertDrawable(element, ElementKind.Rect, parentState, docState);
+			case "line":
+				return CollectConvertDrawable(element, ElementKind.Line, parentState, docState);
+			case "polygon":
+				return CollectConvertDrawable(element, ElementKind.Polygon, parentState, docState);
+			case "polyline":
+				return CollectConvertDrawable(element, ElementKind.Polyline, parentState, docState);
+			default:
+				return SvgIconReasonCodes.UnsupportedElement;
+		}
+	}
+
+	private static string? TraverseConvertContainer(
+		XElement element,
+		ConvertRenderState parentState,
+		int depth,
+		int useDepth,
+		ConvertDocumentState docState,
+		CancellationToken cancellationToken)
+	{
+		if (!TryComputeConvertState(element, parentState, docState, out ConvertRenderState state, out string? error))
+		{
+			return error;
+		}
+		if (!state.Visible || state.Opacity <= 0.02)
+		{
+			return null;
+		}
+		foreach (XElement child in element.Elements())
+		{
+			string? err = TraverseConvertElement(child, state, isRoot: false, depth + 1, useDepth, docState, cancellationToken);
+			if (err != null) return err;
+		}
+		return null;
+	}
+
+	private static string? TraverseConvertUse(
+		XElement useEl,
+		ConvertRenderState parentState,
+		int depth,
+		int useDepth,
+		ConvertDocumentState docState,
+		CancellationToken cancellationToken)
+	{
+		if (useDepth >= 8 || docState.UseExpansionCount >= 64)
+		{
+			return SvgIconReasonCodes.ExternalReference;
+		}
+		string? rawHref = useEl.Attribute("href")?.Value
+			?? useEl.Attributes().FirstOrDefault(a => a.Name.LocalName == "href")?.Value;
+		if (string.IsNullOrWhiteSpace(rawHref) || !rawHref.TrimStart().StartsWith('#'))
+		{
+			return SvgIconReasonCodes.ExternalReference;
+		}
+		string targetId = rawHref.Trim()[1..];
+		if (!docState.ElementsById.TryGetValue(targetId, out XElement? target))
+		{
+			return SvgIconReasonCodes.ExternalReference;
+		}
+		if (!docState.ActiveUseIds.Add(targetId))
+		{
+			return SvgIconReasonCodes.ExternalReference;
+		}
+		docState.UseExpansionCount++;
+		try
+		{
+			if (!TryComputeConvertState(useEl, parentState, docState, out ConvertRenderState state, out string? error))
+			{
+				return error;
+			}
+			if (!TryReadOptionalCoord(useEl, "x", 0.0, out double ux, out string? xErr) ||
+				!TryReadOptionalCoord(useEl, "y", 0.0, out double uy, out xErr))
+			{
+				return xErr;
+			}
+			if (ux != 0.0 || uy != 0.0)
+			{
+				Matrix offset = Matrix.Identity;
+				offset.Translate(ux, uy);
+				Matrix composed = Matrix.Multiply(offset, state.Transform);
+				if (!IsTransformMatrixValid(composed)) return SvgIconReasonCodes.TransformUnsupported;
+				state = state with { Transform = composed };
+			}
+			if (!state.Visible || state.Opacity <= 0.02)
+			{
+				return null;
+			}
+			return TraverseConvertElement(target, state, isRoot: false, depth + 1, useDepth + 1, docState, cancellationToken, allowSymbolAsContainer: true);
+		}
+		finally
+		{
+			docState.ActiveUseIds.Remove(targetId);
+		}
+	}
+
+	private static string? CollectConvertDrawable(
+		XElement element,
+		ElementKind kind,
+		ConvertRenderState parentState,
+		ConvertDocumentState docState)
+	{
+		if (docState.DrawableCount >= MaxDrawableElements)
+		{
+			return SvgIconReasonCodes.InvalidPathData;
+		}
+		docState.DrawableCount++;
+
+		if (!TryComputeConvertState(element, parentState, docState, out ConvertRenderState state, out string? attrError))
+		{
+			return attrError;
+		}
+		if (!state.Visible || state.Opacity <= 0.02)
+		{
+			docState.SawInvisibleGeometry = true;
+			return null;
+		}
+
+		if (!TryBuildLocalShapeGeometry(
+			element,
+			kind,
+			state.FillRule,
+			out PathGeometry localGeometry,
+			out bool canFill,
+			out _,
+			out string? shapeError))
+		{
+			return shapeError;
+		}
+
+		bool hasFill = canFill && !string.Equals(state.Fill, "none", StringComparison.OrdinalIgnoreCase);
+		bool hasStroke = !string.Equals(state.Stroke, "none", StringComparison.OrdinalIgnoreCase) && state.StrokeWidth > 0.0;
+		if (!hasFill && !hasStroke)
+		{
+			docState.SawInvisibleGeometry = true;
+			return null;
+		}
+
+		if (hasFill)
+		{
+			if (!TransformPathGeometry(localGeometry, state.Transform, out PathGeometry filled, out string? txErr))
+			{
+				return txErr;
+			}
+			if (!IsBoundsEmptyOrZero(filled.Bounds))
+			{
+				int segs = CountSegments(filled);
+				if (docState.TotalSegmentCount + segs > MaxTotalSegments) return SvgIconReasonCodes.InvalidPathData;
+				docState.TotalSegmentCount += segs;
+				docState.Shapes.Add(new ConvertShapeEntry(filled, state.FillIsNearWhite));
+			}
+		}
+
+		if (hasStroke)
+		{
+			var pen = new System.Windows.Media.Pen(System.Windows.Media.Brushes.Black, state.StrokeWidth)
+			{
+				StartLineCap = state.StrokeLineCap,
+				EndLineCap = state.StrokeLineCap,
+				LineJoin = state.StrokeLineJoin,
+				MiterLimit = state.StrokeMiterLimit
+			};
+			pen.Freeze();
+
+			PathGeometry widened;
+			try
+			{
+				double span = Math.Max(Math.Max(localGeometry.Bounds.Width, localGeometry.Bounds.Height), state.StrokeWidth);
+				double tolerance = Math.Clamp(span * 0.005, 1e-4, 0.25);
+				widened = localGeometry.GetWidenedPathGeometry(pen, tolerance, ToleranceType.Absolute);
+			}
+			catch
+			{
+				return SvgIconReasonCodes.InvalidPathData;
+			}
+
+			if (!TransformPathGeometry(widened, state.Transform, out PathGeometry stroked, out string? strokeTxErr))
+			{
+				return strokeTxErr;
+			}
+			stroked = Geometry.Combine(stroked, Geometry.Empty, GeometryCombineMode.Union, null);
+			if (!IsBoundsEmptyOrZero(stroked.Bounds))
+			{
+				int segs = CountSegments(stroked);
+				if (docState.TotalSegmentCount + segs > MaxTotalSegments) return SvgIconReasonCodes.InvalidPathData;
+				docState.TotalSegmentCount += segs;
+				docState.Shapes.Add(new ConvertShapeEntry(stroked, state.StrokeIsNearWhite));
+			}
+		}
+
+		return null;
+	}
+
+	private static bool TryComputeConvertState(
+		XElement element,
+		ConvertRenderState parentState,
+		ConvertDocumentState docState,
+		out ConvertRenderState state,
+		out string? errorCode)
+	{
+		state = parentState;
+		errorCode = null;
+		Matrix localTransform = Matrix.Identity;
+
+		bool ApplyProp(string name, string rawValue, ref ConvertRenderState cur, ref Matrix localTx, out string? err)
+		{
+			err = null;
+			switch (name)
+			{
+				case "fill":
+					if (NormalizeConvertPaint(rawValue, out string fillPaint, out bool fillWhite))
+						cur = cur with { Fill = fillPaint, FillIsNearWhite = fillWhite };
+					return true;
+				case "fill-rule":
+				{
+					string t = rawValue.Trim();
+					if (string.Equals(t, "evenodd", StringComparison.OrdinalIgnoreCase))
+						cur = cur with { FillRule = FillRule.EvenOdd };
+					else if (string.Equals(t, "nonzero", StringComparison.OrdinalIgnoreCase))
+						cur = cur with { FillRule = FillRule.Nonzero };
+					return true;
+				}
+				case "stroke":
+					if (NormalizeConvertPaint(rawValue, out string strokePaint, out bool strokeWhite))
+						cur = cur with { Stroke = strokePaint, StrokeIsNearWhite = strokeWhite };
+					return true;
+				case "stroke-width":
+				{
+					string numText = rawValue.Trim();
+					if (numText.EndsWith('%')) numText = "";
+					if (TryParseSvgNumber(numText, allowPxUnit: true, out double w, out _))
+						cur = cur with { StrokeWidth = Math.Clamp(w, 0.0, MaxStrokeWidth) };
+					return true;
+				}
+				case "stroke-linecap":
+				{
+					string t = rawValue.Trim();
+					if (string.Equals(t, "round", StringComparison.OrdinalIgnoreCase)) cur = cur with { StrokeLineCap = PenLineCap.Round };
+					else if (string.Equals(t, "square", StringComparison.OrdinalIgnoreCase)) cur = cur with { StrokeLineCap = PenLineCap.Square };
+					else if (string.Equals(t, "butt", StringComparison.OrdinalIgnoreCase)) cur = cur with { StrokeLineCap = PenLineCap.Flat };
+					return true;
+				}
+				case "stroke-linejoin":
+				{
+					string t = rawValue.Trim();
+					if (string.Equals(t, "round", StringComparison.OrdinalIgnoreCase)) cur = cur with { StrokeLineJoin = PenLineJoin.Round };
+					else if (string.Equals(t, "bevel", StringComparison.OrdinalIgnoreCase)) cur = cur with { StrokeLineJoin = PenLineJoin.Bevel };
+					else if (string.Equals(t, "miter", StringComparison.OrdinalIgnoreCase)) cur = cur with { StrokeLineJoin = PenLineJoin.Miter };
+					return true;
+				}
+				case "stroke-miterlimit":
+					if (TryParseSvgNumber(rawValue, allowPxUnit: false, out double miter, out _))
+						cur = cur with { StrokeMiterLimit = Math.Clamp(miter, MinMiterLimit, MaxMiterLimit) };
+					return true;
+				case "transform":
+					if (!TryParseTransform(rawValue, out Matrix parsedTx, out string? txErr))
+					{
+						err = txErr;
+						return false;
+					}
+					localTx = Matrix.Multiply(parsedTx, localTx);
+					return true;
+				case "display":
+					if (string.Equals(rawValue.Trim(), "none", StringComparison.OrdinalIgnoreCase))
+						cur = cur with { Visible = false };
+					return true;
+				case "visibility":
+					if (rawValue.Trim().ToLowerInvariant() is "hidden" or "collapse")
+						cur = cur with { Visible = false };
+					else if (string.Equals(rawValue.Trim(), "visible", StringComparison.OrdinalIgnoreCase))
+						cur = cur with { Visible = true };
+					return true;
+				case "opacity":
+					if (TryParseAlpha(rawValue.Trim(), out double op))
+						cur = cur with { Opacity = cur.Opacity * op };
+					return true;
+				case "fill-opacity":
+					if (TryParseAlpha(rawValue.Trim(), out double fop) && fop <= 0.02)
+						cur = cur with { Fill = "none" };
+					return true;
+				case "stroke-opacity":
+					if (TryParseAlpha(rawValue.Trim(), out double sop) && sop <= 0.02)
+						cur = cur with { Stroke = "none" };
+					return true;
+				default:
+					return true;
+			}
+		}
+
+		// 1. Tag CSS rules
+		if (docState.TagCssRules.TryGetValue(element.Name.LocalName, out var tagRules))
+		{
+			foreach (var kv in tagRules)
+			{
+				if (!ApplyProp(kv.Key, kv.Value, ref state, ref localTransform, out errorCode)) return false;
+			}
+		}
+
+		// 2. Class CSS rules
+		if (element.Attribute("class")?.Value is { Length: > 0 } classList)
+		{
+			foreach (string cls in classList.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+			{
+				if (docState.ClassCssRules.TryGetValue(cls, out var clsRules))
+				{
+					foreach (var kv in clsRules)
+					{
+						if (!ApplyProp(kv.Key, kv.Value, ref state, ref localTransform, out errorCode)) return false;
+					}
+				}
+			}
+		}
+
+		// 3. XML presentation attributes
+		foreach (XAttribute attr in element.Attributes())
+		{
+			if (attr.IsNamespaceDeclaration) continue;
+			string name = attr.Name.LocalName;
+			if (name == "style") continue;
+			if (ExternalUrlFunctionRegex.IsMatch(attr.Value))
+			{
+				errorCode = name is "fill" or "stroke" ? SvgIconReasonCodes.GradientUnsupported : SvgIconReasonCodes.ExternalReference;
+				return false;
+			}
+			if (!ApplyProp(name, attr.Value, ref state, ref localTransform, out errorCode)) return false;
+		}
+
+		// 4. Inline style="..."
+		if (element.Attribute("style")?.Value is { Length: > 0 } inlineStyle)
+		{
+			if (ExternalUrlFunctionRegex.IsMatch(inlineStyle))
+			{
+				errorCode = SvgIconReasonCodes.ExternalReference;
+				return false;
+			}
+			var decls = ParseStyleDeclarations(inlineStyle);
+			if (decls != null)
+			{
+				foreach (var kv in decls)
+				{
+					if (!ApplyProp(kv.Key, kv.Value, ref state, ref localTransform, out errorCode)) return false;
+				}
+			}
+		}
+
+		if (!localTransform.IsIdentity)
+		{
+			Matrix composed = Matrix.Multiply(localTransform, parentState.Transform);
+			if (!IsTransformMatrixValid(composed))
+			{
+				errorCode = SvgIconReasonCodes.TransformUnsupported;
+				return false;
+			}
+			state = state with { Transform = composed };
+		}
+		return true;
+	}
+
+	private static bool NormalizeConvertPaint(string value, out string paint, out bool isNearWhite)
+	{
+		paint = "#FF000000";
+		isNearWhite = false;
+		string trimmed = value.Trim();
+		if (trimmed.Length == 0) return false;
+		if (trimmed.Contains("!important", StringComparison.OrdinalIgnoreCase))
+		{
+			trimmed = trimmed.Replace("!important", "", StringComparison.OrdinalIgnoreCase).Trim();
+		}
+		if (string.Equals(trimmed, "none", StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(trimmed, "transparent", StringComparison.OrdinalIgnoreCase))
+		{
+			paint = "none";
+			return true;
+		}
+		if (trimmed.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
+		{
+			if (ExternalUrlFunctionRegex.IsMatch(trimmed)) return false;
+			paint = "#FF000000";
+			isNearWhite = false;
+			return true;
+		}
+		if (string.Equals(trimmed, "currentColor", StringComparison.OrdinalIgnoreCase) ||
+			string.Equals(trimmed, "inherit", StringComparison.OrdinalIgnoreCase))
+		{
+			paint = "#FF000000";
+			isNearWhite = false;
+			return true;
+		}
+		if (trimmed.StartsWith("rgba(", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith(")", StringComparison.Ordinal))
+		{
+			string inner = trimmed[5..^1].Trim();
+			string[] parts = inner.Contains(',') ? inner.Split(',') : inner.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length == 4 && TryParseAlpha(parts[3].Trim(), out double alpha) && alpha <= 0.02)
+			{
+				paint = "none";
+				return true;
+			}
+			if (parts.Length >= 3 && TryParseRgbChannels(parts[0], parts[1], parts[2], out Color rgbaColor))
+			{
+				paint = rgbaColor.ToString(CultureInfo.InvariantCulture);
+				isNearWhite = IsNearWhiteColor(rgbaColor);
+				return true;
+			}
+			return true;
+		}
+		if (trimmed.StartsWith("rgb(", StringComparison.OrdinalIgnoreCase) && trimmed.EndsWith(")", StringComparison.Ordinal))
+		{
+			if (TryParseRgbColor(trimmed, out string rgbHex) == null &&
+				ColorConverter.ConvertFromString(rgbHex) is Color c)
+			{
+				paint = rgbHex;
+				isNearWhite = IsNearWhiteColor(c);
+				return true;
+			}
+			return true;
+		}
+
+		// Handle CSS 4-digit (#RGBA) and 8-digit (#RRGGBBAA) hex as well as 3/6-digit hex & named colors.
+		if (Regex.IsMatch(trimmed, @"\A#[0-9a-fA-F]{4}\z", RegexOptions.CultureInvariant))
+		{
+			byte r = (byte)(Convert.ToByte(trimmed.Substring(1, 1), 16) * 17);
+			byte g = (byte)(Convert.ToByte(trimmed.Substring(2, 1), 16) * 17);
+			byte b = (byte)(Convert.ToByte(trimmed.Substring(3, 1), 16) * 17);
+			byte a = (byte)(Convert.ToByte(trimmed.Substring(4, 1), 16) * 17);
+			if (a <= 5) { paint = "none"; return true; }
+			var c = Color.FromRgb(r, g, b);
+			paint = c.ToString(CultureInfo.InvariantCulture);
+			isNearWhite = IsNearWhiteColor(c);
+			return true;
+		}
+		if (Regex.IsMatch(trimmed, @"\A#[0-9a-fA-F]{8}\z", RegexOptions.CultureInvariant))
+		{
+			byte r = Convert.ToByte(trimmed.Substring(1, 2), 16);
+			byte g = Convert.ToByte(trimmed.Substring(3, 2), 16);
+			byte b = Convert.ToByte(trimmed.Substring(5, 2), 16);
+			byte a = Convert.ToByte(trimmed.Substring(7, 2), 16);
+			if (a <= 5) { paint = "none"; return true; }
+			var c = Color.FromRgb(r, g, b);
+			paint = c.ToString(CultureInfo.InvariantCulture);
+			isNearWhite = IsNearWhiteColor(c);
+			return true;
+		}
+
+		try
+		{
+			if (ColorConverter.ConvertFromString(trimmed) is Color namedOrHex)
+			{
+				if (namedOrHex.A <= 5) { paint = "none"; return true; }
+				paint = namedOrHex.ToString(CultureInfo.InvariantCulture);
+				isNearWhite = IsNearWhiteColor(namedOrHex);
+				return true;
+			}
+		}
+		catch
+		{
+		}
+		return false;
+	}
+
+	private static bool TryParseRgbChannels(string rStr, string gStr, string bStr, out Color color)
+	{
+		color = Colors.Black;
+		Span<byte> rgb = stackalloc byte[3];
+		string[] arr = { rStr, gStr, bStr };
+		for (int i = 0; i < 3; i++)
+		{
+			string token = arr[i].Trim();
+			bool pct = token.EndsWith('%');
+			string raw = pct ? token[..^1].Trim() : token;
+			if (!TryParseSvgNumber(raw, allowPxUnit: false, out double ch, out _)) return false;
+			rgb[i] = (byte)Math.Clamp(Math.Round(pct ? ch * 2.55 : ch, MidpointRounding.AwayFromZero), 0.0, 255.0);
+		}
+		color = Color.FromRgb(rgb[0], rgb[1], rgb[2]);
+		return true;
+	}
+
+	private static bool IsNearWhiteColor(Color c) => c.R >= 240 && c.G >= 240 && c.B >= 240;
+
+	private static SvgPathValidationResult BuildConvertedMonochromePath(ConvertDocumentState state)
+	{
+		bool hasNonWhite = state.Shapes.Any(s => !s.IsNearWhite);
+		var areaComponents = new List<PathGeometry>();
+		var openFallbackFigures = new List<PathFigure>();
+
+		void AddPositive(PathGeometry g)
+		{
+			PathGeometry resolved = Geometry.Combine(g, Geometry.Empty, GeometryCombineMode.Union, null);
+			if (!IsBoundsEmptyOrZero(resolved.Bounds))
+			{
+				AddUnionComponent(areaComponents, resolved);
+			}
+			else if (!IsBoundsEmptyOrZero(g.Bounds))
+			{
+				foreach (PathFigure f in g.Figures) openFallbackFigures.Add(f.Clone());
+			}
+		}
+
+		if (!hasNonWhite)
+		{
+			foreach (var shape in state.Shapes) AddPositive(shape.Geometry);
+		}
+		else
+		{
+			foreach (var shape in state.Shapes)
+			{
+				if (!shape.IsNearWhite)
+				{
+					AddPositive(shape.Geometry);
+					continue;
+				}
+				if (areaComponents.Count == 0) continue; // Ignore leading white canvas backdrops before colored art.
+				PathGeometry cutout = Geometry.Combine(shape.Geometry, Geometry.Empty, GeometryCombineMode.Union, null);
+				if (IsBoundsEmptyOrZero(cutout.Bounds)) continue;
+				Rect cutBounds = cutout.Bounds;
+				for (int i = areaComponents.Count - 1; i >= 0; i--)
+				{
+					if (!cutBounds.IntersectsWith(areaComponents[i].Bounds)) continue;
+					PathGeometry carved = Geometry.Combine(areaComponents[i], cutout, GeometryCombineMode.Exclude, null);
+					if (IsBoundsEmptyOrZero(carved.Bounds))
+						areaComponents.RemoveAt(i);
+					else
+						areaComponents[i] = carved;
+				}
+			}
+		}
+
+		var canonical = new PathGeometry { FillRule = FillRule.EvenOdd };
+		foreach (PathGeometry comp in areaComponents)
+			foreach (PathFigure f in comp.Figures)
+				canonical.Figures.Add(f.Clone());
+		foreach (PathFigure f in openFallbackFigures)
+			canonical.Figures.Add(f);
+
+		if (canonical.Figures.Count == 0 || IsBoundsEmptyOrZero(canonical.Bounds))
+			return SvgPathValidationResult.Failure(SvgIconReasonCodes.EmptyGeometry);
+		if (IsBoundsRunaway(canonical.Bounds))
+			return SvgPathValidationResult.Failure(SvgIconReasonCodes.NonFiniteCoordinate);
+
+		string serialized = canonical.ToString(CultureInfo.InvariantCulture);
+		if (string.IsNullOrWhiteSpace(serialized) || !serialized.StartsWith("M", StringComparison.OrdinalIgnoreCase))
+			return SvgPathValidationResult.Failure(SvgIconReasonCodes.InvalidPathData);
+		if (Encoding.UTF8.GetByteCount(serialized) > MaxSvgFileBytes)
+			return SvgPathValidationResult.Failure(SvgIconReasonCodes.FileTooLarge);
+
+		SvgPathValidationResult finalCheck = ValidatePathData(serialized);
+		return finalCheck.IsSuccess
+			? SvgPathValidationResult.Success(finalCheck.PathData, convertedToMonochrome: true)
+			: finalCheck;
 	}
 }
