@@ -19,6 +19,7 @@
 - 平行键与 Global 默认、有效层键、应用专属键、黑名单覆盖的相同完整按键冲突。冲突/无键的导入方案保留数据但不注册平行路由；旧 Global 与应用层复用语义保持。
 - 删除层须清除被删层的 `WheelLayer.ActivationTrigger`，删除第一层同时清除旧根 `WheelProfile.ActivationTrigger`，预先验证剩余路由，禁止隐藏旧键转移到新的第一层；删除后立即同步落盘并重新发布路由快照。
 - `ConfigsFolder` 方案列表按实际 `.json` 文件名茎枚举；`DeleteSavedConfig`、`SwitchToConfig`、`RenameSavedConfig`、`ExportConfigToFile`、`GetConfigJsonForExport`、`SaveConfig` 与 `EnsureConfigsFolder` 均在 `ConfigsFolder` 目录边界内按精确名、忽略大小写名、去首尾空白名与清洗名安全解析目标文件并拒绝路径穿越。目标不存在或删除失败（含文件仍残留）时不得切走配置或返回成功；删除当前激活方案后选取后备方案须同时排除已删原始名与清洗名，并在不重建已删文件的前提下更新 `ActiveConfigProfileName`。
+- 图标库 UI（`IconPickerWindow`）导入本地 `.svg` 时允许在严格校验未通过且不含任何外部引用/脚本/位图前提下，自动将渐变、多色、`clip-path`、内联/类 `<style>` 与内部 `<use href="#...">` 展平转换为规范单色轮廓（并保留常见白色镂空扣减）；`PortableConfigBundle` 导出/导入校验保持严格单色路径契约不变。
 - 原 JSON 接口保留；版本化 .starpie-config ZIP 携带有界 JSON、清单及实际引用的自定义 SVG。校验、资源准备和配置提交分步进行，准备期间配置改变则取消，失败只回滚本次资源。不迁移插件或位图。
 
 ## 基本原则

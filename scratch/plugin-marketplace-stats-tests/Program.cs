@@ -37,11 +37,11 @@ internal static class Program
 
     private static void Run()
     {
-        var alpha = Entry("alpha", Version("Alpha", "1.0.0", OldTag, OldAsset),
+        var alpha = Entry("alpha", Version("Alpha", "1.0.0", OldTag, OldAsset, description: "Hotkey automation deck", tags: ["macro", "workflow"], featureName: "Step Runner"),
             Version("Alpha", "1.1.0", CurrentTag, CurrentAsset, minimumHostVersion: "99.0.0"));
         alpha.Versions.Add(alpha.Versions[0]); // Try to count the same attachment twice.
-        var beta = Entry("beta", Version("Beta", "1.0.0", NewTag, NewAsset));
-        var gamma = Entry("gamma", Version("Gamma", "1.0.0", NewTag, MissingAsset));
+        var beta = Entry("beta", Version("Beta", "1.0.0", NewTag, NewAsset, description: "Window snap controller", tags: ["tiling"], featureName: "Grid Snap"));
+        var gamma = Entry("gamma", Version("Gamma", "1.0.0", NewTag, MissingAsset, description: "Quick sound pad", tags: ["audio"], featureName: "Audio Cue"));
         var catalog = new OfficialPluginCatalog { Modules = [alpha, beta, gamma] };
 
         Check(OfficialPluginReleaseStats.LoadCached() == null && !Directory.Exists(PluginPaths.Root),
@@ -109,6 +109,29 @@ internal static class Program
             !PluginLibraryQuery.Matches(rows[2], "", "downloads100", Now),
             "category, recent versions, installation and popularity filters compose");
 
+        Check(PluginLibraryQuery.MatchesSearch(rows[0], "  ") &&
+            PluginLibraryQuery.MatchesSearch(rows[0], "ALPHA") &&
+            PluginLibraryQuery.MatchesSearch(rows[0], "hotkey deck") &&
+            PluginLibraryQuery.MatchesSearch(rows[0], "WORKFLOW") &&
+            PluginLibraryQuery.MatchesSearch(rows[0], "step runner") &&
+            !PluginLibraryQuery.MatchesSearch(rows[0], "alpha nonexistent") &&
+            PluginLibraryQuery.Matches(rows[1], "Tools", "available", Now, "snap tiling") &&
+            !PluginLibraryQuery.Matches(rows[1], "Tools", "available", Now, "workflow"),
+            "search query matches multi-token name, description, tags and features and composes with filters");
+
+        var installedItem = new PluginListItem
+        {
+            PluginId = "starpie.plugin.macro",
+            DisplayName = "按键宏",
+            CardDescription = "自动化组合键序列",
+            SummaryText = "作者：StarPie | 3 个动作",
+            IsOfficial = true
+        };
+        Check(PluginLibraryQuery.MatchesSearch(installedItem, "宏 组合键") &&
+            PluginLibraryQuery.MatchesSearch(installedItem, "starpie.plugin.macro") &&
+            !PluginLibraryQuery.MatchesSearch(installedItem, "宏 不存在"),
+            "installed plugin search matches display name, id, description and summary");
+
         OfficialPluginReleaseStats.SaveCached(snapshot);
         var cached = OfficialPluginReleaseStats.LoadCached();
         Check(cached?.Assets.SequenceEqual(snapshot.Assets) == true && cached.UpdatedAt == snapshot.UpdatedAt,
@@ -172,6 +195,7 @@ internal static class Program
         foreach (LanguageCode language in new[] { LanguageCode.ZhCn, LanguageCode.ZhTw, LanguageCode.En, LanguageCode.Ja })
         {
             I18n.CurrentLanguage = language;
+            typeof(SettingsWindow).GetMethod("ApplyPluginsPageLocalization", flags)!.Invoke(window, null);
             typeof(SettingsWindow).GetMethod("RenderOfficialPluginItems", flags)!.Invoke(window, null);
             var sort = (ComboBox)window.FindName("MarketSortCombo");
             var market = (ItemsControl)window.FindName("OfficialPluginItemsControl");
@@ -186,6 +210,26 @@ internal static class Program
                 ((TextBlock)window.FindName("MarketEmptyText")).Text == I18n.T("PluginStatsNoMatches"),
                 "filtered empty state is distinct from empty catalog " + language);
             filter.SelectedValue = "";
+
+            var searchBox = (TextBox)window.FindName("PluginLibrarySearchBox");
+            var placeholder = (TextBlock)window.FindName("PluginLibrarySearchPlaceholder");
+            var clearButton = (Button)window.FindName("PluginLibrarySearchClearButton");
+            Check(placeholder.Text == I18n.T("PluginLibrarySearchPlaceholder") &&
+                !placeholder.Text.Contains("PluginLibrarySearch", StringComparison.Ordinal),
+                "search placeholder localized " + language);
+            searchBox.Text = "grid snap";
+            var filteredRows = ((IEnumerable<OfficialPluginListItem>)market.ItemsSource).ToList();
+            Check(filteredRows.Count == 1 && filteredRows[0].Module.Id == "beta" &&
+                placeholder.Visibility == Visibility.Collapsed && clearButton.Visibility == Visibility.Visible,
+                "live search filters market cards and toggles clear button " + language);
+            searchBox.Text = "does-not-exist";
+            Check(market.Items.Count == 0 &&
+                ((TextBlock)window.FindName("MarketEmptyText")).Text == I18n.T("PluginStatsNoMatches"),
+                "search empty state localized " + language);
+            clearButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            Check(searchBox.Text == "" && market.Items.Count == 3 &&
+                placeholder.Visibility == Visibility.Visible && clearButton.Visibility == Visibility.Collapsed,
+                "clear search restores all cards and placeholder " + language);
         }
         Check(new WindowInteropHelper(window).Handle == IntPtr.Zero && !PluginHost.IsInitialized,
             "no shown settings window, live plugin calls, or input hooks");
@@ -200,10 +244,12 @@ internal static class Program
     }
 
     private static OfficialPluginModule Version(string name, string version, string tag, string asset,
-        string minimumHostVersion = "1.0.0") => new()
+        string minimumHostVersion = "1.0.0", string description = "", string[]? tags = null, string featureName = "") => new()
     {
         Name = name, Version = version, ReleaseTag = tag, AssetName = asset, ApiVersion = "1.4",
-        TargetFramework = "net8.0-windows", MinHostVersion = minimumHostVersion, Features = [new() { Category = "Tools" }]
+        TargetFramework = "net8.0-windows", MinHostVersion = minimumHostVersion, Description = description,
+        Tags = tags?.ToList() ?? [],
+        Features = [new() { Category = "Tools", Name = featureName }]
     };
 
     private static object Release(string tag, DateTimeOffset published, (string Name, long DownloadCount)[] assets,

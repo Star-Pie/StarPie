@@ -29,5 +29,7 @@ public static partial class I18n
         add("PluginStatsNotLoaded", "点击「刷新目录」获取 GitHub 下载量和发布日期。", "點選「重新整理目錄」取得 GitHub 下載量及發佈日期。", "Refresh the catalog to load GitHub download counts and dates.", "カタログを更新すると GitHub のダウンロード数と公開日を取得できます。");
         add("PluginStatsLastRefresh", "GitHub 统计更新于 {0}", "GitHub 統計更新於 {0}", "GitHub stats refreshed {0}", "GitHub 統計の更新日時 {0}");
         add("PluginStatsPartialRefresh", "GitHub 统计于 {0} 刷新，部分数据暂缺或沿用缓存。", "GitHub 統計於 {0} 更新，部分資料暫缺或沿用快取。", "GitHub stats refreshed {0}. Some data is cached or unavailable.", "GitHub 統計を {0} に更新しました。一部はキャッシュまたは取得できていないデータです。");
+        add("PluginLibrarySearchPlaceholder", "搜索插件名称、功能、ID 或标签...", "搜尋外掛名稱、功能、ID 或標籤...", "Search plugins by name, feature, ID, or tag...", "プラグイン名・機能・ID・タグを検索...");
+        add("PluginLibrarySearchClear", "清除搜索", "清除搜尋", "Clear search", "検索をクリア");
     }
 }

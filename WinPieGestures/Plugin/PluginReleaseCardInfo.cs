@@ -53,9 +53,14 @@ internal static class PluginLibraryQuery
         return ordered.ThenBy(name, StringComparer.CurrentCultureIgnoreCase).ThenBy(id, StringComparer.OrdinalIgnoreCase);
     }
 
-    public static bool Matches(OfficialPluginListItem item, string? category, string? filter, DateTimeOffset now)
+    public static bool Matches(OfficialPluginListItem item, string? category, string? filter, DateTimeOffset now) =>
+        Matches(item, category, filter, now, query: null);
+
+    public static bool Matches(OfficialPluginListItem item, string? category, string? filter, DateTimeOffset now, string? query)
     {
         if (!string.IsNullOrEmpty(category) && !item.Categories.Contains(category, StringComparer.OrdinalIgnoreCase))
+            return false;
+        if (!MatchesSearch(item, query))
             return false;
         return filter switch
         {
@@ -69,4 +74,50 @@ internal static class PluginLibraryQuery
             _ => true
         };
     }
+
+    public static bool MatchesSearch(OfficialPluginListItem item, string? query)
+    {
+        string[] tokens = TokenizeQuery(query);
+        if (tokens.Length == 0) return true;
+        foreach (string token in tokens)
+        {
+            bool matched = ContainsToken(item.DisplayName, token) ||
+                ContainsToken(item.Module.Id, token) ||
+                ContainsToken(item.Module.Description, token) ||
+                ContainsToken(item.Module.Author, token) ||
+                item.Module.Tags.Any(tag => ContainsToken(tag, token)) ||
+                item.Categories.Any(cat => ContainsToken(cat, token) || ContainsToken(PluginCardPresentation.CategoryName(cat), token)) ||
+                item.Module.Features.Any(f => f != null && (
+                    ContainsToken(f.Name, token) ||
+                    ContainsToken(f.Description, token) ||
+                    ContainsToken(f.Id, token) ||
+                    ContainsToken(f.Category, token)));
+            if (!matched) return false;
+        }
+        return true;
+    }
+
+    public static bool MatchesSearch(PluginListItem item, string? query)
+    {
+        string[] tokens = TokenizeQuery(query);
+        if (tokens.Length == 0) return true;
+        foreach (string token in tokens)
+        {
+            bool matched = ContainsToken(item.DisplayName, token) ||
+                ContainsToken(item.PluginId, token) ||
+                ContainsToken(item.CardDescription, token) ||
+                ContainsToken(item.SummaryText, token) ||
+                ContainsToken(item.SourceText, token);
+            if (!matched) return false;
+        }
+        return true;
+    }
+
+    private static string[] TokenizeQuery(string? query) =>
+        string.IsNullOrWhiteSpace(query)
+            ? []
+            : query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static bool ContainsToken(string? text, string token) =>
+        !string.IsNullOrEmpty(text) && text.Contains(token, StringComparison.OrdinalIgnoreCase);
 }

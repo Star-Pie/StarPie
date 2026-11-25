@@ -2570,6 +2570,7 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("SvgImportFolder", "导入文件夹", "匯入資料夾", "Import folder", "フォルダーを読込");
 		Add("SvgImportWorking", "正在导入图标…", "正在匯入圖示…", "Importing icons…", "アイコンを読込中…");
 		Add("SvgImportSummary", "导入完成：成功 {0}，跳过 {1}，失败 {2}。", "匯入完成：成功 {0}，略過 {1}，失敗 {2}。", "Import complete: {0} imported, {1} skipped, {2} failed.", "読込完了：成功 {0}、スキップ {1}、失敗 {2}。");
+		Add("SvgImportConvertedNote", "其中 {0} 项已自动展平并转换为单色轮廓。", "其中 {0} 項已自動展平並轉換為單色輪廓。", "{0} item(s) were automatically flattened into monochrome silhouettes.", "{0} 件は単色シルエットへ自動変換されました。");
 		Add("SvgImportMore", "另有 {0} 项未在此展开。", "另有 {0} 項未在此展開。", "{0} additional items are not listed here.", "ほか {0} 件は省略しています。");
 		Add("SvgReasonExtension", "批量导入仅支持SVG", "批次匯入僅支援SVG", "Batch import supports SVG only", "一括読込はSVGのみ対応");
 		Add("SvgReasonDuplicate", "重复选择的文件", "重複選擇的檔案", "File selected more than once", "ファイルが重複しています");
@@ -2578,7 +2579,7 @@ Add("AboutCheckUpdate", "🔄 检查更新", "🔄 檢查更新", "🔄 Check fo
 		Add("SvgReasonPath", "没有可用的矢量路径", "沒有可用的向量路徑", "No valid vector path", "有効なベクターパスがありません");
 		Add("SvgReasonCancelled", "导入已取消", "匯入已取消", "Import cancelled", "読込をキャンセルしました");
 		Add("SvgReasonIo", "无法读取、写入或刷新图标，请检查文件与权限。", "無法讀取、寫入或重新整理圖示，請檢查檔案與權限。", "Cannot read, write or refresh icons. Check files and permissions.", "アイコンの読込、保存、更新に失敗しました。ファイルと権限を確認してください。");
-		Add("SvgReasonUnsupported", "仅支持单色path；不支持变换、描边、多色、引用或其他图形。", "僅支援單色path；不支援變換、描邊、多色、參照或其他圖形。", "Only monochrome paths are supported; transforms, strokes, multiple colors, references and other shapes are unsupported.", "単色パスのみ対応。変形、線、多色、参照、その他の図形には対応していません。");
+		Add("SvgReasonUnsupported", "SVG 包含不支持的外部引用、位图、文字或复杂滤镜/脚本元素。", "SVG 包含不支援的外部參照、點陣圖、文字或複雜濾鏡/指令碼元素。", "SVG contains unsupported external references, raster images, text, scripts, or complex elements.", "外部参照、ビットマップ、テキスト、スクリプトなど未対応のSVG要素が含まれています。");
 		Add("SvgImportFileFilter", "SVG矢量图 (*.svg)|*.svg|图片文件 (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp", "SVG向量圖 (*.svg)|*.svg|圖片檔案 (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp", "SVG icons (*.svg)|*.svg|Images (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp", "SVGアイコン (*.svg)|*.svg|画像 (*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.ico;*.jpg;*.jpeg;*.bmp;*.webp");
 		Add("SvgReasonPaint", "透明或不支持的填色，请使用不透明单色图标。", "透明或不支援的填色，請使用不透明單色圖示。", "Transparent or unsupported fill. Use an opaque monochrome icon.", "透明または未対応の塗りです。不透明な単色アイコンを使用してください。");
 		Add("ActionPanelTitle", "动作面板", "動作面板", "Action panel", "アクションパネル");

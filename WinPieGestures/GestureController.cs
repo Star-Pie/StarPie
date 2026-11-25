@@ -244,6 +244,31 @@ public partial class GestureController : IDisposable
 	/// 检测物理坐标是否位于 Windows 任务栏、辅助屏任务栏、托盘通知区或溢出窗口之上。
 	/// 避免星盘低级鼠标钩子截断任务栏右键菜单、跳转列表 (JumpList) 或托盘图标原生点击。
 	/// </summary>
+	internal static bool IsTaskbarWindowClass(string? className) =>
+		string.Equals(className, "Shell_TrayWnd", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "Shell_SecondaryTrayWnd", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "NotifyIconOverflowWindow", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "TopLevelWindowForOverflowXamlIsland", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "TrayNotifyWnd", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "TaskListThumbnailWnd", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "TaskListOverlayWnd", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "MSTaskListWClass", StringComparison.OrdinalIgnoreCase) ||
+		string.Equals(className, "MSTaskSwWClass", StringComparison.OrdinalIgnoreCase);
+
+	internal static bool IsTaskbarExplorerPopupClass(string? className, string? processName)
+	{
+		if (!string.Equals(className, "XamlExplorerHostIslandWindow", StringComparison.OrdinalIgnoreCase))
+		{
+			return false;
+		}
+		string clean = (processName ?? string.Empty).Trim();
+		if (clean.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+		{
+			clean = clean[..^4];
+		}
+		return string.Equals(clean, "explorer", StringComparison.OrdinalIgnoreCase);
+	}
+
 	private static bool IsPointOnTaskbar(Point physicalPt)
 	{
 		try
@@ -264,10 +289,12 @@ public partial class GestureController : IDisposable
 			if (GetClassName(rootHwnd, sb, 128) > 0)
 			{
 				string rootClass = sb.ToString();
-				if (string.Equals(rootClass, "Shell_TrayWnd", StringComparison.OrdinalIgnoreCase) ||
-				    string.Equals(rootClass, "Shell_SecondaryTrayWnd", StringComparison.OrdinalIgnoreCase) ||
-				    string.Equals(rootClass, "NotifyIconOverflowWindow", StringComparison.OrdinalIgnoreCase) ||
-				    string.Equals(rootClass, "TopLevelWindowForOverflowXamlIsland", StringComparison.OrdinalIgnoreCase))
+				if (IsTaskbarWindowClass(rootClass))
+				{
+					return true;
+				}
+				if (string.Equals(rootClass, "XamlExplorerHostIslandWindow", StringComparison.OrdinalIgnoreCase) &&
+				    IsTaskbarExplorerPopupClass(rootClass, ActiveWindowHelper.GetProcessNameForWindow(rootHwnd)))
 				{
 					return true;
 				}
@@ -276,16 +303,9 @@ public partial class GestureController : IDisposable
 			if (rootHwnd != hWnd)
 			{
 				sb.Clear();
-				if (GetClassName(hWnd, sb, 128) > 0)
+				if (GetClassName(hWnd, sb, 128) > 0 && IsTaskbarWindowClass(sb.ToString()))
 				{
-					string childClass = sb.ToString();
-					if (string.Equals(childClass, "Shell_TrayWnd", StringComparison.OrdinalIgnoreCase) ||
-					    string.Equals(childClass, "Shell_SecondaryTrayWnd", StringComparison.OrdinalIgnoreCase) ||
-					    string.Equals(childClass, "NotifyIconOverflowWindow", StringComparison.OrdinalIgnoreCase) ||
-					    string.Equals(childClass, "TrayNotifyWnd", StringComparison.OrdinalIgnoreCase))
-					{
-						return true;
-					}
+					return true;
 				}
 			}
 			return false;

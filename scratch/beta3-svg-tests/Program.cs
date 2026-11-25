@@ -50,6 +50,7 @@ internal static class Program
 			RunOversizeAndPartialFailure(root);
 			RunBarePathAndCancellation(root);
 			RunFolderImport(root);
+			RunMonochromeConversionMode(root);
 			Console.WriteLine($"RESULT passed={_passed} failed={_failed}");
 			return _failed == 0 ? 0 : 1;
 		}
@@ -568,6 +569,74 @@ internal static class Program
 		var result = SvgIconBatchImporter.ImportFolder(sourceDir, target, () => cacheCalls++);
 		Assert(result.SuccessCount == 2 && result.SkippedCount == 1, "folder import");
 		Assert(cacheCalls == 1, "folder cache once");
+	}
+
+	private static void RunMonochromeConversionMode(string root)
+	{
+		string target = NewDirectory(root, "convert-target");
+
+		// 1. Figma-style clip-path + multi-color paths
+		string figmaSvg = Write(root, "figma-default.svg",
+			"<svg width=\"54\" height=\"80\" viewBox=\"0 0 54 80\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">" +
+			"<g clip-path=\"url(#clip0)\"><path d=\"M0 0 H20 V20 H0 Z\" fill=\"#0ACF83\"/><path d=\"M20 0 H40 V20 H20 Z\" fill=\"#A259FF\"/></g>" +
+			"<defs><clipPath id=\"clip0\"><rect width=\"54\" height=\"80\" fill=\"white\"/></clipPath></defs></svg>");
+		var figmaRes = SvgIconBatchImporter.ImportFiles(new[] { figmaSvg }, target, () => { }, CancellationToken.None, allowMonochromeConversion: true);
+		Assert(figmaRes.SuccessCount == 1 && figmaRes.Items[0].ConvertedToMonochrome, "convert multi-color + clipPath succeeds");
+
+		// 2. Google-style overflow=hidden + linearGradient fill="url(#a)"
+		string googleSvg = Write(root, "google-default.svg",
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" xml:space=\"preserve\" overflow=\"hidden\" viewBox=\"0 0 24 24\">" +
+			"<defs><linearGradient id=\"a\"><stop offset=\"0\" stop-color=\"#0fbc5c\"/></linearGradient></defs>" +
+			"<path fill=\"url(#a)\" d=\"M2 2 H12 V12 H2 Z\"/><path fill=\"#FBBC05\" d=\"M12 12 H22 V22 H12 Z\"/></svg>");
+		var googleRes = SvgIconBatchImporter.ImportFiles(new[] { googleSvg }, target, () => { }, CancellationToken.None, allowMonochromeConversion: true);
+		Assert(googleRes.SuccessCount == 1 && googleRes.Items[0].ConvertedToMonochrome, "convert gradient + overflow=hidden succeeds");
+
+		// 3. YouTube/Telegram-style colored badge + #FFF inner cutout preserved via Exclude
+		string youtubeSvg = Write(root, "youtube-default.svg",
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\">" +
+			"<rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"4\" fill=\"#FF0000\"/>" +
+			"<polygon points=\"10,8 16,12 10,16\" fill=\"#FFF\"/></svg>");
+		var ytRes = SvgIconBatchImporter.ImportFiles(new[] { youtubeSvg }, target, () => { }, CancellationToken.None, allowMonochromeConversion: true);
+		Assert(ytRes.SuccessCount == 1 && ytRes.Items[0].ConvertedToMonochrome, "convert badge + white cutout succeeds");
+		Geometry ytGeom = Geometry.Parse(File.ReadAllText(ytRes.Items[0].TargetPath!));
+		Assert(ytGeom.FillContains(new Point(4, 12)) && !ytGeom.FillContains(new Point(12, 12)), "white inner cutout stays hollow");
+
+		// 4. White-only icon with internal <use xlink:href="#B"> + <symbol id="B">
+		string steamSvg = Write(root, "steam-default.svg",
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 24 24\" fill=\"#fff\">" +
+			"<use xlink:href=\"#B\" x=\"1\" y=\"1\"/><defs><symbol id=\"B\"><circle cx=\"10\" cy=\"10\" r=\"6\"/></symbol></defs></svg>");
+		var steamRes = SvgIconBatchImporter.ImportFiles(new[] { steamSvg }, target, () => { }, CancellationToken.None, allowMonochromeConversion: true);
+		Assert(steamRes.SuccessCount == 1 && steamRes.Items[0].ConvertedToMonochrome, "convert white-only symbol + use succeeds");
+		Geometry steamGeom = Geometry.Parse(File.ReadAllText(steamRes.Items[0].TargetPath!));
+		Assert(steamGeom.FillContains(new Point(11, 11)), "converted symbol geometry includes <use> offset");
+
+		// 5. <style> class + inline style="..."
+		string styledSvg = Write(root, "styled.svg",
+			"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><style>.st0{fill:#222}</style>" +
+			"<rect class=\"st0\" x=\"2\" y=\"2\" width=\"8\" height=\"8\"/><circle cx=\"18\" cy=\"18\" r=\"4\" style=\"fill:#444;stroke:none\"/></svg>");
+		var styleRes = SvgIconBatchImporter.ImportFiles(new[] { styledSvg }, target, () => { }, CancellationToken.None, allowMonochromeConversion: true);
+		Assert(styleRes.SuccessCount == 1 && styleRes.Items[0].ConvertedToMonochrome, "convert <style> and inline style succeeds");
+
+		// 6. Strict mode still rejects multi-color without allowMonochromeConversion
+		var strictFail = SvgIconBatchImporter.ImportFiles(new[] { youtubeSvg }, NewDirectory(root, "strict-fail"), () => { });
+		Assert(strictFail.FailureCount == 1 && strictFail.Items[0].ReasonCode == SvgIconReasonCodes.MultiColor, "strict mode unchanged for multi-color");
+
+		// 7. Security checks MUST still reject dangerous constructs even with allowMonochromeConversion = true
+		foreach (var (name, content, code) in new[]
+		{
+			("conv-script.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><script>alert(1)</script><path d=\"M0 0 H10 V10 Z\"/></svg>", SvgIconReasonCodes.ExternalReference),
+			("conv-onclick.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path onclick=\"alert(1)\" d=\"M0 0 H10 V10 Z\"/></svg>", SvgIconReasonCodes.UnsupportedAttribute),
+			("conv-image.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><image href=\"https://evil.test/a.png\"/><path d=\"M0 0 H10 V10 Z\"/></svg>", SvgIconReasonCodes.ExternalReference),
+			("conv-foreign.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><foreignObject width=\"10\" height=\"10\"/><path d=\"M0 0 H10 V10 Z\"/></svg>", SvgIconReasonCodes.ExternalReference),
+			("conv-extuse.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><use href=\"https://evil.test/x#a\"/><path d=\"M0 0 H10 V10 Z\"/></svg>", SvgIconReasonCodes.ExternalReference),
+			("conv-extstyle.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path style=\"fill:url(https://evil.test/x)\" d=\"M0 0 H10 V10 Z\"/></svg>", SvgIconReasonCodes.ExternalReference),
+			("conv-cycleuse.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><defs><g id=\"a\"><use href=\"#a\"/></g></defs><use href=\"#a\"/></svg>", SvgIconReasonCodes.ExternalReference),
+		})
+		{
+			string p = Write(root, name, content);
+			var r = SvgIconBatchImporter.ImportFiles(new[] { p }, NewDirectory(root, "sec-" + name), () => { }, CancellationToken.None, allowMonochromeConversion: true);
+			Assert(r.FailureCount == 1 && r.Items[0].ReasonCode == code, "convert security blocks " + name);
+		}
 	}
 
 	private static string ImportCanonical(string root, string fileName, string content, string name)
