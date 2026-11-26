@@ -320,10 +320,18 @@ internal sealed class WindowsAutoStartSystem : IAutoStartSystem
             scheduler = Activator.CreateInstance(type);
             ((dynamic)scheduler!).Connect();
             folder = ((dynamic)scheduler!).GetFolder(@"\");
-            task = ((dynamic)folder).GetTask(AutoStartRegistration.TaskName);
-            return new(true, false);
+            try
+            {
+                task = ((dynamic)folder).GetTask(AutoStartRegistration.TaskName);
+                return new(true, false);
+            }
+            catch (Exception ex) when ((ex is COMException || ex is FileNotFoundException) &&
+                                       ex.HResult == unchecked((int)0x80070002))
+            {
+                // COM interop maps HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND) to FileNotFoundException.
+                return new(false, true);
+            }
         }
-        catch (COMException ex) when (ex.HResult == unchecked((int)0x80070002)) { return new(false, true); }
         catch { return new(false, false); }
         finally
         {
