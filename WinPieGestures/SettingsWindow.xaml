@@ -3711,18 +3711,20 @@
                         <CheckBox Name="FocusLaunchPlacementCheckBox" Visibility="Collapsed" Margin="0,4,0,6"
                                   Click="FocusLaunchPlacement_Click" />
                         <StackPanel Name="FocusLaunchPanel" Visibility="Collapsed">
-                          <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="Auto" />
-                              <ColumnDefinition Width="Auto" />
-                              <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox Name="FocusLaunchPathTextBox" Height="30" FontSize="11.5" ToolTip="应用程序路径" TextChanged="FocusLaunchPathTextBox_TextChanged" />
-                            <Button x:Name="FocusLaunchPickProgramBtn" Grid.Column="1" Content="📦 软件库选择..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="从已安装的软件、微软商店与开始菜单中模糊搜索选取" Click="FocusPickProgramFromLibrary_Click" />
-                            <Button x:Name="FocusLaunchCaptureWindowBtn" Grid.Column="2" Content="🎯 捕捉运行窗口..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径" Click="FocusCaptureRunningWindow_Click" />
-                            <Button x:Name="FocusLaunchBrowseExeBtn" Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="手动浏览可执行文件或快捷方式" Click="FocusBrowseLaunchExe_Click" />
-                          </Grid>
+                          <ScrollViewer Margin="0,0,0,6" HorizontalContentAlignment="Stretch" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                            <Grid>
+                              <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="120" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                              </Grid.ColumnDefinitions>
+                              <TextBox Name="FocusLaunchPathTextBox" Height="30" FontSize="11.5" ToolTip="应用程序路径" TextChanged="FocusLaunchPathTextBox_TextChanged" />
+                              <Button x:Name="FocusLaunchPickProgramBtn" Grid.Column="1" Content="📦 软件库选择..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="从已安装的软件、微软商店与开始菜单中模糊搜索选取" Click="FocusPickProgramFromLibrary_Click" />
+                              <Button x:Name="FocusLaunchCaptureWindowBtn" Grid.Column="2" Content="🎯 捕捉运行窗口..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径" Click="FocusCaptureRunningWindow_Click" />
+                              <Button x:Name="FocusLaunchBrowseExeBtn" Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="手动浏览可执行文件或快捷方式" Click="FocusBrowseLaunchExe_Click" />
+                            </Grid>
+                          </ScrollViewer>
                           <Grid>
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />
