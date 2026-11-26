@@ -95,7 +95,7 @@ public partial class SettingsWindow
 
     private void LocalizeStudioAppearance()
     {
-        StudioSlotAppearance.Header = I18n.T("StudioSlotAppearance");
+        StudioSlotAppearanceTitle.Text = I18n.T("StudioSlotAppearance");
         StudioBranchTest.Content = I18n.T("FocusTestActionBtnText");
         StudioBranchCopy.Content = I18n.T("FocusCopyActionBtnText");
         StudioBranchPaste.Content = I18n.T("FocusPasteActionBtnText");
@@ -120,11 +120,9 @@ public partial class SettingsWindow
         return _selectedSlotIndex < 0 ? profile.GetEffectiveCenterAction() : profile.GetEffectiveAction(_selectedSlotIndex, _selectedSubActionIndex ?? -1);
     }
 
-    private void StudioAppearanceExpanded(object sender, RoutedEventArgs e) => RefreshStudioAppearance();
-
     private void RefreshStudioAppearance()
     {
-        if (!_studioReady || !StudioSlotAppearance.IsExpanded || _studioAppearanceBinding) return;
+        if (!_studioReady || _studioAppearanceBinding) return;
         var item = GetSelectedProfile() is { } profile ? StudioAppearanceTarget(profile) : null;
         _studioAppearanceBinding = true;
         try
@@ -137,7 +135,7 @@ public partial class SettingsWindow
 
     private void StudioSlotLayoutChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (!_studioReady || _studioAppearanceBinding || _isUpdatingUi || !StudioSlotAppearance.IsExpanded ||
+        if (!_studioReady || _studioAppearanceBinding || _isUpdatingUi ||
             StudioSlotLayout.SelectedValue is not string mode || GetSelectedProfile() is not { } profile ||
             StudioAppearanceTarget(profile) is not { } item || (item.LayoutMode ?? "Inherit") == mode) return;
         if (EditingOuterFixedSlot)

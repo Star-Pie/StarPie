@@ -530,6 +530,8 @@ public static string FormatKeyName(string? keyStr, uint vkCode = 0)
 		Add("StudioCanvas", "画布", "畫布", "Canvas", "キャンバス");
 		Add("StudioPasteSingle", "此槽位可粘贴单个动作。", "此槽位可貼上單個動作。", "Copy a single action to paste into this slot.", "このスロットには単一のアクションを貼り付けられます。");
 		Add("StudioChildren", "下级子菜单", "下級子選單", "Child actions", "子メニュー");
+		Add("StudioEditChildren", "编辑二级子动作", "編輯二級子動作", "Edit secondary actions", "第2階層のアクションを編集");
+		Add("StudioBackToPrimary", "返回一级主扇区", "返回一級主扇區", "Back to primary sector", "第1階層のセクターに戻る");
 		Add("ParallelProfileMode", "平行轮盘", "平行輪盤", "Parallel wheel", "並列ホイール");
 		Add("ConfigTransferExportTitle", "导出配置", "匯出設定", "Export configuration", "設定をエクスポート");
 		Add("PortableConfigExportHint", "导出含自定义 SVG 的便携配置包，或仅导出 JSON。", "匯出含自訂 SVG 的可攜設定包，或僅匯出 JSON。", "Export a portable configuration with custom SVG icons, or JSON only.", "カスタム SVG 付きの設定パック、または JSON のみをエクスポートします。");
