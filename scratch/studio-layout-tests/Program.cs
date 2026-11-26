@@ -135,6 +135,42 @@ internal static class Program
             window.SelectPrimarySlot(0);
             Check(ReferenceEquals(depth.Parent, Get<ContentControl>("StudioActionDepthHost")) && DepthInOriginalGroup() &&
                 Get<FrameworkElement>("StudioActionSection").Visibility == Visibility.Visible, "selecting slot opens its inspector " + lang);
+            Check(Equals(Get<Button>("StudioEditChildren").Content, I18n.T("StudioEditChildren")) &&
+                Equals(Get<Button>("StudioChildrenBack").Content, "← " + I18n.T("StudioBackToPrimary")),
+                "secondary page navigation localized " + lang);
+            Check(Get<StackPanel>("StudioSlotAppearance").Visibility == Visibility.Visible &&
+                Get<TextBlock>("StudioSlotAppearanceTitle").Text == I18n.T("StudioSlotAppearance"),
+                "slot appearance is always expanded " + lang);
+            Click("StudioEditChildren");
+            Check(Get<StackPanel>("StudioChildrenPage").Visibility == Visibility.Visible &&
+                Get<StackPanel>("StudioMainHeader").Visibility == Visibility.Collapsed &&
+                Get<StackPanel>("StudioFocusEditorHost").Visibility == Visibility.Collapsed &&
+                Get<Button>("StudioChildrenBack").Visibility == Visibility.Visible,
+                "secondary page hides the primary editor " + lang);
+            var originalChildren = global.Actions[0].SubActions;
+            global.Actions[0].SubActions = [new ActionItem { Name = "fixture", Type = "None" }];
+            window.SelectSubAction(0, 0);
+            Check(Get<StackPanel>("StudioChildrenPage").Visibility == Visibility.Visible &&
+                Get<StackPanel>("StudioFocusEditorHost").Visibility == Visibility.Visible,
+                "selecting a secondary action exposes its editor on the secondary page " + lang);
+            Click("StudioChildrenBack");
+            Check(Get<StackPanel>("StudioChildrenPage").Visibility == Visibility.Collapsed &&
+                Get<StackPanel>("StudioFocusEditorHost").Visibility == Visibility.Visible &&
+                Get<Button>("StudioChildrenBack").Visibility == Visibility.Collapsed,
+                "return restores primary inspector " + lang);
+            global.Actions[0].SubActions = originalChildren;
+            Click("StudioEditChildren");
+            window.SelectPrimarySlot(1);
+            Check(Get<StackPanel>("StudioChildrenPage").Visibility == Visibility.Collapsed &&
+                Get<StackPanel>("StudioFocusEditorHost").Visibility == Visibility.Visible,
+                "switching primary sectors closes the secondary page " + lang);
+            window.SelectPrimarySlot(0);
+            Click("StudioEditChildren");
+            Call("UpdateStudioMode", true);
+            Check(Get<StackPanel>("StudioChildrenPage").Visibility == Visibility.Collapsed &&
+                Get<StackPanel>("StudioAdvancedChildren").Visibility == Visibility.Collapsed,
+                "simple mode closes the secondary page " + lang);
+            Call("UpdateStudioMode", false);
             Click("StudioContextBack");
             Check(DepthInProfile(), "return from action inspector " + lang);
             Click("StudioListToggle");

@@ -17,6 +17,8 @@ public partial class SettingsWindow
 
     private bool _studioReady;
     private bool _studioAction;
+    private bool _studioChildrenPage;
+    private bool _studioSimple;
     private bool _studioHideRail;
     private bool _studioHideInspector;
     private bool _studioRailDrawer;
@@ -38,6 +40,7 @@ public partial class SettingsWindow
         }
         InitializeStudioRail();
         _studioReady = true;
+        UpdateStudioMode(_studioSimple);
         RootScaleGrid.SizeChanged += (_, _) => UpdateStudioWindowSpacing();
         CanvasTierSelector.IsVisibleChanged += (_, _) => UpdateStudioStageTools();
         ((Panel)MappingsLinkSubActionsBtn.Parent).Children.Remove(MappingsLinkSubActionsBtn);
@@ -86,11 +89,42 @@ public partial class SettingsWindow
     }
 
     private void ShowStudioProfileInspector() => SetStudioContext(false);
-    private void ShowStudioActionInspector() => SetStudioContext(true);
+    private void ShowStudioActionInspector(bool keepChildrenPage = false)
+    {
+        if (!keepChildrenPage) SetStudioChildrenPage(false);
+        SetStudioContext(true);
+    }
+
+    private void SetStudioChildrenPage(bool show)
+    {
+        if (show && (_selectedSlotIndex < 0 || _selectedMultiSlots.Count > 1 || EditingOuterFixedSlot ||
+                     FocusSubActionsBorder.Visibility != Visibility.Visible)) show = false;
+        _studioChildrenPage = show;
+        if (!_studioReady) return;
+        StudioChildrenPage.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        StudioChildrenBack.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        StudioMainHeader.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+        StudioFocusEditorHost.Visibility = !show || _selectedSubActionIndex.HasValue ? Visibility.Visible : Visibility.Collapsed;
+        StudioAdvancedChildren.Visibility = !show && !_studioSimple ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void StudioEditChildren_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedSlotIndex < 0 || FocusSubActionsBorder.Visibility != Visibility.Visible) return;
+        SetStudioChildrenPage(true);
+        RefreshFocusSubActionsListAndChips();
+    }
+
+    private void StudioChildrenBack_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedSlotIndex >= 0) SelectPrimarySlot(_selectedSlotIndex);
+        else SetStudioChildrenPage(false);
+    }
 
     private void SetStudioContext(bool action)
     {
         if (!_studioReady) return;
+        if (!action) SetStudioChildrenPage(false);
         _studioAction = action;
         StudioProfileSection.Visibility = action ? Visibility.Collapsed : Visibility.Visible;
         StudioActionSection.Visibility = action ? Visibility.Visible : Visibility.Collapsed;
@@ -136,8 +170,10 @@ public partial class SettingsWindow
 
     private void UpdateStudioMode(bool simple)
     {
+        _studioSimple = simple;
         if (!_studioReady) return;
-        StudioAdvancedChildren.Visibility = simple ? Visibility.Collapsed : Visibility.Visible;
+        if (simple && _studioChildrenPage) SetStudioChildrenPage(false);
+        StudioAdvancedChildren.Visibility = simple || _studioChildrenPage ? Visibility.Collapsed : Visibility.Visible;
         LayerSwitchTriggerLabel.Visibility = LayerSwitchTriggerComboBox.Visibility = simple ? Visibility.Collapsed : Visibility.Visible;
         StudioSlotAppearance.Visibility = simple ? Visibility.Collapsed : Visibility.Visible;
         RefreshStudioRail();
@@ -152,7 +188,8 @@ public partial class SettingsWindow
         StudioListOptions.Header = I18n.T("StudioListOptions");
         UpdateStudioPaneButtons(StudioRailPane.Visibility == Visibility.Visible, StudioInspector.Visibility == Visibility.Visible);
         StudioProfileDisplayLabel.Text = I18n.T("StudioProfileDisplayLabel");
-        StudioChildren.Header = I18n.T("StudioChildren");
+        StudioEditChildren.Content = I18n.T("StudioEditChildren");
+        StudioChildrenBack.Content = "← " + I18n.T("StudioBackToPrimary");
         StudioPluginActionCaption.Text = I18n.T("ActionTypePluginShort");
         FocusPluginPanel.ManageButton.Content = I18n.T("PluginPageHeader");
         LocalizeStudioAppearance();

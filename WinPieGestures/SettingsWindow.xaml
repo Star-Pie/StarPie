@@ -3417,7 +3417,11 @@
                   </Border>
                 </StackPanel>
 <StackPanel x:Name="StudioActionSection" Visibility="Collapsed">
-<Button Name="StudioContextBack" HorizontalAlignment="Left" Style="{StaticResource ModernButtonStyle}" Click="StudioProfileClick"/>
+<WrapPanel>
+  <Button Name="StudioContextBack" HorizontalAlignment="Left" Style="{StaticResource ModernButtonStyle}" Margin="0,0,6,0" Click="StudioProfileClick"/>
+  <Button Name="StudioChildrenBack" Visibility="Collapsed" Style="{StaticResource ModernButtonStyle}" Click="StudioChildrenBack_Click"/>
+</WrapPanel>
+<StackPanel Name="StudioMainHeader">
 <ContentControl Name="StudioActionDepthHost"/>
                   <WrapPanel Name="StudioBranchTools" Visibility="Collapsed" Margin="0,4,0,6">
                     <Button Name="StudioBranchTest" Style="{StaticResource ModernButtonStyle}" Padding="6,2" Click="StudioBranchTestClick"/>
@@ -3468,6 +3472,53 @@
                     <local:CanvasMenuActionEditor x:Name="DeepCanvasEditor" />
                   </StackPanel>
                 </Border>
+</StackPanel>
+<StackPanel Name="StudioChildrenPage" Visibility="Collapsed">
+<Border Name="FocusSubActionsBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+                      <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                          <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                          </Grid.ColumnDefinitions>
+                          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock x:Name="FocusSubActionsSectionLabel" Text="二级级联子动作:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" />
+                            <TextBlock Name="FocusSubActionsCountLabel" Text="(0 项)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="1" Orientation="Horizontal">
+
+
+                            <Button Name="FocusAddSubActionBtn" Content="➕ 添加二级动作" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" FontSize="11" Click="FocusAddSubActionBtn_Click" />
+                            <Button Name="FocusClearSubActionsBtn" Content="🗑️ 清空" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" FontSize="11" Click="FocusClearSubActionsBtn_Click" />
+
+
+                          </StackPanel>
+                        </Grid>
+
+                        <!-- 面包屑导航与当前编辑路径指示 -->
+                        <Border Name="FocusActionBreadcrumbBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
+                          <Grid>
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="*" />
+                              <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Name="FocusActionBreadcrumbText" Text="📍 [主扇区 1 - 向上]" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <Button Name="FocusRestoreInheritanceBtn" Grid.Column="1" Content="🌐 恢复继承" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" FontSize="10.5" Visibility="Collapsed" Click="FocusRestoreInheritanceBtn_Click" />
+                          </Grid>
+                        </Border>
+
+                        <!-- 二级子动作有序列表 (有序编号、图标、名称、参数摘要与操作按钮) -->
+                        <StackPanel Name="FocusSubActionsOrderedListPanel" Margin="0,0,0,6">
+                        </StackPanel>
+
+                        <!-- 二级子动作芯片列表 -->
+                        <WrapPanel Name="FocusSubActionsChipsPanel" Margin="0,2,0,0">
+                          <!-- 动态注入二级子动作芯片 (可点击选中进行精调，或点击小叉删除) -->
+                        </WrapPanel>
+                      </StackPanel>
+                    </Border>
+</StackPanel>
+<StackPanel Name="StudioFocusEditorHost">
                 <!-- 卡片 2：动作聚焦精调卡片 (Focus Editor Card) -->
                 <Border Name="FocusActionEditorBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="{DynamicResource ArtBorderThickness}" CornerRadius="{DynamicResource CardCornerRadius}" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
@@ -3501,6 +3552,9 @@
                         <Button Name="FocusPrevSlotBtn" Content="◀ 上一槽" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" Click="FocusPrevSlotBtn_Click" />
                         <Button Name="FocusNextSlotBtn" Content="下一槽 ▶" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="0,0,4,0" Click="FocusNextSlotBtn_Click" />
                         <Button Name="FocusCenterCoreBtn" Content="🎯 中心核圆" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Click="FocusCenterCoreBtn_Click" />
+                        <StackPanel Name="StudioAdvancedChildren">
+                          <Button Name="StudioEditChildren" Visibility="{Binding Visibility, ElementName=FocusSubActionsBorder}" Style="{StaticResource ModernButtonStyle}" Height="28" Padding="8,0" Margin="4,0,0,0" Click="StudioEditChildren_Click" />
+                        </StackPanel>
                       </WrapPanel>
                     </StackPanel>
 
@@ -3564,51 +3618,7 @@
                     </Border>
 
                     <!-- 模块 0：二级级联子动作管理 (仅一级扇区呈现，置于参数区上方持续可见) -->
-<StackPanel Name="StudioAdvancedChildren"><Expander x:Name="StudioChildren" IsExpanded="False" Visibility="{Binding Visibility, ElementName=FocusSubActionsBorder}">
-                    <Border Name="FocusSubActionsBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,0,0,12">
-                      <StackPanel>
-                        <Grid Margin="0,0,0,8">
-                          <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                          </Grid.ColumnDefinitions>
-                          <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <TextBlock x:Name="FocusSubActionsSectionLabel" Text="二级级联子动作:" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,6,0" />
-                            <TextBlock Name="FocusSubActionsCountLabel" Text="(0 项)" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
-                          </StackPanel>
-                          <StackPanel Grid.Column="1" Orientation="Horizontal">
 
-
-                            <Button Name="FocusAddSubActionBtn" Content="➕ 添加二级动作" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="8,0" Margin="0,0,4,0" FontSize="11" Click="FocusAddSubActionBtn_Click" />
-                            <Button Name="FocusClearSubActionsBtn" Content="🗑️ 清空" Style="{StaticResource ModernButtonStyle}" Height="26" Padding="6,0" FontSize="11" Click="FocusClearSubActionsBtn_Click" />
-
-
-                          </StackPanel>
-                        </Grid>
-
-                        <!-- 面包屑导航与当前编辑路径指示 -->
-                        <Border Name="FocusActionBreadcrumbBorder" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="4" Padding="8,4" Margin="0,0,0,8">
-                          <Grid>
-                            <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Name="FocusActionBreadcrumbText" Text="📍 [主扇区 1 - 向上]" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                            <Button Name="FocusRestoreInheritanceBtn" Grid.Column="1" Content="🌐 恢复继承" Style="{StaticResource ModernButtonStyle}" Height="22" Padding="6,0" FontSize="10.5" Visibility="Collapsed" Click="FocusRestoreInheritanceBtn_Click" />
-                          </Grid>
-                        </Border>
-
-                        <!-- 二级子动作有序列表 (有序编号、图标、名称、参数摘要与操作按钮) -->
-                        <StackPanel Name="FocusSubActionsOrderedListPanel" Margin="0,0,0,6">
-                        </StackPanel>
-
-                        <!-- 二级子动作芯片列表 -->
-                        <WrapPanel Name="FocusSubActionsChipsPanel" Margin="0,2,0,0">
-                          <!-- 动态注入二级子动作芯片 (可点击选中进行精调，或点击小叉删除) -->
-                        </WrapPanel>
-                      </StackPanel>
-                    </Border>
-</Expander></StackPanel>
 
                     <!-- 模块 1：图标与显示名称配置 -->
                     <Border Name="FocusNameAndIconBorder" Background="{DynamicResource SubtleCardBrush}" BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,0,0,12">
@@ -3711,18 +3721,12 @@
                         <CheckBox Name="FocusLaunchPlacementCheckBox" Visibility="Collapsed" Margin="0,4,0,6"
                                   Click="FocusLaunchPlacement_Click" />
                         <StackPanel Name="FocusLaunchPanel" Visibility="Collapsed">
-                          <Grid Margin="0,0,0,6">
-                            <Grid.ColumnDefinitions>
-                              <ColumnDefinition Width="*" />
-                              <ColumnDefinition Width="Auto" />
-                              <ColumnDefinition Width="Auto" />
-                              <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBox Name="FocusLaunchPathTextBox" Height="30" FontSize="11.5" ToolTip="应用程序路径" TextChanged="FocusLaunchPathTextBox_TextChanged" />
-                            <Button x:Name="FocusLaunchPickProgramBtn" Grid.Column="1" Content="📦 软件库选择..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="从已安装的软件、微软商店与开始菜单中模糊搜索选取" Click="FocusPickProgramFromLibrary_Click" />
-                            <Button x:Name="FocusLaunchCaptureWindowBtn" Grid.Column="2" Content="🎯 捕捉运行窗口..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径" Click="FocusCaptureRunningWindow_Click" />
-                            <Button x:Name="FocusLaunchBrowseExeBtn" Grid.Column="3" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="6,0,0,0" ToolTip="手动浏览可执行文件或快捷方式" Click="FocusBrowseLaunchExe_Click" />
-                          </Grid>
+                          <WrapPanel Margin="0,0,0,2">
+                            <TextBox Name="FocusLaunchPathTextBox" Width="160" Height="30" FontSize="11.5" Margin="0,0,6,4" ToolTip="应用程序路径" TextChanged="FocusLaunchPathTextBox_TextChanged" />
+                            <Button x:Name="FocusLaunchPickProgramBtn" Content="📦 软件库选择..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="0,0,6,4" ToolTip="从已安装的软件、微软商店与开始菜单中模糊搜索选取" Click="FocusPickProgramFromLibrary_Click" />
+                            <Button x:Name="FocusLaunchCaptureWindowBtn" Content="🎯 捕捉运行窗口..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="0,0,6,4" ToolTip="直接探测并捕捉桌面上正在运行的活跃窗口与程序执行路径" Click="FocusCaptureRunningWindow_Click" />
+                            <Button x:Name="FocusLaunchBrowseExeBtn" Content="📂 浏览..." Style="{StaticResource ModernButtonStyle}" Height="30" Padding="8,0" Margin="0,0,0,4" ToolTip="手动浏览可执行文件或快捷方式" Click="FocusBrowseLaunchExe_Click" />
+                          </WrapPanel>
                           <Grid>
                             <Grid.ColumnDefinitions>
                               <ColumnDefinition Width="Auto" />
@@ -4134,11 +4138,11 @@
                   </StackPanel>
                 </StackPanel>
               </Border>
-<Expander Name="StudioSlotAppearance" IsExpanded="False" Expanded="StudioAppearanceExpanded">
-                    <StackPanel Margin="4">
-                      <ComboBox Name="StudioSlotLayout" Style="{StaticResource FlatComboBoxStyle}" SelectedValuePath="Tag" SelectionChanged="StudioSlotLayoutChanged"/>
-                    </StackPanel>
-                  </Expander>
+<StackPanel Name="StudioSlotAppearance" Margin="0,0,0,8">
+                    <TextBlock Name="StudioSlotAppearanceTitle" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="SemiBold" Margin="4,0,4,4" />
+                    <ComboBox Name="StudioSlotLayout" Margin="4,0" Style="{StaticResource FlatComboBoxStyle}" SelectedValuePath="Tag" SelectionChanged="StudioSlotLayoutChanged"/>
+                  </StackPanel>
+</StackPanel>
 </StackPanel>
               </StackPanel>
             </ScrollViewer></DockPanel>

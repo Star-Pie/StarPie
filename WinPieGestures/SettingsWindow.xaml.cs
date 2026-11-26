@@ -5912,7 +5912,7 @@ public partial class SettingsWindow : Window
 	public void SelectSubAction(int parentSlotIndex, int subIndex)
 	{
 		_selectedMultiSlots.Clear();
-        ShowStudioActionInspector();
+        ShowStudioActionInspector(keepChildrenPage: true);
 		SelectFixedInnerLevel(2);
 		CloseDeepCanvas();
 		_selectedSlotIndex = parentSlotIndex;
@@ -6509,6 +6509,7 @@ public partial class SettingsWindow : Window
 		finally
 		{
 			_isUpdatingFocusUi = false;
+            if (_studioChildrenPage) SetStudioChildrenPage(true);
 			ResetFocusEditSnapshot();
 		}
 	}
